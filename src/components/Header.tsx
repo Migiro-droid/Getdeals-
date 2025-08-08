@@ -1,4 +1,5 @@
 import { useState } from "react";
+import logo from "../assets/logo.png";
 import { Link, useLocation } from "react-router-dom";
 import { Search, ShoppingCart, User, Menu, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -33,11 +34,8 @@ export function Header() {
       <div className="container mx-auto px-4">
         <div className="flex h-16 items-center justify-between">
           {/* Logo */}
-          <Link to="/" className="flex items-center space-x-2">
-            <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-primary text-primary-foreground font-bold text-lg">
-              G
-            </div>
-            <span className="font-bold text-xl text-foreground">GetDeals</span>
+          <Link to="/" className="flex items-center">
+            <img src={logo} alt="Logo" className="h-12 w-auto max-h-14 object-contain" style={{background: 'none'}} />
           </Link>
 
           {/* Desktop Navigation */}

@@ -6,8 +6,8 @@ import { Card, CardContent } from "@/components/ui/card";
 import { ProductCard } from "@/components/ProductCard";
 import { AuthModals } from "@/components/AuthModals";
 import { featuredProducts } from "@/data/products";
-import heroImage from "@/assets/hero-supermarket.jpg";
-import deliveryImage from "@/assets/delivery-service.jpg";
+const heroImage = "https://thumbs.dreamstime.com/b/grocery-shop-19157515.jpg";
+const deliveryImage = "https://gulfbusiness.com/wp-content/uploads/2024/04/GettyImages-1824077027-800x534.jpg";
 
 export default function HomePage() {
   const [authModalOpen, setAuthModalOpen] = useState(false);
@@ -229,7 +229,7 @@ export default function HomePage() {
               <img
                 src={deliveryImage}
                 alt="Delivery service"
-                className="rounded-2xl shadow-strong w-full"
+                className="rounded-2xl shadow-strong w-full object-cover"
               />
             </div>
           </div>
