@@ -3,7 +3,7 @@
 @tailwind utilities;
 
 /* GetDeals Kenya Design System - Premium E-commerce
-Brand Colors: Orange (#f58220), Black (#000000), White (#ffffff)
+Brand Colors: Blue (#2563eb), Dark Blue (#1e40af), White (#ffffff)
 Typography: Inter font family for modern, clean design
 */
 
@@ -18,11 +18,11 @@ Typography: Inter font family for modern, clean design
     --popover: 0 0% 100%;
     --popover-foreground: 0 0% 9%;
 
-    /* GetDeals brand orange #f58220 */
-    --primary: 25 96% 53%;
+    /* GetDeals brand blue #2563eb */
+    --primary: 217 91% 60%;
     --primary-foreground: 0 0% 100%;
-    --primary-light: 25 96% 65%;
-    --primary-dark: 25 96% 45%;
+    --primary-light: 217 91% 70%;
+    --primary-dark: 217 91% 50%;
 
     --secondary: 0 0% 96%;
     --secondary-foreground: 0 0% 9%;
@@ -38,7 +38,7 @@ Typography: Inter font family for modern, clean design
 
     --border: 0 0% 89%;
     --input: 0 0% 89%;
-    --ring: 25 96% 53%;
+    --ring: 217 91% 60%;
 
     --success: 120 60% 50%;
     --success-foreground: 0 0% 98%;
@@ -47,14 +47,14 @@ Typography: Inter font family for modern, clean design
     --warning-foreground: 0 0% 9%;
 
     /* Custom gradient for hero sections */
-    --gradient-hero: linear-gradient(135deg, hsl(25 96% 53%), hsl(25 96% 65%));
+    --gradient-hero: linear-gradient(135deg, hsl(217 91% 60%), hsl(217 91% 70%));
     --gradient-subtle: linear-gradient(180deg, hsl(0 0% 99%), hsl(0 0% 96%));
 
     /* Premium shadows */
     --shadow-soft: 0 2px 8px hsl(0 0% 0% / 0.04);
     --shadow-medium: 0 4px 16px hsl(0 0% 0% / 0.08);
     --shadow-strong: 0 8px 32px hsl(0 0% 0% / 0.12);
-    --shadow-orange: 0 4px 20px hsl(25 96% 53% / 0.2);
+    --shadow-blue: 0 4px 20px hsl(217 91% 60% / 0.2);
 
     --radius: 0.75rem;
 
@@ -85,7 +85,7 @@ Typography: Inter font family for modern, clean design
     --popover: 0 0% 9%;
     --popover-foreground: 0 0% 98%;
 
-    --primary: 25 96% 53%;
+    --primary: 217 91% 60%;
     --primary-foreground: 0 0% 9%;
 
     --secondary: 0 0% 14%;
@@ -102,7 +102,7 @@ Typography: Inter font family for modern, clean design
 
     --border: 0 0% 14%;
     --input: 0 0% 14%;
-    --ring: 25 96% 53%;
+    --ring: 217 91% 60%;
     --sidebar-background: 240 5.9% 10%;
     --sidebar-foreground: 240 4.8% 95.9%;
     --sidebar-primary: 224.3 76.3% 48%;
@@ -153,7 +153,7 @@ Typography: Inter font family for modern, clean design
     box-shadow: var(--shadow-strong);
   }
   
-  .shadow-orange {
-    box-shadow: var(--shadow-orange);
+  .shadow-blue {
+    box-shadow: var(--shadow-blue);
   }
 }

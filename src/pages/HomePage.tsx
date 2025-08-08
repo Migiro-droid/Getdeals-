@@ -1,13 +1,17 @@
+import { useState } from "react";
 import { Link } from "react-router-dom";
-import { ArrowRight, CheckCircle, Clock, Shield, Truck } from "lucide-react";
+import { ArrowRight, CheckCircle, Clock, Shield, Truck, LogIn, UserPlus } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { ProductCard } from "@/components/ProductCard";
+import { AuthModals } from "@/components/AuthModals";
 import { featuredProducts } from "@/data/products";
-import heroImage from "@/assets/hero-family.jpg";
+import heroImage from "@/assets/hero-supermarket.jpg";
 import deliveryImage from "@/assets/delivery-service.jpg";
 
 export default function HomePage() {
+  const [authModalOpen, setAuthModalOpen] = useState(false);
+  const [authModalTab, setAuthModalTab] = useState<"signin" | "signup">("signin");
   const features = [
     {
       icon: CheckCircle,
@@ -76,6 +80,30 @@ export default function HomePage() {
                 </Button>
                 <Button variant="outline" size="lg" className="text-lg px-8" asChild>
                   <Link to="/how-it-works">How It Works</Link>
+                </Button>
+              </div>
+              <div className="flex flex-col sm:flex-row gap-3 mt-4">
+                <Button 
+                  variant="secondary" 
+                  size="lg"
+                  onClick={() => {
+                    setAuthModalTab("signin");
+                    setAuthModalOpen(true);
+                  }}
+                >
+                  <LogIn className="mr-2 h-4 w-4" />
+                  Sign In
+                </Button>
+                <Button 
+                  variant="outline" 
+                  size="lg"
+                  onClick={() => {
+                    setAuthModalTab("signup");
+                    setAuthModalOpen(true);
+                  }}
+                >
+                  <UserPlus className="mr-2 h-4 w-4" />
+                  Sign Up
                 </Button>
               </div>
             </div>
@@ -227,6 +255,12 @@ export default function HomePage() {
           </div>
         </div>
       </section>
+      
+      <AuthModals 
+        open={authModalOpen}
+        onOpenChange={setAuthModalOpen}
+        defaultTab={authModalTab}
+      />
     </div>
   );
 }

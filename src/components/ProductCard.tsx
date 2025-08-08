@@ -5,6 +5,7 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { useCart } from "@/contexts/CartContext";
 import { useToast } from "@/hooks/use-toast";
+import { ProductDetailModal } from "./ProductDetailModal";
 
 interface Product {
   id: string;
@@ -26,6 +27,7 @@ interface ProductCardProps {
 export function ProductCard({ product, onQuickView }: ProductCardProps) {
   const [isWishlisted, setIsWishlisted] = useState(false);
   const [isHovered, setIsHovered] = useState(false);
+  const [showDetailModal, setShowDetailModal] = useState(false);
   const { addItem } = useCart();
   const { toast } = useToast();
 
@@ -105,15 +107,13 @@ export function ProductCard({ product, onQuickView }: ProductCardProps) {
               <ShoppingCart className="h-4 w-4 mr-2" />
               Add to Cart
             </Button>
-            {onQuickView && (
-              <Button
-                variant="secondary"
-                size="sm"
-                onClick={() => onQuickView(product)}
-              >
-                <Eye className="h-4 w-4" />
-              </Button>
-            )}
+            <Button
+              variant="secondary"
+              size="sm"
+              onClick={() => setShowDetailModal(true)}
+            >
+              <Eye className="h-4 w-4" />
+            </Button>
           </div>
         </div>
       </div>
@@ -146,6 +146,12 @@ export function ProductCard({ product, onQuickView }: ProductCardProps) {
           </p>
         )}
       </CardContent>
+      
+      <ProductDetailModal 
+        product={product}
+        open={showDetailModal}
+        onOpenChange={setShowDetailModal}
+      />
     </Card>
   );
 }
