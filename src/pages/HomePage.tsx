@@ -6,7 +6,7 @@ import { Card, CardContent } from "@/components/ui/card";
 import { ProductCard } from "@/components/ProductCard";
 import { AuthModals } from "@/components/AuthModals";
 import { featuredProducts } from "@/data/products";
-const heroImage = "https://thumbs.dreamstime.com/b/grocery-shop-19157515.jpg";
+import heroBg from "@/assets/franki-chamaki-ivfp_yxZuYQ-unsplash.jpg";
 const deliveryImage = "https://gulfbusiness.com/wp-content/uploads/2024/04/GettyImages-1824077027-800x534.jpg";
 
 export default function HomePage() {
@@ -61,15 +61,25 @@ export default function HomePage() {
   return (
     <div className="min-h-screen">
       {/* Hero Section */}
-      <section className="relative bg-gradient-to-br from-primary/10 to-primary/5 py-20 lg:py-32">
-        <div className="container mx-auto px-4">
+      <section 
+        className="relative py-20 lg:py-32 min-h-[600px]"
+        style={{
+          backgroundImage: `url(${heroBg})`,
+          backgroundSize: 'cover',
+          backgroundPosition: 'center center',
+          backgroundRepeat: 'no-repeat',
+        }}
+      >
+        {/* Dark overlay for better text readability */}
+        <div className="absolute inset-0 bg-black/40"></div>
+        <div className="container mx-auto px-4 relative z-10">
           <div className="grid lg:grid-cols-2 gap-12 items-center">
             <div className="space-y-8">
-              <h1 className="text-4xl lg:text-6xl font-bold leading-tight text-balance">
+              <h1 className="text-4xl lg:text-6xl font-bold leading-tight text-balance text-white drop-shadow-lg">
                 Smart Shopping
                 <span className="text-primary block">Made Easy</span>
               </h1>
-              <p className="text-xl text-muted-foreground max-w-xl">
+              <p className="text-xl text-white max-w-xl drop-shadow-md">
                 Get curated grocery baskets delivered to your doorstep or pickup at your nearest Quickmart. Save time, save money.
               </p>
               <div className="flex flex-col sm:flex-row gap-4">
@@ -78,7 +88,7 @@ export default function HomePage() {
                     Start Shopping <ArrowRight className="ml-2 h-5 w-5" />
                   </Link>
                 </Button>
-                <Button variant="outline" size="lg" className="text-lg px-8" asChild>
+                <Button variant="outline" size="lg" className="text-lg px-8 bg-white/20 border-white text-white hover:bg-white hover:text-black" asChild>
                   <Link to="/how-it-works">How It Works</Link>
                 </Button>
               </div>
@@ -86,6 +96,7 @@ export default function HomePage() {
                 <Button 
                   variant="secondary" 
                   size="lg"
+                  className="bg-white/20 border-white text-white hover:bg-white hover:text-black"
                   onClick={() => {
                     setAuthModalTab("signin");
                     setAuthModalOpen(true);
@@ -97,6 +108,7 @@ export default function HomePage() {
                 <Button 
                   variant="outline" 
                   size="lg"
+                  className="bg-white/20 border-white text-white hover:bg-white hover:text-black"
                   onClick={() => {
                     setAuthModalTab("signup");
                     setAuthModalOpen(true);
@@ -106,13 +118,6 @@ export default function HomePage() {
                   Sign Up
                 </Button>
               </div>
-            </div>
-            <div className="relative">
-              <img
-                src={heroImage}
-                alt="Happy family shopping"
-                className="rounded-2xl shadow-strong w-full"
-              />
             </div>
           </div>
         </div>
