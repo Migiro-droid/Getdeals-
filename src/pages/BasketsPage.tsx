@@ -33,7 +33,7 @@ export default function BasketsPage() {
   return (
     <div className="min-h-screen py-8">
       <div className="container mx-auto px-4">
-        {/* Header */}
+        {}
         <div className="mb-8">
           <h1 className="text-3xl lg:text-4xl font-bold mb-4">Our Curated Baskets</h1>
           <p className="text-xl text-muted-foreground max-w-2xl">
@@ -41,7 +41,7 @@ export default function BasketsPage() {
           </p>
         </div>
 
-        {/* Filters and Sort */}
+        {}
         <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-8">
           <div className="flex items-center gap-4">
             <Button variant="outline" size="sm">
@@ -69,14 +69,14 @@ export default function BasketsPage() {
           </div>
         </div>
 
-        {/* Products Grid */}
+        {}
         <div className="grid md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6 mb-12">
           {sortedProducts.map((product) => (
             <ProductCard key={product.id} product={product} />
           ))}
         </div>
 
-        {/* Call to Action */}
+        {}
         <div className="text-center py-12 bg-muted/30 rounded-2xl">
           <h2 className="text-2xl font-bold mb-4">Need a Custom Basket?</h2>
           <p className="text-muted-foreground mb-6 max-w-md mx-auto">

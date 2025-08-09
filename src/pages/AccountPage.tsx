@@ -61,8 +61,8 @@ export default function AccountPage() {
                   <div className="w-20 h-20 rounded-full bg-primary/10 flex items-center justify-center mx-auto mb-4">
                     <User className="h-10 w-10 text-primary" />
                   </div>
-                  <h3 className="font-semibold text-lg">John Doe</h3>
-                  <p className="text-muted-foreground">john.doe@email.com</p>
+                  <h3 className="font-semibold text-lg">Eric Ndivo</h3>
+                  <p className="text-muted-foreground">eric.ndivo@email.com</p>
                 </div>
                 
                 <div className="space-y-2">
@@ -114,7 +114,7 @@ export default function AccountPage() {
                         <Label htmlFor="firstName">First Name</Label>
                         <Input 
                           id="firstName" 
-                          defaultValue="John" 
+                          defaultValue="Eric" 
                           disabled={!isEditing}
                         />
                       </div>
@@ -122,7 +122,7 @@ export default function AccountPage() {
                         <Label htmlFor="lastName">Last Name</Label>
                         <Input 
                           id="lastName" 
-                          defaultValue="Doe" 
+                          defaultValue="Ndivo" 
                           disabled={!isEditing}
                         />
                       </div>
@@ -133,7 +133,7 @@ export default function AccountPage() {
                       <Input 
                         id="email" 
                         type="email" 
-                        defaultValue="john.doe@email.com" 
+                        defaultValue="eric.ndivo@email.com" 
                         disabled={!isEditing}
                       />
                     </div>
