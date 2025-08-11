@@ -29,11 +29,12 @@ export function AuthModals({ open, onOpenChange, defaultTab = "signin" }: AuthMo
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-md">
+      <DialogContent className="max-w-md rounded-2xl">
         <DialogHeader>
-          <DialogTitle className="text-center text-2xl font-bold">
+          <DialogTitle className="text-center text-2xl font-extrabold">
             Welcome to GetDeals
           </DialogTitle>
+          <p className="text-center text-sm text-muted-foreground">Sign in or create an account to continue</p>
         </DialogHeader>
 
         <Tabs value={activeTab} onValueChange={setActiveTab as (value: string) => void} className="w-full">
@@ -72,9 +73,18 @@ export function AuthModals({ open, onOpenChange, defaultTab = "signin" }: AuthMo
                 </div>
               </div>
 
-              <Button type="submit" className="w-full" size="lg">
+              <Button type="submit" className="w-full rounded-lg" size="lg">
                 Sign In
               </Button>
+              <div className="flex items-center gap-2">
+                <div className="h-px bg-border flex-1" />
+                <span className="text-xs text-muted-foreground">or continue with</span>
+                <div className="h-px bg-border flex-1" />
+              </div>
+              <div className="grid grid-cols-2 gap-2">
+                <Button type="button" variant="outline">Google</Button>
+                <Button type="button" variant="outline">Facebook</Button>
+              </div>
               
               <p className="text-center text-sm text-muted-foreground">
                 Don't have an account?{" "}
@@ -147,9 +157,18 @@ export function AuthModals({ open, onOpenChange, defaultTab = "signin" }: AuthMo
                 </div>
               </div>
 
-              <Button type="submit" className="w-full" size="lg">
+              <Button type="submit" className="w-full rounded-lg" size="lg">
                 Create Account
               </Button>
+              <div className="flex items-center gap-2">
+                <div className="h-px bg-border flex-1" />
+                <span className="text-xs text-muted-foreground">or continue with</span>
+                <div className="h-px bg-border flex-1" />
+              </div>
+              <div className="grid grid-cols-2 gap-2">
+                <Button type="button" variant="outline">Google</Button>
+                <Button type="button" variant="outline">Facebook</Button>
+              </div>
               
               <p className="text-center text-sm text-muted-foreground">
                 Already have an account?{" "}

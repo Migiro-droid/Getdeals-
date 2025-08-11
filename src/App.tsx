@@ -4,6 +4,7 @@ import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route } from "react-router-dom";
 import { CartProvider } from "@/contexts/CartContext";
+import { WalletProvider } from "@/contexts/WalletContext";
 import { Header } from "@/components/Header";
 import { Footer } from "@/components/Footer";
 import HomePage from "./pages/HomePage";
@@ -16,6 +17,7 @@ import HowItWorksPage from "./pages/HowItWorksPage";
 import AccountPage from "./pages/AccountPage";
 import FAQPage from "./pages/FAQPage";
 import NotFound from "./pages/NotFound";
+import WalletPage from "./pages/WalletPage";
 
 const queryClient = new QueryClient();
 
@@ -23,6 +25,7 @@ const App = () => (
   <QueryClientProvider client={queryClient}>
     <TooltipProvider>
       <CartProvider>
+        <WalletProvider>
         <Toaster />
         <Sonner />
         <BrowserRouter>
@@ -39,6 +42,7 @@ const App = () => (
                 <Route path="/how-it-works" element={<HowItWorksPage />} />
                 <Route path="/account" element={<AccountPage />} />
                 <Route path="/faq" element={<FAQPage />} />
+                <Route path="/wallet" element={<WalletPage />} />
                 {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
                 <Route path="*" element={<NotFound />} />
               </Routes>
@@ -46,6 +50,7 @@ const App = () => (
             <Footer />
           </div>
         </BrowserRouter>
+        </WalletProvider>
       </CartProvider>
     </TooltipProvider>
   </QueryClientProvider>

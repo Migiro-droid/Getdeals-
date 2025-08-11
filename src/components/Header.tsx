@@ -6,12 +6,14 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { useCart } from "@/contexts/CartContext";
+import { useWallet } from "@/contexts/WalletContext";
 
 export function Header() {
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
   const location = useLocation();
   const { items } = useCart();
+  const { balance } = useWallet();
 
   const cartItemsCount = items.reduce((sum, item) => sum + item.quantity, 0);
 
@@ -22,6 +24,7 @@ export function Header() {
     { name: "About", href: "/about" },
     { name: "Contact", href: "/contact" },
     { name: "FAQ", href: "/faq" },
+  { name: "Wallet", href: "/wallet" },
   ];
 
   const isActive = (href: string) => {
@@ -70,6 +73,12 @@ export function Header() {
 
           {/* Right Actions */}
           <div className="flex items-center space-x-4">
+            {/* Wallet quick pill */}
+            <Link to="/wallet" className="hidden md:flex">
+              <div className="px-3 py-1 rounded-full text-xs bg-primary/10 text-primary font-medium">
+                Wallet: KES {balance.toLocaleString()}
+              </div>
+            </Link>
             {/* Mobile Search Button */}
             <Button variant="ghost" size="icon" className="md:hidden">
               <Search className="h-5 w-5" />

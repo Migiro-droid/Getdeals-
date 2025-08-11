@@ -100,7 +100,7 @@ export function Footer() {
           </div>
           <div className="flex items-center space-x-2 text-sm">
             <MapPin className="h-4 w-4 text-primary" />
-            <span>Nairobi, Kenya</span>
+            <span>Karen Green, Nairobi, Kenya</span>
           </div>
         </div>
 
@@ -110,6 +110,9 @@ export function Footer() {
         <div className="flex flex-col md:flex-row justify-between items-center space-y-4 md:space-y-0">
           <p className="text-sm text-muted-foreground">
             © {currentYear} GetDeals Kenya. All rights reserved.
+          </p>
+          <p className="text-sm text-muted-foreground">
+            Powered by <span className="font-semibold">House of Procurement</span>
           </p>
           <div className="flex space-x-6 text-sm">
             <a href="#" className="text-muted-foreground hover:text-primary transition-colors">

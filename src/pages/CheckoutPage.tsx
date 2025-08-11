@@ -9,6 +9,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Separator } from "@/components/ui/separator";
 import { useCart } from "@/contexts/CartContext";
 import { useToast } from "@/hooks/use-toast";
+import { useWallet } from "@/contexts/WalletContext";
 
 export default function CheckoutPage() {
   const { items, total, clearCart } = useCart();
@@ -16,13 +17,27 @@ export default function CheckoutPage() {
   const [isLoading, setIsLoading] = useState(false);
   const [deliveryMethod, setDeliveryMethod] = useState("pickup");
   const [paymentMethod, setPaymentMethod] = useState("mpesa");
+  const { balance, withdraw } = useWallet();
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setIsLoading(true);
 
+    // If paying with wallet, ensure sufficient funds and deduct
+    if (paymentMethod === "wallet") {
+      const res = withdraw(finalTotal, "Checkout payment", "payment");
+      if (!res.ok) {
+        toast({
+          title: "Wallet payment failed",
+          description: res.error || "Insufficient wallet balance",
+        });
+        setIsLoading(false);
+        return;
+      }
+    }
+
     // Simulate order processing
-    await new Promise(resolve => setTimeout(resolve, 2000));
+    await new Promise(resolve => setTimeout(resolve, 1000));
 
     toast({
       title: "Order placed successfully!",
@@ -160,11 +175,11 @@ export default function CheckoutPage() {
                     </Label>
                   </div>
                   <div className="flex items-center space-x-2 p-4 border rounded-lg">
-                    <RadioGroupItem value="rukisha" id="rukisha" />
-                    <Label htmlFor="rukisha" className="flex-1">
-                      <div className="font-medium">Rukisha Wallet</div>
+                    <RadioGroupItem value="wallet" id="wallet" />
+                    <Label htmlFor="wallet" className="flex-1">
+                      <div className="font-medium">GetDeals Wallet</div>
                       <div className="text-sm text-muted-foreground">
-                        Use your Rukisha balance
+                        Current balance: KES {balance.toLocaleString()}
                       </div>
                     </Label>
                   </div>
@@ -178,6 +193,14 @@ export default function CheckoutPage() {
                     </Label>
                   </div>
                 </RadioGroup>
+
+                {paymentMethod === "wallet" && (
+                  <div className={`text-sm ${balance < finalTotal ? "text-red-600" : "text-muted-foreground"}`}>
+                    {balance < finalTotal
+                      ? "Insufficient wallet balance for this order. Please deposit or choose another method."
+                      : "This order will be paid from your GetDeals Wallet."}
+                  </div>
+                )}
 
                 {paymentMethod === "mpesa" && (
                   <div>
@@ -229,7 +252,11 @@ export default function CheckoutPage() {
                   type="submit" 
                   size="lg" 
                   className="w-full" 
-                  disabled={isLoading || items.length === 0}
+                  disabled={
+                    isLoading ||
+                    items.length === 0 ||
+                    (paymentMethod === "wallet" && balance < finalTotal)
+                  }
                 >
                   {isLoading ? "Processing..." : "Place Order"}
                 </Button>

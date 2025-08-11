@@ -74,8 +74,103 @@ export const products: Product[] = [
     ],
     category: "basket", 
     description: "Ultimate luxury shopping experience"
+  },
+  // New baskets
+  {
+    id: "back-to-school-basket",
+    name: "Back to School Basket",
+    price: 4200,
+    originalPrice: 5000,
+    image: "src/assets/essential-basket.jpg",
+    items: [
+      "3kg Rice",
+      "1kg Sugar",
+      "1L Cooking Oil",
+      "2 Bread Loaves",
+      "2kg Wheat Flour"
+    ],
+    category: "basket",
+    description: "Perfect starter pack for school season"
+  },
+  {
+    id: "holiday-feast-basket",
+    name: "Holiday Feast Basket",
+    price: 8500,
+    originalPrice: 10200,
+    image: "src/assets/family-basket.jpg",
+    items: [
+      "10kg Rice",
+      "3kg Sugar",
+      "2L Cooking Oil",
+      "3 Bread Loaves",
+      "4kg Wheat Flour"
+    ],
+    category: "basket",
+    description: "Celebrate holidays with a generous family bundle"
+  },
+  {
+    id: "essentials-plus-basket",
+    name: "Essentials Plus Basket",
+    price: 3800,
+    originalPrice: 4400,
+    image: "src/assets/essential-basket.jpg",
+    items: [
+      "3kg Rice",
+      "1kg Sugar",
+      "1L Cooking Oil",
+      "1 Bread Loaf",
+      "2kg Wheat Flour"
+    ],
+    category: "basket",
+    description: "More of the essentials you use every day"
+  },
+  {
+    id: "essentials-max-basket",
+    name: "Essentials Max Basket",
+    price: 6200,
+    originalPrice: 7400,
+    image: "src/assets/essential-basket.jpg",
+    items: [
+      "5kg Rice",
+      "2kg Sugar",
+      "2L Cooking Oil",
+      "2 Bread Loaves",
+      "4kg Wheat Flour"
+    ],
+    category: "basket",
+    description: "Bulk buy essentials for bigger savings"
+  },
+  // Alcohol deals (placeholder images)
+  {
+    id: "beer-pack",
+    name: "Beer Pack (6x500ml)",
+    price: 1200,
+    originalPrice: 1500,
+    image: "/placeholder.svg",
+    category: "alcohol",
+    description: "Great value 6-pack beer deal"
+  },
+  {
+    id: "red-wine",
+    name: "Red Wine 750ml",
+    price: 1500,
+    originalPrice: 1950,
+    image: "/placeholder.svg",
+    category: "alcohol",
+    description: "Bold and smooth red wine"
+  },
+  {
+    id: "whisky",
+    name: "Whisky 700ml",
+    price: 2800,
+    originalPrice: 3500,
+    image: "/placeholder.svg",
+    category: "alcohol",
+    description: "Premium whisky at a discount"
   }
 ];
 
 export const featuredProducts = products.slice(0, 3);
 export const basketProducts = products.filter(p => p.category === "basket");
+export const alcoholProducts = products.filter(p => p.category === "alcohol");
+export const discountedProducts = products.filter(p => p.originalPrice && p.originalPrice > p.price);
