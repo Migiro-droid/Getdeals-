@@ -108,14 +108,6 @@ export function Footer() {
 
         {/* Bottom */}
         <div className="flex flex-col md:flex-row justify-between items-center space-y-4 md:space-y-0">
-<<<<<<< HEAD
-          <p className="text-sm text-muted-foreground">
-            © {currentYear} GetDeals Kenya. All rights reserved.
-          </p>
-          <p className="text-sm text-muted-foreground">
-            Powered by <span className="font-semibold">House of Procurement</span>
-          </p>
-=======
           <div className="flex flex-col sm:flex-row items-center gap-4">
             <p className="text-sm text-muted-foreground">
               © {currentYear} GetDeals Kenya. All rights reserved.
@@ -124,7 +116,6 @@ export function Footer() {
               Powered by House of Procurement
             </p>
           </div>
->>>>>>> 137123b03eb366678c95fec61df84b2096fdcfcd
           <div className="flex space-x-6 text-sm">
             <a href="#" className="text-muted-foreground hover:text-primary transition-colors">
               Privacy Policy
