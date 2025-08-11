@@ -47,7 +47,40 @@ export default function AboutPage() {
   return (
     <div className="min-h-screen py-8 bg-gradient-to-br from-primary/5 to-background">
       <div className="container mx-auto px-4">
-  {/* ...existing code... */}
+        {/* Hero Section */}
+        <div className="mb-20">
+          <div className="grid lg:grid-cols-2 gap-12 items-center">
+            <div>
+              <h1 className="text-4xl lg:text-5xl font-bold mb-6 bg-gradient-to-r from-primary to-primary/70 bg-clip-text text-transparent">
+                Revolutionizing Grocery Shopping in Kenya
+              </h1>
+              <p className="text-xl text-muted-foreground mb-8 leading-relaxed">
+                GetDeals is transforming how Kenyan families shop for groceries. Located in the heart of Karen Green, we're committed to providing curated, affordable, and convenient shopping solutions that save you time and money.
+              </p>
+              <div className="grid grid-cols-2 gap-6">
+                <div className="text-center p-4 bg-primary/10 rounded-lg">
+                  <h3 className="text-2xl font-bold text-primary">10,000+</h3>
+                  <p className="text-sm text-muted-foreground">Happy Customers</p>
+                </div>
+                <div className="text-center p-4 bg-primary/10 rounded-lg">
+                  <h3 className="text-2xl font-bold text-primary">50,000+</h3>
+                  <p className="text-sm text-muted-foreground">Orders Delivered</p>
+                </div>
+              </div>
+            </div>
+            <div className="relative">
+              <img
+                src={heroFamily}
+                alt="Happy family with groceries"
+                className="rounded-2xl shadow-2xl w-full h-[400px] object-cover"
+              />
+              <div className="absolute -bottom-6 -left-6 bg-primary text-primary-foreground p-6 rounded-lg shadow-lg">
+                <h4 className="font-semibold">Based in Karen Green</h4>
+                <p className="text-sm opacity-90">Serving Nairobi & Beyond</p>
+              </div>
+            </div>
+          </div>
+        </div>
 
         {/* Values Section */}
         <div className="mb-20">
