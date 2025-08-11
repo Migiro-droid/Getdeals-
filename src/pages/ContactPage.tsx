@@ -56,7 +56,7 @@ export default function ContactPage() {
                   </div>
                   <div>
                     <h3 className="font-semibold">Address</h3>
-                    <p className="text-muted-foreground">Nairobi, Kenya</p>
+                    <p className="text-muted-foreground">Karen Green, Nairobi, Kenya</p>
                   </div>
                 </div>
               </CardContent>
