@@ -110,8 +110,8 @@ export const products: Product[] = [
     category: "family", 
     description: "Ultimate luxury shopping experience"
   },
-<<<<<<< HEAD
-  // New baskets
+
+  // Our additional curated baskets
   {
     id: "back-to-school-basket",
     name: "Back to School Basket",
@@ -176,6 +176,7 @@ export const products: Product[] = [
     category: "basket",
     description: "Bulk buy essentials for bigger savings"
   },
+
   // Alcohol deals (placeholder images)
   {
     id: "beer-pack",
@@ -203,9 +204,9 @@ export const products: Product[] = [
     image: "/placeholder.svg",
     category: "alcohol",
     description: "Premium whisky at a discount"
-=======
+  },
 
-  // Holiday Baskets
+  // Holiday Baskets (remote additions)
   {
     id: "christmas-basket",
     name: "Christmas Special Basket",
@@ -241,7 +242,7 @@ export const products: Product[] = [
     description: "Celebrate Easter with the family"
   },
 
-  // Back to School Baskets
+  // Back to School Baskets (remote additions)
   {
     id: "school-lunch-basket",
     name: "School Lunch Basket",
@@ -277,7 +278,7 @@ export const products: Product[] = [
     description: "Perfect for university students"
   },
 
-  // Alcohol Deals
+  // Alcohol Deals (remote additions)
   {
     id: "weekend-spirits",
     name: "Weekend Spirits Pack",
@@ -311,7 +312,7 @@ export const products: Product[] = [
     description: "Curated wine selection for connoisseurs"
   },
 
-  // Black Friday Deals
+  // Black Friday Deals (remote additions)
   {
     id: "black-friday-mega",
     name: "Black Friday Mega Deal",
@@ -345,20 +346,15 @@ export const products: Product[] = [
     ],
     category: "blackfriday",
     description: "Amazing family deals for Black Friday"
->>>>>>> 137123b03eb366678c95fec61df84b2096fdcfcd
   }
 ];
 
 export const featuredProducts = products.slice(0, 3);
 export const basketProducts = products.filter(p => p.category === "basket");
-<<<<<<< HEAD
-export const alcoholProducts = products.filter(p => p.category === "alcohol");
-export const discountedProducts = products.filter(p => p.originalPrice && p.originalPrice > p.price);
-=======
 export const essentialProducts = products.filter(p => p.category === "essential");
 export const familyProducts = products.filter(p => p.category === "family");
 export const holidayProducts = products.filter(p => p.category === "holiday");
 export const schoolProducts = products.filter(p => p.category === "school");
 export const alcoholProducts = products.filter(p => p.category === "alcohol");
 export const blackFridayProducts = products.filter(p => p.category === "blackfriday");
->>>>>>> 137123b03eb366678c95fec61df84b2096fdcfcd
+export const discountedProducts = products.filter(p => p.originalPrice && p.originalPrice > p.price);

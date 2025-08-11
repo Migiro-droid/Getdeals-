@@ -1,14 +1,25 @@
-import { Phone, Mail, MapPin, Clock, Send } from "lucide-react";
+import { Phone, Mail, MapPin, Clock, Send, MessageCircle } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { useToast } from "@/hooks/use-toast";
+import { useRef } from "react";
 
 export default function ContactPage() {
+  const { toast } = useToast();
+  const formRef = useRef<HTMLFormElement | null>(null);
+
+  const onSubmit = (e: React.FormEvent<HTMLFormElement>) => {
+    e.preventDefault();
+    toast({ title: "Message sent", description: "Thanks! We’ll get back to you shortly." });
+    // Reset the form fields without managing state
+    formRef.current?.reset();
+  };
   return (
-    <div className="min-h-screen py-8 bg-gradient-to-br from-primary/5 to-background">
+    <div className="min-h-screen py-8">
       <div className="container mx-auto px-4">
         <div className="text-center mb-12">
           <h1 className="text-4xl lg:text-5xl font-extrabold mb-4 text-primary">Contact Us</h1>
@@ -28,7 +39,7 @@ export default function ContactPage() {
                   </div>
                   <div>
                     <h3 className="font-semibold">Phone</h3>
-                    <p className="text-muted-foreground">+254 700 123 456</p>
+                    <a href="tel:+254700123456" className="text-muted-foreground hover:text-primary transition-colors">+254 700 123 456</a>
                   </div>
                 </div>
               </CardContent>
@@ -42,7 +53,7 @@ export default function ContactPage() {
                   </div>
                   <div>
                     <h3 className="font-semibold">Email</h3>
-                    <p className="text-muted-foreground">support@getdeals.co.ke</p>
+                    <a href="mailto:support@getdeals.co.ke" className="text-muted-foreground hover:text-primary transition-colors">support@getdeals.co.ke</a>
                   </div>
                 </div>
               </CardContent>
@@ -56,7 +67,14 @@ export default function ContactPage() {
                   </div>
                   <div>
                     <h3 className="font-semibold">Address</h3>
-                    <p className="text-muted-foreground">Karen Green, Nairobi, Kenya</p>
+                    <a
+                      href="https://maps.google.com/?q=Karen%20Green%2C%20Nairobi%2C%20Kenya"
+                      target="_blank"
+                      rel="noreferrer"
+                      className="text-muted-foreground hover:text-primary transition-colors"
+                    >
+                      Karen Green, Nairobi, Kenya
+                    </a>
                   </div>
                 </div>
               </CardContent>
@@ -71,6 +89,7 @@ export default function ContactPage() {
                   <div>
                     <h3 className="font-semibold">Business Hours</h3>
                     <p className="text-muted-foreground">Mon-Sat: 8AM-8PM</p>
+                    <p className="text-muted-foreground text-sm">Avg. response time: &lt; 2 hours</p>
                   </div>
                 </div>
               </CardContent>
@@ -84,7 +103,7 @@ export default function ContactPage() {
                 <CardTitle className="text-primary text-2xl">Send us a Message</CardTitle>
               </CardHeader>
               <CardContent>
-                <form className="space-y-6">
+                <form ref={formRef} onSubmit={onSubmit} className="space-y-6">
                   <div className="grid md:grid-cols-2 gap-6">
                     <div>
                       <Label htmlFor="firstName">First Name</Label>
@@ -135,6 +154,24 @@ export default function ContactPage() {
                 </form>
               </CardContent>
             </Card>
+            {/* Quick Actions */}
+            <div className="mt-4 grid sm:grid-cols-3 gap-2">
+              <a href="tel:+254700123456">
+                <Button variant="secondary" className="w-full">
+                  <Phone className="h-4 w-4 mr-2" /> Call Us
+                </Button>
+              </a>
+              <a href="https://wa.me/254700123456" target="_blank" rel="noreferrer">
+                <Button variant="secondary" className="w-full">
+                  <MessageCircle className="h-4 w-4 mr-2" /> WhatsApp
+                </Button>
+              </a>
+              <a href="mailto:support@getdeals.co.ke">
+                <Button variant="secondary" className="w-full">
+                  <Mail className="h-4 w-4 mr-2" /> Email
+                </Button>
+              </a>
+            </div>
             {/* Map Section */}
             <div className="mt-8 rounded-2xl overflow-hidden shadow-lg">
               <iframe
@@ -194,7 +231,7 @@ export default function ContactPage() {
               </CardHeader>
               <CardContent>
                 <p className="text-muted-foreground text-base">
-                  We accept M-Pesa, Visa/Mastercard, Rukisha Wallet, and cash payments.
+                  We accept M-Pesa, Visa/Mastercard, GetDeals Wallet, and cash payments.
                 </p>
               </CardContent>
             </Card>

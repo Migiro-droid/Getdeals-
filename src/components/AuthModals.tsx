@@ -32,15 +32,9 @@ export function AuthModals({ open, onOpenChange, defaultTab = "signin" }: AuthMo
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-<<<<<<< HEAD
-      <DialogContent className="max-w-md rounded-2xl">
-        <DialogHeader>
-          <DialogTitle className="text-center text-2xl font-extrabold">
-=======
       <DialogContent className="max-w-md bg-gradient-to-br from-background to-muted/30 border-2 border-primary/10">
         <DialogHeader className="text-center pb-6">
           <DialogTitle className="text-2xl font-bold bg-gradient-to-r from-primary to-primary/70 bg-clip-text text-transparent">
->>>>>>> 137123b03eb366678c95fec61df84b2096fdcfcd
             Welcome to GetDeals
           </DialogTitle>
           <p className="text-center text-sm text-muted-foreground">Sign in or create an account to continue</p>
@@ -89,11 +83,7 @@ export function AuthModals({ open, onOpenChange, defaultTab = "signin" }: AuthMo
                 </div>
               </div>
 
-<<<<<<< HEAD
-              <Button type="submit" className="w-full rounded-lg" size="lg">
-=======
               <Button type="submit" className="w-full h-12 bg-gradient-to-r from-primary to-primary/80 hover:from-primary/90 hover:to-primary/70 transition-all" size="lg">
->>>>>>> 137123b03eb366678c95fec61df84b2096fdcfcd
                 Sign In
               </Button>
               <div className="flex items-center gap-2">
@@ -193,11 +183,7 @@ export function AuthModals({ open, onOpenChange, defaultTab = "signin" }: AuthMo
                 </div>
               </div>
 
-<<<<<<< HEAD
-              <Button type="submit" className="w-full rounded-lg" size="lg">
-=======
               <Button type="submit" className="w-full h-12 bg-gradient-to-r from-primary to-primary/80 hover:from-primary/90 hover:to-primary/70 transition-all" size="lg">
->>>>>>> 137123b03eb366678c95fec61df84b2096fdcfcd
                 Create Account
               </Button>
               <div className="flex items-center gap-2">
