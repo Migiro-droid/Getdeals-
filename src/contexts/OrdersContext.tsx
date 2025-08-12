@@ -1,0 +1,126 @@
+import React, { createContext, useCallback, useContext, useEffect, useMemo, useState } from "react";
+
+export type OrderStatus = "pending" | "confirmed" | "preparing" | "out_for_delivery" | "delivered" | "cancelled";
+
+export interface OrderItem {
+  id: string;
+  name: string;
+  price: number;
+  quantity: number;
+  image?: string;
+}
+
+export interface OrderCustomer {
+  firstName: string;
+  lastName: string;
+  phone: string;
+  email: string;
+  address?: string;
+  pickupLocation?: string;
+}
+
+export interface Order {
+  id: string;
+  date: string; // ISO
+  items: OrderItem[];
+  subtotal: number;
+  deliveryFee: number;
+  total: number;
+  deliveryMethod: "pickup" | "speedy";
+  paymentMethod: "mpesa" | "card" | "wallet" | "cash";
+  customer: OrderCustomer;
+  status: OrderStatus;
+  note?: string;
+}
+
+interface OrdersContextValue {
+  orders: Order[];
+  createOrder: (o: Omit<Order, "id" | "date" | "status"> & { status?: OrderStatus }) => Order;
+  updateStatus: (id: string, status: OrderStatus) => void;
+  getById: (id: string) => Order | undefined;
+  metrics: {
+    totalRevenue: number;
+    orderCount: number;
+    byStatus: Record<OrderStatus, number>;
+    todayCount: number;
+  };
+  clearAll: () => void; // admin only helper
+}
+
+const OrdersContext = createContext<OrdersContextValue | undefined>(undefined);
+
+const LS_KEY = "getdeals_orders_v1";
+
+export const OrdersProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
+  const [orders, setOrders] = useState<Order[]>(() => {
+    try {
+      const raw = localStorage.getItem(LS_KEY);
+      return raw ? (JSON.parse(raw) as Order[]) : [];
+    } catch {
+      return [];
+    }
+  });
+
+  useEffect(() => {
+    try {
+      localStorage.setItem(LS_KEY, JSON.stringify(orders));
+    } catch {}
+  }, [orders]);
+
+  const createOrder: OrdersContextValue["createOrder"] = useCallback((o) => {
+    const id = `ORD-${Date.now()}-${Math.random().toString(36).slice(2, 6).toUpperCase()}`;
+    const order: Order = {
+      id,
+      date: new Date().toISOString(),
+      status: o.status ?? "pending",
+      ...o,
+    };
+    setOrders((prev) => [order, ...prev]);
+    return order;
+  }, []);
+
+  const updateStatus = useCallback((id: string, status: OrderStatus) => {
+    setOrders((prev) => prev.map((o) => (o.id === id ? { ...o, status } : o)));
+  }, []);
+
+  const getById = useCallback((id: string) => orders.find((o) => o.id === id), [orders]);
+
+  const metrics = useMemo(() => {
+    const byStatus: OrdersContextValue["metrics"]["byStatus"] = {
+      pending: 0,
+      confirmed: 0,
+      preparing: 0,
+      out_for_delivery: 0,
+      delivered: 0,
+      cancelled: 0,
+    };
+    let totalRevenue = 0;
+    const today = new Date().toISOString().slice(0, 10);
+    let todayCount = 0;
+    for (const o of orders) {
+      byStatus[o.status]++;
+      totalRevenue += o.total;
+      if (o.date.slice(0, 10) === today) todayCount++;
+    }
+    return { byStatus, totalRevenue, orderCount: orders.length, todayCount };
+  }, [orders]);
+
+  const clearAll = useCallback(() => setOrders([]), []);
+
+  const value: OrdersContextValue = {
+    orders,
+    createOrder,
+    updateStatus,
+    getById,
+    metrics,
+    clearAll,
+  };
+
+  return <OrdersContext.Provider value={value}>{children}</OrdersContext.Provider>;
+};
+
+export const useOrders = () => {
+  const ctx = useContext(OrdersContext);
+  if (!ctx) throw new Error("useOrders must be used within OrdersProvider");
+  return ctx;
+};

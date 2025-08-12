@@ -30,7 +30,6 @@ export default function HomePage() {
   const [showSticky, setShowSticky] = useState(false);
   const [dismissed, setDismissed] = useState(false);
 
-  // Black Friday 2025 target (Nov 28, 2025 00:00 local)
   useEffect(() => {
     const target = new Date("2025-11-28T00:00:00");
     const tick = () => {
@@ -51,7 +50,6 @@ export default function HomePage() {
     return () => clearInterval(id);
   }, []);
 
-  // Show sticky announcement bar after scrolling a bit (when promo hasn't started and not dismissed)
   useEffect(() => {
     const onScroll = () => {
       if (dismissed || countdown.ended) return setShowSticky(false);
@@ -109,7 +107,7 @@ export default function HomePage() {
 
   return (
     <div className="min-h-screen">
-      {/* Hero Section */}
+      {}
   <section 
         className="relative py-20 lg:py-32 min-h-[600px]"
         style={{
@@ -119,7 +117,7 @@ export default function HomePage() {
           backgroundRepeat: 'no-repeat',
         }}
       >
-        {/* Dark overlay for better text readability */}
+        {}
         <div className="absolute inset-0 bg-black/40"></div>
         <div className="container mx-auto px-4 relative z-10">
           <div className="grid lg:grid-cols-2 gap-12 items-center">
@@ -170,7 +168,7 @@ export default function HomePage() {
             </div>
           </div>
         </div>
-        {/* Hero BF badge */}
+        {}
         {!countdown.ended && (
           <div className="absolute right-4 top-4 md:right-8 md:top-8 z-10">
             <div className="px-3 py-1 rounded-full bg-primary/20 backdrop-blur text-white text-sm font-medium flex items-center gap-2">
@@ -180,7 +178,7 @@ export default function HomePage() {
         )}
       </section>
 
-      {/* Sticky Black Friday ribbon */}
+      {}
       {showSticky && !dismissed && (
         <div className="fixed left-0 right-0 top-16 z-50">
           <div className="mx-auto max-w-6xl px-4">
@@ -200,7 +198,7 @@ export default function HomePage() {
         </div>
       )}
 
-      {/* Black Friday Promo Banner */}
+      {}
   <section id="bf-promo" className="py-10 bg-gradient-to-r from-primary/10 via-primary/5 to-background">
         <div className="container mx-auto px-4">
           <Card className="border-primary/20">
@@ -279,7 +277,7 @@ export default function HomePage() {
         </div>
       </section>
 
-      {/* Sneak Peek horizontal scroll */}
+      {}
       {!countdown.ended && (
         <section className="py-10">
           <div className="container mx-auto px-4">
@@ -317,7 +315,7 @@ export default function HomePage() {
         </section>
       )}
 
-      {/* Features Section */}
+      {}
       <section className="py-20 bg-muted/30">
         <div className="container mx-auto px-4">
           <div className="text-center mb-16">
@@ -342,7 +340,7 @@ export default function HomePage() {
         </div>
       </section>
 
-      {/* Featured Baskets */}
+      {}
       <section className="py-20">
         <div className="container mx-auto px-4">
           <div className="text-center mb-16">
@@ -366,7 +364,7 @@ export default function HomePage() {
         </div>
       </section>
 
-  {/* Black Friday Deals */}
+  {}
   <section id="black-friday" className="py-20 bg-muted/30">
         <div className="container mx-auto px-4">
           <div className="text-center mb-16">
@@ -383,7 +381,7 @@ export default function HomePage() {
         </div>
       </section>
 
-      {/* Alcohol Deals */}
+      {}
       <section className="py-20">
         <div className="container mx-auto px-4">
           <div className="text-center mb-16">
