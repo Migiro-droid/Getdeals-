@@ -33,7 +33,7 @@ export function Header() {
   };
 
   return (
-    <header className="sticky top-0 z-50 w-full border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
+    <header className="sticky top-0 z-50 w-full border-b bg-white dark:bg-white shadow-sm">
       <div className="container mx-auto px-4">
         <div className="flex h-16 items-center justify-between">
           {/* Logo */}
@@ -120,7 +120,7 @@ export function Header() {
 
         {/* Mobile Menu */}
         {isMobileMenuOpen && (
-          <div className="md:hidden">
+          <div className="md:hidden bg-white dark:bg-white border-t">
             <div className="space-y-1 pb-3 pt-2">
               <div className="px-3 pb-3">
                 <div className="relative">
