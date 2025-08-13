@@ -1,53 +1,490 @@
+import { useMemo, useState } from "react";
 import { useOrders, OrderStatus } from "@/contexts/OrdersContext";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { useAdmin } from "@/contexts/AdminContext";
+import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { Button } from "@/components/ui/button";
+import { Circle, CheckCircle, Clock, Truck, Package, ChevronRight, MapPin, CreditCard, Calendar, User, Shield, Crown } from "lucide-react";
+import { ScrollArea } from "@/components/ui/scroll-area";
 
 export default function AdminOrders() {
   const { orders, updateStatus } = useOrders();
-  const statuses: OrderStatus[] = ["pending", "confirmed", "preparing", "out_for_delivery", "delivered", "cancelled"];
+  const { role, user } = useAdmin();
+  const statuses: OrderStatus[] = [
+    "pending",
+    "confirmed",
+    "preparing",
+    "out_for_delivery",
+    "delivered",
+    "cancelled",
+  ];
+  const [statusFilter, setStatusFilter] = useState<"all" | OrderStatus>("all");
+  const [sortBy, setSortBy] = useState<"newest" | "oldest" | "total_desc" | "total_asc">("newest");
+
+  const counts = useMemo(() => {
+    const base = {
+      all: orders.length,
+      pending: 0,
+      confirmed: 0,
+      preparing: 0,
+      out_for_delivery: 0,
+      delivered: 0,
+      cancelled: 0,
+    } as Record<"all" | OrderStatus, number>;
+    for (const o of orders) base[o.status]++;
+    return base;
+  }, [orders]);
+
+  const statusPill = (s: string) => {
+    const base = "inline-flex items-center px-2 py-0.5 rounded-full text-xs";
+    switch (s) {
+      case "pending":
+        return `${base} bg-yellow-100 text-yellow-800`;
+      case "confirmed":
+        return `${base} bg-blue-100 text-blue-800`;
+      case "preparing":
+        return `${base} bg-purple-100 text-purple-800`;
+      case "out_for_delivery":
+        return `${base} bg-amber-100 text-amber-800`;
+      case "delivered":
+        return `${base} bg-green-100 text-green-800`;
+      case "cancelled":
+        return `${base} bg-red-100 text-red-800`;
+      default:
+        return `${base} bg-gray-100 text-gray-800`;
+    }
+  };
+
+  // Deterministic dummy location when none provided
+  const pickDeterministic = (arr: string[], key: string) => {
+    let h = 0;
+    for (let i = 0; i < key.length; i++) h = (h * 31 + key.charCodeAt(i)) >>> 0;
+    return arr[h % arr.length];
+  };
+  const getDisplayLocation = (o: { deliveryMethod: string; customer: { pickupLocation?: string; address?: string } }) => {
+    const pickupPool = ["Quickmart Westlands", "Quickmart Karen", "Quickmart TRM", "Quickmart CBD"];
+    const addressPool = [
+      "Nairobi CBD, Kenyatta Ave",
+      "Westlands, Waiyaki Way",
+      "Kilimani, Lenana Rd",
+      "South B, Mombasa Rd",
+      "Roysambu, TRM Drive",
+    ];
+    if (o.deliveryMethod === "pickup") return o.customer.pickupLocation || pickDeterministic(pickupPool, JSON.stringify(o));
+    return o.customer.address || pickDeterministic(addressPool, JSON.stringify(o));
+  };
+
+  // Map product names to working images
+  const getProductImage = (productName: string, existingImage?: string) => {
+    // If there's already a working image path, use it
+    if (existingImage && !existingImage.includes('placeholder') && !existingImage.startsWith('src/')) {
+      return existingImage;
+    }
+    
+    // Map common product names to actual images
+    const imageMap: Record<string, string> = {
+      'essential basket': '/src/assets/essential-basket.jpg',
+      'mini essential basket': '/src/assets/essential-basket.jpg',
+      'mega essential basket': '/src/assets/essential-basket.jpg',
+      'family basket': '/src/assets/family-basket.jpg',
+      'premium family basket': '/src/assets/family-basket.jpg',
+      'luxury family basket': '/src/assets/family-basket.jpg',
+      'back to school basket': '/src/assets/essential-basket.jpg',
+      'holiday feast basket': '/src/assets/family-basket.jpg',
+      'essentials plus basket': '/src/assets/essential-basket.jpg',
+      'essentials max basket': '/src/assets/essential-basket.jpg',
+      'christmas special basket': '/src/assets/family-basket.jpg',
+      'easter family basket': '/src/assets/family-basket.jpg',
+      'school lunch basket': '/src/assets/essential-basket.jpg',
+      'student essential basket': '/src/assets/essential-basket.jpg',
+      'weekend spirits pack': '/src/assets/family-basket.jpg',
+      'wine collection pack': '/src/assets/family-basket.jpg',
+      'black friday mega deal': '/src/assets/family-basket.jpg',
+      'black friday family pack': '/src/assets/family-basket.jpg',
+      'rice': '/src/assets/products/rice.jpg',
+      'bread': '/src/assets/products/bread.jpg',
+      'flour': '/src/assets/products/flour.jpg',
+      'wheat flour': '/src/assets/products/flour.jpg',
+      'sugar': '/src/assets/products/sugar.jpg',
+      'cooking oil': '/src/assets/products/oil.jpg',
+      'oil': '/src/assets/products/oil.jpg',
+    };
+    
+    // Try exact match first
+    const exactMatch = imageMap[productName.toLowerCase()];
+    if (exactMatch) return exactMatch;
+    
+    // Try partial matches for common terms
+    const lowerName = productName.toLowerCase();
+    if (lowerName.includes('basket')) {
+      if (lowerName.includes('family') || lowerName.includes('premium') || lowerName.includes('luxury')) {
+        return '/src/assets/family-basket.jpg';
+      }
+      return '/src/assets/essential-basket.jpg';
+    }
+    if (lowerName.includes('rice')) return '/src/assets/products/rice.jpg';
+    if (lowerName.includes('bread')) return '/src/assets/products/bread.jpg';
+    if (lowerName.includes('flour')) return '/src/assets/products/flour.jpg';
+    if (lowerName.includes('sugar')) return '/src/assets/products/sugar.jpg';
+    if (lowerName.includes('oil')) return '/src/assets/products/oil.jpg';
+    
+    // Default fallback to a working image
+    return '/src/assets/essential-basket.jpg';
+  };
+
+  const [open, setOpen] = useState(false);
+  const [active, setActive] = useState<ReturnType<typeof useOrders>["orders"][number] | null>(null);
+
+  // User display component
+  const UserDisplay = () => {
+    const getRoleIcon = () => {
+      switch (role) {
+        case "admin": return <Crown className="h-4 w-4 text-amber-600" />;
+        case "staff": return <Shield className="h-4 w-4 text-blue-600" />;
+        default: return <User className="h-4 w-4 text-gray-600" />;
+      }
+    };
+
+    const getRoleColor = () => {
+      switch (role) {
+        case "admin": return "bg-amber-50 text-amber-800 border-amber-200";
+        case "staff": return "bg-blue-50 text-blue-800 border-blue-200";
+        default: return "bg-gray-50 text-gray-800 border-gray-200";
+      }
+    };
+
+    const displayName = user?.name || user?.email || "Unknown User";
+    const hasUserInfo = user?.name || user?.email;
+
+    return (
+      <div className={`inline-flex items-center gap-2 px-3 py-1.5 rounded-full border text-sm ${getRoleColor()}`}>
+        {getRoleIcon()}
+        <div className="flex flex-col">
+          <span className="font-medium capitalize">{role}</span>
+          {hasUserInfo && (
+            <span className="text-xs opacity-75 truncate max-w-[120px]" title={displayName}>
+              {displayName}
+            </span>
+          )}
+        </div>
+      </div>
+    );
+  };
+
+  const setStatusForActive = (next: OrderStatus) => {
+    if (!active) return;
+    updateStatus(active.id, next);
+    setActive({ ...active, status: next });
+  };
+
+  const statusSequence: OrderStatus[] = [
+    "pending",
+    "confirmed",
+    "preparing",
+    "out_for_delivery",
+    "delivered",
+  ];
+  const statusLabel = (s: OrderStatus) => {
+    switch (s) {
+      case "pending": return "Pending";
+      case "confirmed": return "Confirmed";
+      case "preparing": return "Preparing";
+      case "out_for_delivery": return "Out for Delivery";
+      case "delivered": return "Delivered";
+      case "cancelled": return "Cancelled";
+    }
+  };
+  
+  const statusLabelShort = (s: OrderStatus) => {
+    switch (s) {
+      case "pending": return "Pending";
+      case "confirmed": return "Confirmed";
+      case "preparing": return "Preparing";
+      case "out_for_delivery": return "Out for Del.";
+      case "delivered": return "Delivered";
+      case "cancelled": return "Cancelled";
+    }
+  };
+  const statusIcon = (s: OrderStatus) => {
+    switch (s) {
+      case "pending":
+        return Circle;
+      case "confirmed":
+        return Package;
+      case "preparing":
+        return Clock;
+      case "out_for_delivery":
+        return Truck;
+      case "delivered":
+        return CheckCircle;
+      default:
+        return Circle;
+    }
+  };
+
+  const labelPayment = (m: string) => (m === "mpesa" ? "M-Pesa" : m.charAt(0).toUpperCase() + m.slice(1));
+
+  const visible = useMemo(() => {
+    let list = orders.slice();
+    if (statusFilter !== "all") list = list.filter((o) => o.status === statusFilter);
+    switch (sortBy) {
+      case "oldest":
+        list.sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime());
+        break;
+      case "total_desc":
+        list.sort((a, b) => b.total - a.total);
+        break;
+      case "total_asc":
+        list.sort((a, b) => a.total - b.total);
+        break;
+      default:
+        list.sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
+    }
+    return list;
+  }, [orders, statusFilter, sortBy]);
+
   return (
     <div className="min-h-screen py-8">
       <div className="container mx-auto px-4">
-        <h1 className="text-3xl font-bold mb-6">Orders</h1>
+        <div className="flex items-center justify-between mb-6">
+          <h1 className="text-3xl font-bold">Orders</h1>
+          <UserDisplay />
+        </div>
+        {orders.length > 0 && (
+          <div className="flex flex-col gap-3 mb-6">
+            <div className="flex items-center justify-between gap-3 flex-wrap">
+                <div className="flex items-center gap-2 overflow-x-auto [-ms-overflow-style:none] [scrollbar-width:none]">
+                  {(["all", ...statuses] as const).map((s) => (
+                    <button
+                      key={s}
+                      onClick={() => setStatusFilter(s as any)}
+                      className={`text-sm px-3 py-1.5 rounded-full border transition whitespace-nowrap ${
+                        statusFilter === s ? "bg-primary text-primary-foreground border-primary" : "bg-background hover:bg-muted"
+                      }`}
+                    >
+                      <span>{s === "all" ? "All" : statusLabelShort(s as OrderStatus)}</span>
+                      <span className="ml-2 text-xs opacity-80">{(counts as any)[s]}</span>
+                    </button>
+                  ))}
+                </div>
+                <div className="flex items-center gap-2">
+                  <span className="text-sm text-muted-foreground">Sort</span>
+                  <Select value={sortBy} onValueChange={(v) => setSortBy(v as any)}>
+                    <SelectTrigger className="w-[160px]">
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="newest">Newest</SelectItem>
+                      <SelectItem value="oldest">Oldest</SelectItem>
+                      <SelectItem value="total_desc">Total: High → Low</SelectItem>
+                      <SelectItem value="total_asc">Total: Low → High</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+              </div>
+            </div>
+        )}
         {orders.length === 0 ? (
           <Card>
             <CardContent className="p-6 text-muted-foreground">No orders yet.</CardContent>
           </Card>
         ) : (
-          <div className="space-y-4">
-            {orders.map((o) => (
-              <Card key={o.id}>
-                <CardHeader>
-                  <CardTitle className="flex items-center justify-between">
-                    <span>{o.id}</span>
-                    <Badge>{o.status.replace(/_/g, " ")}</Badge>
-                  </CardTitle>
-                </CardHeader>
-                <CardContent className="space-y-3">
-                  <div className="flex flex-wrap gap-4 text-sm">
-                    <div><span className="text-muted-foreground">Customer:</span> {o.customer.firstName} {o.customer.lastName}</div>
-                    <div><span className="text-muted-foreground">Phone:</span> {o.customer.phone}</div>
-                    <div><span className="text-muted-foreground">Payment:</span> {o.paymentMethod}</div>
-                    <div><span className="text-muted-foreground">When:</span> {new Date(o.date).toLocaleString()}</div>
-                    <div><span className="text-muted-foreground">Total:</span> KES {o.total.toLocaleString()}</div>
-                  </div>
-                  <div className="text-sm text-muted-foreground">{o.items.length} item(s)</div>
-                  <div className="flex items-center gap-3">
-                    <Select value={o.status} onValueChange={(v) => updateStatus(o.id, v as OrderStatus)}>
-                      <SelectTrigger className="w-[220px]"><SelectValue /></SelectTrigger>
-                      <SelectContent>
-                        {statuses.map(s => (<SelectItem key={s} value={s}>{s.replace(/_/g, " ")}</SelectItem>))}
-                      </SelectContent>
-                    </Select>
-                    <Button variant="outline">View</Button>
-                  </div>
-                </CardContent>
-              </Card>
-            ))}
-          </div>
+          <Card>
+            <CardContent className="p-0">
+              <Table>
+                <TableHeader>
+                  <TableRow>
+                    <TableHead>Order</TableHead>
+                    <TableHead>Date</TableHead>
+                    <TableHead>Customer</TableHead>
+                    <TableHead>Location</TableHead>
+                    <TableHead className="text-right">Total</TableHead>
+                    <TableHead>Status</TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {visible.map((o) => {
+                    const d = new Date(o.date);
+                    const dateStr = d.toLocaleString(undefined, { month: "short", day: "numeric", hour: "2-digit", minute: "2-digit" });
+                    const loc = getDisplayLocation(o);
+                    return (
+                      <TableRow key={o.id} className="cursor-pointer" onClick={() => { setActive(o); setOpen(true); }}>
+                        <TableCell className="font-medium">{o.id}</TableCell>
+                        <TableCell>{dateStr}</TableCell>
+                        <TableCell>
+                          {(o.customer.firstName || o.customer.lastName) ? 
+                            `${o.customer.firstName || ''} ${o.customer.lastName || ''}`.trim() : 
+                            o.customer.phone
+                          }
+                        </TableCell>
+                        <TableCell>{loc}</TableCell>
+                        <TableCell className="text-right">KES {o.total.toLocaleString()}</TableCell>
+                        <TableCell>
+                          <span className={statusPill(o.status)}>{statusLabelShort(o.status)}</span>
+                        </TableCell>
+                      </TableRow>
+                    );
+                  })}
+                  {visible.length === 0 && (
+                    <TableRow>
+                      <TableCell colSpan={6} className="text-center text-muted-foreground">No matching orders.</TableCell>
+                    </TableRow>
+                  )}
+                </TableBody>
+              </Table>
+            </CardContent>
+          </Card>
         )}
+        <Dialog open={open} onOpenChange={(v) => { setOpen(v); if (!v) setActive(null); }}>
+          <DialogContent className="max-w-3xl p-0">
+            {active && (
+              <div className="flex flex-col">
+                <div className="px-6 pt-5 pb-4 border-b bg-muted/30">
+                  <DialogHeader>
+                    <DialogTitle className="flex items-center justify-between gap-4 pr-8">
+                      <span className="font-mono text-sm truncate max-w-[65%]">Order {active.id}</span>
+                      <span className={statusPill(active.status)}>{statusLabel(active.status)}</span>
+                    </DialogTitle>
+                  </DialogHeader>
+                  <div className="mt-3 grid sm:grid-cols-2 lg:grid-cols-4 gap-3 text-xs text-muted-foreground">
+                    <div className="flex items-center gap-2 min-w-0">
+                      <Calendar className="h-4 w-4" />
+                      <span className="truncate">{new Date(active.date).toLocaleString(undefined, { month: "short", day: "numeric", hour: "2-digit", minute: "2-digit" })}</span>
+                    </div>
+                    <div className="flex items-center gap-2 min-w-0">
+                      <CreditCard className="h-4 w-4" />
+                      <span className="truncate">{labelPayment(active.paymentMethod)}</span>
+                    </div>
+                    <div className="flex items-center gap-2 min-w-0">
+                      <MapPin className="h-4 w-4" />
+                      <span className="truncate" title={getDisplayLocation(active)}>{getDisplayLocation(active)}</span>
+                    </div>
+                    <div className="flex items-center gap-2 min-w-0">
+                      <span className="font-medium text-foreground">KES {active.total.toLocaleString()}</span>
+                    </div>
+                  </div>
+                </div>
+                <ScrollArea className="max-h-[80vh]">
+                  <div className="p-6 space-y-5">
+                    {/* Status controls - stepper */}
+                    <div className="flex flex-col gap-4">
+                      <h3 className="text-sm font-medium text-muted-foreground">Order Status</h3>
+                      <div className="flex items-center justify-between gap-4">
+                        <div className="flex items-center gap-2 overflow-x-auto flex-1 min-w-0">
+                          {(() => {
+                            const currIdx = Math.max(0, statusSequence.indexOf(active.status as OrderStatus));
+                            return statusSequence.map((s, i) => {
+                              const Icon = statusIcon(s);
+                              const isCurrent = s === active.status;
+                              const isDone = i < currIdx || active.status === "delivered";
+                              return (
+                                <div key={s} className="flex items-center gap-2 flex-shrink-0">
+                                  <button
+                                    className={`inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs border transition ${
+                                      isCurrent
+                                        ? "bg-primary text-primary-foreground border-primary"
+                                        : isDone
+                                        ? "bg-emerald-100 text-emerald-800 border-emerald-200"
+                                        : "bg-muted text-muted-foreground border-transparent hover:bg-muted/70"
+                                    }`}
+                                    onClick={() => setStatusForActive(s)}
+                                    aria-label={`Set status to ${statusLabel(s)}`}
+                                  >
+                                    <Icon className="h-3.5 w-3.5" />
+                                    <span className="hidden sm:inline">{statusLabel(s)}</span>
+                                  </button>
+                                  {i < statusSequence.length - 1 && (
+                                    <ChevronRight className="h-4 w-4 text-muted-foreground" />
+                                  )}
+                                </div>
+                              );
+                            });
+                          })()}
+                        </div>
+                        {active.status !== "delivered" && active.status !== "cancelled" && (
+                          <div className="flex-shrink-0">
+                            <Button size="sm" variant="destructive" onClick={() => setStatusForActive("cancelled")}>Cancel order</Button>
+                          </div>
+                        )}
+                      </div>
+                    </div>
+                    <div className="grid md:grid-cols-2 gap-4 text-sm">
+                      <div className="space-y-1">
+                        <div className="min-w-0">
+                          <span className="text-muted-foreground">Customer:</span> 
+                          <span className="truncate inline-block max-w-full align-bottom">
+                            {(active.customer.firstName || active.customer.lastName) ? 
+                              `${active.customer.firstName || ''} ${active.customer.lastName || ''}`.trim() : 
+                              'No name provided'
+                            }
+                          </span>
+                        </div>
+                        <div className="min-w-0"><span className="text-muted-foreground">Phone:</span> <span className="truncate inline-block max-w-full align-bottom">{active.customer.phone}</span></div>
+                        <div className="min-w-0"><span className="text-muted-foreground">Email:</span> <span className="break-all inline-block align-bottom">{active.customer.email}</span></div>
+                      </div>
+                      <div className="space-y-1">
+                        <div className="min-w-0"><span className="text-muted-foreground">Delivery:</span> <span className="truncate inline-block max-w-full align-bottom">{active.deliveryMethod === "speedy" ? "Speedy" : "Pickup"}</span></div>
+                        <div className="min-w-0"><span className="text-muted-foreground">Location:</span> <span className="break-words inline-block align-bottom" title={getDisplayLocation(active)}>{getDisplayLocation(active)}</span></div>
+                        <div className="min-w-0"><span className="text-muted-foreground">Payment:</span> <span className="truncate inline-block max-w-full align-bottom">{labelPayment(active.paymentMethod)}</span></div>
+                      </div>
+                    </div>
+                    <div className="rounded-md border overflow-hidden">
+                      <Table>
+                        <TableHeader>
+                          <TableRow>
+                            <TableHead>Item</TableHead>
+                            <TableHead className="text-right">Qty</TableHead>
+                            <TableHead className="text-right">Price</TableHead>
+                            <TableHead className="text-right">Total</TableHead>
+                          </TableRow>
+                        </TableHeader>
+                        <TableBody>
+                          {active.items.map((it) => (
+                            <TableRow key={`${it.id}-${it.name}`}>
+                              <TableCell>
+                                <div className="flex items-center gap-3 min-w-0">
+                                  <img 
+                                    src={getProductImage(it.name, it.image)} 
+                                    alt={it.name} 
+                                    className="h-10 w-10 rounded object-cover flex-shrink-0" 
+                                    onError={(e) => {
+                                      // Fallback to default image if loading fails
+                                      const target = e.target as HTMLImageElement;
+                                      target.src = '/src/assets/essential-basket.jpg';
+                                    }}
+                                  />
+                                  <div className="truncate max-w-[280px]" title={it.name}>{it.name}</div>
+                                </div>
+                              </TableCell>
+                              <TableCell className="text-right">{it.quantity}</TableCell>
+                              <TableCell className="text-right">KES {it.price.toLocaleString()}</TableCell>
+                              <TableCell className="text-right">KES {(it.price * it.quantity).toLocaleString()}</TableCell>
+                            </TableRow>
+                          ))}
+                          <TableRow>
+                            <TableCell colSpan={3} className="text-right font-medium">Subtotal</TableCell>
+                            <TableCell className="text-right">KES {active.subtotal.toLocaleString()}</TableCell>
+                          </TableRow>
+                          <TableRow>
+                            <TableCell colSpan={3} className="text-right font-medium">Delivery</TableCell>
+                            <TableCell className="text-right">KES {active.deliveryFee.toLocaleString()}</TableCell>
+                          </TableRow>
+                          <TableRow>
+                            <TableCell colSpan={3} className="text-right font-bold">Total</TableCell>
+                            <TableCell className="text-right font-bold">KES {active.total.toLocaleString()}</TableCell>
+                          </TableRow>
+                        </TableBody>
+                      </Table>
+                    </div>
+                  </div>
+                </ScrollArea>
+              </div>
+            )}
+          </DialogContent>
+        </Dialog>
       </div>
     </div>
   );

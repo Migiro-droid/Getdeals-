@@ -3,58 +3,18 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { ChartContainer, ChartTooltip, ChartTooltipContent } from "@/components/ui/chart";
 import { Line, LineChart, XAxis, YAxis, CartesianGrid, Bar, BarChart, PieChart, Pie, Cell } from "recharts";
 import { useOrders, OrderStatus } from "@/contexts/OrdersContext";
-import { useInventory } from "@/contexts/InventoryContext";
 import { products as seedProducts } from "@/data/products";
 import { useAdmin } from "@/contexts/AdminContext";
 import { Link } from "react-router-dom";
-import { ArrowUpRight, ArrowDownRight, TrendingUp, ShoppingBag, Wallet, Settings, AlertTriangle, Truck, CheckCircle, Clock, FileDown, User, Shield, Crown, MapPin, Phone } from "lucide-react";
+import { ArrowUpRight, ArrowDownRight, TrendingUp, ShoppingBag, Wallet, Settings, AlertTriangle, Truck, CheckCircle, Clock, FileDown } from "lucide-react";
 
 export default function AdminDashboard() {
   const { orders, metrics, seedOrders } = useOrders();
-  const { inventory, seedInventory, getOutOfStockItems, getLowStockItems } = useInventory();
-  const { settings, logout, role, user } = useAdmin();
+  const { settings, logout } = useAdmin();
   const [range, setRange] = useState<"7d" | "30d" | "all">("7d");
-  const [customerModalOpen, setCustomerModalOpen] = useState(false);
-
-  // User display component
-  const UserDisplay = () => {
-    const getRoleIcon = () => {
-      switch (role) {
-        case "admin": return <Crown className="h-4 w-4 text-amber-600" />;
-        case "staff": return <Shield className="h-4 w-4 text-blue-600" />;
-        default: return <User className="h-4 w-4 text-gray-600" />;
-      }
-    };
-
-    const getRoleColor = () => {
-      switch (role) {
-        case "admin": return "bg-amber-50 text-amber-800 border-amber-200";
-        case "staff": return "bg-blue-50 text-blue-800 border-blue-200";
-        default: return "bg-gray-50 text-gray-800 border-gray-200";
-      }
-    };
-
-    const displayName = user?.name || user?.email || "Unknown User";
-    const hasUserInfo = user?.name || user?.email;
-
-    return (
-      <div className={`inline-flex items-center gap-2 px-3 py-1.5 rounded-full border text-sm ${getRoleColor()}`}>
-        {getRoleIcon()}
-        <div className="flex flex-col">
-          <span className="font-medium capitalize">{role}</span>
-          {hasUserInfo && (
-            <span className="text-xs opacity-75 truncate max-w-[120px]" title={displayName}>
-              {displayName}
-            </span>
-          )}
-        </div>
-      </div>
-    );
-  };
 
   const fmtCurrency = (n: number) => `KES ${n.toLocaleString()}`;
 
@@ -136,8 +96,8 @@ export default function AdminDashboard() {
           deliveryMethod: pick(del),
           paymentMethod: pick(pay),
           customer: {
-            firstName: ["Mary", "John", "Alice", "Brian", "Grace", "Peter", "Sarah", "David", "Jane", "Michael"][rand(0,9)],
-            lastName: ["Wanjiku", "Kipchoge", "Muthoni", "Nduku", "Ochieng", "Kimani", "Waweru", "Achieng", "Karanja", "Moraa"][rand(0,9)],
+            firstName: ["Mary", "John", "Alice", "Brian", "Grace"][rand(0,4)],
+            lastName: ["W.", "K.", "M.", "N.", "O."][rand(0,4)],
             phone: `+2547${rand(0, 99_999_999).toString().padStart(8, '0')}`,
             email: `demo${rand(1000,9999)}@example.com`,
           },
@@ -287,57 +247,6 @@ export default function AdminDashboard() {
       .slice(0, 5);
   }, [ordersInRange]);
 
-  // Customer analytics for modal
-  const customerAnalytics = useMemo(() => {
-    const customerMap: Record<string, {
-      phone: string;
-      name: string;
-      email: string;
-      orders: number;
-      totalSpent: number;
-      lastOrder: string;
-      preferredLocation: string;
-      orderFrequency: number;
-    }> = {};
-
-    // Mock QuickMart locations
-    const locations = ["Karen Branch", "Westlands Branch", "CBD Branch", "Kilimani Branch", "Lavington Branch"];
-    
-    for (const order of ordersInRange) {
-      const phone = order.customer.phone;
-      const name = `${order.customer.firstName} ${order.customer.lastName}`.trim() || phone;
-      
-      if (!customerMap[phone]) {
-        customerMap[phone] = {
-          phone,
-          name,
-          email: order.customer.email || `${phone}@quickmart.co.ke`,
-          orders: 0,
-          totalSpent: 0,
-          lastOrder: order.date,
-          preferredLocation: locations[phone.length % locations.length], // Mock location based on phone
-          orderFrequency: 0
-        };
-      }
-      
-      customerMap[phone].orders += 1;
-      customerMap[phone].totalSpent += order.total;
-      
-      // Update last order if this one is more recent
-      if (new Date(order.date) > new Date(customerMap[phone].lastOrder)) {
-        customerMap[phone].lastOrder = order.date;
-      }
-    }
-
-    // Calculate order frequency (orders per month based on date range)
-    const rangeMonths = range === "7d" ? 0.25 : range === "30d" ? 1 : 12;
-    Object.values(customerMap).forEach(customer => {
-      customer.orderFrequency = customer.orders / rangeMonths;
-    });
-
-    return Object.values(customerMap).sort((a, b) => b.totalSpent - a.totalSpent);
-  }, [ordersInRange, range]);
-
   // Ops snapshot (today)
   const todayKey = new Date().toISOString().slice(0, 10);
   const todayOrders = useMemo(() => orders.filter((o) => o.date.slice(0, 10) === todayKey), [orders, todayKey]);
@@ -426,8 +335,7 @@ export default function AdminDashboard() {
             <h1 className="text-3xl font-bold">Admin Dashboard</h1>
             <p className="text-sm text-muted-foreground">Monitor sales, orders, and site status at a glance.</p>
           </div>
-          <div className="flex items-center gap-3">
-            <UserDisplay />
+          <div className="flex items-center gap-2">
             <div className="inline-flex rounded-md border p-1">
               {(["7d", "30d", "all"] as const).map((r) => (
                 <button
@@ -440,7 +348,6 @@ export default function AdminDashboard() {
               ))}
             </div>
             <Button variant="outline" onClick={() => seedOrders(genDemoOrders(), true)}>Load Demo Data</Button>
-            <Button variant="outline" onClick={() => seedInventory()}>Load Inventory Data</Button>
             <Button variant="outline" onClick={logout}>Exit Admin</Button>
           </div>
         </div>
@@ -663,387 +570,128 @@ export default function AdminDashboard() {
           </div>
         </div>
 
-        {/* Business Intelligence */}
+        {/* Secondary Analytics */}
         <div>
           <h2 className="text-xl font-semibold mb-4">Business Intelligence</h2>
-          
-          {/* Top Row - Key Business Metrics */}
-          <div className="grid lg:grid-cols-2 gap-6 mb-6">
-            {/* Top Products Analytics - Full width showcase */}
-            <Card className="lg:col-span-2">
+          <div className="grid lg:grid-cols-3 gap-6">
+            {/* Payment Methods */}
+            <Card>
+              <CardHeader>
+                <CardTitle>Payment Methods</CardTitle>
+              </CardHeader>
+              <CardContent>
+                <ChartContainer config={{ pm: { label: "Count", color: "hsl(var(--primary))" } }} className="w-full">
+                  <PieChart>
+                    <Pie data={paymentBreakdown} dataKey="value" nameKey="label" innerRadius={50} outerRadius={80} paddingAngle={4}>
+                      {paymentBreakdown.map((_, i) => (
+                        <Cell key={i} fill={`hsl(var(--primary) / ${0.4 + i * 0.15})`} />
+                      ))}
+                    </Pie>
+                    <ChartTooltip content={<ChartTooltipContent nameKey="pm" />} />
+                  </PieChart>
+                </ChartContainer>
+                <div className="mt-3 grid grid-cols-2 gap-2 text-sm text-muted-foreground">
+                  {paymentBreakdown.map((p) => (
+                    <div key={p.key} className="flex items-center justify-between"><span>{p.label}</span><span className="font-mono">{p.value}</span></div>
+                  ))}
+                </div>
+              </CardContent>
+            </Card>
+
+            {/* Delivery Methods */}
+            <Card>
+              <CardHeader>
+                <CardTitle>Delivery Methods</CardTitle>
+              </CardHeader>
+              <CardContent>
+                <ChartContainer config={{ dm: { label: "Count", color: "hsl(var(--primary))" } }} className="w-full">
+                  <PieChart>
+                    <Pie data={deliveryBreakdown} dataKey="value" nameKey="label" innerRadius={50} outerRadius={80} paddingAngle={4}>
+                      {deliveryBreakdown.map((_, i) => (
+                        <Cell key={i} fill={`hsl(var(--primary) / ${0.4 + i * 0.15})`} />
+                      ))}
+                    </Pie>
+                    <ChartTooltip content={<ChartTooltipContent nameKey="dm" />} />
+                  </PieChart>
+                </ChartContainer>
+                <div className="mt-3 grid grid-cols-2 gap-2 text-sm text-muted-foreground">
+                  {deliveryBreakdown.map((d) => (
+                    <div key={d.key} className="flex items-center justify-between"><span>{d.label}</span><span className="font-mono">{d.value}</span></div>
+                  ))}
+                </div>
+              </CardContent>
+            </Card>
+
+            {/* Top Products Analytics */}
+            <Card>
               <CardHeader>
                 <CardTitle className="flex items-center justify-between">
-                  🏆 Top Performing Products
-                  <div className="flex items-center gap-2">
-                    <Badge variant="outline" className="font-mono">{range.toUpperCase()}</Badge>
-                    <Badge variant="secondary" className="font-mono">{topProducts.length} products</Badge>
-                  </div>
+                  Top Products Analytics
+                  <Badge variant="outline" className="font-mono">
+                    {range.toUpperCase()}
+                  </Badge>
                 </CardTitle>
               </CardHeader>
               <CardContent>
                 <div className="space-y-4">
                   {topProducts.length > 0 ? (
                     topProducts.map((p, index) => (
-                      <div key={p.name} className="flex items-center justify-between p-4 border rounded-lg hover:shadow-md transition-all duration-200 hover:border-primary/20">
-                        {/* Left side: Rank, Product info, and key metrics */}
-                        <div className="flex items-center gap-4 flex-1">
-                          {/* Rank badge */}
-                          <div className="flex-shrink-0 w-10 h-10 rounded-full bg-gradient-to-r from-primary/20 to-primary/10 flex items-center justify-center text-lg font-bold text-primary">
-                            #{index + 1}
-                          </div>
-                          
-                          {/* Product details */}
-                          <div className="flex-1 min-w-0">
-                            <div className="font-medium text-base leading-tight mb-1">{p.name}</div>
-                            <div className="text-sm text-muted-foreground flex items-center gap-3">
-                              <span className="flex items-center gap-1">
-                                <span className="font-mono text-blue-600">×{p.qty}</span>
-                                <span>units sold</span>
-                              </span>
-                              <span>•</span>
-                              <span className="flex items-center gap-1">
-                                <span className="font-mono text-amber-600">{p.frequency}</span>
-                                <span>avg per order</span>
-                              </span>
-                              <span>•</span>
-                              <span>{p.orders} orders from {p.uniqueCustomers} customers</span>
+                      <div key={p.name} className="border rounded-lg p-4 space-y-3">
+                        {/* Product header with rank */}
+                        <div className="flex items-start justify-between">
+                          <div className="flex items-start gap-3">
+                            <div className="flex-shrink-0 w-6 h-6 rounded-full bg-primary/10 flex items-center justify-center text-xs font-bold text-primary">
+                              {index + 1}
                             </div>
-                            {/* Branch performance */}
-                            {p.topBranch && (
-                              <div className="flex items-center gap-2 mt-2">
-                                <div className="h-1.5 w-1.5 rounded-full bg-emerald-500"></div>
-                                <span className="text-xs text-emerald-700 font-medium">
-                                  Best at {p.topBranch[0]} ({p.topBranch[1]} units)
-                                </span>
+                            <div>
+                              <div className="font-medium leading-tight">{p.name}</div>
+                              <div className="text-sm text-muted-foreground">
+                                {p.orders} orders • {p.uniqueCustomers} customers
                               </div>
-                            )}
+                            </div>
+                          </div>
+                          <div className="text-right">
+                            <div className="font-bold text-lg">{fmtCurrency(Math.round(p.revenue))}</div>
+                            <div className="text-xs text-muted-foreground">Total Revenue</div>
                           </div>
                         </div>
                         
-                        {/* Right side: Revenue and avg order value */}
-                        <div className="flex items-center gap-6 flex-shrink-0">
-                          <div className="text-right">
-                            <div className="text-sm text-muted-foreground">Avg Order Value</div>
-                            <div className="font-semibold text-purple-600">{fmtCurrency(p.avgOrderValue)}</div>
+                        {/* Metrics grid */}
+                        <div className="grid grid-cols-3 gap-4 pt-2 border-t border-muted">
+                          <div className="text-center">
+                            <div className="text-lg font-semibold text-blue-600">×{p.qty}</div>
+                            <div className="text-xs text-muted-foreground">Units Sold</div>
                           </div>
-                          <div className="text-right">
-                            <div className="text-sm text-muted-foreground">Total Revenue</div>
-                            <div className="font-bold text-xl text-green-600">{fmtCurrency(Math.round(p.revenue))}</div>
+                          <div className="text-center">
+                            <div className="text-lg font-semibold text-amber-600">{p.frequency}</div>
+                            <div className="text-xs text-muted-foreground">Avg per Order</div>
+                          </div>
+                          <div className="text-center">
+                            <div className="text-lg font-semibold text-green-600">{fmtCurrency(p.avgOrderValue)}</div>
+                            <div className="text-xs text-muted-foreground">Avg Order Val</div>
                           </div>
                         </div>
+                        
+                        {/* Top branch info */}
+                        {p.topBranch && (
+                          <div className="flex items-center justify-between pt-2 border-t border-muted bg-muted/30 -mx-4 px-4 py-2 rounded-b-lg">
+                            <div className="flex items-center gap-2">
+                              <div className="h-2 w-2 rounded-full bg-emerald-500"></div>
+                              <span className="text-sm font-medium">Top Branch:</span>
+                              <span className="text-sm">{p.topBranch[0]}</span>
+                            </div>
+                            <div className="text-sm font-mono text-muted-foreground">
+                              {p.topBranch[1]} units
+                            </div>
+                          </div>
+                        )}
                       </div>
                     ))
                   ) : (
-                    <div className="text-center py-12 text-muted-foreground">
-                      <ShoppingBag className="h-12 w-12 mx-auto mb-4 opacity-50" />
-                      <div>No sales data available for this period.</div>
-                      <div className="text-sm">Try changing the time range or load demo data.</div>
+                    <div className="text-sm text-muted-foreground text-center py-8">
+                      No sales data available for this period.
                     </div>
                   )}
-                </div>
-              </CardContent>
-            </Card>
-          </div>
-
-          {/* Bottom Row - Customer & Operations Insights */}
-          <div className="grid lg:grid-cols-4 gap-6">
-            {/* Payment Methods with enhanced insights */}
-            <Card>
-              <CardHeader>
-                <CardTitle className="flex items-center gap-2">
-                  💳 Payment Insights
-                  <Badge variant="outline" className="text-xs">{paymentBreakdown.reduce((sum, p) => sum + p.value, 0)} orders</Badge>
-                </CardTitle>
-              </CardHeader>
-              <CardContent>
-                <div className="space-y-4">
-                  {/* Payment method breakdown */}
-                  <div className="space-y-3">
-                    {paymentBreakdown
-                      .sort((a, b) => b.value - a.value)
-                      .map((p, index) => {
-                        const total = paymentBreakdown.reduce((sum, method) => sum + method.value, 0);
-                        const percentage = total > 0 ? Math.round((p.value / total) * 100) : 0;
-                        const isTop = index === 0;
-                        return (
-                          <div key={p.key} className="space-y-2">
-                            <div className="flex items-center justify-between">
-                              <div className="flex items-center gap-2">
-                                {isTop && <div className="h-2 w-2 rounded-full bg-green-500"></div>}
-                                <span className={`text-sm ${isTop ? 'font-medium' : ''}`}>{p.label}</span>
-                              </div>
-                              <div className="flex items-center gap-2">
-                                <span className="text-sm font-mono">{p.value}</span>
-                                <span className="text-xs text-muted-foreground w-8 text-right">{percentage}%</span>
-                              </div>
-                            </div>
-                            <div className="h-1.5 bg-muted rounded-full overflow-hidden">
-                              <div
-                                className={`h-full rounded-full transition-all duration-700 ${isTop ? 'bg-green-500' : 'bg-primary/60'}`}
-                                style={{ width: `${percentage}%` }}
-                              />
-                            </div>
-                          </div>
-                        );
-                      })}
-                  </div>
-                </div>
-              </CardContent>
-            </Card>
-
-            {/* Delivery Methods with insights */}
-            <Card>
-              <CardHeader>
-                <CardTitle className="flex items-center gap-2">
-                  🚚 Delivery Insights
-                  <Badge variant="outline" className="text-xs">{deliveryBreakdown.reduce((sum, d) => sum + d.value, 0)} orders</Badge>
-                </CardTitle>
-              </CardHeader>
-              <CardContent>
-                <div className="space-y-4">
-                  {/* Delivery preference */}
-                  <div className="space-y-3">
-                    {deliveryBreakdown
-                      .sort((a, b) => b.value - a.value)
-                      .map((d, index) => {
-                        const total = deliveryBreakdown.reduce((sum, method) => sum + method.value, 0);
-                        const percentage = total > 0 ? Math.round((d.value / total) * 100) : 0;
-                        const isPreferred = index === 0;
-                        return (
-                          <div key={d.key} className="space-y-2">
-                            <div className="flex items-center justify-between">
-                              <div className="flex items-center gap-2">
-                                {isPreferred && <div className="h-2 w-2 rounded-full bg-blue-500"></div>}
-                                <span className={`text-sm ${isPreferred ? 'font-medium' : ''}`}>{d.label}</span>
-                              </div>
-                              <div className="flex items-center gap-2">
-                                <span className="text-sm font-mono">{d.value}</span>
-                                <span className="text-xs text-muted-foreground w-8 text-right">{percentage}%</span>
-                              </div>
-                            </div>
-                            <div className="h-1.5 bg-muted rounded-full overflow-hidden">
-                              <div
-                                className={`h-full rounded-full transition-all duration-700 ${isPreferred ? 'bg-blue-500' : 'bg-primary/60'}`}
-                                style={{ width: `${percentage}%` }}
-                              />
-                            </div>
-                          </div>
-                        );
-                      })}
-                  </div>
-                  
-                  {/* Delivery insights */}
-                  <div className="pt-3 border-t border-muted">
-                    <div className="text-xs text-muted-foreground mb-2">Insights</div>
-                    {deliveryBreakdown.find(d => d.key === 'speedy')?.value > deliveryBreakdown.find(d => d.key === 'pickup')?.value ? (
-                      <div className="text-sm text-blue-600 bg-blue-50 p-2 rounded">
-                        📈 Customers prefer speedy delivery
-                      </div>
-                    ) : (
-                      <div className="text-sm text-green-600 bg-green-50 p-2 rounded">
-                        🏪 Most customers choose pickup
-                      </div>
-                    )}
-                  </div>
-                </div>
-              </CardContent>
-            </Card>
-
-            {/* Customer Behavior Analysis */}
-            <Card>
-              <CardHeader>
-                <CardTitle className="flex items-center gap-2">
-                  👥 Customer Analytics
-                </CardTitle>
-              </CardHeader>
-              <CardContent>
-                <div className="space-y-4">
-                  {/* Customer metrics */}
-                  <div className="space-y-3">
-                    <Dialog open={customerModalOpen} onOpenChange={setCustomerModalOpen}>
-                      <DialogTrigger asChild>
-                        <div className="flex items-center justify-between p-2 bg-blue-50 rounded cursor-pointer hover:bg-blue-100 transition-colors">
-                          <span className="text-sm">Unique Customers</span>
-                          <span className="font-bold text-blue-600">
-                            {new Set(ordersInRange.map(o => o.customer.phone)).size}
-                          </span>
-                        </div>
-                      </DialogTrigger>
-                      <DialogContent className="max-w-4xl max-h-[80vh] overflow-hidden">
-                        <DialogHeader>
-                          <DialogTitle>Customer Analytics - {range === "7d" ? "Last 7 Days" : range === "30d" ? "Last 30 Days" : "All Time"}</DialogTitle>
-                        </DialogHeader>
-                        <div className="overflow-y-auto max-h-[60vh]">
-                          <div className="space-y-4">
-                            <div className="grid grid-cols-3 gap-4 mb-4">
-                              <div className="bg-blue-50 p-3 rounded-lg text-center">
-                                <div className="text-2xl font-bold text-blue-600">{customerAnalytics.length}</div>
-                                <div className="text-sm text-blue-800">Total Customers</div>
-                              </div>
-                              <div className="bg-green-50 p-3 rounded-lg text-center">
-                                <div className="text-2xl font-bold text-green-600">
-                                  {customerAnalytics.length > 0 ? Math.round(customerAnalytics.reduce((sum, c) => sum + c.totalSpent, 0) / customerAnalytics.length) : 0}
-                                </div>
-                                <div className="text-sm text-green-800">Avg Customer Value</div>
-                              </div>
-                              <div className="bg-purple-50 p-3 rounded-lg text-center">
-                                <div className="text-2xl font-bold text-purple-600">
-                                  {customerAnalytics.length > 0 ? Math.round(customerAnalytics.reduce((sum, c) => sum + c.orders, 0) / customerAnalytics.length * 10) / 10 : 0}
-                                </div>
-                                <div className="text-sm text-purple-800">Avg Orders/Customer</div>
-                              </div>
-                            </div>
-                            
-                            <Table>
-                              <TableHeader>
-                                <TableRow>
-                                  <TableHead>Customer</TableHead>
-                                  <TableHead>Contact</TableHead>
-                                  <TableHead>Orders</TableHead>
-                                  <TableHead>Total Spent</TableHead>
-                                  <TableHead>Preferred Location</TableHead>
-                                  <TableHead>Last Order</TableHead>
-                                </TableRow>
-                              </TableHeader>
-                              <TableBody>
-                                {customerAnalytics.map((customer) => (
-                                  <TableRow key={customer.phone}>
-                                    <TableCell>
-                                      <div>
-                                        <div className="font-medium">{customer.name}</div>
-                                        <div className="text-sm text-muted-foreground flex items-center gap-1">
-                                          <User className="h-3 w-3" />
-                                          Customer ID: {customer.phone.slice(-4)}
-                                        </div>
-                                      </div>
-                                    </TableCell>
-                                    <TableCell>
-                                      <div className="space-y-1">
-                                        <div className="flex items-center gap-1 text-sm">
-                                          <Phone className="h-3 w-3" />
-                                          {customer.phone}
-                                        </div>
-                                        <div className="text-sm text-muted-foreground">{customer.email}</div>
-                                      </div>
-                                    </TableCell>
-                                    <TableCell>
-                                      <div>
-                                        <div className="font-medium">{customer.orders}</div>
-                                        <div className="text-sm text-muted-foreground">
-                                          {customer.orderFrequency.toFixed(1)}/month
-                                        </div>
-                                      </div>
-                                    </TableCell>
-                                    <TableCell>
-                                      <div>
-                                        <div className="font-medium">KES {customer.totalSpent.toLocaleString()}</div>
-                                        <div className="text-sm text-muted-foreground">
-                                          Avg: KES {Math.round(customer.totalSpent / customer.orders).toLocaleString()}
-                                        </div>
-                                      </div>
-                                    </TableCell>
-                                    <TableCell>
-                                      <div className="flex items-center gap-1">
-                                        <MapPin className="h-3 w-3 text-orange-600" />
-                                        <span className="text-sm">{customer.preferredLocation}</span>
-                                      </div>
-                                    </TableCell>
-                                    <TableCell>
-                                      <div className="text-sm">
-                                        {new Date(customer.lastOrder).toLocaleDateString()}
-                                      </div>
-                                    </TableCell>
-                                  </TableRow>
-                                ))}
-                              </TableBody>
-                            </Table>
-                          </div>
-                        </div>
-                      </DialogContent>
-                    </Dialog>
-                    <div className="flex items-center justify-between p-2 bg-green-50 rounded">
-                      <span className="text-sm">Repeat Rate</span>
-                      <span className="font-bold text-green-600">
-                        {Math.round((ordersInRange.length / Math.max(new Set(ordersInRange.map(o => o.customer.phone)).size, 1) - 1) * 100)}%
-                      </span>
-                    </div>
-                    <div className="flex items-center justify-between p-2 bg-purple-50 rounded">
-                      <span className="text-sm">Avg Items/Order</span>
-                      <span className="font-bold text-purple-600">
-                        {ordersInRange.length > 0 ? Math.round((ordersInRange.reduce((sum, o) => sum + o.items.length, 0) / ordersInRange.length) * 10) / 10 : 0}
-                      </span>
-                    </div>
-                  </div>
-                  
-                  {/* Customer insight */}
-                  <div className="pt-3 border-t border-muted">
-                    <div className="text-xs text-muted-foreground mb-2">Insight</div>
-                    {ordersInRange.length / Math.max(new Set(ordersInRange.map(o => o.customer.phone)).size, 1) > 1.5 ? (
-                      <div className="text-sm text-green-600 bg-green-50 p-2 rounded">
-                        💚 High customer loyalty
-                      </div>
-                    ) : (
-                      <div className="text-sm text-amber-600 bg-amber-50 p-2 rounded">
-                        📈 Focus on retention
-                      </div>
-                    )}
-                  </div>
-                </div>
-              </CardContent>
-            </Card>
-
-            {/* Business Performance Summary */}
-            <Card>
-              <CardHeader>
-                <CardTitle className="flex items-center gap-2">
-                  📊 Performance Summary
-                </CardTitle>
-              </CardHeader>
-              <CardContent>
-                <div className="space-y-4">
-                  {/* Performance metrics */}
-                  <div className="space-y-3">
-                    <div className="flex items-center justify-between p-2 bg-emerald-50 rounded">
-                      <span className="text-sm">Success Rate</span>
-                      <span className="font-bold text-emerald-600">
-                        {deliveredRate}%
-                      </span>
-                    </div>
-                    <div className="flex items-center justify-between p-2 bg-indigo-50 rounded">
-                      <span className="text-sm">Orders/Day</span>
-                      <span className="font-bold text-indigo-600">
-                        {Math.round(ordersInRange.length / (rangeDays || 1) * 10) / 10}
-                      </span>
-                    </div>
-                    <div className="flex items-center justify-between p-2 bg-rose-50 rounded">
-                      <span className="text-sm">Revenue/Day</span>
-                      <span className="font-bold text-rose-600">
-                        {fmtCurrency(Math.round(revenueInRange / (rangeDays || 1)))}
-                      </span>
-                    </div>
-                  </div>
-                  
-                  {/* Performance trend */}
-                  <div className="pt-3 border-t border-muted">
-                    <div className="text-xs text-muted-foreground mb-2">Trend</div>
-                    {revenueDeltaPct !== null ? (
-                      <div className={`text-sm p-2 rounded ${
-                        revenueDeltaPct >= 10 ? 'text-green-600 bg-green-50' :
-                        revenueDeltaPct >= 0 ? 'text-blue-600 bg-blue-50' :
-                        revenueDeltaPct >= -10 ? 'text-amber-600 bg-amber-50' :
-                        'text-red-600 bg-red-50'
-                      }`}>
-                        {revenueDeltaPct >= 10 ? '🚀 Strong growth' :
-                         revenueDeltaPct >= 0 ? '📈 Growing' :
-                         revenueDeltaPct >= -10 ? '📊 Stable' :
-                         '📉 Needs attention'}
-                      </div>
-                    ) : (
-                      <div className="text-sm text-muted-foreground bg-muted/50 p-2 rounded">
-                        📊 No trend data available
-                      </div>
-                    )}
-                  </div>
                 </div>
               </CardContent>
             </Card>
@@ -1063,15 +711,15 @@ export default function AdminDashboard() {
                   <Button variant="outline" asChild><Link to="/admin/orders">View all</Link></Button>
                 </div>
               </CardHeader>
-              <CardContent className="overflow-hidden p-0">
+              <CardContent>
                 <Table>
                   <TableHeader>
                     <TableRow>
-                      <TableHead className="whitespace-nowrap min-w-[120px]">Order</TableHead>
-                      <TableHead className="whitespace-nowrap min-w-[140px]">Date</TableHead>
-                      <TableHead className="whitespace-nowrap min-w-[160px]">Customer</TableHead>
-                      <TableHead className="text-right whitespace-nowrap min-w-[100px]">Total</TableHead>
-                      <TableHead className="whitespace-nowrap min-w-[120px]">Status</TableHead>
+                      <TableHead>Order</TableHead>
+                      <TableHead>Date</TableHead>
+                      <TableHead>Customer</TableHead>
+                      <TableHead className="text-right">Total</TableHead>
+                      <TableHead>Status</TableHead>
                     </TableRow>
                   </TableHeader>
                   <TableBody>
@@ -1081,11 +729,11 @@ export default function AdminDashboard() {
                       const name = `${o.customer.firstName} ${o.customer.lastName}`.trim();
                       return (
                         <TableRow key={o.id}>
-                          <TableCell className="font-medium whitespace-nowrap py-6">{o.id}</TableCell>
-                          <TableCell className="whitespace-nowrap py-6">{dateStr}</TableCell>
-                          <TableCell className="whitespace-nowrap py-6">{name || o.customer.phone}</TableCell>
-                          <TableCell className="text-right whitespace-nowrap py-6">{fmtCurrency(o.total)}</TableCell>
-                          <TableCell className="whitespace-nowrap py-6"><span className={statusPill(o.status)}>{o.status.replace(/_/g, " ")}</span></TableCell>
+                          <TableCell className="font-medium">{o.id}</TableCell>
+                          <TableCell>{dateStr}</TableCell>
+                          <TableCell>{name || o.customer.phone}</TableCell>
+                          <TableCell className="text-right">{fmtCurrency(o.total)}</TableCell>
+                          <TableCell><span className={statusPill(o.status)}>{o.status.replace(/_/g, " ")}</span></TableCell>
                         </TableRow>
                       );
                     })}
@@ -1109,8 +757,6 @@ export default function AdminDashboard() {
                 <CardContent className="space-y-3">
                   <Button className="w-full" asChild><Link to="/admin/products">Add or Edit Products</Link></Button>
                   <Button variant="outline" className="w-full" asChild><Link to="/admin/orders">Manage Orders</Link></Button>
-                  <Button variant="outline" className="w-full" asChild><Link to="/admin/inventory">View Inventory</Link></Button>
-                  <Button variant="outline" className="w-full" asChild><Link to="/admin/inventory/out-of-stock">Out of Stock Items</Link></Button>
                   <Button variant="outline" className="w-full" asChild><Link to="/admin/settings">Site Settings</Link></Button>
                   {!settings.blackFridayEnabled && (
                     <div className="pt-2">

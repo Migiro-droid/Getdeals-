@@ -45,6 +45,7 @@ interface OrdersContextValue {
     todayCount: number;
   };
   clearAll: () => void; // admin only helper
+  seedOrders: (sample: Order[], replace?: boolean) => void; // admin only helper
 }
 
 const OrdersContext = createContext<OrdersContextValue | undefined>(undefined);
@@ -107,13 +108,23 @@ export const OrdersProvider: React.FC<{ children: React.ReactNode }> = ({ childr
 
   const clearAll = useCallback(() => setOrders([]), []);
 
+  const seedOrders = useCallback((sample: Order[], replace: boolean = false) => {
+    setOrders((prev) => {
+      const merged = replace ? sample : [...sample, ...prev];
+      // sort by date desc
+      merged.sort((a, b) => b.date.localeCompare(a.date));
+      return merged;
+    });
+  }, []);
+
   const value: OrdersContextValue = {
     orders,
     createOrder,
     updateStatus,
     getById,
     metrics,
-    clearAll,
+  clearAll,
+  seedOrders,
   };
 
   return <OrdersContext.Provider value={value}>{children}</OrdersContext.Provider>;

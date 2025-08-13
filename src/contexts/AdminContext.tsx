@@ -1,4 +1,4 @@
-import React, { createContext, useContext, useEffect, useMemo, useState } from "react";
+import React, { createContext, useContext, useEffect, useMemo, useRef, useState } from "react";
 
 interface SiteSettings {
   blackFridayEnabled: boolean;
@@ -8,11 +8,41 @@ interface SiteSettings {
   location: string;
 }
 
+type AdminRole = "guest" | "staff" | "admin";
+
+type AdminPermission =
+  | "viewDashboard"
+  | "manageOrders"
+  | "manageProducts"
+  | "manageSettings";
+
+interface AdminUserInfo {
+  name?: string;
+  email?: string;
+}
+
+interface AdminSession {
+  role: AdminRole;
+  user: AdminUserInfo | null;
+  expiresAt: number | null; // epoch ms
+}
+
 interface AdminContextValue {
+  // Site config
   settings: SiteSettings;
   updateSettings: (partial: Partial<SiteSettings>) => void;
+
+  // Auth/session (new)
+  role: AdminRole;
+  user: AdminUserInfo | null;
+  session: Pick<AdminSession, "expiresAt">;
+  login: (passcode: string, info?: AdminUserInfo) => boolean;
+  logout: () => void;
+  hasPermission: (perm: AdminPermission) => boolean;
+
+  // Back-compat flags
   isAdmin: boolean;
-  setIsAdmin: (v: boolean) => void;
+  setIsAdmin: (v: boolean) => void; // sets role to admin/guest
 }
 
 const defaultSettings: SiteSettings = {
@@ -26,9 +56,19 @@ const defaultSettings: SiteSettings = {
 const AdminContext = createContext<AdminContextValue | undefined>(undefined);
 
 const LS_SETTINGS = "getdeals_admin_settings_v1";
-const LS_IS_ADMIN = "getdeals_admin_flag_v1";
+const LS_IS_ADMIN = "getdeals_admin_flag_v1"; // kept for back-compat
+const LS_SESSION = "getdeals_admin_session_v1";
+
+const SESSION_TTL_MS = 12 * 60 * 60 * 1000; // 12 hours
+
+const ROLE_PERMS: Record<AdminRole, AdminPermission[]> = {
+  guest: ["viewDashboard"],
+  staff: ["viewDashboard", "manageOrders"],
+  admin: ["viewDashboard", "manageOrders", "manageProducts", "manageSettings"],
+};
 
 export const AdminProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
+  // Settings with localStorage persistence
   const [settings, setSettings] = useState<SiteSettings>(() => {
     try {
       const raw = localStorage.getItem(LS_SETTINGS);
@@ -37,18 +77,186 @@ export const AdminProvider: React.FC<{ children: React.ReactNode }> = ({ childre
       return defaultSettings;
     }
   });
-  const [isAdmin, setIsAdmin] = useState<boolean>(() => localStorage.getItem(LS_IS_ADMIN) === "1");
 
+  // Session state
+  const [role, setRole] = useState<AdminRole>(() => {
+    try {
+      const raw = localStorage.getItem(LS_SESSION);
+      if (raw) {
+        const s = JSON.parse(raw) as AdminSession;
+        if (s.expiresAt && Date.now() < s.expiresAt) return s.role;
+      }
+    } catch {}
+    // Back-compat: honor legacy flag if present
+    try {
+      return localStorage.getItem(LS_IS_ADMIN) === "1" ? "admin" : "guest";
+    } catch {}
+    return "guest";
+  });
+  const [user, setUser] = useState<AdminUserInfo | null>(() => {
+    try {
+      const raw = localStorage.getItem(LS_SESSION);
+      if (raw) {
+        const s = JSON.parse(raw) as AdminSession;
+        if (s.expiresAt && Date.now() < s.expiresAt) return s.user ?? null;
+      }
+    } catch {}
+    return null;
+  });
+  const [expiresAt, setExpiresAt] = useState<number | null>(() => {
+    try {
+      const raw = localStorage.getItem(LS_SESSION);
+      if (raw) {
+        const s = JSON.parse(raw) as AdminSession;
+        if (s.expiresAt && Date.now() < s.expiresAt) return s.expiresAt;
+      }
+    } catch {}
+    return null;
+  });
+
+  const sessionRef = useRef<{ timer?: number | null }>({ timer: null });
+
+  // Persist settings
   useEffect(() => {
     try { localStorage.setItem(LS_SETTINGS, JSON.stringify(settings)); } catch {}
   }, [settings]);
+
+  // Save session to localStorage and legacy flags
+  const persistSession = (s: AdminSession | null) => {
+    try {
+      if (s) {
+        localStorage.setItem(LS_SESSION, JSON.stringify(s));
+        localStorage.setItem(LS_IS_ADMIN, s.role === "admin" ? "1" : "0");
+      } else {
+        localStorage.removeItem(LS_SESSION);
+        localStorage.setItem(LS_IS_ADMIN, "0");
+      }
+    } catch {}
+  };
+
+  // Set/refresh expiry timer
+  const setExpiryTimer = (ts: number | null) => {
+    if (sessionRef.current.timer) {
+      // window.clearTimeout expects number in browsers
+      window.clearTimeout(sessionRef.current.timer as number);
+    }
+    sessionRef.current.timer = null;
+    if (ts && ts > Date.now()) {
+      const delay = Math.max(0, ts - Date.now());
+      sessionRef.current.timer = window.setTimeout(() => {
+        // auto logout on expiry
+        doLogout();
+      }, delay);
+    }
+  };
+
   useEffect(() => {
-    try { localStorage.setItem(LS_IS_ADMIN, isAdmin ? "1" : "0"); } catch {}
-  }, [isAdmin]);
+    setExpiryTimer(expiresAt);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [expiresAt]);
+
+  // Cross-tab sync
+  useEffect(() => {
+    const onStorage = (e: StorageEvent) => {
+      if (e.key === LS_SESSION) {
+        try {
+          const raw = e.newValue;
+          if (!raw) {
+            // cleared
+            setRole("guest");
+            setUser(null);
+            setExpiresAt(null);
+            return;
+          }
+          const s = JSON.parse(raw) as AdminSession;
+          if (!s.expiresAt || Date.now() >= s.expiresAt) {
+            setRole("guest");
+            setUser(null);
+            setExpiresAt(null);
+            return;
+          }
+          setRole(s.role);
+          setUser(s.user ?? null);
+          setExpiresAt(s.expiresAt);
+        } catch {}
+      } else if (e.key === LS_SETTINGS && e.newValue) {
+        try {
+          const ns = JSON.parse(e.newValue) as SiteSettings;
+          setSettings((prev) => ({ ...prev, ...ns }));
+        } catch {}
+      }
+    };
+    window.addEventListener("storage", onStorage);
+    return () => window.removeEventListener("storage", onStorage);
+  }, []);
+
+  const doLogin = (passcode: string, info?: AdminUserInfo): AdminSession | null => {
+    // Determine role based on passcode
+    const adminPin = (import.meta as any)?.env?.VITE_ADMIN_PIN ?? (import.meta as any)?.env?.VITE_ADMIN_PASSCODE ?? "1234";
+    const staffPin = (import.meta as any)?.env?.VITE_STAFF_PIN ?? "1111";
+    let nextRole: AdminRole = "guest";
+    if (passcode === String(adminPin)) nextRole = "admin";
+    else if (passcode === String(staffPin)) nextRole = "staff";
+    else return null;
+
+    const next: AdminSession = {
+      role: nextRole,
+      user: info ?? null,
+      expiresAt: Date.now() + SESSION_TTL_MS,
+    };
+    setRole(next.role);
+    setUser(next.user ?? null);
+    setExpiresAt(next.expiresAt);
+    persistSession(next);
+    return next;
+  };
+
+  const doLogout = () => {
+    setRole("guest");
+    setUser(null);
+    setExpiresAt(null);
+    persistSession(null);
+  };
+
+  const login = (passcode: string, info?: AdminUserInfo) => {
+    const s = doLogin(passcode, info);
+    return !!s;
+  };
+  const logout = () => doLogout();
+
+  const hasPermission = (perm: AdminPermission) => ROLE_PERMS[role].includes(perm);
 
   const updateSettings = (partial: Partial<SiteSettings>) => setSettings((s) => ({ ...s, ...partial }));
 
-  const value = useMemo<AdminContextValue>(() => ({ settings, updateSettings, isAdmin, setIsAdmin }), [settings, isAdmin]);
+  // Back-compat setters
+  const isAdmin = role === "admin";
+  const setIsAdmin = (v: boolean) => {
+    if (v) {
+      const s: AdminSession = { role: "admin", user: user ?? null, expiresAt: Date.now() + SESSION_TTL_MS };
+      setRole("admin");
+      setExpiresAt(s.expiresAt);
+      persistSession(s);
+    } else {
+      doLogout();
+    }
+  };
+
+  const value = useMemo<AdminContextValue>(
+    () => ({
+      settings,
+      updateSettings,
+      role,
+      user,
+      session: { expiresAt },
+      login,
+      logout,
+      hasPermission,
+      // back-compat
+      isAdmin,
+      setIsAdmin,
+    }),
+    [settings, role, user, expiresAt]
+  );
 
   return <AdminContext.Provider value={value}>{children}</AdminContext.Provider>;
 };

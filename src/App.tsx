@@ -7,6 +7,8 @@ import { CartProvider } from "@/contexts/CartContext";
 import { WalletProvider } from "@/contexts/WalletContext";
 import { OrdersProvider } from "@/contexts/OrdersContext";
 import { AdminProvider } from "@/contexts/AdminContext";
+import { ProductsProvider } from "@/contexts/ProductsContext";
+import { InventoryProvider } from "@/contexts/InventoryContext";
 import { Header } from "@/components/Header";
 import { Footer } from "@/components/Footer";
 import HomePage from "./pages/HomePage";
@@ -24,22 +26,17 @@ import AdminOrders from "./pages/admin/AdminOrders";
 import AdminSettings from "./pages/admin/AdminSettings";
 import AdminGate from "./pages/admin/AdminGate";
 import { useAdmin } from "@/contexts/AdminContext";
+import AdminProducts from "./pages/admin/AdminProducts";
+import InventoryPage from "./pages/admin/InventoryPage";
+import OutOfStockPage from "./pages/admin/OutOfStockPage";
 import WalletPage from "./pages/WalletPage";
 
 const queryClient = new QueryClient();
 
-const AdminRoutes = () => {
+function AdminGuard({ children }: { children: JSX.Element }) {
   const { isAdmin } = useAdmin();
-  return isAdmin ? (
-    <>
-      <Route path="/admin" element={<AdminDashboard />} />
-      <Route path="/admin/orders" element={<AdminOrders />} />
-      <Route path="/admin/settings" element={<AdminSettings />} />
-    </>
-  ) : (
-    <Route path="/admin/*" element={<AdminGate />} />
-  );
-};
+  return isAdmin ? children : <AdminGate />;
+}
 
 const App = () => (
   <QueryClientProvider client={queryClient}>
@@ -48,6 +45,8 @@ const App = () => (
         <WalletProvider>
         <OrdersProvider>
         <AdminProvider>
+        <ProductsProvider>
+        <InventoryProvider>
         <Toaster />
         <Sonner />
         <BrowserRouter>
@@ -67,17 +66,24 @@ const App = () => (
                 <Route path="/account" element={<AccountPage />} />
                 <Route path="/faq" element={<FAQPage />} />
                 <Route path="/wallet" element={<WalletPage />} />
-                <AdminRoutes />
+                <Route path="/admin" element={<AdminGuard><AdminDashboard /></AdminGuard>} />
+                <Route path="/admin/orders" element={<AdminGuard><AdminOrders /></AdminGuard>} />
+                <Route path="/admin/settings" element={<AdminGuard><AdminSettings /></AdminGuard>} />
+                <Route path="/admin/products" element={<AdminGuard><AdminProducts /></AdminGuard>} />
+                <Route path="/admin/inventory" element={<AdminGuard><InventoryPage /></AdminGuard>} />
+                <Route path="/admin/inventory/out-of-stock" element={<AdminGuard><OutOfStockPage /></AdminGuard>} />
     {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
                 <Route path="*" element={<NotFound />} />
               </Routes>
             </main>
-            <Footer />
+      <Footer />
           </div>
         </BrowserRouter>
-  </AdminProvider>
-  </OrdersProvider>
-  </WalletProvider>
+        </InventoryProvider>
+        </ProductsProvider>
+        </AdminProvider>
+        </OrdersProvider>
+        </WalletProvider>
       </CartProvider>
     </TooltipProvider>
   </QueryClientProvider>

@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
-import { ArrowRight, CheckCircle, Clock, Shield, Truck, LogIn, UserPlus, Sparkles, Megaphone, X } from "lucide-react";
+import { ArrowRight, CheckCircle, Clock, Shield, Truck, LogIn, UserPlus, Sparkles, Megaphone, X, Star, ShieldCheck } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { ProductCard } from "@/components/ProductCard";
@@ -467,22 +467,29 @@ export default function HomePage() {
         </div>
       </section>
 
-      {/* CTA Section */}
-      <section className="py-20 bg-primary text-primary-foreground">
-        <div className="container mx-auto px-4 text-center">
-          <h2 className="text-3xl lg:text-4xl font-bold mb-4">
-            Ready to Start Smart Shopping?
-          </h2>
-          <p className="text-xl opacity-90 max-w-2xl mx-auto mb-8">
-            Join thousands of satisfied customers who save time and money with GetDeals Kenya.
-          </p>
-          <div className="flex flex-col sm:flex-row gap-4 justify-center">
-            <Button size="lg" variant="secondary" className="text-lg px-8" asChild>
-              <Link to="/baskets">Browse Baskets</Link>
-            </Button>
-            <Button size="lg" variant="outline" className="text-lg px-8 border-primary-foreground text-primary-foreground hover:bg-primary-foreground hover:text-primary" asChild>
-              <Link to="/contact">Contact Us</Link>
-            </Button>
+      {/* CTA Section (clean, no background) */}
+      <section className="py-20">
+        <div className="container mx-auto px-4">
+          <div className="max-w-3xl mx-auto text-center">
+            <h2 className="mt-3 text-3xl lg:text-4xl font-extrabold tracking-tight">
+              Ready to smart. Start shopping better.
+            </h2>
+            <p className="mt-2 text-lg text-muted-foreground">
+              Join thousands of satisfied customers who save time and money with GetDeals Kenya.
+            </p>
+            <div className="mt-6 flex flex-col sm:flex-row gap-4 justify-center">
+              <Button size="lg" className="text-lg px-8" asChild>
+                <Link to="/baskets">Browse Baskets <ArrowRight className="ml-2 h-5 w-5" /></Link>
+              </Button>
+              <Button size="lg" variant="outline" className="text-lg px-8" asChild>
+                <Link to="/contact">Contact Us</Link>
+              </Button>
+            </div>
+            <div className="mt-5 flex flex-wrap items-center gap-5 justify-center text-sm text-muted-foreground">
+              <div className="flex items-center gap-2"><Star className="h-4 w-4 text-yellow-500" /><span>4.9/5 satisfaction</span></div>
+              <div className="flex items-center gap-2"><Truck className="h-4 w-4 text-muted-foreground" /><span>2-hour delivery</span></div>
+              <div className="flex items-center gap-2"><ShieldCheck className="h-4 w-4 text-muted-foreground" /><span>Secure checkout</span></div>
+            </div>
           </div>
         </div>
       </section>
