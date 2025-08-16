@@ -1,5 +1,20 @@
 [
   {
+    "id": "family-basket-tmkffm",
+    "name": "Family Basket",
+    "image": "https://tse4.mm.bing.net/th/id/OIP.bcrdKHqxrz30IYvlXYVFmgHaHa?r=0&rs=1&pid=ImgDetMain&o=7&rm=3",
+    "category": "basket",
+    "price": 60000,
+    "originalPrice": 5000,
+    "description": "End Month Family Deals",
+    "items": [
+      "2kg Sugar",
+      "2Kg Rice",
+      "Royco Satchet(50)",
+      "1litre Cooking Oil"
+    ]
+  },
+  {
     "id": "hennessy-vs-holiday-pack",
     "name": "Hennessy VS Holiday Pack",
     "image": "https://th.bing.com/th/id/R.8d9fe45d0e99e4b9f80e31d2ddab166e?rik=uogC3PgHUnkOmQ&riu=http%3a%2f%2fwww.rafinat.ro%2fwp-content%2fuploads%2f2015%2f06%2fHennesy-XO.jpg&ehk=2cRiVcW5gn4lo%2bRUMIAYmM7Z0wNuNoj15UsWfHx73wQ%3d&risl=&pid=ImgRaw&r=0",
@@ -84,7 +99,7 @@
     "name": "Essential Basket",
     "price": 3000,
     "originalPrice": 3500,
-    "image": "src/assets/essential-basket.jpg",
+    "image": "/src/assets/essential-basket.jpg",
     "items": [
       "2kg Rice",
       "1kg Sugar",

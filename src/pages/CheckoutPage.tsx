@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { CreditCard, MapPin, Phone, User } from "lucide-react";
+import { CreditCard, MapPin, Phone, User, Smartphone, Wallet, DollarSign, Clock } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -8,67 +8,257 @@ import { Label } from "@/components/ui/label";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Separator } from "@/components/ui/separator";
+import { Badge } from "@/components/ui/badge";
+import { Alert, AlertDescription } from "@/components/ui/alert";
 import { useCart } from "@/contexts/CartContext";
 import { useToast } from "@/hooks/use-toast";
-import { useWallet } from "@/contexts/WalletContext";
-import { useOrders } from "@/contexts/OrdersContext";
 
 export default function CheckoutPage() {
   const { items, total, clearCart } = useCart();
   const { toast } = useToast();
+  const navigate = useNavigate();
+  
   const [isLoading, setIsLoading] = useState(false);
   const [deliveryMethod, setDeliveryMethod] = useState("pickup");
   const [paymentMethod, setPaymentMethod] = useState("mpesa");
-  const { balance, withdraw } = useWallet();
-  const { createOrder } = useOrders();
-  const navigate = useNavigate();
+  const [paymentStatus, setPaymentStatus] = useState<"idle" | "processing" | "success" | "failed">("idle");
+  
+  // Customer details
   const [firstName, setFirstName] = useState("");
   const [lastName, setLastName] = useState("");
   const [phone, setPhone] = useState("");
   const [email, setEmail] = useState("");
   const [address, setAddress] = useState("");
   const [pickupLocation, setPickupLocation] = useState("");
+  
+  // Payment details
+  const [mpesaPhone, setMpesaPhone] = useState("");
+
+  const formatPhoneNumber = (phone: string) => {
+    // Remove all non-digit characters
+    const digits = phone.replace(/\D/g, '');
+    
+    // Handle different formats
+    if (digits.startsWith('254')) {
+      return digits;
+    } else if (digits.startsWith('0')) {
+      return '254' + digits.substring(1);
+    } else if (digits.length === 9) {
+      return '254' + digits;
+    }
+    
+    return digits;
+  };
+
+  const initiateSTKPush = async (amount: number, phoneNumber: string, orderReference: string) => {
+    try {
+      const response = await fetch('/api/payments/mpesa/stk-push', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          amount,
+          phoneNumber: formatPhoneNumber(phoneNumber),
+          orderReference,
+          description: `Payment for GetDeals order ${orderReference}`
+        }),
+      });
+
+      const result = await response.json();
+      
+      if (response.ok) {
+        return { success: true, ...result };
+      } else {
+        throw new Error(result.error || 'Payment initiation failed');
+      }
+    } catch (error) {
+      console.error('STK Push error:', error);
+      return { success: false, error: error instanceof Error ? error.message : 'Payment failed' };
+    }
+  };
+
+  const checkPaymentStatus = async (checkoutRequestId: string) => {
+    try {
+      const response = await fetch(`/api/payments/mpesa/query/${checkoutRequestId}`);
+      const result = await response.json();
+      
+      if (response.ok) {
+        return result;
+      } else {
+        throw new Error(result.error || 'Failed to check payment status');
+      }
+    } catch (error) {
+      console.error('Payment status check error:', error);
+      return { success: false, error: error instanceof Error ? error.message : 'Status check failed' };
+    }
+  };
+
+  const createOrder = async (orderData: any) => {
+    try {
+      const response = await fetch('/api/orders', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(orderData),
+      });
+
+      const result = await response.json();
+      
+      if (response.ok) {
+        return { success: true, order: result };
+      } else {
+        throw new Error(result.error || 'Failed to create order');
+      }
+    } catch (error) {
+      console.error('Order creation error:', error);
+      return { success: false, error: error instanceof Error ? error.message : 'Order creation failed' };
+    }
+  };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setIsLoading(true);
+    setPaymentStatus("processing");
 
-    // If paying with wallet, ensure sufficient funds and deduct
-    if (paymentMethod === "wallet") {
-      const res = withdraw(finalTotal, "Checkout payment", "payment");
-      if (!res.ok) {
+    try {
+      // Generate order reference
+      const orderReference = `GD${Date.now()}${Math.random().toString(36).substr(2, 4).toUpperCase()}`;
+      
+      // Prepare order data
+      const orderData = {
+        orderReference,
+        customerInfo: {
+          firstName,
+          lastName,
+          phone: formatPhoneNumber(phone),
+          email,
+          address: deliveryMethod === "speedy" ? address : undefined,
+          pickupLocation: deliveryMethod === "pickup" ? pickupLocation : undefined,
+        },
+        items: items.map(item => ({
+          productId: item.id,
+          name: item.name,
+          price: item.price,
+          quantity: item.quantity,
+          image: item.image
+        })),
+        subtotal: total,
+        deliveryFee,
+        total: finalTotal,
+        deliveryMethod,
+        paymentMethod,
+        status: 'pending'
+      };
+
+      if (paymentMethod === "mpesa") {
+        const paymentPhone = mpesaPhone || phone;
+        
+        if (!paymentPhone) {
+          throw new Error("Phone number is required for M-Pesa payment");
+        }
+
+        // Initiate STK Push
+        const stkResult = await initiateSTKPush(finalTotal, paymentPhone, orderReference);
+        
+        if (!stkResult.success) {
+          throw new Error(stkResult.error || "Failed to initiate M-Pesa payment");
+        }
+
+        // Update order data with payment info
+        orderData.paymentInfo = {
+          method: 'mpesa',
+          phone: formatPhoneNumber(paymentPhone),
+          checkoutRequestId: stkResult.CheckoutRequestID,
+          merchantRequestId: stkResult.MerchantRequestID,
+        };
+
+        // Create order
+        const orderResult = await createOrder(orderData);
+        
+        if (!orderResult.success) {
+          throw new Error(orderResult.error || "Failed to create order");
+        }
+
+        // Show STK push notification
         toast({
-          title: "Wallet payment failed",
-          description: res.error || "Insufficient wallet balance",
+          title: "M-Pesa Payment Initiated! 📱",
+          description: `Please check your phone (${paymentPhone}) and enter your M-Pesa PIN to complete the payment.`,
         });
-        setIsLoading(false);
-        return;
+
+        // Poll for payment status
+        const maxAttempts = 20; // 2 minutes with 6-second intervals
+        let attempts = 0;
+        
+        const pollPayment = async () => {
+          if (attempts >= maxAttempts) {
+            setPaymentStatus("failed");
+            toast({
+              title: "Payment Timeout",
+              description: "Payment verification timed out. Please contact support if money was deducted.",
+              variant: "destructive",
+            });
+            return;
+          }
+
+          attempts++;
+          const statusResult = await checkPaymentStatus(stkResult.CheckoutRequestID);
+          
+          if (statusResult.success && statusResult.status === 'completed') {
+            setPaymentStatus("success");
+            toast({
+              title: "Payment Successful! ✅",
+              description: "Your order has been confirmed and you'll receive an SMS shortly.",
+            });
+            
+            clearCart();
+            setTimeout(() => {
+              navigate(`/account?tab=orders&orderId=${orderResult.order.id}`);
+            }, 2000);
+          } else if (statusResult.status === 'failed') {
+            setPaymentStatus("failed");
+            toast({
+              title: "Payment Failed",
+              description: statusResult.error || "M-Pesa payment was not completed.",
+              variant: "destructive",
+            });
+          } else {
+            // Continue polling
+            setTimeout(pollPayment, 6000);
+          }
+        };
+
+        // Start polling after a short delay
+        setTimeout(pollPayment, 3000);
+
+      } else {
+        // Handle other payment methods
+        const orderResult = await createOrder(orderData);
+        
+        if (!orderResult.success) {
+          throw new Error(orderResult.error || "Failed to create order");
+        }
+
+        setPaymentStatus("success");
+        toast({
+          title: "Order Placed Successfully! 🎉",
+          description: "You will receive confirmation details shortly.",
+        });
+
+        clearCart();
+        setTimeout(() => {
+          navigate(`/account?tab=orders&orderId=${orderResult.order.id}`);
+        }, 1500);
       }
+
+    } catch (error) {
+      setPaymentStatus("failed");
+      console.error('Checkout error:', error);
+      toast({
+        title: "Checkout Failed",
+        description: error instanceof Error ? error.message : "An unexpected error occurred",
+        variant: "destructive",
+      });
+    } finally {
+      setIsLoading(false);
     }
-
-    // Create order record
-    const order = createOrder({
-      items: items.map(i => ({ id: i.id, name: i.name, price: i.price, quantity: i.quantity, image: i.image })),
-      subtotal: total,
-      deliveryFee,
-      total: finalTotal,
-      deliveryMethod: deliveryMethod as any,
-      paymentMethod: paymentMethod as any,
-      customer: { firstName, lastName, phone, email, address: deliveryMethod === "speedy" ? address : undefined, pickupLocation: deliveryMethod === "pickup" ? pickupLocation : undefined },
-    });
-
-    // Simulate order processing
-    await new Promise(resolve => setTimeout(resolve, 800));
-
-    toast({
-      title: "Order placed successfully!",
-      description: "You will receive an SMS confirmation shortly.",
-    });
-
-    clearCart();
-    setIsLoading(false);
-    // Jump to account orders tab and highlight the new order
-    navigate(`/account?tab=orders`, { state: { tab: "orders", orderId: order.id } });
   };
 
   const deliveryFee = deliveryMethod === "speedy" ? 200 : 0;
@@ -179,37 +369,38 @@ export default function CheckoutPage() {
               </CardHeader>
               <CardContent className="space-y-4">
                 <RadioGroup value={paymentMethod} onValueChange={setPaymentMethod}>
-                  <div className="flex items-center space-x-2 p-4 border rounded-lg">
+                  <div className="flex items-center space-x-2 p-4 border rounded-lg bg-gradient-to-r from-green-50 to-green-100 border-green-200">
                     <RadioGroupItem value="mpesa" id="mpesa" />
                     <Label htmlFor="mpesa" className="flex-1">
-                      <div className="font-medium">M-Pesa</div>
-                      <div className="text-sm text-muted-foreground">
-                        Pay instantly with M-Pesa
+                      <div className="flex items-center gap-2">
+                        <Smartphone className="h-4 w-4 text-green-600" />
+                        <span className="font-medium">M-Pesa</span>
+                        <Badge variant="secondary" className="bg-green-100 text-green-700">Recommended</Badge>
+                      </div>
+                      <div className="text-sm text-green-700">
+                        Pay instantly with M-Pesa STK Push - Fast & Secure
                       </div>
                     </Label>
                   </div>
                   <div className="flex items-center space-x-2 p-4 border rounded-lg">
                     <RadioGroupItem value="card" id="card" />
                     <Label htmlFor="card" className="flex-1">
-                      <div className="font-medium">Card Payment</div>
+                      <div className="flex items-center gap-2">
+                        <CreditCard className="h-4 w-4" />
+                        <span className="font-medium">Card Payment</span>
+                      </div>
                       <div className="text-sm text-muted-foreground">
                         Visa, Mastercard accepted
                       </div>
                     </Label>
                   </div>
                   <div className="flex items-center space-x-2 p-4 border rounded-lg">
-                    <RadioGroupItem value="wallet" id="wallet" />
-                    <Label htmlFor="wallet" className="flex-1">
-                      <div className="font-medium">GetDeals Wallet</div>
-                      <div className="text-sm text-muted-foreground">
-                        Current balance: KES {balance.toLocaleString()}
-                      </div>
-                    </Label>
-                  </div>
-                  <div className="flex items-center space-x-2 p-4 border rounded-lg">
                     <RadioGroupItem value="cash" id="cash" />
                     <Label htmlFor="cash" className="flex-1">
-                      <div className="font-medium">Cash Payment</div>
+                      <div className="flex items-center gap-2">
+                        <DollarSign className="h-4 w-4" />
+                        <span className="font-medium">Cash Payment</span>
+                      </div>
                       <div className="text-sm text-muted-foreground">
                         Pay cash on delivery/pickup
                       </div>
@@ -217,18 +408,33 @@ export default function CheckoutPage() {
                   </div>
                 </RadioGroup>
 
-                {paymentMethod === "wallet" && (
-                  <div className={`text-sm ${balance < finalTotal ? "text-red-600" : "text-muted-foreground"}`}>
-                    {balance < finalTotal
-                      ? "Insufficient wallet balance for this order. Please deposit or choose another method."
-                      : "This order will be paid from your GetDeals Wallet."}
-                  </div>
-                )}
-
                 {paymentMethod === "mpesa" && (
-                  <div>
-                    <Label htmlFor="mpesaPhone">M-Pesa Phone Number</Label>
-                    <Input id="mpesaPhone" type="tel" placeholder="+254 7XX XXX XXX" required />
+                  <div className="space-y-4 bg-green-50 p-4 rounded-lg border border-green-200">
+                    <div>
+                      <Label htmlFor="mpesaPhone" className="text-sm font-medium">
+                        M-Pesa Phone Number
+                      </Label>
+                      <Input 
+                        id="mpesaPhone" 
+                        type="tel" 
+                        placeholder="+254 7XX XXX XXX" 
+                        value={mpesaPhone}
+                        onChange={(e) => setMpesaPhone(e.target.value)}
+                        className="bg-white"
+                      />
+                      <p className="text-xs text-green-700 mt-1">
+                        Leave empty to use your contact phone number
+                      </p>
+                    </div>
+                    
+                    {paymentStatus === "processing" && (
+                      <Alert className="bg-blue-50 border-blue-200">
+                        <Clock className="h-4 w-4 text-blue-600" />
+                        <AlertDescription className="text-blue-700">
+                          STK Push sent! Please check your phone and enter your M-Pesa PIN to complete payment.
+                        </AlertDescription>
+                      </Alert>
+                    )}
                   </div>
                 )}
               </CardContent>
@@ -274,15 +480,40 @@ export default function CheckoutPage() {
                 <Button 
                   type="submit" 
                   size="lg" 
-                  className="w-full" 
+                  className="w-full relative" 
                   disabled={
                     isLoading ||
                     items.length === 0 ||
-                    (paymentMethod === "wallet" && balance < finalTotal)
+                    paymentStatus === "processing"
                   }
                 >
-                  {isLoading ? "Processing..." : "Place Order"}
+                  {paymentStatus === "processing" ? (
+                    <>
+                      <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></div>
+                      Waiting for M-Pesa...
+                    </>
+                  ) : isLoading ? (
+                    <>
+                      <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></div>
+                      Processing...
+                    </>
+                  ) : paymentMethod === "mpesa" ? (
+                    <>
+                      <Smartphone className="h-4 w-4 mr-2" />
+                      Pay with M-Pesa
+                    </>
+                  ) : (
+                    "Place Order"
+                  )}
                 </Button>
+                
+                {paymentMethod === "mpesa" && (
+                  <div className="text-xs text-center text-muted-foreground space-y-1">
+                    <p>• You'll receive an STK Push on your phone</p>
+                    <p>• Enter your M-Pesa PIN to complete payment</p>
+                    <p>• Payment confirmation is instant</p>
+                  </div>
+                )}
               </CardContent>
             </Card>
           </div>

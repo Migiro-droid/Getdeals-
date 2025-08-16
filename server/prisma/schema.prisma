@@ -1,0 +1,225 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id                String    @id @default(cuid())
+  email             String    @unique
+  name              String
+  phone             String
+  passwordHash      String
+  role              String    @default("user")
+  location          String?
+  city              String?
+  country           String?
+  twoFactorEnabled  Boolean   @default(false)
+  emailVerified     Boolean   @default(false)
+  createdAt         DateTime  @default(now())
+  updatedAt         DateTime  @updatedAt
+  
+  // Relations
+  addresses         Address[]
+  orders            Order[]
+  
+  @@map("users")
+}
+
+model Address {
+  id        String   @id @default(cuid())
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  label     String   // "Home", "Work", etc.
+  street    String
+  city      String
+  county    String?
+  country   String   @default("Kenya")
+  isDefault Boolean  @default(false)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  
+  @@map("addresses")
+}
+
+model Product {
+  id            String    @id @default(cuid())
+  slug          String?   @unique
+  name          String
+  category      String
+  description   String?
+  image         String
+  price         Int       // Store in cents for precision
+  originalPrice Int?      // Store in cents
+  discount      Int?      // Percentage
+  items         String[]  // For simple baskets
+  itemsDetail   Json?     // For baskets with individual images
+  isBasket      Boolean   @default(false)
+  isActive      Boolean   @default(true)
+  stock         Int       @default(0)
+  lowStockThreshold Int   @default(5)
+  supplier      String?
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+  
+  // Relations
+  orderItems    OrderItem[]
+  inventoryItems InventoryItem[]
+  cartItems     CartItem[]
+  
+  @@map("products")
+}
+
+model Order {
+  id            String       @id @default(cuid())
+  orderNumber   String       @unique
+  userId        String?
+  user          User?        @relation(fields: [userId], references: [id])
+  
+  // Order details
+  status        OrderStatus  @default(PENDING)
+  subtotal      Int          // In cents
+  deliveryFee   Int          // In cents
+  total         Int          // In cents
+  
+  // Payment info
+  paymentMethod String?      // "mpesa", "card", "cash"
+  mpesaPhone    String?      // Customer phone for M-Pesa
+  mpesaReceipt  String?      // M-Pesa transaction ID
+  mpesaCheckoutRequestID String? // For tracking STK push
+  
+  // Delivery info
+  deliveryMethod String?     // "pickup", "speedy"
+  deliveryAddress Json?      // Address object
+  deliveryNotes String?
+  
+  // Timestamps
+  createdAt     DateTime     @default(now())
+  updatedAt     DateTime     @updatedAt
+  deliveredAt   DateTime?
+  
+  // Relations
+  items         OrderItem[]
+  
+  @@map("orders")
+}
+
+model OrderItem {
+  id        String  @id @default(cuid())
+  orderId   String
+  order     Order   @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  productId String?
+  product   Product? @relation(fields: [productId], references: [id])
+  
+  // Item details (snapshot at time of order)
+  name      String
+  price     Int     // In cents
+  quantity  Int
+  image     String?
+  
+  @@map("order_items")
+}
+
+model InventoryItem {
+  id                String   @id @default(cuid())
+  productId         String   @unique
+  product           Product  @relation(fields: [productId], references: [id], onDelete: Cascade)
+  
+  quantity          Int      @default(0)
+  reserved          Int      @default(0) // For pending orders
+  lowStockThreshold Int      @default(5)
+  costPrice         Int?     // In cents
+  supplier          String?
+  lastRestocked     DateTime?
+  demoSeed          Boolean  @default(false)
+  
+  createdAt         DateTime @default(now())
+  updatedAt         DateTime @updatedAt
+  
+  @@map("inventory_items")
+}
+
+model Cart {
+  id        String     @id @default(cuid())
+  userId    String?
+  sessionId String?    // For guest users
+  items     CartItem[]
+  createdAt DateTime   @default(now())
+  updatedAt DateTime   @updatedAt
+  
+  @@map("carts")
+}
+
+model CartItem {
+  id        String  @id @default(cuid())
+  cartId    String
+  cart      Cart    @relation(fields: [cartId], references: [id], onDelete: Cascade)
+  productId String
+  product   Product @relation(fields: [productId], references: [id])
+  quantity  Int
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  
+  @@map("cart_items")
+}
+
+model PaymentTransaction {
+  id                    String    @id @default(cuid())
+  orderId               String?
+  transactionType       String    // "mpesa_stk", "card", etc.
+  amount                Int       // In cents
+  currency              String    @default("KES")
+  status                String    // "pending", "success", "failed"
+  
+  // M-Pesa specific fields
+  mpesaCheckoutRequestID String?
+  mpesaReceiptNumber    String?
+  mpesaPhone            String?
+  mpesaTransactionDate  String?
+  
+  // General fields
+  reference             String?
+  description           String?
+  metadata              Json?
+  
+  createdAt             DateTime  @default(now())
+  updatedAt             DateTime  @updatedAt
+  
+  @@map("payment_transactions")
+}
+
+model AdminSettings {
+  id                String   @id @default("default")
+  blackFridayEnabled Boolean  @default(true)
+  maintenanceMode   Boolean  @default(false)
+  supportPhone      String   @default("+254 700 123 456")
+  supportEmail      String   @default("support@getdeals.co.ke")
+  location          String   @default("Karen Green, Nairobi, Kenya")
+  
+  // M-Pesa settings
+  mpesaShortcode    String?
+  mpesaPasskey      String?
+  mpesaConsumerKey  String?
+  mpesaConsumerSecret String?
+  mpesaEnvironment  String   @default("sandbox") // "sandbox" or "production"
+  
+  updatedAt         DateTime @updatedAt
+  
+  @@map("admin_settings")
+}
+
+enum OrderStatus {
+  PENDING
+  CONFIRMED
+  PREPARING
+  OUT_FOR_DELIVERY
+  DELIVERED
+  CANCELLED
+  PAYMENT_FAILED
+}

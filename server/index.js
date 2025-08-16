@@ -7,6 +7,10 @@ import bcrypt from 'bcryptjs';
 import jwt from 'jsonwebtoken';
 import { fileURLToPath } from 'url';
 import { nanoid } from 'nanoid';
+import prisma from './lib/prisma.js';
+import MpesaService from './lib/mpesa.js';
+import SMSService from './lib/sms.js';
+import EmailService from './lib/email.js';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -18,9 +22,15 @@ const PORT = process.env.PORT || 4000;
 const JWT_SECRET = process.env.JWT_SECRET || 'devsecret';
 const JWT_EXPIRES_IN = process.env.JWT_EXPIRES_IN || '7d';
 
+// Initialize services
+const mpesaService = new MpesaService();
+const smsService = new SMSService();
+const emailService = new EmailService();
+
 app.use(cors());
 app.use(express.json());
 
+// Legacy file-based functions (for migration support)
 const dataDir = path.join(__dirname, 'data');
 const usersFile = path.join(dataDir, 'users.json');
 const productsFile = path.join(dataDir, 'products.json');
@@ -245,6 +255,292 @@ app.post('/api/products/reset', (req, res) => {
   }
 });
 
+// --- M-Pesa Payment Endpoints ---
+app.post('/api/payments/mpesa/initiate', authMiddleware, async (req, res) => {
+  try {
+    const { phoneNumber, amount, orderId } = req.body;
+    
+    if (!phoneNumber || !amount || !orderId) {
+      return res.status(400).json({ message: 'Phone number, amount, and order ID are required' });
+    }
+
+    const result = await mpesaService.initiateSTKPush(phoneNumber, amount, orderId);
+    
+    if (result.success) {
+      // Save transaction record
+      await prisma.paymentTransaction.create({
+        data: {
+          orderId,
+          transactionType: 'mpesa_stk',
+          amount: Math.round(amount * 100), // Convert to cents
+          status: 'pending',
+          mpesaCheckoutRequestID: result.checkoutRequestId,
+          mpesaPhone: phoneNumber,
+          reference: orderId,
+          description: 'GetDeals Order Payment',
+        },
+      });
+
+      return res.json(result);
+    } else {
+      return res.status(400).json(result);
+    }
+  } catch (error) {
+    console.error('M-Pesa initiate error:', error);
+    return res.status(500).json({ message: 'Payment initiation failed' });
+  }
+});
+
+app.post('/api/payments/mpesa/callback', async (req, res) => {
+  try {
+    const callbackResult = mpesaService.processCallback(req.body);
+    
+    if (callbackResult.success) {
+      // Update payment transaction
+      await prisma.paymentTransaction.updateMany({
+        where: { mpesaCheckoutRequestID: callbackResult.checkoutRequestId },
+        data: {
+          status: 'success',
+          mpesaReceiptNumber: callbackResult.mpesaReceiptNumber,
+          mpesaTransactionDate: callbackResult.transactionDate,
+        },
+      });
+
+      // Update order status
+      const transaction = await prisma.paymentTransaction.findFirst({
+        where: { mpesaCheckoutRequestID: callbackResult.checkoutRequestId },
+      });
+
+      if (transaction?.orderId) {
+        const order = await prisma.order.update({
+          where: { id: transaction.orderId },
+          data: { 
+            status: 'CONFIRMED',
+            mpesaReceipt: callbackResult.mpesaReceiptNumber,
+          },
+          include: { items: true, user: true },
+        });
+
+        // Send SMS confirmation
+        if (order.mpesaPhone) {
+          await smsService.sendOrderConfirmationSMS(order.mpesaPhone, order);
+        }
+
+        // Send email confirmation
+        if (order.user?.email) {
+          await emailService.sendOrderConfirmation(order, order.user.email);
+        }
+      }
+    } else {
+      // Update payment as failed
+      await prisma.paymentTransaction.updateMany({
+        where: { mpesaCheckoutRequestID: callbackResult.checkoutRequestId },
+        data: { status: 'failed' },
+      });
+
+      // Update order status
+      const transaction = await prisma.paymentTransaction.findFirst({
+        where: { mpesaCheckoutRequestID: callbackResult.checkoutRequestId },
+      });
+
+      if (transaction?.orderId) {
+        await prisma.order.update({
+          where: { id: transaction.orderId },
+          data: { status: 'PAYMENT_FAILED' },
+        });
+      }
+    }
+
+    res.json({ message: 'Callback processed successfully' });
+  } catch (error) {
+    console.error('M-Pesa callback error:', error);
+    res.status(500).json({ message: 'Callback processing failed' });
+  }
+});
+
+app.get('/api/payments/mpesa/status/:checkoutRequestId', authMiddleware, async (req, res) => {
+  try {
+    const { checkoutRequestId } = req.params;
+    const result = await mpesaService.querySTKPushStatus(checkoutRequestId);
+    res.json(result);
+  } catch (error) {
+    console.error('M-Pesa status query error:', error);
+    res.status(500).json({ message: 'Status query failed' });
+  }
+});
+
+// --- Orders API ---
+app.post('/api/orders', authMiddleware, async (req, res) => {
+  try {
+    const { items, deliveryMethod, deliveryAddress, paymentMethod, mpesaPhone } = req.body;
+    const userId = req.user.sub;
+
+    // Calculate totals
+    const subtotal = items.reduce((sum, item) => sum + (item.price * item.quantity), 0);
+    const deliveryFee = deliveryMethod === 'speedy' ? 200 : 0; // KES 200 for speedy delivery
+    const total = subtotal + deliveryFee;
+
+    // Generate order number
+    const orderNumber = `GD${Date.now().toString().slice(-8)}`;
+
+    // Create order
+    const order = await prisma.order.create({
+      data: {
+        orderNumber,
+        userId,
+        subtotal: Math.round(subtotal * 100), // Convert to cents
+        deliveryFee: Math.round(deliveryFee * 100),
+        total: Math.round(total * 100),
+        paymentMethod,
+        mpesaPhone,
+        deliveryMethod,
+        deliveryAddress,
+        items: {
+          create: items.map(item => ({
+            productId: item.id,
+            name: item.name,
+            price: Math.round(item.price * 100),
+            quantity: item.quantity,
+            image: item.image,
+          })),
+        },
+      },
+      include: { items: true, user: true },
+    });
+
+    res.status(201).json(order);
+  } catch (error) {
+    console.error('Order creation error:', error);
+    res.status(500).json({ message: 'Failed to create order' });
+  }
+});
+
+app.get('/api/orders', authMiddleware, async (req, res) => {
+  try {
+    const userId = req.user.sub;
+    const orders = await prisma.order.findMany({
+      where: { userId },
+      include: { items: true },
+      orderBy: { createdAt: 'desc' },
+    });
+
+    res.json(orders);
+  } catch (error) {
+    console.error('Get orders error:', error);
+    res.status(500).json({ message: 'Failed to fetch orders' });
+  }
+});
+
+// --- Admin Endpoints ---
+app.get('/api/admin/users', authMiddleware, async (req, res) => {
+  try {
+    const users = await prisma.user.findMany({
+      select: {
+        id: true,
+        name: true,
+        email: true,
+        phone: true,
+        location: true,
+        city: true,
+        country: true,
+        createdAt: true,
+        _count: { select: { orders: true } },
+      },
+      orderBy: { createdAt: 'desc' },
+    });
+
+    res.json(users);
+  } catch (error) {
+    console.error('Get users error:', error);
+    res.status(500).json({ message: 'Failed to fetch users' });
+  }
+});
+
+app.post('/api/admin/notifications/email', authMiddleware, async (req, res) => {
+  try {
+    const { userIds, subject, message } = req.body;
+    
+    let recipients;
+    if (userIds && userIds.length > 0) {
+      recipients = await prisma.user.findMany({
+        where: { id: { in: userIds } },
+        select: { name: true, email: true },
+      });
+    } else {
+      recipients = await prisma.user.findMany({
+        select: { name: true, email: true },
+      });
+    }
+
+    const results = await emailService.sendBulkEmail(recipients, subject, message);
+    res.json({ success: true, results });
+  } catch (error) {
+    console.error('Bulk email error:', error);
+    res.status(500).json({ message: 'Failed to send emails' });
+  }
+});
+
+app.post('/api/admin/notifications/sms', authMiddleware, async (req, res) => {
+  try {
+    const { userIds, message } = req.body;
+    
+    let recipients;
+    if (userIds && userIds.length > 0) {
+      recipients = await prisma.user.findMany({
+        where: { id: { in: userIds } },
+        select: { name: true, phone: true },
+      });
+    } else {
+      recipients = await prisma.user.findMany({
+        select: { name: true, phone: true },
+      });
+    }
+
+    const result = await smsService.sendBulkSMS(recipients, message);
+    res.json(result);
+  } catch (error) {
+    console.error('Bulk SMS error:', error);
+    res.status(500).json({ message: 'Failed to send SMS' });
+  }
+});
+
+app.get('/api/admin/orders', authMiddleware, async (req, res) => {
+  try {
+    const orders = await prisma.order.findMany({
+      include: { items: true, user: { select: { name: true, email: true, phone: true } } },
+      orderBy: { createdAt: 'desc' },
+    });
+
+    res.json(orders);
+  } catch (error) {
+    console.error('Get admin orders error:', error);
+    res.status(500).json({ message: 'Failed to fetch orders' });
+  }
+});
+
+// --- Contact Form Endpoint ---
+app.post('/api/contact', async (req, res) => {
+  try {
+    const { name, email, phone, subject, message } = req.body;
+    
+    if (!name || !email || !subject || !message) {
+      return res.status(400).json({ message: 'Name, email, subject, and message are required' });
+    }
+
+    const result = await emailService.sendContactFormEmail({ name, email, phone, subject, message });
+    
+    if (result.success) {
+      res.json({ success: true, message: 'Your message has been sent successfully' });
+    } else {
+      res.status(500).json({ success: false, message: 'Failed to send message' });
+    }
+  } catch (error) {
+    console.error('Contact form error:', error);
+    res.status(500).json({ message: 'Failed to process contact form' });
+  }
+});
+
 app.listen(PORT, () => {
-  console.log(`Auth server listening on http://localhost:${PORT}`);
+  console.log(`GetDeals server listening on http://localhost:${PORT}`);
+  console.log(`Database: ${process.env.DATABASE_URL ? 'PostgreSQL' : 'File-based (development)'}`);
 });

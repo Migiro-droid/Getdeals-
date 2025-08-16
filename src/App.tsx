@@ -32,6 +32,7 @@ import AdminSettings from "./pages/admin/AdminSettings";
 import AdminGate from "./pages/admin/AdminGate";
 import { useAdmin } from "@/contexts/AdminContext";
 import AdminProducts from "./pages/admin/AdminProducts";
+import AdminUsers from "./pages/admin/AdminUsers";
 import InventoryPage from "./pages/admin/InventoryPage";
 import OutOfStockPage from "./pages/admin/OutOfStockPage";
 import WalletPage from "./pages/WalletPage";
@@ -100,6 +101,7 @@ const App = () => (
                 <Route path="/wallet" element={<WalletPage />} />
                 <Route path="/admin" element={<AdminGuard><AdminDashboard /></AdminGuard>} />
                 <Route path="/admin/orders" element={<AdminGuard><AdminOrders /></AdminGuard>} />
+                <Route path="/admin/users" element={<AdminGuard><AdminUsers /></AdminGuard>} />
                 <Route path="/admin/settings" element={<AdminGuard><AdminSettings /></AdminGuard>} />
                 <Route path="/admin/products" element={<AdminGuard><AdminProducts /></AdminGuard>} />
                 <Route path="/admin/inventory" element={<AdminGuard><InventoryPage /></AdminGuard>} />
