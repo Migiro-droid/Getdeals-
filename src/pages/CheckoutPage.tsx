@@ -10,6 +10,7 @@ import { Separator } from "@/components/ui/separator";
 import { useCart } from "@/contexts/CartContext";
 import { useToast } from "@/hooks/use-toast";
 import { useWallet } from "@/contexts/WalletContext";
+import { useOrders } from "@/contexts/OrdersContext";
 
 export default function CheckoutPage() {
   const { items, total, clearCart } = useCart();
@@ -18,6 +19,13 @@ export default function CheckoutPage() {
   const [deliveryMethod, setDeliveryMethod] = useState("pickup");
   const [paymentMethod, setPaymentMethod] = useState("mpesa");
   const { balance, withdraw } = useWallet();
+  const { createOrder } = useOrders();
+  const [firstName, setFirstName] = useState("");
+  const [lastName, setLastName] = useState("");
+  const [phone, setPhone] = useState("");
+  const [email, setEmail] = useState("");
+  const [address, setAddress] = useState("");
+  const [pickupLocation, setPickupLocation] = useState("");
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -36,6 +44,17 @@ export default function CheckoutPage() {
       }
     }
 
+    // Create order record
+    const order = createOrder({
+      items: items.map(i => ({ id: i.id, name: i.name, price: i.price, quantity: i.quantity, image: i.image })),
+      subtotal: total,
+      deliveryFee,
+      total: finalTotal,
+      deliveryMethod: deliveryMethod as any,
+      paymentMethod: paymentMethod as any,
+      customer: { firstName, lastName, phone, email, address: deliveryMethod === "speedy" ? address : undefined, pickupLocation: deliveryMethod === "pickup" ? pickupLocation : undefined },
+    });
+
     // Simulate order processing
     await new Promise(resolve => setTimeout(resolve, 1000));
 
@@ -44,7 +63,7 @@ export default function CheckoutPage() {
       description: "You will receive an SMS confirmation shortly.",
     });
 
-    clearCart();
+  clearCart();
     setIsLoading(false);
   };
 
@@ -71,20 +90,20 @@ export default function CheckoutPage() {
                 <div className="grid md:grid-cols-2 gap-4">
                   <div>
                     <Label htmlFor="firstName">First Name</Label>
-                    <Input id="firstName" required />
+                    <Input id="firstName" required value={firstName} onChange={(e) => setFirstName(e.target.value)} />
                   </div>
                   <div>
                     <Label htmlFor="lastName">Last Name</Label>
-                    <Input id="lastName" required />
+                    <Input id="lastName" required value={lastName} onChange={(e) => setLastName(e.target.value)} />
                   </div>
                 </div>
                 <div>
                   <Label htmlFor="phone">Phone Number</Label>
-                  <Input id="phone" type="tel" placeholder="+254 7XX XXX XXX" required />
+                  <Input id="phone" type="tel" placeholder="+254 7XX XXX XXX" required value={phone} onChange={(e) => setPhone(e.target.value)} />
                 </div>
                 <div>
                   <Label htmlFor="email">Email Address</Label>
-                  <Input id="email" type="email" required />
+                  <Input id="email" type="email" required value={email} onChange={(e) => setEmail(e.target.value)} />
                 </div>
               </CardContent>
             </Card>
@@ -122,7 +141,7 @@ export default function CheckoutPage() {
                 {deliveryMethod === "pickup" && (
                   <div>
                     <Label htmlFor="quickmart">Select Quickmart Location</Label>
-                    <Select required>
+                    <Select required value={pickupLocation} onValueChange={setPickupLocation}>
                       <SelectTrigger>
                         <SelectValue placeholder="Choose your pickup location" />
                       </SelectTrigger>
@@ -140,7 +159,7 @@ export default function CheckoutPage() {
                 {deliveryMethod === "speedy" && (
                   <div>
                     <Label htmlFor="address">Delivery Address</Label>
-                    <Input id="address" placeholder="Enter your full address" required />
+                    <Input id="address" placeholder="Enter your full address" required value={address} onChange={(e) => setAddress(e.target.value)} />
                   </div>
                 )}
               </CardContent>

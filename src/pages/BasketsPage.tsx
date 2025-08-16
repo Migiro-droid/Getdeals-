@@ -2,7 +2,7 @@ import { useState } from "react";
 import { Filter, SortAsc } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { ProductCard } from "@/components/ProductCard";
-import { products } from "@/data/products";
+import { useProducts } from "@/contexts/ProductsContext";
 import {
   Select,
   SelectContent,
@@ -13,9 +13,9 @@ import {
 
 export default function BasketsPage() {
   const [sortBy, setSortBy] = useState("featured");
-  const [allProducts] = useState(products);
+  const { all } = useProducts();
 
-  const sortedProducts = [...allProducts].sort((a, b) => {
+  const sortedProducts = [...all].sort((a, b) => {
     switch (sortBy) {
       case "price-low":
         return a.price - b.price;
@@ -49,7 +49,7 @@ export default function BasketsPage() {
               Filters
             </Button>
             <span className="text-sm text-muted-foreground">
-              {allProducts.length} baskets available
+              {all.length} baskets available
             </span>
           </div>
           
