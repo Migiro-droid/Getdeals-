@@ -39,6 +39,7 @@ interface AdminContextValue {
   login: (passcode: string, info?: AdminUserInfo) => boolean;
   logout: () => void;
   hasPermission: (perm: AdminPermission) => boolean;
+  setAdminUser: (info: AdminUserInfo | null) => void;
 
   // Back-compat flags
   isAdmin: boolean;
@@ -228,6 +229,12 @@ export const AdminProvider: React.FC<{ children: React.ReactNode }> = ({ childre
 
   const updateSettings = (partial: Partial<SiteSettings>) => setSettings((s) => ({ ...s, ...partial }));
 
+  // Allow updating user info (e.g., attach authenticated site user to admin session)
+  const setAdminUser = (info: AdminUserInfo | null) => {
+    setUser(info);
+    persistSession({ role, user: info, expiresAt });
+  };
+
   // Back-compat setters
   const isAdmin = role === "admin";
   const setIsAdmin = (v: boolean) => {
@@ -251,6 +258,7 @@ export const AdminProvider: React.FC<{ children: React.ReactNode }> = ({ childre
       login,
       logout,
       hasPermission,
+      setAdminUser,
       // back-compat
       isAdmin,
       setIsAdmin,

@@ -7,6 +7,8 @@ import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { useCart } from "@/contexts/CartContext";
 import { useWallet } from "@/contexts/WalletContext";
+import { useAuth } from "@/contexts/AuthContext";
+import { AuthModals } from "./AuthModals";
 
 export function Header() {
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
@@ -14,6 +16,8 @@ export function Header() {
   const location = useLocation();
   const { items } = useCart();
   const { balance } = useWallet();
+  const { isAuthenticated } = useAuth();
+  const [authOpen, setAuthOpen] = useState(false);
 
   const cartItemsCount = items.reduce((sum, item) => sum + item.quantity, 0);
 
@@ -33,6 +37,7 @@ export function Header() {
   };
 
   return (
+    <>
     <header className="sticky top-0 z-50 w-full border-b bg-white dark:bg-white shadow-sm">
       <div className="container mx-auto px-4">
         <div className="flex h-16 items-center justify-between">
@@ -85,11 +90,17 @@ export function Header() {
             </Button>
 
             {/* User Account */}
-            <Link to="/account">
-              <Button variant="ghost" size="icon">
+            {isAuthenticated ? (
+              <Link to="/account">
+                <Button variant="ghost" size="icon">
+                  <User className="h-5 w-5" />
+                </Button>
+              </Link>
+            ) : (
+              <Button variant="ghost" size="icon" onClick={() => setAuthOpen(true)}>
                 <User className="h-5 w-5" />
               </Button>
-            </Link>
+            )}
 
             {/* Shopping Cart */}
             <Link to="/cart" className="relative">
@@ -150,5 +161,7 @@ export function Header() {
         )}
       </div>
     </header>
+    <AuthModals open={authOpen} onOpenChange={setAuthOpen} defaultTab="signin" />
+    </>
   );
 }

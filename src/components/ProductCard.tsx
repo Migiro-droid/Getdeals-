@@ -7,6 +7,8 @@ import { Badge } from "@/components/ui/badge";
 import { useCart } from "@/contexts/CartContext";
 import { useToast } from "@/hooks/use-toast";
 import { ProductDetailModal } from "./ProductDetailModal";
+import { useAuth } from "@/contexts/AuthContext";
+import { AuthRequiredDialog } from "./AuthRequiredDialog";
 
 interface Product {
   id: string;
@@ -29,6 +31,7 @@ export function ProductCard({ product, onQuickView }: ProductCardProps) {
   const [isWishlisted, setIsWishlisted] = useState(false);
   const [isHovered, setIsHovered] = useState(false);
   const [showDetailModal, setShowDetailModal] = useState(false);
+  const [showAuthDialog, setShowAuthDialog] = useState(false);
   const { version } = useProducts();
   const withVersion = (url: string) => {
     if (!url) return url;
@@ -38,8 +41,13 @@ export function ProductCard({ product, onQuickView }: ProductCardProps) {
   };
   const { addItem } = useCart();
   const { toast } = useToast();
+  const { isAuthenticated } = useAuth();
 
   const handleAddToCart = () => {
+    if (!isAuthenticated) {
+      setShowAuthDialog(true);
+      return;
+    }
     addItem({
       id: product.id,
       name: product.name,
@@ -162,6 +170,7 @@ export function ProductCard({ product, onQuickView }: ProductCardProps) {
         open={showDetailModal}
         onOpenChange={setShowDetailModal}
       />
+  <AuthRequiredDialog open={showAuthDialog} onOpenChange={setShowAuthDialog} />
     </Card>
   );
 }

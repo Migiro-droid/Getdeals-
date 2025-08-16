@@ -6,6 +6,7 @@ import { Card, CardContent } from "@/components/ui/card";
 import { ProductCard } from "@/components/ProductCard";
 import { AuthModals } from "@/components/AuthModals";
 import { useProducts } from "@/contexts/ProductsContext";
+import { useAuth } from "@/contexts/AuthContext";
 import { Input } from "@/components/ui/input";
 import { useToast } from "@/hooks/use-toast";
 import heroBg from "@/assets/franki-chamaki-ivfp_yxZuYQ-unsplash.jpg";
@@ -23,6 +24,7 @@ function TimePill({ label, value }: { label: string; value: number }) {
 
 export default function HomePage() {
   const { all } = useProducts();
+  const { isAuthenticated, signOut } = useAuth();
   const featuredProducts = all.filter(p => p.category !== 'alcohol' && p.category !== 'blackfriday').slice(0, 3);
   const discountedProducts = all.filter(p => p.originalPrice && p.originalPrice > p.price);
   const alcoholProducts = all.filter(p => p.category === 'alcohol');
@@ -144,32 +146,47 @@ export default function HomePage() {
                   <Link to="/how-it-works">How It Works</Link>
                 </Button>
               </div>
-              <div className="flex flex-col sm:flex-row gap-3 mt-4">
-                <Button 
-                  variant="secondary" 
-                  size="lg"
-                  className="bg-white/20 border-white text-white hover:bg-white hover:text-black"
-                  onClick={() => {
-                    setAuthModalTab("signin");
-                    setAuthModalOpen(true);
-                  }}
-                >
-                  <LogIn className="mr-2 h-4 w-4" />
-                  Sign In
-                </Button>
-                <Button 
-                  variant="outline" 
-                  size="lg"
-                  className="bg-white/20 border-white text-white hover:bg-white hover:text-black"
-                  onClick={() => {
-                    setAuthModalTab("signup");
-                    setAuthModalOpen(true);
-                  }}
-                >
-                  <UserPlus className="mr-2 h-4 w-4" />
-                  Sign Up
-                </Button>
-              </div>
+              {!isAuthenticated ? (
+                <div className="flex flex-col sm:flex-row gap-3 mt-4">
+                  <Button 
+                    variant="secondary" 
+                    size="lg"
+                    className="bg-white/20 border-white text-white hover:bg-white hover:text-black"
+                    onClick={() => {
+                      setAuthModalTab("signin");
+                      setAuthModalOpen(true);
+                    }}
+                  >
+                    <LogIn className="mr-2 h-4 w-4" />
+                    Sign In
+                  </Button>
+                  <Button 
+                    variant="outline" 
+                    size="lg"
+                    className="bg-white/20 border-white text-white hover:bg-white hover:text-black"
+                    onClick={() => {
+                      setAuthModalTab("signup");
+                      setAuthModalOpen(true);
+                    }}
+                  >
+                    <UserPlus className="mr-2 h-4 w-4" />
+                    Sign Up
+                  </Button>
+                </div>
+              ) : (
+                <div className="flex flex-col sm:flex-row gap-3 mt-4">
+                  <Button 
+                    variant="outline" 
+                    size="lg"
+                    className="bg-white/20 border-white text-white hover:bg-white hover:text-black"
+                    onClick={() => {
+                      signOut();
+                    }}
+                  >
+                    Sign Out
+                  </Button>
+                </div>
+              )}
             </div>
           </div>
         </div>

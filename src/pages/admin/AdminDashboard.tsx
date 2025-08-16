@@ -10,11 +10,10 @@ import { useOrders, OrderStatus, Order } from "@/contexts/OrdersContext";
 import { useInventory } from "@/contexts/InventoryContext";
 import { useAdmin } from "@/contexts/AdminContext";
 import { Link } from "react-router-dom";
-import { ShoppingBag, AlertTriangle, Truck, Clock, FileDown, User, Shield, Crown, MapPin, Phone } from "lucide-react";
+import { ShoppingBag, AlertTriangle, Truck, Clock, FileDown, User, Shield, Crown, MapPin, Phone, LogOut } from "lucide-react";
 
 export default function AdminDashboard() {
-  const { orders, metrics, seedOrders, clearDemoOrders, hasDemoOrders } = useOrders();
-  const { seedInventory, hasDemoInventory, clearDemoInventory } = useInventory();
+  const { orders, metrics } = useOrders();
   const { settings, logout, role, user } = useAdmin();
   const [range, setRange] = useState<"7d" | "30d" | "all">("7d");
   const [customerModalOpen, setCustomerModalOpen] = useState(false);
@@ -471,23 +470,9 @@ export default function AdminDashboard() {
               ))}
             </div>
             {/* Unified demo data toggle: loads/clears both orders & inventory */}
-            <Button
-              variant={hasDemoOrders || hasDemoInventory ? "destructive" : "outline"}
-              onClick={() => {
-                if (hasDemoOrders || hasDemoInventory) {
-                  // Clear both demo orders and demo inventory
-                  if (hasDemoOrders) clearDemoOrders();
-                  if (hasDemoInventory) clearDemoInventory();
-                } else {
-                  // Load both demo orders and demo inventory
-                  seedOrders(genDemoOrders(), false);
-                  seedInventory();
-                }
-              }}
-            >
-              {hasDemoOrders || hasDemoInventory ? "Clear" : "Load Data"}
+            <Button variant="outline" onClick={logout} title="Sign out of admin area">
+              <LogOut className="h-4 w-4 mr-2" /> Sign out
             </Button>
-            <Button variant="outline" onClick={logout}>Exit Admin</Button>
           </div>
         </div>
 

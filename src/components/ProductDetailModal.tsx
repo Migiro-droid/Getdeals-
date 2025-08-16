@@ -1,3 +1,4 @@
+import { useState } from "react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -5,6 +6,8 @@ import { ShoppingCart, X } from "lucide-react";
 import { Product } from "@/data/products";
 import { useCart } from "@/contexts/CartContext";
 import { useProducts } from "@/contexts/ProductsContext";
+import { useAuth } from "@/contexts/AuthContext";
+import { AuthRequiredDialog } from "./AuthRequiredDialog";
 // Removed prebuilt item images to ensure we always use admin-provided images
 
 interface ProductDetailModalProps {
@@ -18,6 +21,8 @@ interface ProductDetailModalProps {
 export function ProductDetailModal({ product, open, onOpenChange }: ProductDetailModalProps) {
   const { addItem } = useCart();
   const { version, all } = useProducts();
+  const { isAuthenticated } = useAuth();
+  const [showAuthDialog, setShowAuthDialog] = useState(false);
   const withVersion = (url: string) => {
     if (!url) return url;
   if (url.startsWith("http://") || url.startsWith("https://")) return url;
@@ -121,6 +126,7 @@ export function ProductDetailModal({ product, open, onOpenChange }: ProductDetai
                 size="lg" 
                 className="flex-1"
                 onClick={() => {
+                  if (!isAuthenticated) { setShowAuthDialog(true); return; }
                   addItem(live);
                   onOpenChange(false);
                 }}
@@ -139,6 +145,7 @@ export function ProductDetailModal({ product, open, onOpenChange }: ProductDetai
           </div>
         </div>
       </DialogContent>
+  <AuthRequiredDialog open={showAuthDialog} onOpenChange={setShowAuthDialog} />
     </Dialog>
   );
 }

@@ -7,6 +7,7 @@ import { Separator } from "@/components/ui/separator";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Mail, Lock, User, Phone, Eye, EyeOff } from "lucide-react";
 import { useAuth } from "@/contexts/AuthContext";
+import { useToast } from "@/components/ui/use-toast";
 
 interface AuthModalsProps {
   open: boolean;
@@ -21,6 +22,7 @@ export function AuthModals({ open, onOpenChange, defaultTab = "signin" }: AuthMo
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const { signIn, signUp } = useAuth();
+  const { toast } = useToast();
 
   const handleSignIn = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -31,6 +33,7 @@ export function AuthModals({ open, onOpenChange, defaultTab = "signin" }: AuthMo
     const password = (form.querySelector('#signin-password') as HTMLInputElement)?.value;
     try {
       await signIn(email, password);
+  toast({ title: "Signed in successfully" });
       onOpenChange(false);
     } catch (err: any) {
       setError(err?.message || 'Failed to sign in');
@@ -50,6 +53,7 @@ export function AuthModals({ open, onOpenChange, defaultTab = "signin" }: AuthMo
     const password = (form.querySelector('#signup-password') as HTMLInputElement)?.value;
     try {
       await signUp(name, phone, email, password);
+  toast({ title: "Account created", description: "Welcome to GetDeals" });
       onOpenChange(false);
     } catch (err: any) {
       setError(err?.message || 'Failed to sign up');
