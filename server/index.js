@@ -150,9 +150,16 @@ function validateProductInput(body) {
   const originalPrice = body?.originalPrice != null ? Number(body.originalPrice) : undefined;
   const description = body?.description != null ? String(body.description) : undefined;
   const items = Array.isArray(body?.items) ? body.items.map(String) : undefined;
+  let itemsDetail = undefined;
+  if (Array.isArray(body?.itemsDetail)) {
+    itemsDetail = body.itemsDetail
+      .filter((it) => it && typeof it === 'object')
+      .map((it) => ({ name: String(it.name || ''), image: String(it.image || '') }))
+      .filter((it) => it.name);
+  }
   return {
     ok: true,
-    value: { name, image, category, price, originalPrice, description, items }
+    value: { name, image, category, price, originalPrice, description, items, itemsDetail }
   };
 }
 
@@ -183,7 +190,7 @@ app.patch('/api/products/:id', (req, res) => {
 
   const patch = req.body || {};
   // Partial validation: allow updating provided fields only
-  const allowed = ['name', 'price', 'originalPrice', 'image', 'discount', 'items', 'category', 'description'];
+  const allowed = ['name', 'price', 'originalPrice', 'image', 'discount', 'items', 'itemsDetail', 'category', 'description'];
   const updated = { ...list[idx] };
   for (const key of allowed) {
     if (key in patch) {
@@ -193,6 +200,17 @@ app.patch('/api/products/:id', (req, res) => {
         updated[key] = num;
       } else if (key === 'items') {
         updated.items = Array.isArray(patch.items) ? patch.items.map(String) : undefined;
+      } else if (key === 'itemsDetail') {
+        if (patch.itemsDetail == null) {
+          updated.itemsDetail = undefined;
+        } else if (!Array.isArray(patch.itemsDetail)) {
+          return res.status(400).json({ message: 'itemsDetail must be an array' });
+        } else {
+          updated.itemsDetail = patch.itemsDetail
+            .filter((it) => it && typeof it === 'object')
+            .map((it) => ({ name: String(it.name || ''), image: String(it.image || '') }))
+            .filter((it) => it.name);
+        }
       } else if (patch[key] == null) {
         updated[key] = undefined;
       } else {

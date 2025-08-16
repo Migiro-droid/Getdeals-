@@ -31,12 +31,15 @@ export interface Order {
   customer: OrderCustomer;
   status: OrderStatus;
   note?: string;
+  // Marks seeded demo orders so admin can clear them without affecting real ones
+  demoSeed?: boolean;
 }
 
 interface OrdersContextValue {
   orders: Order[];
   createOrder: (o: Omit<Order, "id" | "date" | "status"> & { status?: OrderStatus }) => Order;
   updateStatus: (id: string, status: OrderStatus) => void;
+  deleteOrder: (id: string) => void;
   getById: (id: string) => Order | undefined;
   metrics: {
     totalRevenue: number;
@@ -46,6 +49,8 @@ interface OrdersContextValue {
   };
   clearAll: () => void; // admin only helper
   seedOrders: (sample: Order[], replace?: boolean) => void; // admin only helper
+  clearDemoOrders: () => void; // remove only demoSeed orders
+  hasDemoOrders: boolean;
 }
 
 const OrdersContext = createContext<OrdersContextValue | undefined>(undefined);
@@ -84,6 +89,10 @@ export const OrdersProvider: React.FC<{ children: React.ReactNode }> = ({ childr
     setOrders((prev) => prev.map((o) => (o.id === id ? { ...o, status } : o)));
   }, []);
 
+  const deleteOrder = useCallback((id: string) => {
+    setOrders((prev) => prev.filter((o) => o.id !== id));
+  }, []);
+
   const getById = useCallback((id: string) => orders.find((o) => o.id === id), [orders]);
 
   const metrics = useMemo(() => {
@@ -117,14 +126,33 @@ export const OrdersProvider: React.FC<{ children: React.ReactNode }> = ({ childr
     });
   }, []);
 
+  const isDemoOrder = (o: Order) => {
+    // Consider as demo if explicitly flagged, or matches legacy demo signatures
+    const email = o.customer?.email || "";
+    return (
+      o.demoSeed === true ||
+      o.id.startsWith("DEMO-") ||
+      email.endsWith("@example.com")
+    );
+  };
+
+  const clearDemoOrders = useCallback(() => {
+    setOrders((prev) => prev.filter((o) => !isDemoOrder(o)));
+  }, []);
+
+  const hasDemoOrders = useMemo(() => orders.some((o) => isDemoOrder(o)), [orders]);
+
   const value: OrdersContextValue = {
     orders,
     createOrder,
     updateStatus,
+  deleteOrder,
     getById,
     metrics,
   clearAll,
   seedOrders,
+  clearDemoOrders,
+  hasDemoOrders,
   };
 
   return <OrdersContext.Provider value={value}>{children}</OrdersContext.Provider>;

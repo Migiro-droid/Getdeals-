@@ -7,6 +7,7 @@ type ProductsCtx = {
   update: (id: string, patch: Partial<Product>) => void;
   remove: (id: string) => void;
   restoreDefaults: () => void;
+  version: number;
   // selectors
   featured: Product[];
   discounted: Product[];
@@ -17,6 +18,7 @@ const ProductsContext = createContext<ProductsCtx | undefined>(undefined);
 
 export const ProductsProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const [all, setAll] = useState<Product[]>([]);
+  const [version, setVersion] = useState(0);
   const api = {
     async list() {
       const r = await fetch("/api/products");
@@ -57,6 +59,7 @@ export const ProductsProvider: React.FC<{ children: React.ReactNode }> = ({ chil
     const run = async () => {
       const created = await api.add(p);
       setAll((prev) => [created, ...prev]);
+  setVersion((v) => v + 1);
       return created;
     };
     // return placeholder then update when resolved for API compatibility
@@ -68,6 +71,7 @@ export const ProductsProvider: React.FC<{ children: React.ReactNode }> = ({ chil
 
   const update: ProductsCtx["update"] = useCallback((id, patch) => {
     setAll((prev) => prev.map((p) => (p.id === id ? { ...p, ...patch } : p)));
+  setVersion((v) => v + 1);
     api.update(id, patch).catch((e) => {
       console.error(e);
       // on failure, refetch to sync
@@ -77,6 +81,7 @@ export const ProductsProvider: React.FC<{ children: React.ReactNode }> = ({ chil
 
   const remove: ProductsCtx["remove"] = useCallback((id) => {
     setAll((prev) => prev.filter((p) => p.id !== id));
+  setVersion((v) => v + 1);
     api.remove(id).catch((e) => {
       console.error(e);
       api.list().then(setAll).catch(console.error);
@@ -87,13 +92,14 @@ export const ProductsProvider: React.FC<{ children: React.ReactNode }> = ({ chil
     api.reset()
       .then(() => api.list().then(setAll))
       .catch(console.error);
+  setVersion((v) => v + 1);
   }, []);
 
   const featured = useMemo(() => all.slice(0, 3), [all]);
   const discounted = useMemo(() => all.filter((p) => p.originalPrice && p.originalPrice > p.price), [all]);
   const byCategory = useCallback((cat: string) => all.filter((p) => p.category === cat), [all]);
 
-  const value: ProductsCtx = { all, add, update, remove, restoreDefaults, featured, discounted, byCategory };
+  const value: ProductsCtx = { all, add, update, remove, restoreDefaults, version, featured, discounted, byCategory };
   return <ProductsContext.Provider value={value}>{children}</ProductsContext.Provider>;
 };
 

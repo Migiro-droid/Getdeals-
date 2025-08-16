@@ -23,9 +23,10 @@ function TimePill({ label, value }: { label: string; value: number }) {
 
 export default function HomePage() {
   const { all } = useProducts();
-  const featuredProducts = all.slice(0, 3);
+  const featuredProducts = all.filter(p => p.category !== 'alcohol' && p.category !== 'blackfriday').slice(0, 3);
   const discountedProducts = all.filter(p => p.originalPrice && p.originalPrice > p.price);
   const alcoholProducts = all.filter(p => p.category === 'alcohol');
+  const blackFridayProducts = all.filter(p => p.category === 'blackfriday');
   const [authModalOpen, setAuthModalOpen] = useState(false);
   const [authModalTab, setAuthModalTab] = useState<"signin" | "signup">("signin");
   const { toast } = useToast();
@@ -291,13 +292,13 @@ export default function HomePage() {
             </div>
             <div className="overflow-x-auto [-ms-overflow-style:none] [scrollbar-width:none]" style={{ scrollbarWidth: 'none' }}>
               <div className="flex gap-4 min-w-max pr-2">
-                {discountedProducts.slice(0, 8).map((p) => {
+                {blackFridayProducts.slice(0, 8).map((p) => {
                   const pct = p.originalPrice ? Math.round(((p.originalPrice - p.price) / p.originalPrice) * 100) : 0;
                   return (
                     <Link key={p.id} to="#black-friday" className="group w-48 shrink-0">
                       <div className="rounded-lg border bg-background overflow-hidden">
-                        <div className="aspect-[4/3] w-full overflow-hidden">
-                          <img src={p.image} alt={p.name} className="h-full w-full object-cover group-hover:scale-105 transition-transform" />
+                        <div className="aspect-[4/3] w-full overflow-hidden bg-muted flex items-center justify-center">
+                          <img src={p.image} alt={p.name} className="max-w-full max-h-full object-contain transition-transform" />
                         </div>
                         <div className="p-3">
                           <div className="text-sm font-medium line-clamp-1">{p.name}</div>
@@ -378,7 +379,7 @@ export default function HomePage() {
             </p>
           </div>
           <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-8 mb-12">
-            {discountedProducts.slice(0, 6).map((product) => (
+            {blackFridayProducts.map((product) => (
               <ProductCard key={product.id} product={product} />
             ))}
           </div>

@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { useNavigate } from "react-router-dom";
 import { CreditCard, MapPin, Phone, User } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -20,6 +21,7 @@ export default function CheckoutPage() {
   const [paymentMethod, setPaymentMethod] = useState("mpesa");
   const { balance, withdraw } = useWallet();
   const { createOrder } = useOrders();
+  const navigate = useNavigate();
   const [firstName, setFirstName] = useState("");
   const [lastName, setLastName] = useState("");
   const [phone, setPhone] = useState("");
@@ -56,15 +58,17 @@ export default function CheckoutPage() {
     });
 
     // Simulate order processing
-    await new Promise(resolve => setTimeout(resolve, 1000));
+    await new Promise(resolve => setTimeout(resolve, 800));
 
     toast({
       title: "Order placed successfully!",
       description: "You will receive an SMS confirmation shortly.",
     });
 
-  clearCart();
+    clearCart();
     setIsLoading(false);
+    // Jump to account orders tab and highlight the new order
+    navigate(`/account?tab=orders`, { state: { tab: "orders", orderId: order.id } });
   };
 
   const deliveryFee = deliveryMethod === "speedy" ? 200 : 0;

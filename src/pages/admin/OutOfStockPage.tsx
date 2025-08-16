@@ -277,7 +277,7 @@ export default function OutOfStockPage() {
                               <img 
                                 src={item.image.startsWith('/') ? item.image : `/src/assets/${item.image.split('/').pop()}`}
                                 alt={item.name}
-                                className="h-10 w-10 rounded object-cover"
+                                className="h-10 w-10 rounded object-contain bg-muted"
                                 onError={(e) => {
                                   const target = e.target as HTMLImageElement;
                                   target.src = '/src/assets/essential-basket.jpg';
