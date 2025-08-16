@@ -1,5 +1,5 @@
 import React, { createContext, useCallback, useContext, useEffect, useMemo, useState } from "react";
-import { products as seedProducts, type Product } from "@/data/products";
+import type { Product } from "@/data/products";
 
 type ProductsCtx = {
   all: Product[];
@@ -13,66 +13,81 @@ type ProductsCtx = {
   byCategory: (cat: string) => Product[];
 };
 
-const LS_KEY = "getdeals_products_overrides_v1";
-
-type Store = {
-  overrides: Record<string, Product>; // include add or replace by id
-};
-
 const ProductsContext = createContext<ProductsCtx | undefined>(undefined);
 
-function mergeProducts(store: Store): Product[] {
-  const map = new Map<string, Product>();
-  for (const p of seedProducts) map.set(p.id, p);
-  for (const id of Object.keys(store.overrides)) map.set(id, store.overrides[id]);
-  return Array.from(map.values());
-}
-
 export const ProductsProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
-  const [store, setStore] = useState<Store>(() => {
-    try {
-      const raw = localStorage.getItem(LS_KEY);
-      return raw ? (JSON.parse(raw) as Store) : { overrides: {} };
-    } catch {
-      return { overrides: {} };
+  const [all, setAll] = useState<Product[]>([]);
+  const api = {
+    async list() {
+      const r = await fetch("/api/products");
+      if (!r.ok) throw new Error("Failed to fetch products");
+      return (await r.json()) as Product[];
+    },
+    async add(p: Omit<Product, "id">) {
+      const r = await fetch("/api/products", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(p) });
+      if (!r.ok) throw new Error("Failed to add product");
+      return (await r.json()) as Product;
+    },
+    async update(id: string, patch: Partial<Product>) {
+      const r = await fetch(`/api/products/${id}`, { method: "PATCH", headers: { "Content-Type": "application/json" }, body: JSON.stringify(patch) });
+      if (!r.ok) throw new Error("Failed to update product");
+      return (await r.json()) as Product;
+    },
+    async remove(id: string) {
+      const r = await fetch(`/api/products/${id}`, { method: "DELETE" });
+      if (!r.ok) throw new Error("Failed to delete product");
+      return true;
+    },
+    async reset() {
+      const r = await fetch(`/api/products/reset`, { method: "POST" });
+      if (!r.ok) throw new Error("Failed to reset products");
+      return true;
     }
-  });
+  };
 
+  // initial fetch
   useEffect(() => {
-    try { localStorage.setItem(LS_KEY, JSON.stringify(store)); } catch {}
-  }, [store]);
-
-  const all = useMemo(() => mergeProducts(store), [store]);
+    api.list()
+      .then(setAll)
+      .catch(() => setAll([]));
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   const add: ProductsCtx["add"] = useCallback((p) => {
-    const id = `${p.category}-${Date.now().toString(36)}`;
-    const np: Product = { id, ...p } as Product;
-    setStore((s) => ({ overrides: { ...s.overrides, [np.id]: np } }));
-    return np;
+    const run = async () => {
+      const created = await api.add(p);
+      setAll((prev) => [created, ...prev]);
+      return created;
+    };
+    // return placeholder then update when resolved for API compatibility
+    // but here we await synchronously by throwing promise is not ideal; just return fake immediately
+    // Consumers don't rely on return value; in AdminProducts we don't use it.
+    run().catch(console.error);
+    return { id: "temp", ...p } as Product;
   }, []);
 
   const update: ProductsCtx["update"] = useCallback((id, patch) => {
-    setStore((s) => {
-      const current = s.overrides[id] ?? seedProducts.find((p) => p.id === id);
-      if (!current) return s;
-      const next = { ...current, ...patch, id } as Product;
-      return { overrides: { ...s.overrides, [id]: next } };
+    setAll((prev) => prev.map((p) => (p.id === id ? { ...p, ...patch } : p)));
+    api.update(id, patch).catch((e) => {
+      console.error(e);
+      // on failure, refetch to sync
+      api.list().then(setAll).catch(console.error);
     });
   }, []);
 
   const remove: ProductsCtx["remove"] = useCallback((id) => {
-    setStore((s) => {
-      const next = { ...s.overrides };
-      if (next[id]) delete next[id];
-      else {
-        // mark deletion by storing a tombstone with category "deleted" (optional)
-        next[id] = { id, name: "(deleted)", price: 0, image: "", category: "deleted" } as Product;
-      }
-      return { overrides: next };
+    setAll((prev) => prev.filter((p) => p.id !== id));
+    api.remove(id).catch((e) => {
+      console.error(e);
+      api.list().then(setAll).catch(console.error);
     });
   }, []);
 
-  const restoreDefaults = useCallback(() => setStore({ overrides: {} }), []);
+  const restoreDefaults = useCallback(() => {
+    api.reset()
+      .then(() => api.list().then(setAll))
+      .catch(console.error);
+  }, []);
 
   const featured = useMemo(() => all.slice(0, 3), [all]);
   const discounted = useMemo(() => all.filter((p) => p.originalPrice && p.originalPrice > p.price), [all]);

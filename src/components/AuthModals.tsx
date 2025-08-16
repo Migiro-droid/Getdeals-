@@ -6,6 +6,7 @@ import { Label } from "@/components/ui/label";
 import { Separator } from "@/components/ui/separator";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Mail, Lock, User, Phone, Eye, EyeOff } from "lucide-react";
+import { useAuth } from "@/contexts/AuthContext";
 
 interface AuthModalsProps {
   open: boolean;
@@ -17,17 +18,44 @@ export function AuthModals({ open, onOpenChange, defaultTab = "signin" }: AuthMo
   const [activeTab, setActiveTab] = useState(defaultTab);
   const [showSignInPassword, setShowSignInPassword] = useState(false);
   const [showSignUpPassword, setShowSignUpPassword] = useState(false);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const { signIn, signUp } = useAuth();
 
-  const handleSignIn = (e: React.FormEvent) => {
+  const handleSignIn = async (e: React.FormEvent) => {
     e.preventDefault();
-    // Handle sign in logic here
-    onOpenChange(false);
+    setError(null);
+    setLoading(true);
+    const form = e.target as HTMLFormElement;
+    const email = (form.querySelector('#signin-email') as HTMLInputElement)?.value;
+    const password = (form.querySelector('#signin-password') as HTMLInputElement)?.value;
+    try {
+      await signIn(email, password);
+      onOpenChange(false);
+    } catch (err: any) {
+      setError(err?.message || 'Failed to sign in');
+    } finally {
+      setLoading(false);
+    }
   };
 
-  const handleSignUp = (e: React.FormEvent) => {
+  const handleSignUp = async (e: React.FormEvent) => {
     e.preventDefault();
-    // Handle sign up logic here
-    onOpenChange(false);
+    setError(null);
+    setLoading(true);
+    const form = e.target as HTMLFormElement;
+    const name = (form.querySelector('#signup-name') as HTMLInputElement)?.value;
+    const phone = (form.querySelector('#signup-phone') as HTMLInputElement)?.value;
+    const email = (form.querySelector('#signup-email') as HTMLInputElement)?.value;
+    const password = (form.querySelector('#signup-password') as HTMLInputElement)?.value;
+    try {
+      await signUp(name, phone, email, password);
+      onOpenChange(false);
+    } catch (err: any) {
+      setError(err?.message || 'Failed to sign up');
+    } finally {
+      setLoading(false);
+    }
   };
 
   return (
@@ -83,7 +111,8 @@ export function AuthModals({ open, onOpenChange, defaultTab = "signin" }: AuthMo
                 </div>
               </div>
 
-              <Button type="submit" className="w-full h-10 bg-gradient-to-r from-primary to-primary/80 hover:from-primary/90 hover:to-primary/70 transition-all">
+              {error && <p className="text-xs text-red-600">{error}</p>}
+              <Button disabled={loading} type="submit" className="w-full h-10 bg-gradient-to-r from-primary to-primary/80 hover:from-primary/90 hover:to-primary/70 transition-all">
                 Sign In
               </Button>
               
@@ -178,7 +207,8 @@ export function AuthModals({ open, onOpenChange, defaultTab = "signin" }: AuthMo
                 </div>
               </div>
 
-              <Button type="submit" className="w-full h-10 bg-gradient-to-r from-primary to-primary/80 hover:from-primary/90 hover:to-primary/70 transition-all">
+              {error && <p className="text-xs text-red-600">{error}</p>}
+              <Button disabled={loading} type="submit" className="w-full h-10 bg-gradient-to-r from-primary to-primary/80 hover:from-primary/90 hover:to-primary/70 transition-all">
                 Create Account
               </Button>
               

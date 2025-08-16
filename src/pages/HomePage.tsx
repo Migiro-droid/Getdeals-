@@ -5,7 +5,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { ProductCard } from "@/components/ProductCard";
 import { AuthModals } from "@/components/AuthModals";
-import { featuredProducts, discountedProducts, alcoholProducts } from "@/data/products";
+import { useProducts } from "@/contexts/ProductsContext";
 import { Input } from "@/components/ui/input";
 import { useToast } from "@/hooks/use-toast";
 import heroBg from "@/assets/franki-chamaki-ivfp_yxZuYQ-unsplash.jpg";
@@ -22,6 +22,10 @@ function TimePill({ label, value }: { label: string; value: number }) {
 }
 
 export default function HomePage() {
+  const { all } = useProducts();
+  const featuredProducts = all.slice(0, 3);
+  const discountedProducts = all.filter(p => p.originalPrice && p.originalPrice > p.price);
+  const alcoholProducts = all.filter(p => p.category === 'alcohol');
   const [authModalOpen, setAuthModalOpen] = useState(false);
   const [authModalTab, setAuthModalTab] = useState<"signin" | "signup">("signin");
   const { toast } = useToast();

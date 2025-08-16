@@ -10,6 +10,7 @@ import { AdminProvider } from "@/contexts/AdminContext";
 import { ProductsProvider } from "@/contexts/ProductsContext";
 import { InventoryProvider } from "@/contexts/InventoryContext";
 import { Header } from "@/components/Header";
+import { AuthProvider } from "./contexts/AuthContext";
 import { Footer } from "@/components/Footer";
 import HomePage from "./pages/HomePage";
 import BasketsPage from "./pages/BasketsPage";
@@ -47,6 +48,7 @@ const App = () => (
         <AdminProvider>
         <ProductsProvider>
         <InventoryProvider>
+        <AuthProvider>
         <Toaster />
         <Sonner />
         <BrowserRouter>
@@ -79,6 +81,7 @@ const App = () => (
       <Footer />
           </div>
         </BrowserRouter>
+  </AuthProvider>
         </InventoryProvider>
         </ProductsProvider>
         </AdminProvider>
