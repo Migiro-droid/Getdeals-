@@ -3,7 +3,7 @@ import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route } from "react-router-dom";
-import { useEffect, useState } from "react";
+import { useEffect } from "react";
 import { CartProvider } from "@/contexts/CartContext";
 import { WalletProvider } from "@/contexts/WalletContext";
 import { OrdersProvider } from "@/contexts/OrdersContext";
@@ -12,10 +12,8 @@ import { ProductsProvider } from "@/contexts/ProductsContext";
 import { InventoryProvider } from "@/contexts/InventoryContext";
 import { Header } from "@/components/Header";
 import { AuthProvider } from "./contexts/AuthContext";
-import { useAuth } from "./contexts/AuthContext";
 import { AccountProvider } from "./contexts/AccountContext";
 import { Footer } from "@/components/Footer";
-import { AuthModals } from "@/components/AuthModals";
 import HomePage from "./pages/HomePage";
 import BasketsPage from "./pages/BasketsPage";
 import CartPage from "./pages/CartPage";
@@ -29,7 +27,6 @@ import NotFound from "./pages/NotFound";
 import AdminDashboard from "./pages/admin/AdminDashboard";
 import AdminOrders from "./pages/admin/AdminOrders";
 import AdminSettings from "./pages/admin/AdminSettings";
-import AdminGate from "./pages/admin/AdminGate";
 import { useAdmin } from "@/contexts/AdminContext";
 import AdminProducts from "./pages/admin/AdminProducts";
 import AdminUsers from "./pages/admin/AdminUsers";
@@ -41,31 +38,16 @@ const queryClient = new QueryClient();
 
 function AdminGuard({ children }: { children: JSX.Element }) {
   const { isAdmin, setIsAdmin, setAdminUser } = useAdmin();
-  const { isAuthenticated, loading, user } = useAuth();
-  const [authOpen, setAuthOpen] = useState(true);
-
+  
+  // Auto-enable admin access without authentication for development
   useEffect(() => {
-    if (isAuthenticated && !isAdmin) {
-      setAdminUser({ name: user?.name, email: user?.email });
+    if (!isAdmin) {
+      setAdminUser({ name: "Admin User", email: "admin@getdeals.co.ke" });
       setIsAdmin(true);
     }
-  }, [isAuthenticated, isAdmin, setAdminUser, setIsAdmin, user]);
+  }, [isAdmin, setAdminUser, setIsAdmin]);
 
-  if (loading) return null;
-  if (!isAuthenticated) {
-    return (
-      <>
-        <AuthModals open={authOpen} onOpenChange={setAuthOpen} defaultTab="signin" />
-        <div className="container mx-auto px-4 py-16">
-          <div className="max-w-md mx-auto text-center">
-            <h1 className="text-2xl font-bold mb-2">Admin access</h1>
-            <p className="text-muted-foreground">Please sign in to continue.</p>
-          </div>
-        </div>
-      </>
-    );
-  }
-  if (!isAdmin) return null; // brief handoff while elevating admin session
+  // Always return children - no authentication required
   return children;
 }
 
@@ -129,10 +111,20 @@ export default App;
 
 function MaintenanceBanner() {
   const { settings } = useAdmin();
-  if (!settings.maintenanceMode) return null;
   return (
-    <div className="bg-yellow-100 text-yellow-800 text-sm py-2">
-      <div className="container mx-auto px-4">Maintenance mode active. Some features may be limited.</div>
-    </div>
+    <>
+      {/* Development Notice */}
+      <div className="bg-blue-100 text-blue-800 text-sm py-2">
+        <div className="container mx-auto px-4 text-center">
+          🔧 Development Mode: Authentication temporarily disabled for easier testing
+        </div>
+      </div>
+      {/* Maintenance Banner */}
+      {settings.maintenanceMode && (
+        <div className="bg-yellow-100 text-yellow-800 text-sm py-2">
+          <div className="container mx-auto px-4">Maintenance mode active. Some features may be limited.</div>
+        </div>
+      )}
+    </>
   );
 }

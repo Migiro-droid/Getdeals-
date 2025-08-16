@@ -28,7 +28,8 @@ export function Header() {
     { name: "About", href: "/about" },
     { name: "Contact", href: "/contact" },
     { name: "FAQ", href: "/faq" },
-  { name: "Wallet", href: "/wallet" },
+    { name: "Wallet", href: "/wallet" },
+    { name: "Admin", href: "/admin" },
   ];
 
   const isActive = (href: string) => {
@@ -89,18 +90,12 @@ export function Header() {
               <Search className="h-5 w-5" />
             </Button>
 
-            {/* User Account */}
-            {isAuthenticated ? (
-              <Link to="/account">
-                <Button variant="ghost" size="icon">
-                  <User className="h-5 w-5" />
-                </Button>
-              </Link>
-            ) : (
-              <Button variant="ghost" size="icon" onClick={() => setAuthOpen(true)}>
+            {/* User Account - Disabled for now */}
+            <Link to="/account">
+              <Button variant="ghost" size="icon">
                 <User className="h-5 w-5" />
               </Button>
-            )}
+            </Link>
 
             {/* Shopping Cart */}
             <Link to="/cart" className="relative">
@@ -161,7 +156,8 @@ export function Header() {
         )}
       </div>
     </header>
-    <AuthModals open={authOpen} onOpenChange={setAuthOpen} defaultTab="signin" />
+    {/* AuthModals disabled for now */}
+    {/* <AuthModals open={authOpen} onOpenChange={setAuthOpen} defaultTab="signin" /> */}
     </>
   );
 }
