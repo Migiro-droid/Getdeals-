@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { Filter, SortAsc } from "lucide-react";
+import { SortAsc } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { ProductCard } from "@/components/ProductCard";
 import { useProducts } from "@/contexts/ProductsContext";
@@ -13,9 +13,13 @@ import {
 
 export default function BasketsPage() {
   const [sortBy, setSortBy] = useState("featured");
+  const [filter, setFilter] = useState<string>("all");
   const { all } = useProducts();
+  const basketsOnly = all.filter(p => p.category !== 'alcohol' && p.category !== 'blackfriday');
+  const categories = Array.from(new Set(basketsOnly.map(p => p.category))).filter(Boolean);
+  const visible = basketsOnly.filter(p => filter === 'all' ? true : p.category === filter);
 
-  const sortedProducts = [...all].sort((a, b) => {
+  const sortedProducts = [...visible].sort((a, b) => {
     switch (sortBy) {
       case "price-low":
         return a.price - b.price;
@@ -43,13 +47,17 @@ export default function BasketsPage() {
 
         {}
         <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-8">
-          <div className="flex items-center gap-4">
-            <Button variant="outline" size="sm">
-              <Filter className="h-4 w-4 mr-2" />
-              Filters
-            </Button>
+          <div className="flex items-center gap-3">
+            <span className="text-sm text-muted-foreground">Filter:</span>
+            <Select value={filter} onValueChange={setFilter}>
+              <SelectTrigger className="w-[180px]"><SelectValue placeholder="All" /></SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">All</SelectItem>
+                {categories.map(c => (<SelectItem key={c} value={c}>{c}</SelectItem>))}
+              </SelectContent>
+            </Select>
             <span className="text-sm text-muted-foreground">
-              {all.length} baskets available
+              {visible.length} baskets available
             </span>
           </div>
           

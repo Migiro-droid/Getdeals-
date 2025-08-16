@@ -1,5 +1,9 @@
-import { CheckCircle, Users, Award, Heart } from "lucide-react";
-import { Card, CardContent } from "@/components/ui/card";
+import { CheckCircle, Users, Award, Heart, Truck, ShoppingCart, ShieldCheck, Leaf, MapPin } from "lucide-react";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
+import { Separator } from "@/components/ui/separator";
+import { Link } from "react-router-dom";
 import heroFamily from "@/assets/hero-family.jpg";
 
 export default function AboutPage() {
@@ -7,159 +11,167 @@ export default function AboutPage() {
     {
       icon: Heart,
       title: "Customer First",
-      description: "We put our customers at the heart of everything we do, ensuring exceptional service and satisfaction."
+      description:
+        "We put families first with friendly support and a seamless shopping experience.",
     },
     {
       icon: CheckCircle,
-      title: "Quality Assurance",
-      description: "We carefully curate our products to ensure only the highest quality items reach your family."
-    },
-    {
-      icon: Users,
-      title: "Community Focus",
-      description: "We're committed to supporting local communities and making grocery shopping accessible to all."
+      title: "Quality Assured",
+      description:
+        "Curated baskets and products vetted for freshness, value, and consistency.",
     },
     {
       icon: Award,
-      title: "Excellence",
-      description: "We strive for excellence in every aspect of our service, from product selection to delivery."
-    }
+      title: "Reliable Service",
+      description:
+        "Timely delivery and convenient pickup options you can count on, every time.",
+    },
+    {
+      icon: Leaf,
+      title: "Local Impact",
+      description:
+        "We support local suppliers and reduce waste with smarter procurement.",
+    },
   ];
 
-  const team = [
+  const steps = [
     {
-      name: "Sarah Mwangi",
-      role: "CEO & Founder",
-      description: "Passionate about making grocery shopping easier for Kenyan families."
+      icon: ShoppingCart,
+      title: "Pick your basket",
+      text: "Choose from essential, family, or custom add-ons to fit your week.",
     },
     {
-      name: "James Kiprotich",
-      role: "Head of Operations",
-      description: "Ensures smooth operations and timely deliveries across all locations."
+      icon: ShieldCheck,
+      title: "We prepare with care",
+      text: "Our team curates quality items and keeps you updated on your order.",
     },
     {
-      name: "Grace Njeri",
-      role: "Customer Experience Manager",
-      description: "Dedicated to providing exceptional customer service and support."
-    }
+      icon: Truck,
+      title: "Deliver or pickup",
+      text: "Same‑day delivery in Nairobi or quick pickup at your nearest Quickmart.",
+    },
   ];
 
   return (
-    <div className="min-h-screen py-8 bg-gradient-to-br from-primary/5 to-background">
+    <div className="min-h-screen py-12">
       <div className="container mx-auto px-4">
-        {/* Hero Section */}
-        <div className="mb-20">
-          <div className="grid lg:grid-cols-2 gap-12 items-center">
-            <div>
-              <h1 className="text-4xl lg:text-5xl font-bold mb-6 bg-gradient-to-r from-primary to-primary/70 bg-clip-text text-transparent">
-                Revolutionizing Grocery Shopping in Kenya
-              </h1>
-              <p className="text-xl text-muted-foreground mb-8 leading-relaxed">
-                GetDeals is transforming how Kenyan families shop for groceries. Located in the heart of Karen Green, we're committed to providing curated, affordable, and convenient shopping solutions that save you time and money.
-              </p>
-              <div className="grid grid-cols-2 gap-6">
-                <div className="text-center p-4 bg-primary/10 rounded-lg">
-                  <h3 className="text-2xl font-bold text-primary">10,000+</h3>
-                  <p className="text-sm text-muted-foreground">Happy Customers</p>
-                </div>
-                <div className="text-center p-4 bg-primary/10 rounded-lg">
-                  <h3 className="text-2xl font-bold text-primary">50,000+</h3>
-                  <p className="text-sm text-muted-foreground">Orders Delivered</p>
-                </div>
-              </div>
+        {/* Hero */}
+        <div className="grid lg:grid-cols-2 gap-10 items-center mb-16">
+          <div>
+            <div className="flex items-center gap-2 mb-3 text-sm text-muted-foreground">
+              <Badge variant="secondary" className="gap-2">
+                <MapPin className="h-3.5 w-3.5 text-primary" /> Based in Karen Green, Nairobi
+              </Badge>
             </div>
-            <div className="relative">
-              <img
-                src={heroFamily}
-                alt="Happy family with groceries"
-                className="rounded-2xl shadow-2xl w-full h-[400px] object-cover"
-              />
-              <div className="absolute -bottom-6 -left-6 bg-primary text-primary-foreground p-6 rounded-lg shadow-lg">
-                <h4 className="font-semibold">Based in Karen Green</h4>
-                <p className="text-sm opacity-90">Serving Nairobi & Beyond</p>
-              </div>
+            <h1 className="text-4xl lg:text-5xl font-bold tracking-tight mb-4">
+              Smart grocery shopping for Kenyan families
+            </h1>
+            <p className="text-muted-foreground text-lg mb-6">
+              GetDeals makes weekly shopping simple with curated baskets, fair pricing,
+              and dependable delivery or pickup.
+            </p>
+            <div className="flex flex-col sm:flex-row gap-3">
+              <Button asChild>
+                <Link to="/baskets">Browse baskets</Link>
+              </Button>
+              <Button asChild variant="outline">
+                <Link to="/contact">Talk to us</Link>
+              </Button>
             </div>
+          </div>
+          <div className="relative">
+            <img
+              src={heroFamily}
+              alt="A happy family unpacking groceries at home"
+              className="rounded-2xl w-full h-[360px] object-cover"
+            />
           </div>
         </div>
 
-        {/* Values Section */}
-        <div className="mb-20">
-          <div className="text-center mb-12">
-            <h2 className="text-3xl font-bold mb-4 text-primary">Our Values</h2>
-            <p className="text-xl text-muted-foreground max-w-2xl mx-auto">
-              These core values guide everything we do and shape how we serve our customers.
+        {/* Quick Stats */}
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-16">
+          {[
+            { label: "Orders delivered", value: "50k+" },
+            { label: "Happy customers", value: "10k+" },
+            { label: "Avg response", value: "~2 hrs" },
+            { label: "On‑time delivery", value: "98%" },
+          ].map((s, i) => (
+            <Card key={i}>
+              <CardContent className="p-4 text-center">
+                <div className="text-2xl font-bold">{s.value}</div>
+                <div className="text-xs text-muted-foreground">{s.label}</div>
+              </CardContent>
+            </Card>
+          ))}
+        </div>
+
+        {/* Values */}
+        <div className="mb-16">
+          <div className="text-center mb-8">
+            <h2 className="text-2xl font-bold">What we stand for</h2>
+            <p className="text-muted-foreground max-w-2xl mx-auto">
+              Clear values guide how we source, pack, and deliver every order.
             </p>
           </div>
-          <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-8">
-            {values.map((value, index) => (
-              <Card key={index} className="text-center hover:shadow-lg transition-shadow border-0 bg-background/80">
-                <CardContent className="p-8">
-                  <div className="w-16 h-16 rounded-full bg-primary/10 flex items-center justify-center mx-auto mb-4">
-                    <value.icon className="h-8 w-8 text-primary" />
+          <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-6">
+            {values.map((v, idx) => (
+              <Card key={idx}>
+                <CardHeader className="pb-3">
+                  <div className="w-10 h-10 rounded-md bg-muted flex items-center justify-center mb-2">
+                    <v.icon className="h-5 w-5 text-primary" />
                   </div>
-                  <h3 className="text-lg font-semibold mb-2 text-primary">{value.title}</h3>
-                  <p className="text-muted-foreground text-base">{value.description}</p>
+                  <CardTitle className="text-base">{v.title}</CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <p className="text-sm text-muted-foreground">{v.description}</p>
                 </CardContent>
               </Card>
             ))}
           </div>
         </div>
 
-        {/* Mission & Vision */}
-        <div className="grid md:grid-cols-2 gap-8 mb-20">
-          <Card className="bg-primary/10 border-0 shadow-lg">
-            <CardContent className="p-8">
-              <h3 className="text-2xl font-bold mb-4 text-primary">Our Mission</h3>
-              <p className="text-muted-foreground text-lg">
-                To make grocery shopping smart, convenient, and affordable for every Kenyan family by providing curated bundles, reliable delivery, and exceptional service.
-              </p>
-            </CardContent>
-          </Card>
-          <Card className="bg-primary/10 border-0 shadow-lg">
-            <CardContent className="p-8">
-              <h3 className="text-2xl font-bold mb-4 text-primary">Our Vision</h3>
-              <p className="text-muted-foreground text-lg">
-                To become Kenya's leading smart shopping platform, transforming how families access and purchase essential goods while supporting local communities.
-              </p>
-            </CardContent>
-          </Card>
-        </div>
-
-        {/* Team Section */}
-        <div className="text-center mb-20">
-          <h2 className="text-3xl font-bold mb-4 text-primary">Meet Our Team</h2>
-          <p className="text-xl text-muted-foreground max-w-2xl mx-auto mb-12">
-            We're a passionate team dedicated to making your shopping experience exceptional.
-          </p>
-          <div className="grid md:grid-cols-3 gap-8">
-            {team.map((member, index) => (
-              <Card key={index} className="text-center border-0 bg-background/80 shadow-lg">
-                <CardContent className="p-8">
-                  <div className="w-24 h-24 rounded-full bg-primary/10 flex items-center justify-center mx-auto mb-4">
-                    <Users className="h-12 w-12 text-primary" />
+        {/* How it works */}
+        <div className="mb-16">
+          <div className="text-center mb-8">
+            <h2 className="text-2xl font-bold">How it works</h2>
+            <p className="text-muted-foreground max-w-2xl mx-auto">
+              A simple three‑step process designed around your routine.
+            </p>
+          </div>
+          <div className="grid md:grid-cols-3 gap-6">
+            {steps.map((s, i) => (
+              <Card key={i}>
+                <CardHeader className="pb-3">
+                  <div className="w-10 h-10 rounded-md bg-muted flex items-center justify-center mb-2">
+                    <s.icon className="h-5 w-5 text-primary" />
                   </div>
-                  <h3 className="text-xl font-semibold mb-1 text-primary">{member.name}</h3>
-                  <p className="text-primary font-medium mb-3">{member.role}</p>
-                  <p className="text-muted-foreground text-base">{member.description}</p>
+                  <CardTitle className="text-base">{s.title}</CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <p className="text-sm text-muted-foreground">{s.text}</p>
                 </CardContent>
               </Card>
             ))}
           </div>
         </div>
 
-        {/* CTA Section */}
-        <div className="text-center py-12 bg-gradient-to-r from-primary/10 to-primary/5 rounded-2xl shadow-lg">
-          <h2 className="text-2xl font-bold mb-4 text-primary">Ready to Experience Smart Shopping?</h2>
-          <p className="text-muted-foreground mb-6 max-w-md mx-auto text-lg">
-            Join thousands of satisfied customers who have made the switch to convenient, affordable grocery shopping.
+  {/* Our story removed as requested */}
+
+        <Separator className="my-6" />
+
+        {/* CTA */}
+        <div className="text-center">
+          <h3 className="text-xl font-semibold mb-2">Ready to try GetDeals?</h3>
+          <p className="text-sm text-muted-foreground mb-4">
+            Join thousands of happy customers and make grocery day effortless.
           </p>
-          <div className="flex flex-col sm:flex-row gap-4 justify-center">
-            <button className="px-8 py-4 bg-primary text-primary-foreground font-semibold rounded-lg hover:bg-primary/90 transition-colors text-lg shadow-md">
-              Start Shopping
-            </button>
-            <button className="px-8 py-4 border-2 border-primary text-primary font-semibold rounded-lg hover:bg-primary/5 transition-colors text-lg shadow-md">
-              Contact Us
-            </button>
+          <div className="flex flex-col sm:flex-row gap-3 justify-center">
+            <Button asChild>
+              <Link to="/baskets">Start shopping</Link>
+            </Button>
+            <Button asChild variant="outline">
+              <Link to="/how-it-works">How it works</Link>
+            </Button>
           </div>
         </div>
       </div>

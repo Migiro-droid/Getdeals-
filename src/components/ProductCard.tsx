@@ -1,11 +1,14 @@
 import { useState } from "react";
 import { Heart, ShoppingCart, Eye } from "lucide-react";
+import { useProducts } from "@/contexts/ProductsContext";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { useCart } from "@/contexts/CartContext";
 import { useToast } from "@/hooks/use-toast";
 import { ProductDetailModal } from "./ProductDetailModal";
+import { useAuth } from "@/contexts/AuthContext";
+import { AuthRequiredDialog } from "./AuthRequiredDialog";
 
 interface Product {
   id: string;
@@ -28,10 +31,23 @@ export function ProductCard({ product, onQuickView }: ProductCardProps) {
   const [isWishlisted, setIsWishlisted] = useState(false);
   const [isHovered, setIsHovered] = useState(false);
   const [showDetailModal, setShowDetailModal] = useState(false);
+  const [showAuthDialog, setShowAuthDialog] = useState(false);
+  const { version } = useProducts();
+  const withVersion = (url: string) => {
+    if (!url) return url;
+    if (url.startsWith("http://") || url.startsWith("https://")) return url;
+  const ensured = url.startsWith("/") ? url : `/${url}`;
+  return `${ensured}${ensured.includes('?') ? '&' : '?'}v=${version}`;
+  };
   const { addItem } = useCart();
   const { toast } = useToast();
+  const { isAuthenticated } = useAuth();
 
   const handleAddToCart = () => {
+    if (!isAuthenticated) {
+      setShowAuthDialog(true);
+      return;
+    }
     addItem({
       id: product.id,
       name: product.name,
@@ -67,11 +83,13 @@ export function ProductCard({ product, onQuickView }: ProductCardProps) {
       onMouseLeave={() => setIsHovered(false)}
     >
       <div className="relative overflow-hidden">
-        <img
-          src={product.image}
-          alt={product.name}
-          className="w-full h-48 object-cover transition-transform duration-300 group-hover:scale-105"
-        />
+        <div className="w-full aspect-[4/3] bg-muted flex items-center justify-center">
+          <img
+            src={withVersion(product.image)}
+            alt={product.name}
+            className="max-w-full max-h-full object-contain transition-transform duration-300"
+          />
+        </div>
         
         {/* Discount Badge */}
         {discountPercentage && (
@@ -93,7 +111,7 @@ export function ProductCard({ product, onQuickView }: ProductCardProps) {
         </Button>
 
         {/* Quick Actions Overlay */}
-        <div
+  <div
           className={`absolute inset-x-0 bottom-0 p-3 bg-gradient-to-t from-black/60 to-transparent transition-all duration-300 ${
             isHovered ? "opacity-100 translate-y-0" : "opacity-0 translate-y-4"
           }`}
@@ -152,6 +170,7 @@ export function ProductCard({ product, onQuickView }: ProductCardProps) {
         open={showDetailModal}
         onOpenChange={setShowDetailModal}
       />
+  <AuthRequiredDialog open={showAuthDialog} onOpenChange={setShowAuthDialog} />
     </Card>
   );
 }

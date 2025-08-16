@@ -42,7 +42,7 @@ export default function CartPage() {
                     <img
                       src={item.image}
                       alt={item.name}
-                      className="w-20 h-20 object-cover rounded-lg"
+                      className="w-20 h-20 object-contain rounded-lg bg-muted"
                     />
                     <div className="flex-1">
                       <h3 className="font-semibold text-lg">{item.name}</h3>

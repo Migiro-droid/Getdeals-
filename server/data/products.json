@@ -1,0 +1,344 @@
+[
+  {
+    "id": "hennessy-vs-holiday-pack",
+    "name": "Hennessy VS Holiday Pack",
+    "image": "https://th.bing.com/th/id/R.8d9fe45d0e99e4b9f80e31d2ddab166e?rik=uogC3PgHUnkOmQ&riu=http%3a%2f%2fwww.rafinat.ro%2fwp-content%2fuploads%2f2015%2f06%2fHennesy-XO.jpg&ehk=2cRiVcW5gn4lo%2bRUMIAYmM7Z0wNuNoj15UsWfHx73wQ%3d&risl=&pid=ImgRaw&r=0",
+    "category": "alcohol",
+    "price": 27000,
+    "originalPrice": 28060,
+    "description": "Special Hennessy Offer",
+    "items": [
+      "1Hennessy"
+    ]
+  },
+  {
+    "id": "heineken-6pack",
+    "name": "Heineken 6pack",
+    "image": "https://www.mompshop.com/cdn/shop/products/DRINKS_Heineken_6_Pa_285bd1b579_large.png?v=1662469063",
+    "category": "alcohol",
+    "price": 1300,
+    "originalPrice": 1600,
+    "description": "Perfect Friday Chill Down After Work",
+    "items": [
+      "6 Pack Beer"
+    ]
+  },
+  {
+    "id": "bachelor-basket",
+    "name": "Bachelor Basket",
+    "image": "https://c8.alamy.com/comp/BY5WTY/photo-of-a-wire-shopping-basket-full-of-fresh-fruit-and-vegetables-BY5WTY.jpg",
+    "category": "basket",
+    "price": 6000,
+    "originalPrice": 5000,
+    "description": "Perfect for Bachelors",
+    "items": [
+      "10 Bananas",
+      "2kg Rice",
+      "2 Litre Cooking oil",
+      "6Rolls Tissue paper",
+      "Royco Satchet of 50"
+    ]
+  },
+  {
+    "id": "family-basket-WIhXav",
+    "name": "Family Basket",
+    "image": "src/assets/family-basket.jpg",
+    "category": "basket",
+    "price": 20000,
+    "originalPrice": 24000,
+    "description": "Perfect for Monthly Family needs",
+    "items": [
+      "5kg Rice",
+      "5kg",
+      "5Litres Cooking Oil",
+      "Salt",
+      "12 Rolls Tissue Paper",
+      "Baking Flour"
+    ]
+  },
+  {
+    "id": "test-basket-2",
+    "name": "TEST BASKET 2",
+    "image": "src/assets/family-basket.jpg",
+    "category": "basket",
+    "price": 10000,
+    "originalPrice": 8000,
+    "description": "Save 2000",
+    "items": [
+      "2kg Rice",
+      "2kg Sugar",
+      "2litres cooking oil"
+    ]
+  },
+  {
+    "id": "test",
+    "name": "TEST Basket",
+    "image": "src/assets/essential-basket.jpg",
+    "category": "basket",
+    "price": 10000,
+    "originalPrice": 12000,
+    "description": ""
+  },
+  {
+    "id": "essential-basket",
+    "name": "Essential Basket",
+    "price": 3000,
+    "originalPrice": 3500,
+    "image": "src/assets/essential-basket.jpg",
+    "items": [
+      "2kg Rice",
+      "1kg Sugar",
+      "500ml Cooking Oil",
+      "1 Bread Loaf",
+      "1kg Wheat Flour"
+    ],
+    "category": "essential",
+    "description": "Perfect for small families with daily essentials"
+  },
+  {
+    "id": "mini-essential",
+    "name": "Mini Essential Basket",
+    "price": 1800,
+    "originalPrice": 2200,
+    "image": "src/assets/essential-basket.jpg",
+    "items": [
+      "1kg Rice",
+      "500g Sugar",
+      "250ml Cooking Oil",
+      "1 Bread Loaf"
+    ],
+    "category": "essential",
+    "description": "Compact essentials for singles or couples"
+  },
+  {
+    "id": "mega-essential",
+    "name": "Mega Essential Basket",
+    "price": 4500,
+    "originalPrice": 5500,
+    "image": "src/assets/essential-basket.jpg",
+    "items": [
+      "5kg Rice",
+      "2kg Sugar",
+      "1L Cooking Oil",
+      "2 Bread Loaves",
+      "2kg Wheat Flour",
+      "1kg Beans"
+    ],
+    "category": "essential",
+    "description": "Extended essentials for larger households"
+  },
+  {
+    "id": "family-basket",
+    "name": "Family Basket",
+    "price": 5000,
+    "originalPrice": 6200,
+    "image": "src/assets/family-basket.jpg",
+    "items": [
+      "5kg Rice",
+      "2kg Sugar",
+      "1L Cooking Oil",
+      "2 Bread Loaves",
+      "2kg Wheat Flour"
+    ],
+    "category": "family",
+    "description": "Complete family shopping solution"
+  },
+  {
+    "id": "premium-basket",
+    "name": "Premium Family Basket",
+    "price": 10000,
+    "originalPrice": 12500,
+    "image": "src/assets/family-basket.jpg",
+    "items": [
+      "10kg Rice (Premium)",
+      "5kg Sugar",
+      "2L Premium Cooking Oil",
+      "4 Bread Loaves",
+      "5kg Wheat Flour"
+    ],
+    "category": "family",
+    "description": "Premium products for discerning families"
+  },
+  {
+    "id": "luxury-basket",
+    "name": "Luxury Family Basket",
+    "price": 15000,
+    "originalPrice": 19500,
+    "image": "src/assets/family-basket.jpg",
+    "items": [
+      "15kg Premium Rice",
+      "10kg Sugar",
+      "3L Premium Oil",
+      "6 Premium Bread",
+      "10kg Wheat Flour"
+    ],
+    "category": "family",
+    "description": "Ultimate luxury shopping experience"
+  },
+  {
+    "id": "back-to-school-basket",
+    "name": "Back to School Basket",
+    "price": 4200,
+    "originalPrice": 5000,
+    "image": "src/assets/essential-basket.jpg",
+    "items": [
+      "3kg Rice",
+      "1kg Sugar",
+      "1L Cooking Oil",
+      "2 Bread Loaves",
+      "2kg Wheat Flour"
+    ],
+    "category": "basket",
+    "description": "Perfect starter pack for school season"
+  },
+  {
+    "id": "holiday-feast-basket",
+    "name": "Holiday Feast Basket",
+    "price": 8500,
+    "originalPrice": 10200,
+    "image": "src/assets/family-basket.jpg",
+    "items": [
+      "10kg Rice",
+      "3kg Sugar",
+      "2L Cooking Oil",
+      "3 Bread Loaves",
+      "4kg Wheat Flour"
+    ],
+    "category": "basket",
+    "description": "Celebrate holidays with a generous family bundle"
+  },
+  {
+    "id": "essentials-plus-basket",
+    "name": "Essentials Plus Basket",
+    "price": 3800,
+    "originalPrice": 4400,
+    "image": "src/assets/essential-basket.jpg",
+    "items": [
+      "3kg Rice",
+      "1kg Sugar",
+      "1L Cooking Oil",
+      "1 Bread Loaf",
+      "2kg Wheat Flour"
+    ],
+    "category": "basket",
+    "description": "More of the essentials you use every day"
+  },
+  {
+    "id": "essentials-max-basket",
+    "name": "Essentials Max Basket",
+    "price": 6200,
+    "originalPrice": 7400,
+    "image": "src/assets/essential-basket.jpg",
+    "items": [
+      "5kg Rice",
+      "2kg Sugar",
+      "2L Cooking Oil",
+      "2 Bread Loaves",
+      "4kg Wheat Flour"
+    ],
+    "category": "basket",
+    "description": "Bulk buy essentials for bigger savings"
+  },
+  {
+    "id": "christmas-basket",
+    "name": "Christmas Special Basket",
+    "price": 8500,
+    "originalPrice": 10500,
+    "image": "src/assets/family-basket.jpg",
+    "items": [
+      "5kg Premium Rice",
+      "2kg Sugar",
+      "1L Cooking Oil",
+      "Christmas Cake Mix",
+      "Festive Spices Set",
+      "Holiday Treats"
+    ],
+    "category": "holiday",
+    "description": "Perfect for Christmas celebrations"
+  },
+  {
+    "id": "easter-basket",
+    "name": "Easter Family Basket",
+    "price": 6500,
+    "originalPrice": 8000,
+    "image": "src/assets/family-basket.jpg",
+    "items": [
+      "3kg Rice",
+      "1kg Sugar",
+      "500ml Oil",
+      "Easter Bread",
+      "Chocolate Treats",
+      "Fresh Fruits"
+    ],
+    "category": "holiday",
+    "description": "Celebrate Easter with the family"
+  },
+  {
+    "id": "school-lunch-basket",
+    "name": "School Lunch Basket",
+    "price": 4200,
+    "originalPrice": 5200,
+    "image": "src/assets/essential-basket.jpg",
+    "items": [
+      "2kg Rice",
+      "1kg Sugar",
+      "Lunch Snacks Pack",
+      "Juice Boxes (12)",
+      "Sandwich Bread",
+      "Peanut Butter"
+    ],
+    "category": "school",
+    "description": "Everything for healthy school lunches"
+  },
+  {
+    "id": "student-essential",
+    "name": "Student Essential Basket",
+    "price": 3500,
+    "originalPrice": 4500,
+    "image": "src/assets/essential-basket.jpg",
+    "items": [
+      "2kg Rice",
+      "1kg Sugar",
+      "Instant Noodles (12)",
+      "Cooking Oil",
+      "Tea & Coffee",
+      "Quick Meals Pack"
+    ],
+    "category": "school",
+    "description": "Perfect for university students"
+  },
+  {
+    "id": "black-friday-mega",
+    "name": "Black Friday Mega Deal",
+    "price": 7500,
+    "originalPrice": 12000,
+    "image": "src/assets/family-basket.jpg",
+    "items": [
+      "10kg Rice",
+      "5kg Sugar",
+      "2L Cooking Oil",
+      "4 Bread Loaves",
+      "3kg Wheat Flour",
+      "Electronics Item"
+    ],
+    "category": "blackfriday",
+    "description": "Unbeatable Black Friday savings!"
+  },
+  {
+    "id": "black-friday-family",
+    "name": "Black Friday Family Pack",
+    "price": 4500,
+    "originalPrice": 8000,
+    "image": "src/assets/family-basket.jpg",
+    "items": [
+      "5kg Rice",
+      "2kg Sugar",
+      "1L Oil",
+      "Home Appliance",
+      "Snacks Pack",
+      "Beverages"
+    ],
+    "category": "blackfriday",
+    "description": "Amazing family deals for Black Friday"
+  }
+]

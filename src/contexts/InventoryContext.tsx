@@ -11,6 +11,8 @@ export interface InventoryItem {
   lowStockThreshold: number;
   lastRestocked?: string;
   supplier?: string;
+  // Marks items that were created by the demo seeder so we can safely undo
+  demoSeed?: boolean;
 }
 
 interface InventoryContextValue {
@@ -21,7 +23,11 @@ interface InventoryContextValue {
   getOutOfStockItems: () => InventoryItem[];
   getLowStockItems: () => InventoryItem[];
   getTotalValue: () => number;
+  // Toggles demo inventory: load if not loaded; clear if already loaded
   seedInventory: () => void;
+  isInventorySeeded: boolean;
+  clearDemoInventory: () => void;
+  hasDemoInventory: boolean;
 }
 
 const InventoryContext = createContext<InventoryContextValue | undefined>(undefined);
@@ -62,7 +68,20 @@ export const InventoryProvider: React.FC<{ children: React.ReactNode }> = ({ chi
     } catch {}
   }, [inventory]);
 
+  const isInventorySeeded = inventory.length > 0 && inventory.every(it => it.demoSeed === true);
+  const isDemoInventoryItem = (it: InventoryItem) => {
+    // Treat as demo if flagged or using known demo image paths
+    const img = it.image || "";
+    return it.demoSeed === true || img.includes("/placeholder.svg") || img.includes("src/assets/");
+  };
+  const hasDemoInventory = inventory.some(it => isDemoInventoryItem(it));
+
   const seedInventory = () => {
+    // If any demo data exists, pressing again should clear only demo items
+    if (hasDemoInventory) {
+      setInventory(prev => prev.filter(it => !isDemoInventoryItem(it)));
+      return;
+    }
     const inventoryItems: InventoryItem[] = products.map((product) => {
       const stock = generateRandomStock();
       const lowStockThreshold = generateLowStockThreshold();
@@ -78,12 +97,15 @@ export const InventoryProvider: React.FC<{ children: React.ReactNode }> = ({ chi
         stock: finalStock,
         lowStockThreshold,
         lastRestocked: new Date(Date.now() - Math.random() * 30 * 24 * 60 * 60 * 1000).toISOString(), // Random date in last 30 days
-        supplier: suppliers[Math.floor(Math.random() * suppliers.length)]
+        supplier: suppliers[Math.floor(Math.random() * suppliers.length)],
+        demoSeed: true,
       };
     });
     
-    setInventory(inventoryItems);
+    setInventory(prev => [...prev, ...inventoryItems]);
   };
+
+  const clearDemoInventory = () => setInventory(prev => prev.filter(it => !isDemoInventoryItem(it)));
 
   const updateStock = (id: string, newStock: number) => {
     setInventory(prev => prev.map(item => 
@@ -115,7 +137,10 @@ export const InventoryProvider: React.FC<{ children: React.ReactNode }> = ({ chi
     getOutOfStockItems,
     getLowStockItems,
     getTotalValue,
-    seedInventory
+  seedInventory,
+  isInventorySeeded,
+  clearDemoInventory,
+  hasDemoInventory,
   };
 
   return <InventoryContext.Provider value={value}>{children}</InventoryContext.Provider>;

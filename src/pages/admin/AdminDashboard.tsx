@@ -1,24 +1,29 @@
-import { useMemo, useState } from "react";
+import { useMemo, useState, useCallback } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { ChartContainer, ChartTooltip, ChartTooltipContent } from "@/components/ui/chart";
-import { Line, LineChart, XAxis, YAxis, CartesianGrid, Bar, BarChart, PieChart, Pie, Cell } from "recharts";
-import { useOrders, OrderStatus } from "@/contexts/OrdersContext";
+import { Line, LineChart, XAxis, YAxis, CartesianGrid, PieChart, Pie, Cell } from "recharts";
+import { useOrders, OrderStatus, Order } from "@/contexts/OrdersContext";
 import { useInventory } from "@/contexts/InventoryContext";
-import { products as seedProducts } from "@/data/products";
 import { useAdmin } from "@/contexts/AdminContext";
 import { Link } from "react-router-dom";
-import { ArrowUpRight, ArrowDownRight, TrendingUp, ShoppingBag, Wallet, Settings, AlertTriangle, Truck, CheckCircle, Clock, FileDown, User, Shield, Crown, MapPin, Phone } from "lucide-react";
+import { ShoppingBag, AlertTriangle, Truck, Clock, FileDown, User, Shield, Crown, MapPin, Phone, LogOut } from "lucide-react";
 
 export default function AdminDashboard() {
-  const { orders, metrics, seedOrders } = useOrders();
-  const { inventory, seedInventory, getOutOfStockItems, getLowStockItems } = useInventory();
+  const { orders, metrics } = useOrders();
   const { settings, logout, role, user } = useAdmin();
   const [range, setRange] = useState<"7d" | "30d" | "all">("7d");
   const [customerModalOpen, setCustomerModalOpen] = useState(false);
+
+  // Hide any lingering demo orders from admin analytics/views (extra safety)
+  const isDemoOrder = (o: Order) => {
+    const email = o.customer?.email || "";
+    return o.demoSeed === true || o.id.startsWith("DEMO-") || email.endsWith("@example.com");
+  };
+  const safeOrders = useMemo(() => orders.filter(o => !isDemoOrder(o)), [orders]);
 
   // User display component
   const UserDisplay = () => {
@@ -69,9 +74,9 @@ export default function AdminDashboard() {
   }, [range, rangeDays]);
 
   const ordersInRange = useMemo(() => {
-    if (range === "all") return orders;
-    return orders.filter((o) => new Date(o.date) >= startDate);
-  }, [orders, startDate, range]);
+    if (range === "all") return safeOrders;
+    return safeOrders.filter((o) => new Date(o.date) >= startDate);
+  }, [safeOrders, startDate, range]);
 
   // KPIs
   const revenueInRange = useMemo(() => ordersInRange.reduce((s, o) => s + o.total, 0), [ordersInRange]);
@@ -100,57 +105,64 @@ export default function AdminDashboard() {
     return Math.round(((revenueInRange - prevRevenue) / prevRevenue) * 100);
   }, [revenueInRange, prevRevenue]);
 
-  // Demo data generator
-  const genDemoOrders = () => {
-    const statuses = ["pending", "confirmed", "preparing", "out_for_delivery", "delivered", "cancelled"] as const;
-    const pay = ["mpesa", "card", "wallet", "cash"] as const;
-    const del = ["pickup", "speedy"] as const;
-    const rand = (min: number, max: number) => Math.floor(Math.random() * (max - min + 1)) + min;
-    const pick = <T,>(arr: readonly T[]) => arr[rand(0, arr.length - 1)];
-    const prods = seedProducts;
-    const out: any[] = [];
-    const today = new Date();
-    for (let d = 0; d < 30; d++) { // last 30 days
-      const day = new Date(today);
-      day.setDate(day.getDate() - d);
-      const ordersCount = rand(0, 4);
-      for (let k = 0; k < ordersCount; k++) {
-        const itemsCount = rand(1, 3);
-        const items = Array.from({ length: itemsCount }).map(() => {
-          const p = pick(prods);
-          const qty = rand(1, 3);
-          return { id: p.id, name: p.name, price: p.price, quantity: qty, image: p.image };
-        });
-        const subtotal = items.reduce((s, it) => s + it.price * it.quantity, 0);
-        const deliveryFee = pick(del) === "speedy" ? 200 : 0;
-        const total = subtotal + deliveryFee;
-        const date = new Date(day);
-        date.setHours(rand(8, 20), rand(0, 59), rand(0, 59), 0);
-        out.push({
-          id: `DEMO-${date.getTime()}-${Math.random().toString(36).slice(2,6).toUpperCase()}`,
-          date: date.toISOString(),
-          items,
-          subtotal,
-          deliveryFee,
-          total,
-          deliveryMethod: pick(del),
-          paymentMethod: pick(pay),
-          customer: {
-            firstName: ["Mary", "John", "Alice", "Brian", "Grace", "Peter", "Sarah", "David", "Jane", "Michael"][rand(0,9)],
-            lastName: ["Wanjiku", "Kipchoge", "Muthoni", "Nduku", "Ochieng", "Kimani", "Waweru", "Achieng", "Karanja", "Moraa"][rand(0,9)],
-            phone: `+2547${rand(0, 99_999_999).toString().padStart(8, '0')}`,
-            email: `demo${rand(1000,9999)}@example.com`,
-          },
-          status: pick(statuses),
-        });
-      }
+  // Demo orders generator (used only when admin explicitly loads demo data)
+  const genDemoOrders = useCallback((): Order[] => {
+    const names = [
+      { fn: "James", ln: "Mwangi" },
+      { fn: "Aisha", ln: "Khan" },
+      { fn: "Peter", ln: "Otieno" },
+      { fn: "Grace", ln: "Wanjiru" },
+      { fn: "John", ln: "Kamau" },
+    ];
+    const itemsPool = [
+      { name: "Essential Basket", price: 3000 },
+      { name: "Family Basket", price: 5000 },
+      { name: "Rice", price: 450 },
+      { name: "Sugar", price: 280 },
+      { name: "Cooking Oil", price: 980 },
+    ];
+    const statuses: OrderStatus[] = ["pending", "confirmed", "preparing", "out_for_delivery", "delivered", "cancelled"];
+    const pay: Order["paymentMethod"][] = ["mpesa", "card", "wallet", "cash"];
+    const del: Order["deliveryMethod"][] = ["pickup", "speedy"];
+    const out: Order[] = [];
+    const nowTs = Date.now();
+    const count = 12;
+    for (let i = 0; i < count; i++) {
+      const customer = names[i % names.length];
+      const lineCount = 1 + (i % 3);
+      const items = Array.from({ length: lineCount }).map((_, j) => {
+        const p = itemsPool[(i + j) % itemsPool.length];
+        const qty = ((i + j) % 3) + 1;
+        return { id: `${p.name}-${j}`, name: p.name, price: p.price, quantity: qty };
+      });
+      const subtotal = items.reduce((s, it) => s + it.price * it.quantity, 0);
+      const deliveryFee = del[i % del.length] === "speedy" ? 250 : 0;
+      const total = subtotal + deliveryFee;
+      const d = new Date(nowTs - i * 36_00_000); // space orders by 1h
+      out.push({
+        id: `DEMO-${nowTs}-${i}`,
+        date: d.toISOString(),
+        items,
+        subtotal,
+        deliveryFee,
+        total,
+        deliveryMethod: del[i % del.length],
+        paymentMethod: pay[i % pay.length],
+        customer: {
+          firstName: customer.fn,
+          lastName: customer.ln,
+          phone: `07${(10000000 + (i * 1379)) % 99999999}`,
+          email: `${customer.fn.toLowerCase()}.${customer.ln.toLowerCase()}@example.com`,
+          address: i % 2 ? "Nairobi CBD, Kenyatta Ave" : undefined,
+          pickupLocation: i % 2 ? undefined : "Quickmart Westlands",
+        },
+        status: statuses[i % statuses.length],
+        note: i % 5 === 0 ? "Leave at reception" : undefined,
+        demoSeed: true,
+      });
     }
-    // bias some delivered
-    out.forEach((o) => {
-      if (Math.random() < 0.55) o.status = "delivered";
-    });
     return out;
-  };
+  }, []);
 
   // Chart data: daily revenue for last N days
   const dailyData = useMemo(() => {
@@ -163,7 +175,7 @@ export default function AdminDashboard() {
       const key = d.toISOString().slice(0, 10);
       map[key] = 0;
     }
-    for (const o of orders) {
+  for (const o of safeOrders) {
       const key = o.date.slice(0, 10);
       if (key in map) map[key] += o.total;
     }
@@ -173,7 +185,7 @@ export default function AdminDashboard() {
       days.push({ label, value: map[k] });
     });
     return days;
-  }, [orders, rangeDays]);
+  }, [safeOrders, rangeDays]);
 
   const statusKeys: OrderStatus[] = [
     "pending",
@@ -192,26 +204,44 @@ export default function AdminDashboard() {
     cancelled: "#F43F5E",       // rose-500
   };
   const statusDistribution = useMemo(() => {
-    const total = Object.values(metrics.byStatus).reduce((a, b) => a + b, 0);
+    const byStatus = {
+      pending: 0,
+      confirmed: 0,
+      preparing: 0,
+      out_for_delivery: 0,
+      delivered: 0,
+      cancelled: 0,
+    } as Record<OrderStatus, number>;
+    for (const o of ordersInRange) byStatus[o.status]++;
+    const total = Object.values(byStatus).reduce((a, b) => a + b, 0);
     const row: any = { name: "Orders" };
     statusKeys.forEach((k) => {
-      const cnt = metrics.byStatus[k] || 0;
+      const cnt = byStatus[k] || 0;
       row[k] = total ? Math.round((cnt / total) * 100) : 0;
     });
     return { data: [row], total };
-  }, [metrics.byStatus]);
+  }, [ordersInRange]);
   const statusLegend = useMemo(() => {
-    const total = Object.values(metrics.byStatus).reduce((a, b) => a + b, 0) || 1;
+    const byStatus = {
+      pending: 0,
+      confirmed: 0,
+      preparing: 0,
+      out_for_delivery: 0,
+      delivered: 0,
+      cancelled: 0,
+    } as Record<OrderStatus, number>;
+    for (const o of ordersInRange) byStatus[o.status]++;
+    const total = Object.values(byStatus).reduce((a, b) => a + b, 0) || 1;
     return statusKeys
       .map((k) => ({
         key: k,
         label: k.replace(/_/g, " "),
-        count: metrics.byStatus[k] || 0,
-        perc: Math.round(((metrics.byStatus[k] || 0) / total) * 100),
+        count: byStatus[k] || 0,
+        perc: Math.round(((byStatus[k] || 0) / total) * 100),
         color: statusColors[k],
       }))
       .sort((a, b) => b.count - a.count);
-  }, [metrics.byStatus]);
+  }, [ordersInRange]);
 
   // Payment & Delivery breakdowns
   const labelPayment = (m: string) => (m === "mpesa" ? "M-Pesa" : m.charAt(0).toUpperCase() + m.slice(1));
@@ -340,7 +370,7 @@ export default function AdminDashboard() {
 
   // Ops snapshot (today)
   const todayKey = new Date().toISOString().slice(0, 10);
-  const todayOrders = useMemo(() => orders.filter((o) => o.date.slice(0, 10) === todayKey), [orders, todayKey]);
+  const todayOrders = useMemo(() => safeOrders.filter((o) => o.date.slice(0, 10) === todayKey), [safeOrders, todayKey]);
   const todayCounts = useMemo(() => {
     const c: Record<string, number> = { pending: 0, out_for_delivery: 0, cancelled: 0 };
     for (const o of todayOrders) {
@@ -365,7 +395,7 @@ export default function AdminDashboard() {
       "total",
       "items",
     ];
-    const rows = orders.map((o) => {
+  const rows = safeOrders.map((o) => {
       const name = `${o.customer.firstName} ${o.customer.lastName}`.trim();
       const items = o.items.map((i) => `${i.name} x${i.quantity}`).join("; ");
       return [
@@ -390,7 +420,7 @@ export default function AdminDashboard() {
     const url = URL.createObjectURL(blob);
     const a = document.createElement("a");
     a.href = url;
-    a.download = `orders_export_${todayKey}.csv`;
+  a.download = `orders_export_${todayKey}.csv`;
     document.body.appendChild(a);
     a.click();
     document.body.removeChild(a);
@@ -439,14 +469,15 @@ export default function AdminDashboard() {
                 </button>
               ))}
             </div>
-            <Button variant="outline" onClick={() => seedOrders(genDemoOrders(), true)}>Load Demo Data</Button>
-            <Button variant="outline" onClick={() => seedInventory()}>Load Inventory Data</Button>
-            <Button variant="outline" onClick={logout}>Exit Admin</Button>
+            {/* Unified demo data toggle: loads/clears both orders & inventory */}
+            <Button variant="outline" onClick={logout} title="Sign out of admin area">
+              <LogOut className="h-4 w-4 mr-2" /> Sign out
+            </Button>
           </div>
         </div>
 
         {/* System Alerts */}
-        {settings.maintenanceMode && (
+  {settings.maintenanceMode && (
           <Card className="border-yellow-300/50">
             <CardContent className="py-4 flex items-center gap-3 text-yellow-700">
               <AlertTriangle className="h-5 w-5" />
@@ -459,55 +490,7 @@ export default function AdminDashboard() {
               </div>
             </CardContent>
           </Card>
-        )}
-
-        {/* Key Performance Indicators */}
-        <div>
-          <h2 className="text-xl font-semibold mb-4">Key Metrics ({range.toUpperCase()})</h2>
-          <div className="grid md:grid-cols-4 gap-6">
-            <Card>
-              <CardHeader className="pb-2">
-                <CardTitle className="text-sm font-medium flex items-center gap-2"><TrendingUp className="h-4 w-4" /> Revenue</CardTitle>
-              </CardHeader>
-              <CardContent>
-                <div className="text-3xl font-extrabold">{fmtCurrency(revenueInRange)}</div>
-                {revenueDeltaPct !== null && (
-                  <div className={`mt-1 flex items-center gap-1 text-sm ${revenueDeltaPct >= 0 ? "text-emerald-600" : "text-red-600"}`}>
-                    {revenueDeltaPct >= 0 ? <ArrowUpRight className="h-4 w-4" /> : <ArrowDownRight className="h-4 w-4" />}
-                    <span>{Math.abs(revenueDeltaPct)}% vs prev period</span>
-                  </div>
-                )}
-              </CardContent>
-            </Card>
-            <Card>
-              <CardHeader className="pb-2">
-                <CardTitle className="text-sm font-medium flex items-center gap-2"><ShoppingBag className="h-4 w-4" /> Orders (Today)</CardTitle>
-              </CardHeader>
-              <CardContent>
-                <div className="text-3xl font-extrabold">{metrics.todayCount}</div>
-                <div className="mt-1 text-sm text-muted-foreground">All-time: {metrics.orderCount}</div>
-              </CardContent>
-            </Card>
-            <Card>
-              <CardHeader className="pb-2">
-                <CardTitle className="text-sm font-medium flex items-center gap-2"><Wallet className="h-4 w-4" /> Avg Order Value</CardTitle>
-              </CardHeader>
-              <CardContent>
-                <div className="text-3xl font-extrabold">{fmtCurrency(Math.round(aov))}</div>
-                <div className="mt-1 text-sm text-muted-foreground">Across {ordersInRange.length} orders</div>
-              </CardContent>
-            </Card>
-            <Card>
-              <CardHeader className="pb-2">
-                <CardTitle className="text-sm font-medium flex items-center gap-2"><Truck className="h-4 w-4" /> Delivered Rate</CardTitle>
-              </CardHeader>
-              <CardContent>
-                <div className="text-3xl font-extrabold">{deliveredRate}%</div>
-                <div className="mt-1 text-sm text-muted-foreground">of orders delivered</div>
-              </CardContent>
-            </Card>
-          </div>
-        </div>
+  )}
 
         {/* Main Analytics Charts */}
         <div>
@@ -1075,7 +1058,7 @@ export default function AdminDashboard() {
                     </TableRow>
                   </TableHeader>
                   <TableBody>
-                    {orders.slice(0, 6).map((o) => {
+                    {safeOrders.slice(0, 6).map((o) => {
                       const d = new Date(o.date);
                       const dateStr = d.toLocaleString(undefined, { month: "short", day: "numeric", hour: "2-digit", minute: "2-digit" });
                       const name = `${o.customer.firstName} ${o.customer.lastName}`.trim();
@@ -1089,7 +1072,7 @@ export default function AdminDashboard() {
                         </TableRow>
                       );
                     })}
-                    {orders.length === 0 && (
+                    {safeOrders.length === 0 && (
                       <TableRow>
                         <TableCell colSpan={5} className="text-center text-muted-foreground">No orders yet.</TableCell>
                       </TableRow>

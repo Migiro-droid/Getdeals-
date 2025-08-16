@@ -339,12 +339,12 @@ export default function AdminOrders() {
           </Card>
         )}
         <Dialog open={open} onOpenChange={(v) => { setOpen(v); if (!v) setActive(null); }}>
-          <DialogContent className="max-w-3xl p-0">
+          <DialogContent className="max-w-3xl p-0 pr-10">
             {active && (
               <div className="flex flex-col">
-                <div className="px-6 pt-5 pb-4 border-b bg-muted/30">
+                <div className="px-6 pt-5 pb-4 border-b bg-muted/30 pr-6">
                   <DialogHeader>
-                    <DialogTitle className="flex items-center justify-between gap-4 pr-8">
+                    <DialogTitle className="flex items-center justify-between gap-4 pr-6">
                       <span className="font-mono text-sm truncate max-w-[65%]">Order {active.id}</span>
                       <span className={statusPill(active.status)}>{statusLabel(active.status)}</span>
                     </DialogTitle>
@@ -449,7 +449,7 @@ export default function AdminOrders() {
                                   <img 
                                     src={getProductImage(it.name, it.image)} 
                                     alt={it.name} 
-                                    className="h-10 w-10 rounded object-cover flex-shrink-0" 
+                                    className="h-10 w-10 rounded object-contain bg-muted flex-shrink-0"
                                     onError={(e) => {
                                       // Fallback to default image if loading fails
                                       const target = e.target as HTMLImageElement;

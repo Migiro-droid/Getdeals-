@@ -3,6 +3,7 @@ import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route } from "react-router-dom";
+import { useEffect, useState } from "react";
 import { CartProvider } from "@/contexts/CartContext";
 import { WalletProvider } from "@/contexts/WalletContext";
 import { OrdersProvider } from "@/contexts/OrdersContext";
@@ -10,7 +11,11 @@ import { AdminProvider } from "@/contexts/AdminContext";
 import { ProductsProvider } from "@/contexts/ProductsContext";
 import { InventoryProvider } from "@/contexts/InventoryContext";
 import { Header } from "@/components/Header";
+import { AuthProvider } from "./contexts/AuthContext";
+import { useAuth } from "./contexts/AuthContext";
+import { AccountProvider } from "./contexts/AccountContext";
 import { Footer } from "@/components/Footer";
+import { AuthModals } from "@/components/AuthModals";
 import HomePage from "./pages/HomePage";
 import BasketsPage from "./pages/BasketsPage";
 import CartPage from "./pages/CartPage";
@@ -34,8 +39,33 @@ import WalletPage from "./pages/WalletPage";
 const queryClient = new QueryClient();
 
 function AdminGuard({ children }: { children: JSX.Element }) {
-  const { isAdmin } = useAdmin();
-  return isAdmin ? children : <AdminGate />;
+  const { isAdmin, setIsAdmin, setAdminUser } = useAdmin();
+  const { isAuthenticated, loading, user } = useAuth();
+  const [authOpen, setAuthOpen] = useState(true);
+
+  useEffect(() => {
+    if (isAuthenticated && !isAdmin) {
+      setAdminUser({ name: user?.name, email: user?.email });
+      setIsAdmin(true);
+    }
+  }, [isAuthenticated, isAdmin, setAdminUser, setIsAdmin, user]);
+
+  if (loading) return null;
+  if (!isAuthenticated) {
+    return (
+      <>
+        <AuthModals open={authOpen} onOpenChange={setAuthOpen} defaultTab="signin" />
+        <div className="container mx-auto px-4 py-16">
+          <div className="max-w-md mx-auto text-center">
+            <h1 className="text-2xl font-bold mb-2">Admin access</h1>
+            <p className="text-muted-foreground">Please sign in to continue.</p>
+          </div>
+        </div>
+      </>
+    );
+  }
+  if (!isAdmin) return null; // brief handoff while elevating admin session
+  return children;
 }
 
 const App = () => (
@@ -47,6 +77,8 @@ const App = () => (
         <AdminProvider>
         <ProductsProvider>
         <InventoryProvider>
+  <AuthProvider>
+  <AccountProvider>
         <Toaster />
         <Sonner />
         <BrowserRouter>
@@ -79,6 +111,8 @@ const App = () => (
       <Footer />
           </div>
         </BrowserRouter>
+  </AccountProvider>
+  </AuthProvider>
         </InventoryProvider>
         </ProductsProvider>
         </AdminProvider>

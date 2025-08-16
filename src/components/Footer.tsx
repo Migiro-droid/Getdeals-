@@ -89,34 +89,55 @@ export function Footer() {
         <Separator className="my-8" />
 
         {/* Contact Info */}
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-8">
-          <div className="flex items-center space-x-2 text-sm">
-            <Phone className="h-4 w-4 text-primary" />
-            <span>+254 700 123 456</span>
-          </div>
-          <div className="flex items-center space-x-2 text-sm">
-            <Mail className="h-4 w-4 text-primary" />
-            <span>support@getdeals.co.ke</span>
-          </div>
-          <div className="flex items-center space-x-2 text-sm">
-            <MapPin className="h-4 w-4 text-primary" />
-            <span>Karen Green, Nairobi, Kenya</span>
+        <div className="mb-8">
+          <div className="flex flex-col md:flex-row items-start md:items-center justify-center gap-3 md:gap-8 text-sm">
+            <div className="flex items-center gap-2 md:whitespace-nowrap">
+              <Mail className="h-4 w-4 text-primary" />
+              <a
+                href="mailto:support@getdeals.co.ke"
+                className="hover:text-primary hover:underline underline-offset-4 transition-colors"
+              >
+                support@getdeals.co.ke
+              </a>
+            </div>
+            <div className="flex items-center gap-2 md:whitespace-nowrap">
+              <MapPin className="h-4 w-4 text-primary" />
+              <a
+                href="https://maps.google.com/?q=Karen%20Green,%20Nairobi,%20Kenya"
+                target="_blank"
+                rel="noreferrer"
+                className="hover:text-primary hover:underline underline-offset-4 transition-colors"
+              >
+                Karen Green, Nairobi, Kenya
+              </a>
+            </div>
+            <div className="flex items-center gap-2 md:whitespace-nowrap">
+              <Phone className="h-4 w-4 text-primary" />
+              <a
+                href="tel:+254700123456"
+                className="hover:text-primary hover:underline underline-offset-4 transition-colors"
+              >
+                +254 700 123 456
+              </a>
+            </div>
           </div>
         </div>
 
         <Separator className="mb-8" />
 
         {/* Bottom */}
-        <div className="flex flex-col md:flex-row justify-between items-center space-y-4 md:space-y-0">
-          <div className="flex flex-col sm:flex-row items-center gap-4">
+        <div className="grid grid-cols-1 md:grid-cols-3 items-center gap-4">
+          <div className="text-center md:text-left">
             <p className="text-sm text-muted-foreground">
               © {currentYear} GetDeals Kenya. All rights reserved.
             </p>
-            <p className="text-xs text-muted-foreground bg-muted/50 px-3 py-1 rounded-full">
-              Powered by House of Procurement
-            </p>
           </div>
-          <div className="flex space-x-6 text-sm">
+          <div className="justify-self-center">
+            <span className="inline-flex items-center text-xs text-muted-foreground bg-muted/60 border border-border/60 px-3 py-1 rounded-full shadow-sm hover:bg-muted transition-colors">
+              Powered by House of Procurement
+            </span>
+          </div>
+          <div className="flex justify-center md:justify-end space-x-6 text-sm">
             <a href="#" className="text-muted-foreground hover:text-primary transition-colors">
               Privacy Policy
             </a>
