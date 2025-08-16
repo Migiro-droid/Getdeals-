@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -23,6 +23,17 @@ export function AuthModals({ open, onOpenChange, defaultTab = "signin" }: AuthMo
   const [error, setError] = useState<string | null>(null);
   const { signIn, signUp } = useAuth();
   const { toast } = useToast();
+
+  // Keep tab in sync with caller preference and reset transient state on open
+  useEffect(() => {
+    if (open) {
+      setActiveTab(defaultTab);
+      setError(null);
+      setLoading(false);
+      setShowSignInPassword(false);
+      setShowSignUpPassword(false);
+    }
+  }, [open, defaultTab]);
 
   const handleSignIn = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -72,7 +83,14 @@ export function AuthModals({ open, onOpenChange, defaultTab = "signin" }: AuthMo
           <p className="text-center text-xs text-muted-foreground">Sign in or create an account to continue</p>
         </DialogHeader>
 
-        <Tabs value={activeTab} onValueChange={setActiveTab as (value: string) => void} className="w-full">
+        <Tabs
+          value={activeTab}
+          onValueChange={(v) => {
+            setActiveTab(v as typeof activeTab);
+            setError(null);
+          }}
+          className="w-full"
+        >
           <TabsList className="grid w-full grid-cols-2 h-10 bg-muted/50">
             <TabsTrigger value="signin" className="text-sm">Sign In</TabsTrigger>
             <TabsTrigger value="signup" className="text-sm">Sign Up</TabsTrigger>

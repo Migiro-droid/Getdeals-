@@ -28,6 +28,8 @@ export function AuthRequiredDialog({ open, onOpenChange }: AuthRequiredDialogPro
               <Button
                 onClick={() => {
                   setTab("signin");
+                  // Close this dialog before opening the auth modal to avoid nested dialogs
+                  onOpenChange(false);
                   setAuthOpen(true);
                 }}
               >
@@ -37,6 +39,7 @@ export function AuthRequiredDialog({ open, onOpenChange }: AuthRequiredDialogPro
                 variant="outline"
                 onClick={() => {
                   setTab("signup");
+                  onOpenChange(false);
                   setAuthOpen(true);
                 }}
               >

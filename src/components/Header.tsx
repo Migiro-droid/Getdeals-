@@ -156,8 +156,12 @@ export function Header() {
         )}
       </div>
     </header>
+<<<<<<< Updated upstream
     {/* AuthModals disabled for now */}
     {/* <AuthModals open={authOpen} onOpenChange={setAuthOpen} defaultTab="signin" /> */}
+=======
+  <AuthModals open={authOpen} onOpenChange={setAuthOpen} defaultTab={"signin"} />
+>>>>>>> Stashed changes
     </>
   );
 }
