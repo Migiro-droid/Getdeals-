@@ -33,7 +33,7 @@ export default function CartPage() {
         <h1 className="text-3xl font-bold mb-8">Shopping Cart</h1>
         
         <div className="grid lg:grid-cols-3 gap-8">
-          {/* Cart Items */}
+          {}
           <div className="lg:col-span-2 space-y-4">
             {items.map((item) => (
               <Card key={item.id}>
