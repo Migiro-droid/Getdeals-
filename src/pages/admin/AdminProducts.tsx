@@ -36,12 +36,14 @@ export default function AdminProducts() {
           }
           const row = rows[i];
           if (!row.name || !row.price || !row.category) { failed++; return addNext(i+1); }
-          const items = row.items ? String(row.items).split(",").map((s) => s.trim()).filter(Boolean) : undefined;
+          // accept comma or semicolon separated items in CSV
+          const items = row.items ? String(row.items).split(/[,;]+/).map((s) => s.trim()).filter(Boolean) : undefined;
           add({
             name: row.name,
             price: Number(row.price),
             originalPrice: row.originalPrice ? Number(row.originalPrice) : undefined,
-            image: "", // admin will edit after upload
+            // backend requires an image; use provided image or a placeholder so import succeeds
+            image: row.image ? normalizeUrl(row.image) : "/placeholder.svg",
             category: row.category,
             description: row.description || undefined,
             items,
