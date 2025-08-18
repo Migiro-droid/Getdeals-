@@ -36,18 +36,58 @@ import WalletPage from "./pages/WalletPage";
 
 const queryClient = new QueryClient();
 
-function AdminGuard({ children }: { children: JSX.Element }) {
-  const { isAdmin, setIsAdmin, setAdminUser } = useAdmin();
-  
-  // Auto-enable admin access without authentication for development
-  useEffect(() => {
-    if (!isAdmin) {
-      setAdminUser({ name: "Admin User", email: "admin@getdeals.co.ke" });
-      setIsAdmin(true);
-    }
-  }, [isAdmin, setAdminUser, setIsAdmin]);
+import { useAuth } from "./contexts/AuthContext";
 
-  // Always return children - no authentication required
+function AdminGuard({ children }: { children: JSX.Element }) {
+  const { isAuthenticated, user } = useAuth();
+  const { setIsAdmin, setAdminUser } = useAdmin();
+  
+  // Check if user is authenticated and has admin role
+  useEffect(() => {
+    if (isAuthenticated && user?.role === 'admin') {
+      setAdminUser({ name: user.name, email: user.email });
+      setIsAdmin(true);
+    } else {
+      setIsAdmin(false);
+      setAdminUser(null);
+    }
+  }, [isAuthenticated, user, setAdminUser, setIsAdmin]);
+
+  // Require authentication and admin role
+  if (!isAuthenticated) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-gray-50">
+        <div className="max-w-md w-full space-y-8">
+          <div className="text-center">
+            <h2 className="mt-6 text-3xl font-extrabold text-gray-900">
+              Admin Access Required
+            </h2>
+            <p className="mt-2 text-sm text-gray-600">
+              Please sign in with an admin account to access this area.
+            </p>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  if (user?.role !== 'admin') {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-gray-50">
+        <div className="max-w-md w-full space-y-8">
+          <div className="text-center">
+            <h2 className="mt-6 text-3xl font-extrabold text-gray-900">
+              Insufficient Permissions
+            </h2>
+            <p className="mt-2 text-sm text-gray-600">
+              You don't have permission to access the admin area.
+            </p>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
   return children;
 }
 
@@ -111,14 +151,18 @@ export default App;
 
 function MaintenanceBanner() {
   const { settings } = useAdmin();
+  const { isAuthenticated } = useAuth();
+  
   return (
     <>
-      {/* Development Notice */}
-      <div className="bg-blue-100 text-blue-800 text-sm py-2">
-        <div className="container mx-auto px-4 text-center">
-          🔧 Development Mode: Authentication temporarily disabled for easier testing
+      {/* Authentication Status */}
+      {!isAuthenticated && (
+        <div className="bg-green-100 text-green-800 text-sm py-2">
+          <div className="container mx-auto px-4 text-center">
+            🔐 Authentication is now enabled! Please sign in to access all features.
+          </div>
         </div>
-      </div>
+      )}
       {/* Maintenance Banner */}
       {settings.maintenanceMode && (
         <div className="bg-yellow-100 text-yellow-800 text-sm py-2">

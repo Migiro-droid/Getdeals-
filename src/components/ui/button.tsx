@@ -36,6 +36,15 @@ const buttonVariants = cva(
 export interface ButtonProps
   extends React.ButtonHTMLAttributes<HTMLButtonElement>,
     VariantProps<typeof buttonVariants> {
+  // Explicitly include these to avoid type inference issues in consumers
+  variant?:
+    | "default"
+    | "destructive"
+    | "outline"
+    | "secondary"
+    | "ghost"
+    | "link"
+  size?: "default" | "sm" | "lg" | "icon"
   asChild?: boolean
 }
 

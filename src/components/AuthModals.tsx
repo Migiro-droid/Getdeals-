@@ -180,15 +180,14 @@ export function AuthModals({ open, onOpenChange, defaultTab = "signin" }: AuthMo
                 </div>
 
                 <div className="space-y-1">
-                  <Label htmlFor="signup-phone" className="text-xs font-medium">Phone</Label>
+                  <Label htmlFor="signup-phone" className="text-xs font-medium">Phone (Optional)</Label>
                   <div className="relative">
                     <Phone className="absolute left-2 top-2.5 h-3 w-3 text-muted-foreground" />
                     <Input
                       id="signup-phone"
                       type="tel"
-                      placeholder="+254..."
+                      placeholder="+254... (optional)"
                       className="pl-7 h-10 text-sm border-2 focus:border-primary/50 transition-colors"
-                      required
                     />
                   </div>
                 </div>

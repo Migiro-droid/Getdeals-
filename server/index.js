@@ -7,10 +7,11 @@ import bcrypt from 'bcryptjs';
 import jwt from 'jsonwebtoken';
 import { fileURLToPath } from 'url';
 import { nanoid } from 'nanoid';
-import prisma from './lib/prisma.js';
-import MpesaService from './lib/mpesa.js';
-import SMSService from './lib/sms.js';
-import EmailService from './lib/email.js';
+import { JSONDatabase } from './lib/database.js';
+// Removed Prisma import - using JSON database now
+// import MpesaService from './lib/mpesa.js';
+// import SMSService from './lib/sms.js';
+// import EmailService from './lib/email.js';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -22,10 +23,10 @@ const PORT = process.env.PORT || 4000;
 const JWT_SECRET = process.env.JWT_SECRET || 'devsecret';
 const JWT_EXPIRES_IN = process.env.JWT_EXPIRES_IN || '7d';
 
-// Initialize services
-const mpesaService = new MpesaService();
-const smsService = new SMSService();
-const emailService = new EmailService();
+// Initialize services (disabled for now - using JSON database)
+// const mpesaService = new MpesaService();
+// const smsService = new SMSService();
+// const emailService = new EmailService();
 
 app.use(cors());
 app.use(express.json());
@@ -175,72 +176,92 @@ function validateProductInput(body) {
 
 // --- Products API ---
 app.get('/api/products', (req, res) => {
-  const list = readProducts();
-  return res.json(list);
+  try {
+    const products = JSONDatabase.getAllProducts();
+    return res.json(products);
+  } catch (error) {
+    console.error('Error fetching products:', error);
+    return res.status(500).json({ message: 'Failed to fetch products' });
+  }
 });
 
 app.post('/api/products', (req, res) => {
-  const check = validateProductInput(req.body);
-  if (!check.ok) return res.status(400).json({ message: 'Validation failed', errors: check.errors });
-  const list = readProducts();
-  const id = (String(check.value.name).toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)/g, '') || nanoid());
-  const exists = list.some(p => p.id === id);
-  const finalId = exists ? `${id}-${nanoid(6)}` : id;
-  const product = { id: finalId, ...check.value };
-  const next = [product, ...list];
-  writeProducts(next);
-  return res.status(201).json(product);
+  try {
+    const check = validateProductInput(req.body);
+    if (!check.ok) return res.status(400).json({ message: 'Validation failed', errors: check.errors });
+    
+    const product = JSONDatabase.addProduct(check.value);
+    if (!product) {
+      return res.status(500).json({ message: 'Failed to create product' });
+    }
+    
+    return res.status(201).json(product);
+  } catch (error) {
+    console.error('Error creating product:', error);
+    return res.status(500).json({ message: 'Failed to create product' });
+  }
 });
 
 app.patch('/api/products/:id', (req, res) => {
-  const { id } = req.params;
-  const list = readProducts();
-  const idx = list.findIndex(p => p.id === id);
-  if (idx === -1) return res.status(404).json({ message: 'Product not found' });
-
-  const patch = req.body || {};
-  // Partial validation: allow updating provided fields only
-  const allowed = ['name', 'price', 'originalPrice', 'image', 'discount', 'items', 'itemsDetail', 'category', 'description'];
-  const updated = { ...list[idx] };
-  for (const key of allowed) {
-    if (key in patch) {
-      if (key === 'price' || key === 'originalPrice') {
-        const num = Number(patch[key]);
-        if (!Number.isFinite(num) || num < 0) return res.status(400).json({ message: `${key} must be a non-negative number` });
-        updated[key] = num;
-      } else if (key === 'items') {
-        updated.items = Array.isArray(patch.items) ? patch.items.map(String) : undefined;
-      } else if (key === 'itemsDetail') {
-        if (patch.itemsDetail == null) {
-          updated.itemsDetail = undefined;
-        } else if (!Array.isArray(patch.itemsDetail)) {
-          return res.status(400).json({ message: 'itemsDetail must be an array' });
+  try {
+    const { id } = req.params;
+    const patch = req.body || {};
+    
+    // Partial validation: allow updating provided fields only
+    const allowed = ['name', 'price', 'originalPrice', 'image', 'discount', 'items', 'itemsDetail', 'category', 'description'];
+    const updates = {};
+    
+    for (const key of allowed) {
+      if (key in patch) {
+        if (key === 'price' || key === 'originalPrice') {
+          const num = Number(patch[key]);
+          if (!Number.isFinite(num) || num < 0) return res.status(400).json({ message: `${key} must be a non-negative number` });
+          updates[key] = num;
+        } else if (key === 'items') {
+          updates.items = Array.isArray(patch.items) ? patch.items.map(String) : undefined;
+        } else if (key === 'itemsDetail') {
+          if (patch.itemsDetail == null) {
+            updates.itemsDetail = undefined;
+          } else if (!Array.isArray(patch.itemsDetail)) {
+            return res.status(400).json({ message: 'itemsDetail must be an array' });
+          } else {
+            updates.itemsDetail = patch.itemsDetail
+              .filter((it) => it && typeof it === 'object')
+              .map((it) => ({ name: String(it.name || ''), image: String(it.image || '') }))
+              .filter((it) => it.name);
+          }
+        } else if (patch[key] == null) {
+          updates[key] = undefined;
         } else {
-          updated.itemsDetail = patch.itemsDetail
-            .filter((it) => it && typeof it === 'object')
-            .map((it) => ({ name: String(it.name || ''), image: String(it.image || '') }))
-            .filter((it) => it.name);
+          updates[key] = String(patch[key]);
         }
-      } else if (patch[key] == null) {
-        updated[key] = undefined;
-      } else {
-        updated[key] = String(patch[key]);
       }
     }
+    
+    const updatedProduct = JSONDatabase.updateProduct(id, updates);
+    if (!updatedProduct) {
+      return res.status(404).json({ message: 'Product not found' });
+    }
+    
+    return res.json(updatedProduct);
+  } catch (error) {
+    console.error('Error updating product:', error);
+    return res.status(500).json({ message: 'Failed to update product' });
   }
-  list[idx] = updated;
-  writeProducts(list);
-  return res.json(updated);
 });
 
 app.delete('/api/products/:id', (req, res) => {
-  const { id } = req.params;
-  const list = readProducts();
-  const idx = list.findIndex(p => p.id === id);
-  if (idx === -1) return res.status(404).json({ message: 'Product not found' });
-  list.splice(idx, 1);
-  writeProducts(list);
-  return res.status(204).send();
+  try {
+    const { id } = req.params;
+    const success = JSONDatabase.deleteProduct(id);
+    if (!success) {
+      return res.status(404).json({ message: 'Product not found' });
+    }
+    return res.status(204).send();
+  } catch (error) {
+    console.error('Error deleting product:', error);
+    return res.status(500).json({ message: 'Failed to delete product' });
+  }
 });
 
 app.post('/api/products/reset', (req, res) => {

@@ -1,5 +1,5 @@
 import React, { createContext, useContext, useEffect, useState } from "react";
-import { products } from "@/data/products";
+import { useProducts } from "@/contexts/ProductsContext";
 
 export interface InventoryItem {
   id: string;
@@ -49,6 +49,7 @@ const suppliers = [
 ];
 
 export const InventoryProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
+  const { all: products } = useProducts();
   const [inventory, setInventory] = useState<InventoryItem[]>(() => {
     try {
       const raw = localStorage.getItem(LS_INVENTORY);
@@ -82,7 +83,7 @@ export const InventoryProvider: React.FC<{ children: React.ReactNode }> = ({ chi
       setInventory(prev => prev.filter(it => !isDemoInventoryItem(it)));
       return;
     }
-    const inventoryItems: InventoryItem[] = products.map((product) => {
+  const inventoryItems: InventoryItem[] = products.map((product) => {
       const stock = generateRandomStock();
       const lowStockThreshold = generateLowStockThreshold();
       // Some items should be out of stock for demo

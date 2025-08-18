@@ -1,4 +1,5 @@
-import { useState } from "react";
+import React, { useState, useRef } from "react";
+import * as Papa from "papaparse";
 import { useProducts } from "@/contexts/ProductsContext";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -11,11 +12,57 @@ import { useToast } from "@/hooks/use-toast";
 import { AdminProductItemsModal } from "./AdminProductItemsModalEnhanced";
 
 export default function AdminProducts() {
+  const fileInputRef = useRef<HTMLInputElement>(null);
+  const [uploading, setUploading] = useState(false);
+
+  // CSV upload handler
+  const handleCSVUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    setUploading(true);
+    Papa.parse(file, {
+      header: true,
+      skipEmptyLines: true,
+      complete: (results) => {
+        const rows = results.data as any[];
+        let added = 0, failed = 0;
+        // Use a helper to sequentially add products
+        const addNext = async (i: number) => {
+          if (i >= rows.length) {
+            setUploading(false);
+            toast({ title: "CSV Upload Complete", description: `${added} added, ${failed} failed. Edit image URLs as needed.` });
+            if (fileInputRef.current) fileInputRef.current.value = "";
+            return;
+          }
+          const row = rows[i];
+          if (!row.name || !row.price || !row.category) { failed++; return addNext(i+1); }
+          const items = row.items ? String(row.items).split(",").map((s) => s.trim()).filter(Boolean) : undefined;
+          add({
+            name: row.name,
+            price: Number(row.price),
+            originalPrice: row.originalPrice ? Number(row.originalPrice) : undefined,
+            image: "", // admin will edit after upload
+            category: row.category,
+            description: row.description || undefined,
+            items,
+          }).then(() => { added++; addNext(i+1); })
+            .catch(() => { failed++; addNext(i+1); });
+        };
+        addNext(0);
+      },
+      error: () => {
+        setUploading(false);
+        toast({ title: "CSV Upload Failed", description: "Could not parse file." });
+      }
+    });
+  };
+
   const { all, add, update, remove, restoreDefaults } = useProducts();
   const { toast } = useToast();
   const [itemsModalOpen, setItemsModalOpen] = useState(false);
   const [activeProductId, setActiveProductId] = useState<string | null>(null);
-  const [draft, setDraft] = useState({ name: "", price: "", originalPrice: "", image: "", category: "basket", description: "", itemsText: "" });
+  const emptyDraft = { name: "", price: "", originalPrice: "", image: "", category: "basket", description: "", itemsText: "" };
+  const [draft, setDraft] = useState<typeof emptyDraft>(emptyDraft);
   const [filter, setFilter] = useState<string>("all");
 
   const normalizeUrl = (url: string) => {
@@ -30,27 +77,38 @@ export default function AdminProducts() {
     return v;
   };
 
-  const onAdd = () => {
-    if (!draft.name || !draft.price || !draft.image) return alert("Name, price and image are required");
-    const addedName = draft.name;
-    const items = draft.itemsText
-      ? draft.itemsText.split(",").map((s) => s.trim()).filter(Boolean)
+  const onAdd = async () => {
+    const safeDraft = draft || emptyDraft;
+    if (!safeDraft.name || !safeDraft.price || !safeDraft.image) return alert("Name, price and image are required");
+    const items = safeDraft.itemsText
+      ? safeDraft.itemsText.split(",").map((s) => s.trim()).filter(Boolean)
       : undefined;
-    add({
-      name: draft.name,
-      price: Number(draft.price),
-      originalPrice: draft.originalPrice ? Number(draft.originalPrice) : undefined,
-      image: normalizeUrl(draft.image),
-      category: draft.category,
-      description: draft.description || "",
-      items,
-    });
-    setDraft({ name: "", price: "", originalPrice: "", image: "", category: "basket", description: "", itemsText: "" });
-    toast({ title: "Item added", description: `${addedName} has been added.` });
+    try {
+      const payload = {
+        name: safeDraft.name,
+        price: Number(safeDraft.price),
+        originalPrice: safeDraft.originalPrice ? Number(safeDraft.originalPrice) : undefined,
+        image: normalizeUrl(safeDraft.image),
+        category: safeDraft.category,
+        description: safeDraft.description || undefined,
+        items,
+      } as any;
+
+      await add(payload);
+      setDraft(emptyDraft);
+      toast({ title: "Product added", description: "Product was added successfully" });
+    } catch (err: any) {
+      console.error(err);
+      const msg = err?.message || String(err);
+      toast({ title: "Failed", description: `Could not add product: ${msg}` });
+    }
   };
 
   const visible = all.filter(p => filter === "all" ? true : p.category === filter);
   const categories = Array.from(new Set(all.map(p => p.category))).filter(Boolean);
+
+  // Defensive: always use a valid draft object
+  const safeDraft = draft || emptyDraft;
 
   return (
     <div className="min-h-screen py-8">
@@ -67,25 +125,37 @@ export default function AdminProducts() {
             <CardTitle>Add New Item</CardTitle>
           </CardHeader>
           <CardContent className="grid md:grid-cols-5 gap-3">
+            <div className="md:col-span-5 flex flex-col md:flex-row gap-2 items-start md:items-center mb-2">
+              <input
+                type="file"
+                accept=".csv"
+                ref={fileInputRef}
+                onChange={handleCSVUpload}
+                disabled={uploading}
+                className="block"
+              />
+              <span className="text-xs text-muted-foreground">Upload CSV to bulk add products (columns: name, price, category, description, items, originalPrice)</span>
+              {uploading && <span className="text-xs text-blue-600 ml-2">Uploading...</span>}
+            </div>
             <div>
               <Label>Name</Label>
-              <Input value={draft.name} onChange={(e) => setDraft(d => ({ ...d, name: e.target.value }))} />
+              <Input value={safeDraft.name} onChange={(e) => setDraft(d => ({ ...(d || emptyDraft), name: e.target.value }))} />
             </div>
             <div>
               <Label>Price (KES)</Label>
-              <Input type="number" value={draft.price} onChange={(e) => setDraft(d => ({ ...d, price: e.target.value }))} />
+              <Input type="number" value={safeDraft.price} onChange={(e) => setDraft(d => ({ ...(d || emptyDraft), price: e.target.value }))} />
             </div>
             <div>
               <Label>Original Price (optional)</Label>
-              <Input type="number" value={draft.originalPrice} onChange={(e) => setDraft(d => ({ ...d, originalPrice: e.target.value }))} />
+              <Input type="number" value={safeDraft.originalPrice} onChange={(e) => setDraft(d => ({ ...(d || emptyDraft), originalPrice: e.target.value }))} />
             </div>
             <div>
               <Label>Image URL</Label>
-              <Input value={draft.image} onChange={(e) => setDraft(d => ({ ...d, image: e.target.value }))} placeholder="/path or https://" />
+              <Input value={safeDraft.image} onChange={(e) => setDraft(d => ({ ...(d || emptyDraft), image: e.target.value }))} placeholder="/path or https://" />
             </div>
             <div>
               <Label>Category</Label>
-              <Select value={draft.category} onValueChange={(v) => setDraft(d => ({ ...d, category: v }))}>
+              <Select value={safeDraft.category} onValueChange={(v) => setDraft(d => ({ ...(d || emptyDraft), category: v }))}>
                 <SelectTrigger><SelectValue /></SelectTrigger>
                 <SelectContent>
                   <SelectItem value="basket">basket</SelectItem>
@@ -100,11 +170,11 @@ export default function AdminProducts() {
             </div>
             <div className="md:col-span-5">
               <Label>Description</Label>
-              <Textarea value={draft.description} onChange={(e) => setDraft(d => ({ ...d, description: e.target.value }))} placeholder="Short description shown under price" rows={2} />
+              <Textarea value={safeDraft.description} onChange={(e) => setDraft(d => ({ ...(d || emptyDraft), description: e.target.value }))} placeholder="Short description shown under price" rows={2} />
             </div>
             <div className="md:col-span-5">
               <Label>Items (comma-separated)</Label>
-              <Input value={draft.itemsText} onChange={(e) => setDraft(d => ({ ...d, itemsText: e.target.value }))} placeholder="e.g. 2kg Rice, 1kg Sugar, 500ml Oil" />
+              <Input value={safeDraft.itemsText} onChange={(e) => setDraft(d => ({ ...(d || emptyDraft), itemsText: e.target.value }))} placeholder="e.g. 2kg Rice, 1kg Sugar, 500ml Oil" />
               <p className="text-xs text-muted-foreground mt-1">This powers the "X Items" text. "Save KES" shows when Original Price is higher than Price.</p>
             </div>
             <div className="md:col-span-5">

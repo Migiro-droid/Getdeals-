@@ -6,7 +6,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { ChartContainer, ChartTooltip, ChartTooltipContent } from "@/components/ui/chart";
 import { Line, LineChart, XAxis, YAxis, CartesianGrid, Bar, BarChart, PieChart, Pie, Cell } from "recharts";
 import { useOrders, OrderStatus } from "@/contexts/OrdersContext";
-import { products as seedProducts } from "@/data/products";
+import { useProducts } from "@/contexts/ProductsContext";
 import { useAdmin } from "@/contexts/AdminContext";
 import { Link } from "react-router-dom";
 import { ArrowUpRight, ArrowDownRight, TrendingUp, ShoppingBag, Wallet, Settings, AlertTriangle, Truck, CheckCircle, Clock, FileDown } from "lucide-react";
@@ -14,6 +14,7 @@ import { ArrowUpRight, ArrowDownRight, TrendingUp, ShoppingBag, Wallet, Settings
 export default function AdminDashboard() {
   const { orders, metrics, seedOrders } = useOrders();
   const { settings, logout } = useAdmin();
+  const { all: products } = useProducts();
   const [range, setRange] = useState<"7d" | "30d" | "all">("7d");
 
   const fmtCurrency = (n: number) => `KES ${n.toLocaleString()}`;
@@ -61,13 +62,14 @@ export default function AdminDashboard() {
   }, [revenueInRange, prevRevenue]);
 
   // Demo data generator
+  // Demo data generator using live products
   const genDemoOrders = () => {
     const statuses = ["pending", "confirmed", "preparing", "out_for_delivery", "delivered", "cancelled"] as const;
     const pay = ["mpesa", "card", "wallet", "cash"] as const;
     const del = ["pickup", "speedy"] as const;
     const rand = (min: number, max: number) => Math.floor(Math.random() * (max - min + 1)) + min;
     const pick = <T,>(arr: readonly T[]) => arr[rand(0, arr.length - 1)];
-    const prods = seedProducts;
+    const prods = products.length > 0 ? products : [];
     const out: any[] = [];
     const today = new Date();
     for (let d = 0; d < 30; d++) { // last 30 days
@@ -76,11 +78,13 @@ export default function AdminDashboard() {
       const ordersCount = rand(0, 4);
       for (let k = 0; k < ordersCount; k++) {
         const itemsCount = rand(1, 3);
-        const items = Array.from({ length: itemsCount }).map(() => {
-          const p = pick(prods);
-          const qty = rand(1, 3);
-          return { id: p.id, name: p.name, price: p.price, quantity: qty, image: p.image };
-        });
+        const items = prods.length > 0
+          ? Array.from({ length: itemsCount }).map(() => {
+              const p = pick(prods);
+              const qty = rand(1, 3);
+              return { id: p.id, name: p.name, price: p.price, quantity: qty, image: p.image };
+            })
+          : [];
         const subtotal = items.reduce((s, it) => s + it.price * it.quantity, 0);
         const deliveryFee = pick(del) === "speedy" ? 200 : 0;
         const total = subtotal + deliveryFee;

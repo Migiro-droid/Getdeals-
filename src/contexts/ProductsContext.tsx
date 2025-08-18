@@ -3,7 +3,7 @@ import type { Product } from "@/data/products";
 
 type ProductsCtx = {
   all: Product[];
-  add: (p: Omit<Product, "id">) => Product;
+  add: (p: Omit<Product, "id">) => Promise<Product>;
   update: (id: string, patch: Partial<Product>) => void;
   remove: (id: string) => void;
   restoreDefaults: () => void;
@@ -21,27 +21,64 @@ export const ProductsProvider: React.FC<{ children: React.ReactNode }> = ({ chil
   const [version, setVersion] = useState(0);
   const api = {
     async list() {
-      const r = await fetch("/api/products");
-      if (!r.ok) throw new Error("Failed to fetch products");
-      return (await r.json()) as Product[];
+      // Try Vercel API first, fallback to localhost for development
+      const baseUrl = process.env.NODE_ENV === 'production' 
+        ? window.location.origin 
+        : "http://localhost:4000";
+      const r = await fetch(`${baseUrl}/api/products`);
+      const text = await r.text();
+      if (!r.ok) {
+        let msg = text;
+        try { const j = JSON.parse(text); msg = j.message || JSON.stringify(j); } catch (e) {}
+        throw new Error(`Failed to fetch products: ${r.status} ${r.statusText} - ${msg}`);
+      }
+      return JSON.parse(text) as Product[];
     },
     async add(p: Omit<Product, "id">) {
-      const r = await fetch("/api/products", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(p) });
-      if (!r.ok) throw new Error("Failed to add product");
-      return (await r.json()) as Product;
+      const baseUrl = process.env.NODE_ENV === 'production' 
+        ? window.location.origin 
+        : "http://localhost:4000";
+      const r = await fetch(`${baseUrl}/api/products`, { 
+        method: "POST", 
+        headers: { "Content-Type": "application/json" }, 
+        body: JSON.stringify(p) 
+      });
+      const text = await r.text();
+      if (!r.ok) {
+        let msg = text;
+        try { const j = JSON.parse(text); msg = j.message || JSON.stringify(j); } catch (e) {}
+        throw new Error(`Failed to add product: ${r.status} ${r.statusText} - ${msg}`);
+      }
+      return JSON.parse(text) as Product;
     },
     async update(id: string, patch: Partial<Product>) {
-      const r = await fetch(`/api/products/${id}`, { method: "PATCH", headers: { "Content-Type": "application/json" }, body: JSON.stringify(patch) });
+      const baseUrl = process.env.NODE_ENV === 'production' 
+        ? window.location.origin 
+        : "http://localhost:4000";
+        
+      const r = await fetch(`${baseUrl}/api/products/${id}`, { 
+        method: "PUT", 
+        headers: { "Content-Type": "application/json" }, 
+        body: JSON.stringify(patch) 
+      });
       if (!r.ok) throw new Error("Failed to update product");
       return (await r.json()) as Product;
     },
     async remove(id: string) {
-      const r = await fetch(`/api/products/${id}`, { method: "DELETE" });
+      const baseUrl = process.env.NODE_ENV === 'production' 
+        ? window.location.origin 
+        : "http://localhost:4000";
+        
+      const r = await fetch(`${baseUrl}/api/products/${id}`, { method: "DELETE" });
       if (!r.ok) throw new Error("Failed to delete product");
       return true;
     },
     async reset() {
-      const r = await fetch(`/api/products/reset`, { method: "POST" });
+      const baseUrl = process.env.NODE_ENV === 'production' 
+        ? window.location.origin 
+        : "http://localhost:4000";
+        
+      const r = await fetch(`${baseUrl}/api/products/reset`, { method: "POST" });
       if (!r.ok) throw new Error("Failed to reset products");
       return true;
     }
@@ -55,18 +92,13 @@ export const ProductsProvider: React.FC<{ children: React.ReactNode }> = ({ chil
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  const add: ProductsCtx["add"] = useCallback((p) => {
-    const run = async () => {
-      const created = await api.add(p);
-      setAll((prev) => [created, ...prev]);
-  setVersion((v) => v + 1);
-      return created;
-    };
-    // return placeholder then update when resolved for API compatibility
-    // but here we await synchronously by throwing promise is not ideal; just return fake immediately
-    // Consumers don't rely on return value; in AdminProducts we don't use it.
-    run().catch(console.error);
-    return { id: "temp", ...p } as Product;
+  const add: ProductsCtx["add"] = useCallback(async (p) => {
+    // perform add and return the created product, re-fetch list to stay in sync
+    const created = await api.add(p);
+    const latest = await api.list();
+    setAll(latest);
+    setVersion((v) => v + 1);
+    return created;
   }, []);
 
   const update: ProductsCtx["update"] = useCallback((id, patch) => {

@@ -3,7 +3,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/u
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { ShoppingCart, X } from "lucide-react";
-import { Product } from "@/data/products";
+import type { Product } from "@/data/products";
 import { useCart } from "@/contexts/CartContext";
 import { useProducts } from "@/contexts/ProductsContext";
 import { useAuth } from "@/contexts/AuthContext";

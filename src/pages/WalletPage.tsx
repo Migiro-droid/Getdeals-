@@ -170,7 +170,7 @@ export default function WalletPage() {
                         <div className={t.type === "deposit" ? "text-emerald-700" : "text-red-700"}>
                           {t.type === "deposit" ? "+" : "-"} KES {t.amount.toLocaleString()}
                         </div>
-                        <Badge variant="outline" className="mt-1">KES</Badge>
+                        <Badge className="mt-1">KES</Badge>
                       </div>
                     </div>
                   ))}

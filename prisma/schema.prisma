@@ -1,0 +1,170 @@
+// Prisma schema for GetDeals Kenya
+// This file defines your database schema
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider  = "postgresql"
+  url       = env("DATABASE_URL")
+  directUrl = env("DATABASE_URL_UNPOOLED")
+}
+
+model Product {
+  id            String   @id @default(cuid())
+  name          String
+  price         Int      // Price in cents (e.g., 3000 = KES 30.00)
+  originalPrice Int?     // Original price in cents
+  image         String
+  discount      Int?     // Discount percentage
+  items         String[] // Array of item names
+  itemsDetail   Json?    // Array of {name, image} objects
+  category      String
+  description   String?
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  // Relations
+  orderItems    OrderItem[]
+
+  @@map("products")
+}
+
+model User {
+  id                String   @id @default(cuid())
+  name              String
+  email             String   @unique
+  phone             String?  @unique
+  passwordHash      String?
+  role              String   @default("customer") // customer, admin
+  twoFactorEnabled  Boolean  @default(false)
+  twoFactorSecret   String?
+  emailVerified     Boolean  @default(false)
+  phoneVerified     Boolean  @default(false)
+  createdAt         DateTime @default(now())
+  updatedAt         DateTime @updatedAt
+
+  // Relations
+  orders            Order[]
+  addresses         Address[]
+  paymentMethods    PaymentMethod[]
+
+  @@map("users")
+}
+
+model Order {
+  id             String   @id @default(cuid())
+  userId         String
+  total          Int      // Total in cents
+  subtotal       Int      // Subtotal in cents
+  deliveryFee    Int      // Delivery fee in cents
+  status         String   @default("pending") // pending, confirmed, processing, shipped, delivered, cancelled
+  paymentStatus  String   @default("pending") // pending, paid, failed, refunded
+  paymentMethod  String?  // mpesa, card, cash
+  deliveryMethod String   @default("standard") // standard, express
+  deliveryDate   DateTime?
+  notes          String?
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+
+  // Relations
+  user           User       @relation(fields: [userId], references: [id])
+  items          OrderItem[]
+  payments       Payment[]
+  address        Address?   @relation(fields: [addressId], references: [id])
+  addressId      String?
+
+  @@map("orders")
+}
+
+model OrderItem {
+  id        String @id @default(cuid())
+  orderId   String
+  productId String
+  quantity  Int
+  price     Int    // Price at time of order (in cents)
+  
+  // Relations
+  order     Order   @relation(fields: [orderId], references: [id])
+  product   Product @relation(fields: [productId], references: [id])
+
+  @@map("order_items")
+}
+
+model Payment {
+  id                String   @id @default(cuid())
+  orderId           String
+  amount            Int      // Amount in cents
+  method            String   // mpesa, card, cash
+  status            String   @default("pending") // pending, completed, failed, cancelled
+  transactionId     String?  // M-Pesa transaction ID
+  phoneNumber       String?  // For M-Pesa payments
+  reference         String?  // Payment reference
+  failureReason     String?
+  processedAt       DateTime?
+  createdAt         DateTime @default(now())
+
+  // Relations
+  order             Order    @relation(fields: [orderId], references: [id])
+
+  @@map("payments")
+}
+
+model Address {
+  id           String  @id @default(cuid())
+  userId       String
+  name         String  // Address name (e.g., "Home", "Office")
+  street       String
+  city         String
+  county       String
+  postalCode   String?
+  landmark     String?
+  phoneNumber  String
+  isDefault    Boolean @default(false)
+  createdAt    DateTime @default(now())
+
+  // Relations
+  user         User    @relation(fields: [userId], references: [id])
+  orders       Order[]
+
+  @@map("addresses")
+}
+
+model PaymentMethod {
+  id           String  @id @default(cuid())
+  userId       String
+  type         String  // mpesa, card
+  phoneNumber  String? // For M-Pesa
+  cardLast4    String? // For cards
+  cardBrand    String? // visa, mastercard
+  isDefault    Boolean @default(false)
+  createdAt    DateTime @default(now())
+
+  // Relations
+  user         User    @relation(fields: [userId], references: [id])
+
+  @@map("payment_methods")
+}
+
+model Category {
+  id          String @id @default(cuid())
+  name        String @unique
+  slug        String @unique
+  description String?
+  image       String?
+  isActive    Boolean @default(true)
+  sortOrder   Int     @default(0)
+  createdAt   DateTime @default(now())
+
+  @@map("categories")
+}
+
+model Setting {
+  id    String @id @default(cuid())
+  key   String @unique
+  value String
+  type  String @default("string") // string, number, boolean, json
+
+  @@map("settings")
+}

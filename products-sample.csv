@@ -1,0 +1,10 @@
+name,price,originalPrice,category,description,items,image
+Family Basket,2500,3000,basket,"A basket for the whole family","2kg Rice, 1kg Sugar, 500ml Oil","/assets/products/family-basket.jpg"
+Essential Basket,1500,1800,essential,"Basic essentials for every home","1kg Flour, 1kg Sugar, 1L Oil","/assets/products/essential-basket.jpg"
+Bread,100,,essential,"Freshly baked bread","","/assets/products/bread.jpg"
+Cooking Oil,350,400,essential,"Pure cooking oil","","/assets/products/oil.jpg"
+Sugar,200,250,essential,"Sweet sugar for your tea","","/assets/products/sugar.jpg"
+Flour,180,220,essential,"Fine wheat flour","","/assets/products/flour.jpg"
+Rice,300,350,essential,"Long grain rice","","/assets/products/rice.jpg"
+Holiday Basket,3500,4000,holiday,"Special basket for holidays","2kg Rice, 2kg Sugar, 2L Oil, 2kg Flour","/assets/products/hero-family.jpg"
+School Basket,2000,2300,school,"Back to school essentials","1kg Rice, 1kg Sugar, 1L Oil, 1kg Flour","/assets/products/hero-supermarket.jpg"

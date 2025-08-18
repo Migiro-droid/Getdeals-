@@ -80,22 +80,36 @@ export function Header() {
           {/* Right Actions */}
           <div className="flex items-center space-x-4">
             {/* Wallet quick pill */}
-            <Link to="/wallet" className="hidden md:flex">
-              <div className="px-3 py-1 rounded-full text-xs bg-primary/10 text-primary font-medium">
-                Wallet: KES {balance.toLocaleString()}
-              </div>
-            </Link>
+            {isAuthenticated && (
+              <Link to="/wallet" className="hidden md:flex">
+                <div className="px-3 py-1 rounded-full text-xs bg-primary/10 text-primary font-medium">
+                  Wallet: KES {balance.toLocaleString()}
+                </div>
+              </Link>
+            )}
+            
             {/* Mobile Search Button */}
             <Button variant="ghost" size="icon" className="md:hidden">
               <Search className="h-5 w-5" />
             </Button>
 
-            {/* User Account - Disabled for now */}
-            <Link to="/account">
-              <Button variant="ghost" size="icon">
-                <User className="h-5 w-5" />
+            {/* User Account / Authentication */}
+            {isAuthenticated ? (
+              <Link to="/account">
+                <Button variant="ghost" size="icon">
+                  <User className="h-5 w-5" />
+                </Button>
+              </Link>
+            ) : (
+              <Button 
+                variant="ghost" 
+                size="sm"
+                onClick={() => setAuthOpen(true)}
+                className="hidden md:flex"
+              >
+                Sign In
               </Button>
-            </Link>
+            )}
 
             {/* Shopping Cart */}
             <Link to="/cart" className="relative">
@@ -151,17 +165,31 @@ export function Header() {
                   {item.name}
                 </Link>
               ))}
+              
+              {/* Mobile Authentication */}
+              {!isAuthenticated && (
+                <div className="px-3 py-2 border-t">
+                  <Button 
+                    variant="default" 
+                    size="sm"
+                    onClick={() => {
+                      setAuthOpen(true);
+                      setIsMobileMenuOpen(false);
+                    }}
+                    className="w-full"
+                  >
+                    Sign In
+                  </Button>
+                </div>
+              )}
             </div>
           </div>
         )}
       </div>
     </header>
-<<<<<<< Updated upstream
-    {/* AuthModals disabled for now */}
-    {/* <AuthModals open={authOpen} onOpenChange={setAuthOpen} defaultTab="signin" /> */}
-=======
-  <AuthModals open={authOpen} onOpenChange={setAuthOpen} defaultTab={"signin"} />
->>>>>>> Stashed changes
+    
+    {/* Authentication Modals */}
+    <AuthModals open={authOpen} onOpenChange={setAuthOpen} defaultTab="signin" />
     </>
   );
 }
