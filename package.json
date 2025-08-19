@@ -7,8 +7,8 @@
     "node": "18.x"
   },
   "scripts": {
-    "dev": "vite",
-    "build": "vite build",
+  "dev": "vite",
+  "build": "prisma generate && vite build",
     "build:dev": "vite build --mode development",
     "lint": "eslint .",
     "preview": "vite preview",
