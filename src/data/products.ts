@@ -18,7 +18,7 @@ export const products: Product[] = [
     name: "Essential Basket",
     price: 3000,
     originalPrice: 3500,
-    image: "src/assets/essential-basket.jpg",
+    image: "/essential-basket.jpg",
     items: [
       "2kg Rice",
       "1kg Sugar", 
@@ -34,7 +34,7 @@ export const products: Product[] = [
     name: "Mini Essential Basket",
     price: 1800,
     originalPrice: 2200,
-    image: "src/assets/essential-basket.jpg",
+    image: "/essential-basket.jpg",
     items: [
       "1kg Rice",
       "500g Sugar", 
@@ -49,7 +49,7 @@ export const products: Product[] = [
     name: "Mega Essential Basket",
     price: 4500,
     originalPrice: 5500,
-    image: "src/assets/essential-basket.jpg",
+    image: "/essential-basket.jpg",
     items: [
       "5kg Rice",
       "2kg Sugar", 
@@ -68,7 +68,7 @@ export const products: Product[] = [
     name: "Family Basket", 
     price: 5000,
     originalPrice: 6200,
-    image: "src/assets/family-basket.jpg",
+    image: "/family-basket.jpg",
     items: [
       "5kg Rice",
       "2kg Sugar",
@@ -84,7 +84,7 @@ export const products: Product[] = [
     name: "Premium Family Basket",
     price: 10000,
     originalPrice: 12500,
-    image: "src/assets/family-basket.jpg",
+    image: "/family-basket.jpg",
     items: [
       "10kg Rice (Premium)",
       "5kg Sugar",
@@ -100,7 +100,7 @@ export const products: Product[] = [
     name: "Luxury Family Basket",
     price: 15000,
     originalPrice: 19500,
-    image: "src/assets/family-basket.jpg",
+    image: "/family-basket.jpg",
     items: [
       "15kg Premium Rice",
       "10kg Sugar",
@@ -118,7 +118,7 @@ export const products: Product[] = [
     name: "Back to School Basket",
     price: 4200,
     originalPrice: 5000,
-    image: "src/assets/essential-basket.jpg",
+    image: "/essential-basket.jpg",
     items: [
       "3kg Rice",
       "1kg Sugar",
@@ -134,7 +134,7 @@ export const products: Product[] = [
     name: "Holiday Feast Basket",
     price: 8500,
     originalPrice: 10200,
-    image: "src/assets/family-basket.jpg",
+    image: "/family-basket.jpg",
     items: [
       "10kg Rice",
       "3kg Sugar",
@@ -150,7 +150,7 @@ export const products: Product[] = [
     name: "Essentials Plus Basket",
     price: 3800,
     originalPrice: 4400,
-    image: "src/assets/essential-basket.jpg",
+    image: "/essential-basket.jpg",
     items: [
       "3kg Rice",
       "1kg Sugar",
@@ -166,7 +166,7 @@ export const products: Product[] = [
     name: "Essentials Max Basket",
     price: 6200,
     originalPrice: 7400,
-    image: "src/assets/essential-basket.jpg",
+    image: "/essential-basket.jpg",
     items: [
       "5kg Rice",
       "2kg Sugar",
@@ -213,7 +213,7 @@ export const products: Product[] = [
     name: "Christmas Special Basket",
     price: 8500,
     originalPrice: 10500,
-    image: "src/assets/family-basket.jpg",
+    image: "/family-basket.jpg",
     items: [
       "5kg Premium Rice",
       "2kg Sugar",
@@ -230,7 +230,7 @@ export const products: Product[] = [
     name: "Easter Family Basket",
     price: 6500,
     originalPrice: 8000,
-    image: "src/assets/family-basket.jpg",
+    image: "/family-basket.jpg",
     items: [
       "3kg Rice",
       "1kg Sugar",
@@ -249,7 +249,7 @@ export const products: Product[] = [
     name: "School Lunch Basket",
     price: 4200,
     originalPrice: 5200,
-    image: "src/assets/essential-basket.jpg",
+    image: "/essential-basket.jpg",
     items: [
       "2kg Rice",
       "1kg Sugar",
@@ -266,7 +266,7 @@ export const products: Product[] = [
     name: "Student Essential Basket",
     price: 3500,
     originalPrice: 4500,
-    image: "src/assets/essential-basket.jpg",
+    image: "/essential-basket.jpg",
     items: [
       "2kg Rice",
       "1kg Sugar",
@@ -285,7 +285,7 @@ export const products: Product[] = [
     name: "Weekend Spirits Pack",
     price: 12000,
     originalPrice: 15000,
-    image: "src/assets/family-basket.jpg",
+    image: "/family-basket.jpg",
     items: [
       "Premium Whiskey (750ml)",
       "Red Wine (750ml)",
@@ -301,7 +301,7 @@ export const products: Product[] = [
     name: "Wine Collection Pack",
     price: 8500,
     originalPrice: 11000,
-    image: "src/assets/family-basket.jpg",
+    image: "/family-basket.jpg",
     items: [
       "Red Wine (750ml)",
       "White Wine (750ml)",
@@ -319,7 +319,7 @@ export const products: Product[] = [
     name: "Black Friday Mega Deal",
     price: 7500,
     originalPrice: 12000,
-    image: "src/assets/family-basket.jpg",
+    image: "/family-basket.jpg",
     items: [
       "10kg Rice",
       "5kg Sugar",
@@ -336,7 +336,7 @@ export const products: Product[] = [
     name: "Black Friday Family Pack",
     price: 4500,
     originalPrice: 8000,
-    image: "src/assets/family-basket.jpg",
+    image: "/family-basket.jpg",
     items: [
       "5kg Rice",
       "2kg Sugar",

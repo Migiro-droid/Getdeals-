@@ -2,11 +2,11 @@ import { createRoot } from 'react-dom/client'
 import App from './App.tsx'
 import './index.css'
 import { ErrorBoundary } from './components/ErrorBoundary.tsx'
-import logoUrl from './assets/logo.png?url'
 
 // Ensure favicon uses our logo in both dev and prod
 (() => {
 	try {
+		const logoUrl = '/logo.png';
 		const setIcon = (rel: string, href: string) => {
 			let link = document.querySelector(`link[rel='${rel}']`) as HTMLLinkElement | null;
 			if (!link) {

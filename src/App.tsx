@@ -32,6 +32,7 @@ import AdminProducts from "./pages/admin/AdminProducts";
 import AdminUsers from "./pages/admin/AdminUsers";
 import InventoryPage from "./pages/admin/InventoryPage";
 import OutOfStockPage from "./pages/admin/OutOfStockPage";
+import TestProductsPage from "./pages/TestProductsPage";
 import WalletPage from "./pages/WalletPage";
 
 const queryClient = new QueryClient();
@@ -120,6 +121,7 @@ const App = () => (
                 <Route path="/how-it-works" element={<HowItWorksPage />} />
                 <Route path="/account" element={<AccountPage />} />
                 <Route path="/faq" element={<FAQPage />} />
+                <Route path="/test-products" element={<TestProductsPage />} />
                 <Route path="/wallet" element={<WalletPage />} />
                 <Route path="/admin" element={<AdminGuard><AdminDashboard /></AdminGuard>} />
                 <Route path="/admin/orders" element={<AdminGuard><AdminOrders /></AdminGuard>} />
@@ -150,7 +152,6 @@ const App = () => (
 export default App;
 
 function MaintenanceBanner() {
-  const { settings } = useAdmin();
   const { isAuthenticated } = useAuth();
   
   return (
@@ -161,12 +162,6 @@ function MaintenanceBanner() {
           <div className="container mx-auto px-4 text-center">
             🔐 Authentication is now enabled! Please sign in to access all features.
           </div>
-        </div>
-      )}
-      {/* Maintenance Banner */}
-      {settings.maintenanceMode && (
-        <div className="bg-yellow-100 text-yellow-800 text-sm py-2">
-          <div className="container mx-auto px-4">Maintenance mode active. Some features may be limited.</div>
         </div>
       )}
     </>

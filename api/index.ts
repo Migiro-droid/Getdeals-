@@ -1,5 +1,4 @@
 import { VercelRequest, VercelResponse } from '@vercel/node';
-import { prisma, getProducts, createProduct, updateProduct, deleteProduct, getUsers, getOrders, seedDatabase } from '../lib/db';
 
 export default async function handler(req: VercelRequest, res: VercelResponse) {
   // Enable CORS
@@ -25,14 +24,25 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       });
     }
 
+    // Simple products endpoint for testing
+    if (method === 'GET' && path === '/api/products') {
+      // Lazy import to avoid module loading issues
+      const { getProducts } = await import('../lib/db');
+      const products = await getProducts();
+      return res.status(200).json(products);
+    }
+
     // Database seeding endpoint
     if (method === 'POST' && path === '/api/seed') {
+      const { seedDatabase } = await import('../lib/db');
       await seedDatabase();
       return res.status(200).json({ message: 'Database seeded successfully' });
     }
 
     // Products endpoints
     if (path === '/api/products') {
+      const { getProducts, createProduct } = await import('../lib/db');
+      
       if (method === 'GET') {
         const products = await getProducts();
         return res.status(200).json(products);
@@ -46,6 +56,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
 
     // Individual product operations
     if (path.startsWith('/api/products/')) {
+      const { getProducts, updateProduct, deleteProduct } = await import('../lib/db');
       const productId = path.split('/')[3];
 
       if (method === 'GET') {
@@ -76,12 +87,14 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
 
     // Users endpoints
     if (path === '/api/users' && method === 'GET') {
+      const { getUsers } = await import('../lib/db');
       const users = await getUsers();
       return res.status(200).json(users);
     }
 
     // Orders endpoints  
     if (path === '/api/orders' && method === 'GET') {
+      const { getOrders } = await import('../lib/db');
       const orders = await getOrders();
       return res.status(200).json(orders);
     }
