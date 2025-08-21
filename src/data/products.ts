@@ -349,7 +349,7 @@ export const products: Product[] = [
     description: "Amazing family deals for Black Friday"
   },
   {
-    id: "black-friday-electronics",
+    id: "black-friday-electronics-bundle",
     name: "Black Friday Electronics Bundle",
     price: 12500,
     originalPrice: 18000,
