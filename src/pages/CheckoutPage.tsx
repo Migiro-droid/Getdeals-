@@ -20,7 +20,7 @@ export default function CheckoutPage() {
   
   const [isLoading, setIsLoading] = useState(false);
   const [deliveryMethod, setDeliveryMethod] = useState("pickup");
-  const [paymentMethod, setPaymentMethod] = useState("mpesa");
+  const [paymentMethod, setPaymentMethod] = useState("wallet");
   const [paymentStatus, setPaymentStatus] = useState<"idle" | "processing" | "success" | "failed">("idle");
   
   // Customer details
@@ -145,9 +145,23 @@ export default function CheckoutPage() {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setIsLoading(true);
-    setPaymentStatus("processing");
 
     try {
+      // Check M-Pesa availability first
+      if (paymentMethod === "mpesa") {
+        // Show M-Pesa unavailable message
+        toast({
+          title: "M-Pesa Not Available 📱",
+          description: "M-Pesa integration is currently underway. Please use wallet payment or contact support for assistance.",
+          variant: "destructive",
+        });
+        setIsLoading(false);
+        return;
+      }
+
+      // Set processing status only for available payment methods
+      setPaymentStatus("processing");
+
       // Generate order reference
       const orderReference = `GD${Date.now()}${Math.random().toString(36).substr(2, 4).toUpperCase()}`;
       
@@ -177,100 +191,16 @@ export default function CheckoutPage() {
         status: 'pending'
       };
 
-      if (paymentMethod === "mpesa") {
-        const paymentPhone = mpesaPhone || phone;
-        
-        if (!paymentPhone) {
-          throw new Error("Phone number is required for M-Pesa payment");
-        }
+      // Handle wallet and other payment methods
+      const orderResult = await createOrder(orderData);
+      
+      if (!orderResult.success) {
+        throw new Error(orderResult.error || "Failed to create order");
+      }
 
-        // Initiate STK Push
-        const stkResult = await initiateSTKPush(finalTotal, paymentPhone, orderReference);
-        
-        if (!stkResult.success) {
-          throw new Error(stkResult.error || "Failed to initiate M-Pesa payment");
-        }
-
-        // Update order data with payment info
-        const updatedOrderData = {
-          ...orderData,
-          paymentInfo: {
-            method: 'mpesa',
-            phone: formatPhoneNumber(paymentPhone),
-            checkoutRequestId: stkResult.CheckoutRequestID,
-            merchantRequestId: stkResult.MerchantRequestID,
-          }
-        };
-
-        // Create order
-        const orderResult = await createOrder(updatedOrderData);
-        
-        if (!orderResult.success) {
-          throw new Error(orderResult.error || "Failed to create order");
-        }
-
-        // Show STK push notification
-        toast({
-          title: "M-Pesa Payment Initiated! 📱",
-          description: `Please check your phone (${paymentPhone}) and enter your M-Pesa PIN to complete the payment.`,
-        });
-
-        // Poll for payment status
-        const maxAttempts = 20; // 2 minutes with 6-second intervals
-        let attempts = 0;
-        
-        const pollPayment = async () => {
-          if (attempts >= maxAttempts) {
-            setPaymentStatus("failed");
-            toast({
-              title: "Payment Timeout",
-              description: "Payment verification timed out. Please contact support if money was deducted.",
-              variant: "destructive",
-            });
-            return;
-          }
-
-          attempts++;
-          const statusResult = await checkPaymentStatus(stkResult.CheckoutRequestID);
-          
-          if (statusResult.success && statusResult.status === 'completed') {
-            setPaymentStatus("success");
-            toast({
-              title: "Payment Successful! ✅",
-              description: "Your order has been confirmed and you'll receive an SMS shortly.",
-            });
-            
-            clearCart();
-            setTimeout(() => {
-              navigate(`/account?tab=orders&orderId=${orderResult.order.id}`);
-            }, 2000);
-          } else if (statusResult.status === 'failed') {
-            setPaymentStatus("failed");
-            toast({
-              title: "Payment Failed",
-              description: statusResult.error || "M-Pesa payment was not completed.",
-              variant: "destructive",
-            });
-          } else {
-            // Continue polling
-            setTimeout(pollPayment, 6000);
-          }
-        };
-
-        // Start polling after a short delay
-        setTimeout(pollPayment, 3000);
-
-      } else {
-        // Handle other payment methods
-        const orderResult = await createOrder(orderData);
-        
-        if (!orderResult.success) {
-          throw new Error(orderResult.error || "Failed to create order");
-        }
-
-        setPaymentStatus("success");
-        toast({
-          title: "Order Placed Successfully! 🎉",
+      setPaymentStatus("success");
+      toast({
+        title: "Order Placed Successfully! 🎉",
           description: "You will receive confirmation details shortly.",
         });
 
@@ -427,14 +357,14 @@ export default function CheckoutPage() {
                     </Label>
                   </div>
                   <div className="flex items-center space-x-2 p-4 border rounded-lg">
-                    <RadioGroupItem value="cash" id="cash" />
-                    <Label htmlFor="cash" className="flex-1">
+                    <RadioGroupItem value="wallet" id="wallet" />
+                    <Label htmlFor="wallet" className="flex-1">
                       <div className="flex items-center gap-2">
                         <DollarSign className="h-4 w-4" />
-                        <span className="font-medium">Cash Payment</span>
+                        <span className="font-medium">Wallet Payment</span>
                       </div>
                       <div className="text-sm text-muted-foreground">
-                        Pay cash on delivery/pickup
+                        Pay using your GetDeals wallet balance
                       </div>
                     </Label>
                   </div>
@@ -515,8 +445,7 @@ export default function CheckoutPage() {
                   className="w-full relative" 
                   disabled={
                     isLoading ||
-                    items.length === 0 ||
-                    paymentStatus === "processing"
+                    items.length === 0
                   }
                 >
                   {paymentStatus === "processing" ? (
@@ -534,6 +463,11 @@ export default function CheckoutPage() {
                       <Smartphone className="h-4 w-4 mr-2" />
                       Pay with M-Pesa
                     </>
+                  ) : paymentMethod === "wallet" ? (
+                    <>
+                      <DollarSign className="h-4 w-4 mr-2" />
+                      Pay with Wallet
+                    </>
                   ) : (
                     "Place Order"
                   )}
@@ -541,9 +475,17 @@ export default function CheckoutPage() {
                 
                 {paymentMethod === "mpesa" && (
                   <div className="text-xs text-center text-muted-foreground space-y-1">
-                    <p>• You'll receive an STK Push on your phone</p>
-                    <p>• Enter your M-Pesa PIN to complete payment</p>
-                    <p>• Payment confirmation is instant</p>
+                    <p>• M-Pesa integration is currently underway</p>
+                    <p>• Please use wallet payment for now</p>
+                    <p>• Contact support for assistance</p>
+                  </div>
+                )}
+
+                {paymentMethod === "wallet" && (
+                  <div className="text-xs text-center text-muted-foreground space-y-1">
+                    <p>• Payment will be deducted from your wallet balance</p>
+                    <p>• Top up your wallet for seamless payments</p>
+                    <p>• Instant order confirmation</p>
                   </div>
                 )}
               </CardContent>
