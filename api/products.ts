@@ -1,18 +1,14 @@
 // api/products.ts
 
-import { VercelRequest, VercelResponse } from '@vercel/node';
 import pkg from 'pg';
-
 const { Pool } = pkg;
 
 const pool = new Pool({
   connectionString: process.env.DATABASE_URL,
-  ssl: {
-    rejectUnauthorized: false, // required for Neon
-  },
+  ssl: { rejectUnauthorized: false }, // Neon requires SSL
 });
 
-export default async function handler(req: VercelRequest, res: VercelResponse) {
+export default async function handler(req, res) {
   res.setHeader('Access-Control-Allow-Origin', '*');
   res.setHeader('Access-Control-Allow-Methods', 'GET, POST, OPTIONS');
   res.setHeader('Access-Control-Allow-Headers', 'Content-Type');
@@ -23,7 +19,6 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
 
   try {
     if (req.method === 'GET') {
-      // Fetch all products
       const result = await pool.query('SELECT * FROM products ORDER BY "createdAt" DESC');
       return res.status(200).json(result.rows);
     }
@@ -45,12 +40,11 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       const values = [id, name, price, originalPrice, image, discount, items, itemsDetail, category, description];
 
       const result = await pool.query(query, values);
-
       return res.status(201).json(result.rows[0]);
     }
 
     return res.status(405).json({ error: 'Method not allowed' });
-  } catch (error: any) {
+  } catch (error) {
     console.error('Products API Error:', error);
     return res.status(500).json({ error: 'Internal Server Error', details: error.message });
   }
