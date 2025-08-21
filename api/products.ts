@@ -5,7 +5,7 @@ const sql = neon(process.env.DATABASE_URL!);
 export default async function handler(req: any, res: any) {
   try {
     if (req.method === 'GET') {
-      const products = await sql`SELECT * FROM products ORDER BY id DESC`;
+      const products = await sql`SELECT * FROM products ORDER BY "createdAt" DESC`;
       return res.status(200).json(products);
     }
 
@@ -21,8 +21,8 @@ export default async function handler(req: any, res: any) {
       
       const [newProduct] = await sql`
         INSERT INTO products (
-          id, name, price, original_price, image_url, category, 
-          description, items, items_detail, created_at
+          id, name, price, "originalPrice", image, category, 
+          description, items, "itemsDetail", "createdAt", "updatedAt"
         ) VALUES (
           ${productId},
           ${name},
@@ -31,8 +31,9 @@ export default async function handler(req: any, res: any) {
           ${image || 'https://via.placeholder.com/300'},
           ${category || 'general'},
           ${description || ''},
-          ${JSON.stringify(items || [])},
-          ${JSON.stringify(itemsDetail || [])},
+          ${items || []},
+          ${itemsDetail ? JSON.stringify(itemsDetail) : JSON.stringify([])},
+          NOW(),
           NOW()
         )
         RETURNING *
