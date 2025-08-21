@@ -38,6 +38,14 @@ import WalletPage from "./pages/WalletPage";
 const queryClient = new QueryClient();
 
 import { useAuth } from "./contexts/AuthContext";
+import { SupabaseAuthProvider } from "./contexts/SupabaseAuthContext";
+import { SupabaseProductsProvider } from "./contexts/SupabaseProductsContext";
+import { SupabaseAdminProvider } from "./contexts/SupabaseAdminContext";
+import { SupabaseWalletProvider } from "./contexts/SupabaseWalletContext";
+import SupabaseAdminProducts from "./pages/admin/SupabaseAdminProducts";
+import SupabaseAdminSettings from "./pages/admin/SupabaseAdminSettings";
+import AuthPage from "./pages/AuthPage";
+import SupabaseWalletPage from "./pages/SupabaseWalletPage";
 
 function AdminGuard({ children }: { children: JSX.Element }) {
   const { isAuthenticated, user } = useAuth();
@@ -95,14 +103,18 @@ function AdminGuard({ children }: { children: JSX.Element }) {
 const App = () => (
   <QueryClientProvider client={queryClient}>
     <TooltipProvider>
-      <CartProvider>
-        <WalletProvider>
-        <OrdersProvider>
-        <AdminProvider>
-        <ProductsProvider>
-        <InventoryProvider>
-  <AuthProvider>
-  <AccountProvider>
+      <SupabaseAuthProvider>
+        <SupabaseAdminProvider>
+          <SupabaseProductsProvider>
+            <SupabaseWalletProvider>
+              <CartProvider>
+                <WalletProvider>
+                <OrdersProvider>
+                <AdminProvider>
+                <ProductsProvider>
+                <InventoryProvider>
+          <AuthProvider>
+          <AccountProvider>
         <Toaster />
         <Sonner />
         <BrowserRouter>
@@ -122,12 +134,13 @@ const App = () => (
                 <Route path="/account" element={<AccountPage />} />
                 <Route path="/faq" element={<FAQPage />} />
                 <Route path="/test-products" element={<TestProductsPage />} />
-                <Route path="/wallet" element={<WalletPage />} />
+                <Route path="/wallet" element={<SupabaseWalletPage />} />
+                <Route path="/auth" element={<AuthPage />} />
                 <Route path="/admin" element={<AdminGuard><AdminDashboard /></AdminGuard>} />
                 <Route path="/admin/orders" element={<AdminGuard><AdminOrders /></AdminGuard>} />
                 <Route path="/admin/users" element={<AdminGuard><AdminUsers /></AdminGuard>} />
-                <Route path="/admin/settings" element={<AdminGuard><AdminSettings /></AdminGuard>} />
-                <Route path="/admin/products" element={<AdminGuard><AdminProducts /></AdminGuard>} />
+                <Route path="/admin/settings" element={<AdminGuard><SupabaseAdminSettings /></AdminGuard>} />
+                <Route path="/admin/products" element={<AdminGuard><SupabaseAdminProducts /></AdminGuard>} />
                 <Route path="/admin/inventory" element={<AdminGuard><InventoryPage /></AdminGuard>} />
                 <Route path="/admin/inventory/out-of-stock" element={<AdminGuard><OutOfStockPage /></AdminGuard>} />
     {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
@@ -137,14 +150,18 @@ const App = () => (
       <Footer />
           </div>
         </BrowserRouter>
-  </AccountProvider>
-  </AuthProvider>
-        </InventoryProvider>
-        </ProductsProvider>
-        </AdminProvider>
-        </OrdersProvider>
-        </WalletProvider>
-      </CartProvider>
+          </AccountProvider>
+          </AuthProvider>
+                </InventoryProvider>
+                </ProductsProvider>
+                </AdminProvider>
+                </OrdersProvider>
+                </WalletProvider>
+              </CartProvider>
+            </SupabaseWalletProvider>
+          </SupabaseProductsProvider>
+        </SupabaseAdminProvider>
+      </SupabaseAuthProvider>
     </TooltipProvider>
   </QueryClientProvider>
 );
