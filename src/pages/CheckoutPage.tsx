@@ -208,7 +208,6 @@ export default function CheckoutPage() {
         setTimeout(() => {
           navigate(`/account?tab=orders&orderId=${orderResult.order.id}`);
         }, 1500);
-      }
 
     } catch (error) {
       setPaymentStatus("failed");
