@@ -64,14 +64,6 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       });
     }
 
-    // Simple products endpoint for testing
-    if (method === 'GET' && path === '/api/products') {
-      // Lazy import to avoid module loading issues
-      const { getProducts } = await import('../lib/db');
-      const products = await getProducts();
-      return res.status(200).json(products);
-    }
-
     // Database seeding endpoint
     if (method === 'POST' && path === '/api/seed') {
       const { seedDatabase } = await import('../lib/db');
