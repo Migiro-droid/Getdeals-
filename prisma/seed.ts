@@ -69,11 +69,11 @@ async function main() {
   const passwordHash = Buffer.from(defaultPassword + 'salt123').toString('base64');
   
   await prisma.user.upsert({
-    where: { email: 'admin@getdeals.co.ke' },
+    where: { email: 'info@getdeals.co.ke' },
     update: {},
     create: {
       name: 'GetDeals Admin',
-      email: 'admin@getdeals.co.ke',
+      email: 'info@getdeals.co.ke',
       phone: '+254700000000',
       passwordHash: passwordHash,
       role: 'admin',
@@ -123,7 +123,7 @@ async function main() {
   console.log('✅ Database seeded successfully!');
   console.log(`📦 Created ${products.length} products`);
   console.log(`📂 Created ${categories.length} categories`);
-  console.log(`👤 Created admin user (admin@getdeals.co.ke / admin123)`);
+  console.log(`👤 Created admin user (info@getdeals.co.ke / admin123)`);
   console.log(`👤 Created sample customer (customer@example.com / customer123)`);
   console.log(`⚙️ Created ${settings.length} settings`);
 }

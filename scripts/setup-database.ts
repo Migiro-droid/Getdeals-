@@ -84,7 +84,7 @@ async function main() {
   log('   3. Deploy to Vercel when ready!', 'blue');
   log('', 'reset');
   log('🌐 Admin Login:', 'bold');
-  log('   Email: admin@getdeals.co.ke', 'yellow');
+  log('   Email: info@getdeals.co.ke', 'yellow');
   log('   (Authentication is disabled for development)', 'yellow');
 }
 

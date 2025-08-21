@@ -83,8 +83,8 @@ export default function ContactPage() {
                     </div>
                     <div>
                       <div className="font-medium text-lg">Phone Support</div>
-                      <a href="tel:+254700123456" className="text-muted-foreground hover:text-primary transition-colors">
-                        +254 700 123 456
+                      <a href="tel:+254728322355" className="text-muted-foreground hover:text-primary transition-colors">
+                        +254 728 322 355
                       </a>
                       <p className="text-sm text-muted-foreground mt-1">Available 8AM - 8PM</p>
                     </div>
@@ -97,7 +97,7 @@ export default function ContactPage() {
                     <div>
                       <div className="font-medium text-lg">WhatsApp</div>
                       <a 
-                        href="https://wa.me/254700123456" 
+                        href="https://wa.me/254728322355" 
                         target="_blank" 
                         rel="noreferrer" 
                         className="text-muted-foreground hover:text-primary transition-colors"
@@ -115,10 +115,10 @@ export default function ContactPage() {
                     <div>
                       <div className="font-medium text-lg">Email</div>
                       <a 
-                        href="mailto:support@getdeals.co.ke" 
+                        href="mailto:info@getdeals.co.ke" 
                         className="text-muted-foreground hover:text-primary transition-colors"
                       >
-                        support@getdeals.co.ke
+                        info@getdeals.co.ke
                       </a>
                       <p className="text-sm text-muted-foreground mt-1">We'll respond within 2 hours</p>
                     </div>

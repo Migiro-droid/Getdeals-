@@ -82,7 +82,7 @@ export default function ContactPage() {
                   </div>
                   <div className="flex-1">
                     <h3 className="font-semibold text-lg">Call Us Now</h3>
-                    <a href="tel:+254700123456" className="text-muted-foreground hover:text-primary transition-colors text-lg">
+                    <a href="tel:+254728322355" className="text-muted-foreground hover:text-primary transition-colors text-lg">
                       +254 700 123 456
                     </a>
                     <p className="text-sm text-muted-foreground">Available 8AM - 8PM</p>
@@ -101,7 +101,7 @@ export default function ContactPage() {
                   </div>
                   <div className="flex-1">
                     <h3 className="font-semibold text-lg">WhatsApp Chat</h3>
-                    <a href="https://wa.me/254700123456" target="_blank" rel="noreferrer" className="text-muted-foreground hover:text-primary transition-colors">
+                    <a href="https://wa.me/254728322355" target="_blank" rel="noreferrer" className="text-muted-foreground hover:text-primary transition-colors">
                       Chat with us instantly
                     </a>
                     <div className="flex items-center gap-2 mt-1">
@@ -123,8 +123,8 @@ export default function ContactPage() {
                   </div>
                   <div className="flex-1">
                     <h3 className="font-semibold text-lg">Email Support</h3>
-                    <a href="mailto:support@getdeals.co.ke" className="text-muted-foreground hover:text-primary transition-colors">
-                      support@getdeals.co.ke
+                    <a href="mailto:info@getdeals.co.ke" className="text-muted-foreground hover:text-primary transition-colors">
+                      info@getdeals.co.ke
                     </a>
                     <p className="text-sm text-muted-foreground">We reply within 2 hours</p>
                   </div>
@@ -386,13 +386,13 @@ export default function ContactPage() {
                 </p>
                 <div className="flex flex-col sm:flex-row gap-3 justify-center">
                   <Button asChild variant="default">
-                    <a href="tel:+254700123456">
+                    <a href="tel:+254728322355">
                       <Phone className="h-4 w-4 mr-2" />
                       Call Support
                     </a>
                   </Button>
                   <Button asChild variant="outline">
-                    <a href="https://wa.me/254700123456" target="_blank" rel="noreferrer">
+                    <a href="https://wa.me/254728322355" target="_blank" rel="noreferrer">
                       <MessageCircle className="h-4 w-4 mr-2" />
                       WhatsApp Chat
                     </a>

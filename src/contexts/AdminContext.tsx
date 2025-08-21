@@ -50,7 +50,7 @@ const defaultSettings: SiteSettings = {
   blackFridayEnabled: true,
   maintenanceMode: false,
   supportPhone: "+254 700 123 456",
-  supportEmail: "support@getdeals.co.ke",
+  supportEmail: "info@getdeals.co.ke",
   location: "Karen Green, Nairobi, Kenya",
 };
 

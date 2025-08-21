@@ -94,10 +94,10 @@ export function Footer() {
             <div className="flex items-center gap-2 md:whitespace-nowrap">
               <Mail className="h-4 w-4 text-primary" />
               <a
-                href="mailto:support@getdeals.co.ke"
+                href="mailto:info@getdeals.co.ke"
                 className="hover:text-primary hover:underline underline-offset-4 transition-colors"
               >
-                support@getdeals.co.ke
+                info@getdeals.co.ke
               </a>
             </div>
             <div className="flex items-center gap-2 md:whitespace-nowrap">
@@ -114,10 +114,10 @@ export function Footer() {
             <div className="flex items-center gap-2 md:whitespace-nowrap">
               <Phone className="h-4 w-4 text-primary" />
               <a
-                href="tel:+254700123456"
+                href="tel:+254728322355"
                 className="hover:text-primary hover:underline underline-offset-4 transition-colors"
               >
-                +254 700 123 456
+                +254 728 322 355
               </a>
             </div>
           </div>

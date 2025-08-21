@@ -102,7 +102,7 @@ export default function FAQPage() {
         },
         {
           question: "How do I contact customer support?",
-          answer: "You can reach us at +254 700 123 456, email support@getdeals.co.ke, or use the contact form on our website. We're available Mon-Sat, 8AM-8PM."
+          answer: "You can reach us at +254 728 322 355, email info@getdeals.co.ke, or use the contact form on our website. We're available Mon-Sat, 8AM-8PM."
         },
         {
           question: "Do you offer wholesale pricing?",

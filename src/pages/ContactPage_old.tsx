@@ -39,7 +39,7 @@ export default function ContactPage() {
                   </div>
                   <div>
                     <h3 className="font-semibold">Phone</h3>
-                    <a href="tel:+254700123456" className="text-muted-foreground hover:text-primary transition-colors">+254 700 123 456</a>
+                    <a href="tel:+254728322355" className="text-muted-foreground hover:text-primary transition-colors">+254 700 123 456</a>
                   </div>
                 </div>
               </CardContent>
@@ -53,7 +53,7 @@ export default function ContactPage() {
                   </div>
                   <div>
                     <h3 className="font-semibold">Email</h3>
-                    <a href="mailto:support@getdeals.co.ke" className="text-muted-foreground hover:text-primary transition-colors">support@getdeals.co.ke</a>
+                    <a href="mailto:info@getdeals.co.ke" className="text-muted-foreground hover:text-primary transition-colors">info@getdeals.co.ke</a>
                   </div>
                 </div>
               </CardContent>
@@ -156,17 +156,17 @@ export default function ContactPage() {
             </Card>
             {/* Quick Actions */}
             <div className="mt-4 grid sm:grid-cols-3 gap-2">
-              <a href="tel:+254700123456">
+              <a href="tel:+254728322355">
                 <Button variant="secondary" className="w-full">
                   <Phone className="h-4 w-4 mr-2" /> Call Us
                 </Button>
               </a>
-              <a href="https://wa.me/254700123456" target="_blank" rel="noreferrer">
+              <a href="https://wa.me/254728322355" target="_blank" rel="noreferrer">
                 <Button variant="secondary" className="w-full">
                   <MessageCircle className="h-4 w-4 mr-2" /> WhatsApp
                 </Button>
               </a>
-              <a href="mailto:support@getdeals.co.ke">
+              <a href="mailto:info@getdeals.co.ke">
                 <Button variant="secondary" className="w-full">
                   <Mail className="h-4 w-4 mr-2" /> Email
                 </Button>
