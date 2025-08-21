@@ -1,4 +1,6 @@
 // Simple fallback database for browser environment with localStorage persistence
+import { storage } from './storage';
+
 export interface User {
   id: string;
   name: string;
@@ -31,7 +33,7 @@ const defaultUsers: User[] = [
 // Get users from localStorage or use defaults
 function getStoredUsers(): User[] {
   try {
-    const stored = localStorage.getItem('getdeals_users');
+    const stored = storage.getItem('getdeals_users');
     if (stored) {
       const parsed = JSON.parse(stored);
       // Convert date strings back to Date objects
@@ -49,7 +51,7 @@ function getStoredUsers(): User[] {
 // Save users to localStorage
 function saveUsers(users: User[]) {
   try {
-    localStorage.setItem('getdeals_users', JSON.stringify(users));
+    storage.setItem('getdeals_users', JSON.stringify(users));
   } catch (error) {
     console.warn('Failed to save users to localStorage:', error);
   }

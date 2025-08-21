@@ -1,6 +1,7 @@
 import React, { createContext, useContext, useEffect, useMemo, useState } from 'react';
 import { useToast } from '@/hooks/use-toast';
 import { authAPI, type AuthUser as APIAuthUser } from '@/api/auth';
+import { storage } from '@/lib/storage';
 
 export type AuthUser = {
   id: string;
@@ -37,8 +38,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   // Check for existing session on mount
   useEffect(() => {
     const checkAuth = async () => {
-      const storedToken = localStorage.getItem('auth_token');
-      const storedUser = localStorage.getItem('auth_user');
+      const storedToken = storage.getItem('auth_token');
+      const storedUser = storage.getItem('auth_user');
       
       if (storedToken && storedUser) {
         try {
@@ -58,13 +59,13 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
             });
           } else {
             // Token invalid, clear storage
-            localStorage.removeItem('auth_token');
-            localStorage.removeItem('auth_user');
+            storage.removeItem('auth_token');
+            storage.removeItem('auth_user');
           }
         } catch (error) {
           console.error('Auth verification failed:', error);
-          localStorage.removeItem('auth_token');
-          localStorage.removeItem('auth_user');
+          storage.removeItem('auth_token');
+          storage.removeItem('auth_user');
         }
       }
       setLoading(false);
@@ -96,8 +97,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         setUser(authUser);
         
         // Store in localStorage
-        localStorage.setItem('auth_token', result.token);
-        localStorage.setItem('auth_user', JSON.stringify(authUser));
+        storage.setItem('auth_token', result.token);
+        storage.setItem('auth_user', JSON.stringify(authUser));
 
         toast({
           title: "Welcome back!",
@@ -154,8 +155,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         setUser(authUser);
         
         // Store in localStorage
-        localStorage.setItem('auth_token', result.token);
-        localStorage.setItem('auth_user', JSON.stringify(authUser));
+        storage.setItem('auth_token', result.token);
+        storage.setItem('auth_user', JSON.stringify(authUser));
 
         toast({
           title: "Account Created!",
@@ -179,8 +180,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const signOut = () => {
     setToken(null);
     setUser(null);
-    localStorage.removeItem('auth_token');
-    localStorage.removeItem('auth_user');
+    storage.removeItem('auth_token');
+    storage.removeItem('auth_user');
     
     toast({
       title: "Signed Out",
