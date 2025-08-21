@@ -161,23 +161,38 @@ export default function SupabaseAdminProducts() {
       : undefined;
     
     try {
-      await add({
-        name: safeDraft.name,
-        price: Number(safeDraft.price),
-        original_price: safeDraft.original_price ? Number(safeDraft.original_price) : undefined,
-        image_url: safeDraft.image_url,
-        category: safeDraft.category,
-        description: safeDraft.description || undefined,
-        items,
-        is_basket: safeDraft.is_basket,
-        stock_quantity: Number(safeDraft.stock_quantity) || 0,
+      // Use API endpoint instead of Supabase client to bypass RLS
+      const response = await fetch('/api/products', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          name: safeDraft.name,
+          price: Number(safeDraft.price),
+          originalPrice: safeDraft.original_price ? Number(safeDraft.original_price) : undefined,
+          image: safeDraft.image_url,
+          category: safeDraft.category,
+          description: safeDraft.description || undefined,
+          items,
+          itemsDetail: undefined, // Can be added later if needed
+        }),
       });
+
+      if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`);
+      }
+
+      const newProduct = await response.json();
       
       setDraft(emptyDraft);
       toast({ 
         title: "Product added", 
         description: "Product was added successfully" 
       });
+      
+      // Refresh the products list
+      refresh();
     } catch (err: any) {
       console.error(err);
       const msg = err?.message || String(err);
