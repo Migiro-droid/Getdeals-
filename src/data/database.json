@@ -631,12 +631,25 @@
       ],
       "id": "product-1755769146470-2t2hqx87d",
       "createdAt": "2025-08-21T09:39:06.470Z"
+    },
+    {
+      "name": "TESTDATA2",
+      "image": "https://www.simontea.com/cdn/shop/files/healing-hope-basket_600x.jpg?v=1698156042",
+      "category": "basket",
+      "price": 14000,
+      "originalPrice": 15000,
+      "description": "TESTDATA2",
+      "items": [
+        "TESTDATA2"
+      ],
+      "id": "product-1755769506464-9jj553zqv",
+      "createdAt": "2025-08-21T09:45:06.464Z"
     }
   ],
   "users": [],
   "orders": [],
   "settings": {
-    "lastProductId": 48,
+    "lastProductId": 49,
     "lastOrderId": 0,
     "lastUserId": 0
   }
