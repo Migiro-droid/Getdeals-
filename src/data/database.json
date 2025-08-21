@@ -297,24 +297,6 @@
       "description": "Amazing family deals for Black Friday"
     },
     {
-      "name": "Family Basket",
-      "image": "https://tse4.mm.bing.net/th/id/OIP.SeBB1bPaH_LkNPjqvIgFsQHaE8?r=0&rs=1&pid=ImgDetMain&o=7&rm=3",
-      "category": "basket",
-      "price": 7000,
-      "originalPrice": 8000,
-      "description": "End Month Family Deals",
-      "items": [
-        "2kg Rice",
-        "2kg Sugar",
-        "2litre Cooking Oil",
-        "12 Tissue Rolls",
-        "Salt"
-      ],
-      "itemsDetail": [],
-      "id": "product-1755418004212-r6dmadwbh",
-      "createdAt": "2025-08-17T08:06:44.212Z"
-    },
-    {
       "name": "FAMILY BASKET",
       "image": "https://tse3.mm.bing.net/th/id/OIP.01E6jtsAQensZPeNYQSeGwHaHa?r=0&rs=1&pid=ImgDetMain&o=7&rm=3",
       "category": "basket",
@@ -380,12 +362,25 @@
       ],
       "id": "product-1755510739964-bax5ncqtq",
       "createdAt": "2025-08-18T09:52:19.964Z"
+    },
+    {
+      "name": "TEST DATA",
+      "image": "https://www.thebasketcompany.com/images/oval-wicker-shopping-basket-with-swing-handles-p253-628_image.jpg",
+      "category": "basket",
+      "price": 12000,
+      "originalPrice": 13000,
+      "description": "TESTDATA1",
+      "items": [
+        "TESTDATA1"
+      ],
+      "id": "product-1755768563906-d2nmh9apg",
+      "createdAt": "2025-08-21T09:29:23.906Z"
     }
   ],
   "users": [],
   "orders": [],
   "settings": {
-    "lastProductId": 28,
+    "lastProductId": 29,
     "lastOrderId": 0,
     "lastUserId": 0
   }

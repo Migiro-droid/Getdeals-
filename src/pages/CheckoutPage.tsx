@@ -201,14 +201,13 @@ export default function CheckoutPage() {
       setPaymentStatus("success");
       toast({
         title: "Order Placed Successfully! 🎉",
-          description: "You will receive confirmation details shortly.",
-        });
+        description: "You will receive confirmation details shortly.",
+      });
 
-        clearCart();
-        setTimeout(() => {
-          navigate(`/account?tab=orders&orderId=${orderResult.order.id}`);
-        }, 1500);
-      }
+      clearCart();
+      setTimeout(() => {
+        navigate(`/account?tab=orders&orderId=${orderResult.order.id}`);
+      }, 1500);
 
     } catch (error) {
       setPaymentStatus("failed");

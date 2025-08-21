@@ -209,27 +209,27 @@ export default function AdminProducts() {
                     <div className="h-12 w-12 rounded bg-muted overflow-hidden flex items-center justify-center">
                       <img src={p.image} alt={p.name} className="max-w-full max-h-full object-contain" onError={(e) => { (e.currentTarget as HTMLImageElement).src = "/placeholder.svg"; }} />
                     </div>
-                    <Input defaultValue={p.name} onBlur={(e) => update(p.id, { name: e.target.value })} />
+                    <Input defaultValue={p.name} onBlur={(e) => update(p.id, { name: e.target.value }).catch(console.error)} />
                   </div>
                   {/* Price */}
                   <div>
-                    <Input type="number" defaultValue={p.price} onBlur={(e) => update(p.id, { price: Number(e.target.value) })} />
+                    <Input type="number" defaultValue={p.price} onBlur={(e) => update(p.id, { price: Number(e.target.value) }).catch(console.error)} />
                   </div>
                   {/* Original price */}
                   <div>
-                    <Input type="number" defaultValue={p.originalPrice ?? ""} onBlur={(e) => update(p.id, { originalPrice: e.target.value ? Number(e.target.value) : undefined })} />
+                    <Input type="number" defaultValue={p.originalPrice ?? ""} onBlur={(e) => update(p.id, { originalPrice: e.target.value ? Number(e.target.value) : undefined }).catch(console.error)} />
                   </div>
                   {/* Image URL editor */}
                   <div>
                     <Input
                       defaultValue={p.image}
                       placeholder="/path or https://"
-                      onBlur={(e) => update(p.id, { image: normalizeUrl(e.target.value) })}
+                      onBlur={(e) => update(p.id, { image: normalizeUrl(e.target.value) }).catch(console.error)}
                     />
                   </div>
                   {/* Category */}
                   <div className="pr-8 lg:pr-12">
-                    <Select defaultValue={p.category} onValueChange={(v) => update(p.id, { category: v })}>
+                    <Select defaultValue={p.category} onValueChange={(v) => update(p.id, { category: v }).catch(console.error)}>
                       <SelectTrigger><SelectValue /></SelectTrigger>
                       <SelectContent>
                         {['basket','essential','family','holiday','school','alcohol','blackfriday'].map(c => (
@@ -241,7 +241,7 @@ export default function AdminProducts() {
                   {/* Actions */}
                   <div className="flex items-center gap-2 justify-end pl-8 lg:pl-12">
                     <Button variant="secondary" onClick={() => { setActiveProductId(p.id); setItemsModalOpen(true); }}>Manage Items</Button>
-                    <Button variant="outline" onClick={() => remove(p.id)}>Delete</Button>
+                    <Button variant="outline" onClick={() => remove(p.id).catch(console.error)}>Delete</Button>
                   </div>
                 </div>
               ))}

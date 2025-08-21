@@ -19,7 +19,7 @@ const defaultUsers: User[] = [
   {
     id: '1',
     name: 'GetDeals Admin',
-    email: 'info@getdeals.co.ke',
+    email: 'admin@getdeals.co.ke',
     phone: '+254728322355',
     role: 'admin',
     firstName: 'GetDeals',
