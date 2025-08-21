@@ -39,20 +39,6 @@ export default function SupabaseAdminProducts() {
   const [draft, setDraft] = useState<typeof emptyDraft>(emptyDraft);
   const [filter, setFilter] = useState<string>("all");
 
-  // Check admin permissions
-  if (!isAdmin) {
-    return (
-      <div className="min-h-screen flex items-center justify-center">
-        <Card className="max-w-md">
-          <CardContent className="pt-6">
-            <h2 className="text-xl font-bold text-center mb-2">Access Denied</h2>
-            <p className="text-center text-muted-foreground">You need admin privileges to access this page.</p>
-          </CardContent>
-        </Card>
-      </div>
-    );
-  }
-
   // Image upload handler
   const handleImageUpload = async (file: File): Promise<string | null> => {
     try {
