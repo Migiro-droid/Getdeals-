@@ -14,6 +14,42 @@ export type Database = {
   }
   public: {
     Tables: {
+      admin_settings: {
+        Row: {
+          black_friday_date: string | null
+          black_friday_enabled: boolean | null
+          created_at: string | null
+          id: string
+          location: string | null
+          maintenance_mode: boolean | null
+          support_email: string | null
+          support_phone: string | null
+          updated_at: string | null
+        }
+        Insert: {
+          black_friday_date?: string | null
+          black_friday_enabled?: boolean | null
+          created_at?: string | null
+          id?: string
+          location?: string | null
+          maintenance_mode?: boolean | null
+          support_email?: string | null
+          support_phone?: string | null
+          updated_at?: string | null
+        }
+        Update: {
+          black_friday_date?: string | null
+          black_friday_enabled?: boolean | null
+          created_at?: string | null
+          id?: string
+          location?: string | null
+          maintenance_mode?: boolean | null
+          support_email?: string | null
+          support_phone?: string | null
+          updated_at?: string | null
+        }
+        Relationships: []
+      }
       carts: {
         Row: {
           created_at: string | null
@@ -231,39 +267,54 @@ export type Database = {
       products: {
         Row: {
           basket_items: Json | null
+          category: string | null
           category_id: string | null
           created_at: string | null
           description: string | null
+          discount: number | null
           id: string
           image_url: string | null
           is_basket: boolean | null
+          items: string[] | null
+          items_detail: Json | null
           name: string
+          original_price: number | null
           price: number
           stock_quantity: number | null
           updated_at: string | null
         }
         Insert: {
           basket_items?: Json | null
+          category?: string | null
           category_id?: string | null
           created_at?: string | null
           description?: string | null
+          discount?: number | null
           id?: string
           image_url?: string | null
           is_basket?: boolean | null
+          items?: string[] | null
+          items_detail?: Json | null
           name: string
+          original_price?: number | null
           price: number
           stock_quantity?: number | null
           updated_at?: string | null
         }
         Update: {
           basket_items?: Json | null
+          category?: string | null
           category_id?: string | null
           created_at?: string | null
           description?: string | null
+          discount?: number | null
           id?: string
           image_url?: string | null
           is_basket?: boolean | null
+          items?: string[] | null
+          items_detail?: Json | null
           name?: string
+          original_price?: number | null
           price?: number
           stock_quantity?: number | null
           updated_at?: string | null
@@ -306,6 +357,86 @@ export type Database = {
           last_name?: string | null
           location?: string | null
           phone?: string | null
+          updated_at?: string | null
+          user_id?: string
+        }
+        Relationships: []
+      }
+      user_roles: {
+        Row: {
+          created_at: string | null
+          id: string
+          role: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string | null
+          id?: string
+          role?: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string | null
+          id?: string
+          role?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
+      wallet_transactions: {
+        Row: {
+          amount: number
+          created_at: string | null
+          description: string | null
+          id: string
+          type: string
+          wallet_id: string
+        }
+        Insert: {
+          amount: number
+          created_at?: string | null
+          description?: string | null
+          id?: string
+          type: string
+          wallet_id: string
+        }
+        Update: {
+          amount?: number
+          created_at?: string | null
+          description?: string | null
+          id?: string
+          type?: string
+          wallet_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "wallet_transactions_wallet_id_fkey"
+            columns: ["wallet_id"]
+            isOneToOne: false
+            referencedRelation: "wallets"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      wallets: {
+        Row: {
+          balance: number | null
+          created_at: string | null
+          id: string
+          updated_at: string | null
+          user_id: string
+        }
+        Insert: {
+          balance?: number | null
+          created_at?: string | null
+          id?: string
+          updated_at?: string | null
+          user_id: string
+        }
+        Update: {
+          balance?: number | null
+          created_at?: string | null
+          id?: string
           updated_at?: string | null
           user_id?: string
         }
