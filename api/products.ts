@@ -1,50 +1,57 @@
-import { neon } from '@neondatabase/serverless';
+// api/products.ts
 
-const sql = neon(process.env.DATABASE_URL!);
+import { VercelRequest, VercelResponse } from '@vercel/node';
+import pkg from 'pg';
 
-export default async function handler(req: any, res: any) {
+const { Pool } = pkg;
+
+const pool = new Pool({
+  connectionString: process.env.DATABASE_URL,
+  ssl: {
+    rejectUnauthorized: false, // required for Neon
+  },
+});
+
+export default async function handler(req: VercelRequest, res: VercelResponse) {
+  res.setHeader('Access-Control-Allow-Origin', '*');
+  res.setHeader('Access-Control-Allow-Methods', 'GET, POST, OPTIONS');
+  res.setHeader('Access-Control-Allow-Headers', 'Content-Type');
+
+  if (req.method === 'OPTIONS') {
+    return res.status(200).end();
+  }
+
   try {
     if (req.method === 'GET') {
-      const products = await sql`SELECT * FROM products ORDER BY "createdAt" DESC`;
-      return res.status(200).json(products);
+      // Fetch all products
+      const result = await pool.query('SELECT * FROM products ORDER BY "createdAt" DESC');
+      return res.status(200).json(result.rows);
     }
 
     if (req.method === 'POST') {
-      const { name, price, category, image, description, originalPrice, items, itemsDetail } = req.body;
-      
-      if (!name || !price) {
-        return res.status(400).json({ error: "Name and price are required" });
+      const { id, name, price, originalPrice, image, discount, items, itemsDetail, category, description } = req.body;
+
+      if (!id || !name || !price || !image || !category) {
+        return res.status(400).json({ error: 'Missing required fields' });
       }
 
-      // Generate unique ID
-      const productId = `${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
-      
-      const [newProduct] = await sql`
-        INSERT INTO products (
-          id, name, price, "originalPrice", image, category, 
-          description, items, "itemsDetail", "createdAt", "updatedAt"
-        ) VALUES (
-          ${productId},
-          ${name},
-          ${Number(price)},
-          ${originalPrice ? Number(originalPrice) : Number(price)},
-          ${image || 'https://via.placeholder.com/300'},
-          ${category || 'general'},
-          ${description || ''},
-          ${items || []},
-          ${itemsDetail ? JSON.stringify(itemsDetail) : JSON.stringify([])},
-          NOW(),
-          NOW()
-        )
-        RETURNING *
+      const query = `
+        INSERT INTO products 
+        (id, name, price, "originalPrice", image, discount, items, "itemsDetail", category, description, "createdAt", "updatedAt") 
+        VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,NOW(),NOW())
+        RETURNING *;
       `;
-      
-      return res.status(201).json(newProduct);
+
+      const values = [id, name, price, originalPrice, image, discount, items, itemsDetail, category, description];
+
+      const result = await pool.query(query, values);
+
+      return res.status(201).json(result.rows[0]);
     }
 
     return res.status(405).json({ error: 'Method not allowed' });
-  } catch (err) {
-    console.error('API Error:', err);
-    return res.status(500).json({ error: 'Internal Server Error' });
+  } catch (error: any) {
+    console.error('Products API Error:', error);
+    return res.status(500).json({ error: 'Internal Server Error', details: error.message });
   }
 }
