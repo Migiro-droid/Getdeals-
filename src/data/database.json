@@ -375,12 +375,268 @@
       ],
       "id": "product-1755768563906-d2nmh9apg",
       "createdAt": "2025-08-21T09:29:23.906Z"
+    },
+    {
+      "name": "Essential Basket - Starter",
+      "image": "/src/assets/essential-basket.jpg",
+      "category": "essential",
+      "price": 1500,
+      "originalPrice": 1800,
+      "description": "Basic essentials for a small household",
+      "items": [
+        "1kg Rice",
+        "500g Sugar",
+        "250ml Cooking Oil",
+        "1 Bread Loaf"
+      ],
+      "id": "product-1755769129477-a6wtgj3ba",
+      "createdAt": "2025-08-21T09:38:49.477Z"
+    },
+    {
+      "name": "Essential Basket - Plus",
+      "image": "/src/assets/essential-basket.jpg",
+      "category": "essential",
+      "price": 2800,
+      "originalPrice": 3200,
+      "description": "Larger essentials pack",
+      "items": [
+        "3kg Rice",
+        "1kg Sugar",
+        "1L Cooking Oil",
+        "2 Bread Loaves"
+      ],
+      "id": "product-1755769129629-6t1deos8o",
+      "createdAt": "2025-08-21T09:38:49.629Z"
+    },
+    {
+      "name": "Family Basket - Standard",
+      "image": "/src/assets/family-basket.jpg",
+      "category": "family",
+      "price": 5000,
+      "originalPrice": 6200,
+      "description": "Full family grocery bundle",
+      "items": [
+        "5kg Rice",
+        "2kg Sugar",
+        "1L Cooking Oil",
+        "2 Bread Loaves",
+        "2kg Flour"
+      ],
+      "id": "product-1755769130265-a23s5d030",
+      "createdAt": "2025-08-21T09:38:50.265Z"
+    },
+    {
+      "name": "Premium Family Basket",
+      "image": "/src/assets/family-basket.jpg",
+      "category": "family",
+      "price": 10000,
+      "originalPrice": 12500,
+      "description": "Premium family items",
+      "items": [
+        "10kg Rice",
+        "5kg Sugar",
+        "2L Cooking Oil",
+        "4 Bread Loaves",
+        "5kg Flour"
+      ],
+      "id": "product-1755769130961-q4f77az3l",
+      "createdAt": "2025-08-21T09:38:50.962Z"
+    },
+    {
+      "name": "Mini Essential",
+      "image": "/src/assets/essential-basket.jpg",
+      "category": "essential",
+      "price": 900,
+      "description": "Small pack for singles",
+      "items": [
+        "500g Rice",
+        "250g Sugar",
+        "200ml Oil"
+      ],
+      "id": "product-1755769131540-8vph2risy",
+      "createdAt": "2025-08-21T09:38:51.540Z"
+    },
+    {
+      "name": "Parboiled Rice 2kg",
+      "image": "/src/assets/products/rice.jpg",
+      "category": "essential",
+      "price": 700,
+      "originalPrice": 850,
+      "description": "Quality long-grain parboiled rice",
+      "id": "product-1755769132171-stik82667",
+      "createdAt": "2025-08-21T09:38:52.171Z"
+    },
+    {
+      "name": "White Sugar 1kg",
+      "image": "/src/assets/products/sugar.jpg",
+      "category": "essential",
+      "price": 200,
+      "originalPrice": 250,
+      "description": "Refined white sugar",
+      "id": "product-1755769132884-syq5fj2nz",
+      "createdAt": "2025-08-21T09:38:52.884Z"
+    },
+    {
+      "name": "Wheat Flour 1kg",
+      "image": "/src/assets/products/flour.jpg",
+      "category": "essential",
+      "price": 180,
+      "originalPrice": 220,
+      "description": "Sifted wheat flour",
+      "id": "product-1755769133741-mx1wqc263",
+      "createdAt": "2025-08-21T09:38:53.741Z"
+    },
+    {
+      "name": "Cooking Oil 1L",
+      "image": "/src/assets/products/oil.jpg",
+      "category": "essential",
+      "price": 350,
+      "originalPrice": 400,
+      "description": "Pure cooking oil 1 litre",
+      "id": "product-1755769134589-or0w7kvde",
+      "createdAt": "2025-08-21T09:38:54.589Z"
+    },
+    {
+      "name": "Bread Loaf",
+      "image": "/src/assets/products/bread.jpg",
+      "category": "essential",
+      "price": 120,
+      "description": "Freshly baked daily bread",
+      "id": "product-1755769135366-zj7711jmo",
+      "createdAt": "2025-08-21T09:38:55.366Z"
+    },
+    {
+      "name": "Back To School Basket",
+      "image": "/src/assets/hero-family.jpg",
+      "category": "basket",
+      "price": 4200,
+      "originalPrice": 5000,
+      "description": "Starter pack for students",
+      "items": [
+        "3kg Rice",
+        "1kg Sugar",
+        "1L Oil",
+        "Lunch Snacks"
+      ],
+      "id": "product-1755769138761-lm9ula26a",
+      "createdAt": "2025-08-21T09:38:58.761Z"
+    },
+    {
+      "name": "Holiday Feast Basket",
+      "image": "/src/assets/family-basket.jpg",
+      "category": "holiday",
+      "price": 8500,
+      "originalPrice": 10200,
+      "description": "Generous holiday bundle",
+      "items": [
+        "10kg Rice",
+        "3kg Sugar",
+        "2L Oil",
+        "3 Bread Loaves",
+        "4kg Flour"
+      ],
+      "id": "product-1755769139779-8fe9r9jmn",
+      "createdAt": "2025-08-21T09:38:59.779Z"
+    },
+    {
+      "name": "Beer Pack (6)",
+      "image": "/src/assets/placeholder.svg",
+      "category": "alcohol",
+      "price": 1200,
+      "originalPrice": 1500,
+      "description": "Value 6-pack beer",
+      "id": "product-1755769140693-saypqdkyx",
+      "createdAt": "2025-08-21T09:39:00.693Z"
+    },
+    {
+      "name": "Red Wine 750ml",
+      "image": "/src/assets/placeholder.svg",
+      "category": "alcohol",
+      "price": 1500,
+      "originalPrice": 1950,
+      "description": "Smooth red wine",
+      "id": "product-1755769141849-mkgx9wuyw",
+      "createdAt": "2025-08-21T09:39:01.849Z"
+    },
+    {
+      "name": "Whisky 700ml",
+      "image": "/src/assets/placeholder.svg",
+      "category": "alcohol",
+      "price": 2800,
+      "originalPrice": 3500,
+      "description": "Premium whisky bottle",
+      "id": "product-1755769143694-yrm9ulo1q",
+      "createdAt": "2025-08-21T09:39:03.694Z"
+    },
+    {
+      "name": "Black Friday Mega Deal",
+      "image": "/src/assets/family-basket.jpg",
+      "category": "blackfriday",
+      "price": 7500,
+      "originalPrice": 12000,
+      "description": "Top Black Friday bundle",
+      "items": [
+        "10kg Rice",
+        "5kg Sugar",
+        "2L Oil",
+        "Electronics Item"
+      ],
+      "id": "product-1755769144910-7hkkben87",
+      "createdAt": "2025-08-21T09:39:04.910Z"
+    },
+    {
+      "name": "School Lunch Basket",
+      "image": "/src/assets/essential-basket.jpg",
+      "category": "school",
+      "price": 4200,
+      "originalPrice": 5200,
+      "description": "Healthy school lunch items",
+      "items": [
+        "2kg Rice",
+        "1kg Sugar",
+        "Lunch Snacks",
+        "Juice Boxes"
+      ],
+      "id": "product-1755769145782-q1rmnoa3k",
+      "createdAt": "2025-08-21T09:39:05.782Z"
+    },
+    {
+      "name": "Student Essential Basket",
+      "image": "/src/assets/essential-basket.jpg",
+      "category": "school",
+      "price": 3500,
+      "originalPrice": 4500,
+      "description": "Budget pack for students",
+      "items": [
+        "2kg Rice",
+        "1kg Sugar",
+        "Instant Noodles",
+        "Cooking Oil"
+      ],
+      "id": "product-1755769146119-naynyv8u5",
+      "createdAt": "2025-08-21T09:39:06.119Z"
+    },
+    {
+      "name": "Christmas Special Basket",
+      "image": "/src/assets/family-basket.jpg",
+      "category": "holiday",
+      "price": 9500,
+      "originalPrice": 11500,
+      "description": "Festive Christmas bundle",
+      "items": [
+        "5kg Rice",
+        "2kg Sugar",
+        "Christmas Cake Mix",
+        "Holiday Treats"
+      ],
+      "id": "product-1755769146470-2t2hqx87d",
+      "createdAt": "2025-08-21T09:39:06.470Z"
     }
   ],
   "users": [],
   "orders": [],
   "settings": {
-    "lastProductId": 29,
+    "lastProductId": 48,
     "lastOrderId": 0,
     "lastUserId": 0
   }

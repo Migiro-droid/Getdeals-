@@ -25,7 +25,11 @@ export const ProductsProvider: React.FC<{ children: React.ReactNode }> = ({ chil
   const api = {
     async list() {
       try {
-        const response = await fetch('http://localhost:4000/api/products');
+        // Use production API or local development server
+        const baseUrl = process.env.NODE_ENV === 'production' 
+          ? window.location.origin 
+          : 'http://localhost:4000';
+        const response = await fetch(`${baseUrl}/api/products`);
         if (!response.ok) throw new Error('Failed to fetch products');
         return await response.json();
       } catch (error) {
@@ -35,7 +39,10 @@ export const ProductsProvider: React.FC<{ children: React.ReactNode }> = ({ chil
     },
     async add(p: Omit<Product, "id">) {
       try {
-        const response = await fetch('http://localhost:4000/api/products', {
+        const baseUrl = process.env.NODE_ENV === 'production' 
+          ? window.location.origin 
+          : 'http://localhost:4000';
+        const response = await fetch(`${baseUrl}/api/products`, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify(p)
@@ -49,7 +56,10 @@ export const ProductsProvider: React.FC<{ children: React.ReactNode }> = ({ chil
     },
     async update(id: string, patch: Partial<Product>) {
       try {
-        const response = await fetch(`http://localhost:4000/api/products/${id}`, {
+        const baseUrl = process.env.NODE_ENV === 'production' 
+          ? window.location.origin 
+          : 'http://localhost:4000';
+        const response = await fetch(`${baseUrl}/api/products/${id}`, {
           method: 'PATCH',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify(patch)
@@ -63,7 +73,10 @@ export const ProductsProvider: React.FC<{ children: React.ReactNode }> = ({ chil
     },
     async remove(id: string) {
       try {
-        const response = await fetch(`http://localhost:4000/api/products/${id}`, {
+        const baseUrl = process.env.NODE_ENV === 'production' 
+          ? window.location.origin 
+          : 'http://localhost:4000';
+        const response = await fetch(`${baseUrl}/api/products/${id}`, {
           method: 'DELETE'
         });
         if (!response.ok) throw new Error('Failed to delete product');
@@ -75,7 +88,10 @@ export const ProductsProvider: React.FC<{ children: React.ReactNode }> = ({ chil
     },
     async reset() {
       try {
-        const response = await fetch('http://localhost:4000/api/products/reset', {
+        const baseUrl = process.env.NODE_ENV === 'production' 
+          ? window.location.origin 
+          : 'http://localhost:4000';
+        const response = await fetch(`${baseUrl}/api/products/reset`, {
           method: 'POST'
         });
         if (!response.ok) throw new Error('Failed to reset products');
