@@ -71,71 +71,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       return res.status(200).json({ message: 'Database seeded successfully' });
     }
 
-    // Products endpoints
-    if (path === '/api/products') {
-      if (method === 'GET') {
-        const { getProducts } = await import('../lib/db');
-        const products = await getProducts();
-        return res.status(200).json(products);
-      }
-      
-      if (method === 'POST') {
-        // Validate input
-        const { isValid, errors, sanitizedData } = validateProductInput(req.body);
-        
-        if (!isValid) {
-          return res.status(400).json({ 
-            message: 'Validation failed', 
-            errors 
-          });
-        }
-
-        try {
-          // Generate unique ID
-          const productId = `${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
-          
-          // Insert into database using direct Neon query
-          const result = await sql`
-            INSERT INTO products (
-              id, name, price, original_price, image_url, category, 
-              description, items, items_detail, created_at
-            ) VALUES (
-              ${productId},
-              ${sanitizedData.name},
-              ${sanitizedData.price},
-              ${sanitizedData.originalPrice},
-              ${sanitizedData.image},
-              ${sanitizedData.category},
-              ${sanitizedData.description},
-              ${JSON.stringify(sanitizedData.items)},
-              ${JSON.stringify(sanitizedData.items_detail)},
-              NOW()
-            )
-            RETURNING 
-              id, 
-              name, 
-              price, 
-              original_price as "originalPrice",
-              image_url as image,
-              category,
-              description,
-              items,
-              items_detail as "itemsDetail",
-              created_at as "createdAt"
-          `;
-
-          return res.status(201).json(result[0]);
-        } catch (error) {
-          console.error('Database error:', error);
-          return res.status(500).json({ 
-            message: 'Failed to create product',
-            error: String(error)
-          });
-        }
-      }
-    }
-
-    // Individual product operations
+    // Individual product operations (handled by api/products/[id].ts)
     if (path.startsWith('/api/products/')) {
       const { getProducts, updateProduct, deleteProduct } = await import('../lib/db');
       const productId = path.split('/')[3];

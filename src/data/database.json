@@ -657,12 +657,21 @@
       ],
       "id": "product-1755770525144-6mv89b5o9",
       "createdAt": "2025-08-21T10:02:05.144Z"
+    },
+    {
+      "name": "Test Product",
+      "image": "https://via.placeholder.com/300",
+      "category": "basket",
+      "price": 1500,
+      "description": "Test",
+      "id": "product-1755774382630-vkeceyrqi",
+      "createdAt": "2025-08-21T11:06:22.630Z"
     }
   ],
   "users": [],
   "orders": [],
   "settings": {
-    "lastProductId": 50,
+    "lastProductId": 51,
     "lastOrderId": 0,
     "lastUserId": 0
   }
