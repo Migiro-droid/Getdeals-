@@ -88,7 +88,6 @@ export async function createProduct(product: Omit<Product, 'id' | 'createdAt'>):
     itemsDetail: created.itemsDetail as { name: string; image: string }[] || undefined,
     category: created.category,
     description: created.description || undefined,
-    createdAt: created.createdAt.toISOString(),
   };
 }
 
@@ -120,7 +119,6 @@ export async function updateProduct(id: string, updates: Partial<Product>): Prom
       itemsDetail: updated.itemsDetail as { name: string; image: string }[] || undefined,
       category: updated.category,
       description: updated.description || undefined,
-      createdAt: updated.createdAt.toISOString(),
     };
   } catch (error) {
     console.error('Error updating product:', error);
