@@ -23,6 +23,27 @@ export class ErrorBoundary extends React.Component<ErrorBoundaryProps, ErrorBoun
     console.error('ErrorBoundary caught an error:', error, errorInfo);
   }
 
+  componentDidMount() {
+    // listen for global runtime errors forwarded from main.tsx
+    window.addEventListener('app-runtime-error', this.onAppRuntimeError as EventListener);
+  }
+
+  componentWillUnmount() {
+    window.removeEventListener('app-runtime-error', this.onAppRuntimeError as EventListener);
+  }
+
+  private onAppRuntimeError = (ev: Event) => {
+    try {
+      // @ts-ignore - detail is provided by CustomEvent
+      const detail = (ev as CustomEvent).detail;
+      const error = detail?.error ?? new Error('Unknown runtime error');
+      this.setState({ hasError: true, error });
+      console.error('Global runtime error captured', error);
+    } catch (e) {
+      this.setState({ hasError: true, error: new Error('Unknown runtime error') });
+    }
+  };
+
   render() {
     if (this.state.hasError) {
       return (
