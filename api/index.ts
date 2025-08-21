@@ -101,71 +101,104 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
 
     // M-Pesa payment endpoints - Basic implementation for demo
     if (path === '/api/payments/mpesa/stk-push' && method === 'POST') {
-      // For demo purposes, simulate a successful STK push
-      const { amount, phoneNumber, orderReference } = req.body;
-      
-      // Basic validation
-      if (!amount || !phoneNumber || !orderReference) {
-        return res.status(400).json({ 
+      try {
+        // For demo purposes, simulate a successful STK push
+        const { amount, phoneNumber, orderReference } = req.body;
+        
+        console.log('M-Pesa STK Push request:', { amount, phoneNumber, orderReference });
+        
+        // Basic validation
+        if (!amount || !phoneNumber || !orderReference) {
+          return res.status(400).json({ 
+            success: false, 
+            error: 'Amount, phone number, and order reference are required' 
+          });
+        }
+
+        // Simulate STK push response
+        const mockResponse = {
+          success: true,
+          CheckoutRequestID: `ws_CO_${Date.now()}${Math.random().toString(36).substr(2, 9)}`,
+          MerchantRequestID: `mr_${Date.now()}${Math.random().toString(36).substr(2, 9)}`,
+          ResponseCode: "0",
+          ResponseDescription: "Success. Request accepted for processing",
+          CustomerMessage: "Success. Request accepted for processing"
+        };
+
+        console.log('M-Pesa STK Push response:', mockResponse);
+        return res.status(200).json(mockResponse);
+      } catch (error) {
+        console.error('M-Pesa STK Push error:', error);
+        return res.status(500).json({ 
           success: false, 
-          error: 'Amount, phone number, and order reference are required' 
+          error: 'Internal server error during payment initiation' 
         });
       }
-
-      // Simulate STK push response
-      const mockResponse = {
-        success: true,
-        CheckoutRequestID: `ws_CO_${Date.now()}${Math.random().toString(36).substr(2, 9)}`,
-        MerchantRequestID: `mr_${Date.now()}${Math.random().toString(36).substr(2, 9)}`,
-        ResponseCode: "0",
-        ResponseDescription: "Success. Request accepted for processing",
-        CustomerMessage: "Success. Request accepted for processing"
-      };
-
-      return res.status(200).json(mockResponse);
     }
 
     // M-Pesa payment status query
     if (path.startsWith('/api/payments/mpesa/query/') && method === 'GET') {
-      const checkoutRequestId = path.split('/')[5];
-      
-      if (!checkoutRequestId) {
-        return res.status(400).json({ 
+      try {
+        const checkoutRequestId = path.split('/')[5];
+        
+        console.log('M-Pesa status query for:', checkoutRequestId);
+        
+        if (!checkoutRequestId) {
+          return res.status(400).json({ 
+            success: false, 
+            error: 'Checkout request ID is required' 
+          });
+        }
+
+        // For demo purposes, simulate payment completion after a short delay
+        // In production, this would query the actual M-Pesa API
+        const mockStatusResponse = {
+          success: true,
+          status: 'completed',
+          ResultCode: 0,
+          ResultDesc: "The service request is processed successfully.",
+          CheckoutRequestID: checkoutRequestId
+        };
+
+        console.log('M-Pesa status response:', mockStatusResponse);
+        return res.status(200).json(mockStatusResponse);
+      } catch (error) {
+        console.error('M-Pesa status query error:', error);
+        return res.status(500).json({ 
           success: false, 
-          error: 'Checkout request ID is required' 
+          error: 'Internal server error during status check' 
         });
       }
-
-      // For demo purposes, simulate payment completion after a short delay
-      // In production, this would query the actual M-Pesa API
-      const mockStatusResponse = {
-        success: true,
-        status: 'completed',
-        ResultCode: 0,
-        ResultDesc: "The service request is processed successfully.",
-        CheckoutRequestID: checkoutRequestId
-      };
-
-      return res.status(200).json(mockStatusResponse);
     }
 
     // Orders creation endpoint
     if (path === '/api/orders' && method === 'POST') {
-      // Basic order creation for demo
-      const orderData = req.body;
-      
-      const newOrder = {
-        id: `order_${Date.now()}`,
-        ...orderData,
-        status: 'pending',
-        createdAt: new Date().toISOString(),
-        orderNumber: `GD${Date.now().toString().slice(-8)}`
-      };
+      try {
+        // Basic order creation for demo
+        const orderData = req.body;
+        
+        console.log('Order creation request:', orderData);
+        
+        const newOrder = {
+          id: `order_${Date.now()}`,
+          ...orderData,
+          status: 'pending',
+          createdAt: new Date().toISOString(),
+          orderNumber: `GD${Date.now().toString().slice(-8)}`
+        };
 
-      return res.status(201).json({ 
-        success: true, 
-        order: newOrder 
-      });
+        console.log('Order created:', newOrder);
+        return res.status(201).json({ 
+          success: true, 
+          order: newOrder 
+        });
+      } catch (error) {
+        console.error('Order creation error:', error);
+        return res.status(500).json({ 
+          success: false, 
+          error: 'Internal server error during order creation' 
+        });
+      }
     }
 
     // Route not found

@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { CreditCard, MapPin, Phone, User, Smartphone, Wallet, DollarSign, Clock } from "lucide-react";
+import { CreditCard, MapPin, Phone, User, Smartphone, DollarSign, Clock } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -63,7 +63,21 @@ export default function CheckoutPage() {
         }),
       });
 
-      const result = await response.json();
+      // Check if response has content before trying to parse JSON
+      const responseText = await response.text();
+      console.log('STK Push response text:', responseText);
+      
+      if (!responseText) {
+        throw new Error('Empty response from server');
+      }
+
+      let result;
+      try {
+        result = JSON.parse(responseText);
+      } catch (jsonError) {
+        console.error('JSON parsing error:', jsonError);
+        throw new Error(`Invalid JSON response: ${responseText.substring(0, 100)}`);
+      }
       
       if (response.ok) {
         return { success: true, ...result };
@@ -79,7 +93,22 @@ export default function CheckoutPage() {
   const checkPaymentStatus = async (checkoutRequestId: string) => {
     try {
       const response = await fetch(`/api/payments/mpesa/query/${checkoutRequestId}`);
-      const result = await response.json();
+      
+      // Check if response has content before trying to parse JSON
+      const responseText = await response.text();
+      console.log('Payment status response text:', responseText);
+      
+      if (!responseText) {
+        throw new Error('Empty response from server');
+      }
+
+      let result;
+      try {
+        result = JSON.parse(responseText);
+      } catch (jsonError) {
+        console.error('JSON parsing error:', jsonError);
+        throw new Error(`Invalid JSON response: ${responseText.substring(0, 100)}`);
+      }
       
       if (response.ok) {
         return result;
@@ -163,15 +192,18 @@ export default function CheckoutPage() {
         }
 
         // Update order data with payment info
-        orderData.paymentInfo = {
-          method: 'mpesa',
-          phone: formatPhoneNumber(paymentPhone),
-          checkoutRequestId: stkResult.CheckoutRequestID,
-          merchantRequestId: stkResult.MerchantRequestID,
+        const updatedOrderData = {
+          ...orderData,
+          paymentInfo: {
+            method: 'mpesa',
+            phone: formatPhoneNumber(paymentPhone),
+            checkoutRequestId: stkResult.CheckoutRequestID,
+            merchantRequestId: stkResult.MerchantRequestID,
+          }
         };
 
         // Create order
-        const orderResult = await createOrder(orderData);
+        const orderResult = await createOrder(updatedOrderData);
         
         if (!orderResult.success) {
           throw new Error(orderResult.error || "Failed to create order");
