@@ -1,14 +1,16 @@
 // api/products.ts
 
-import pkg from 'pg';
-const { Pool } = pkg;
+import { Pool } from 'pg';
 
+// ✅ Use a single pool (avoid creating on every request)
 const pool = new Pool({
   connectionString: process.env.DATABASE_URL,
-  ssl: { rejectUnauthorized: false }, // Neon requires SSL
+  ssl: { rejectUnauthorized: false }, // required for Neon
 });
 
+// ✅ Next.js API handler
 export default async function handler(req, res) {
+  // CORS headers
   res.setHeader('Access-Control-Allow-Origin', '*');
   res.setHeader('Access-Control-Allow-Methods', 'GET, POST, OPTIONS');
   res.setHeader('Access-Control-Allow-Headers', 'Content-Type');
@@ -19,12 +21,25 @@ export default async function handler(req, res) {
 
   try {
     if (req.method === 'GET') {
-      const result = await pool.query('SELECT * FROM products ORDER BY "createdAt" DESC');
+      const result = await pool.query(
+        'SELECT * FROM products ORDER BY "createdAt" DESC'
+      );
       return res.status(200).json(result.rows);
     }
 
     if (req.method === 'POST') {
-      const { id, name, price, originalPrice, image, discount, items, itemsDetail, category, description } = req.body;
+      const {
+        id,
+        name,
+        price,
+        originalPrice,
+        image,
+        discount,
+        items,
+        itemsDetail,
+        category,
+        description,
+      } = req.body;
 
       if (!id || !name || !price || !image || !category) {
         return res.status(400).json({ error: 'Missing required fields' });
@@ -37,7 +52,18 @@ export default async function handler(req, res) {
         RETURNING *;
       `;
 
-      const values = [id, name, price, originalPrice, image, discount, items, itemsDetail, category, description];
+      const values = [
+        id,
+        name,
+        price,
+        originalPrice,
+        image,
+        discount,
+        items,
+        itemsDetail,
+        category,
+        description,
+      ];
 
       const result = await pool.query(query, values);
       return res.status(201).json(result.rows[0]);
@@ -46,6 +72,8 @@ export default async function handler(req, res) {
     return res.status(405).json({ error: 'Method not allowed' });
   } catch (error) {
     console.error('Products API Error:', error);
-    return res.status(500).json({ error: 'Internal Server Error', details: error.message });
+    return res
+      .status(500)
+      .json({ error: 'Internal Server Error', details: error.message });
   }
 }

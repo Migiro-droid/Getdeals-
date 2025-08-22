@@ -190,7 +190,7 @@ export default function CheckoutPage() {
         paymentMethod,
         status: 'pending'
       };
-
+  
       // Handle wallet and other payment methods
       const orderResult = await createOrder(orderData);
       
