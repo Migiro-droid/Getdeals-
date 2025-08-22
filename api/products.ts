@@ -1,30 +1,28 @@
-// api/products.ts
-
-import { Pool } from 'pg';
+import type { VercelRequest, VercelResponse } from '@vercel/node'
+import { Pool } from 'pg'
 
 // ✅ Use a single pool (avoid creating on every request)
 const pool = new Pool({
   connectionString: process.env.DATABASE_URL,
   ssl: { rejectUnauthorized: false }, // required for Neon
-});
+})
 
-// ✅ Next.js API handler
-export default async function handler(req, res) {
+export default async function handler(req: VercelRequest, res: VercelResponse) {
   // CORS headers
-  res.setHeader('Access-Control-Allow-Origin', '*');
-  res.setHeader('Access-Control-Allow-Methods', 'GET, POST, OPTIONS');
-  res.setHeader('Access-Control-Allow-Headers', 'Content-Type');
+  res.setHeader('Access-Control-Allow-Origin', '*')
+  res.setHeader('Access-Control-Allow-Methods', 'GET, POST, OPTIONS')
+  res.setHeader('Access-Control-Allow-Headers', 'Content-Type')
 
   if (req.method === 'OPTIONS') {
-    return res.status(200).end();
+    return res.status(200).end()
   }
 
   try {
     if (req.method === 'GET') {
       const result = await pool.query(
         'SELECT * FROM products ORDER BY "createdAt" DESC'
-      );
-      return res.status(200).json(result.rows);
+      )
+      return res.status(200).json(result.rows)
     }
 
     if (req.method === 'POST') {
@@ -39,10 +37,10 @@ export default async function handler(req, res) {
         itemsDetail,
         category,
         description,
-      } = req.body;
+      } = req.body
 
       if (!id || !name || !price || !image || !category) {
-        return res.status(400).json({ error: 'Missing required fields' });
+        return res.status(400).json({ error: 'Missing required fields' })
       }
 
       const query = `
@@ -50,7 +48,7 @@ export default async function handler(req, res) {
         (id, name, price, "originalPrice", image, discount, items, "itemsDetail", category, description, "createdAt", "updatedAt") 
         VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,NOW(),NOW())
         RETURNING *;
-      `;
+      `
 
       const values = [
         id,
@@ -63,17 +61,17 @@ export default async function handler(req, res) {
         itemsDetail,
         category,
         description,
-      ];
+      ]
 
-      const result = await pool.query(query, values);
-      return res.status(201).json(result.rows[0]);
+      const result = await pool.query(query, values)
+      return res.status(201).json(result.rows[0])
     }
 
-    return res.status(405).json({ error: 'Method not allowed' });
-  } catch (error) {
-    console.error('Products API Error:', error);
+    return res.status(405).json({ error: 'Method not allowed' })
+  } catch (error: any) {
+    console.error('Products API Error:', error)
     return res
       .status(500)
-      .json({ error: 'Internal Server Error', details: error.message });
+      .json({ error: 'Internal Server Error', details: error.message })
   }
 }

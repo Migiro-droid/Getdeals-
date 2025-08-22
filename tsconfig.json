@@ -1,19 +1,39 @@
 {
-  "files": [],
-  "references": [
-    { "path": "./tsconfig.app.json" },
-    { "path": "./tsconfig.node.json" }
-  ],
   "compilerOptions": {
+    /* Base settings */
+    "target": "ES2022",
+    "module": "NodeNext",
+    "moduleResolution": "NodeNext",
+    "strict": true,
+    "jsx": "react-jsx",
+
+    /* Path aliases */
     "baseUrl": ".",
     "paths": {
       "@/*": ["./src/*"]
     },
-    "noImplicitAny": false,
-    "noUnusedParameters": false,
+
+    /* Interop & ESM */
+    "esModuleInterop": true,
+    "allowSyntheticDefaultImports": true,
+    "isolatedModules": true,
+
+    /* Build options */
     "skipLibCheck": true,
     "allowJs": true,
+    "forceConsistentCasingInFileNames": true,
+    "outDir": "dist",
+
+    /* Loosen some checks since you had them off */
+    "noImplicitAny": false,
+    "noUnusedParameters": false,
     "noUnusedLocals": false,
     "strictNullChecks": false
-  }
+  },
+
+  "include": [
+    "src",
+    "api/**/*.ts"
+  ],
+  "exclude": ["node_modules", "dist"]
 }
