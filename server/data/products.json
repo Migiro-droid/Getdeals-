@@ -1,105 +1,10 @@
 [
   {
-    "id": "family-basket-tmkffm",
-    "name": "Family Basket",
-    "image": "https://tse4.mm.bing.net/th/id/OIP.bcrdKHqxrz30IYvlXYVFmgHaHa?r=0&rs=1&pid=ImgDetMain&o=7&rm=3",
-    "category": "basket",
-    "price": 60000,
-    "originalPrice": 5000,
-    "description": "End Month Family Deals",
-    "items": [
-      "2kg Sugar",
-      "2Kg Rice",
-      "Royco Satchet(50)",
-      "1litre Cooking Oil"
-    ]
-  },
-  {
-    "id": "hennessy-vs-holiday-pack",
-    "name": "Hennessy VS Holiday Pack",
-    "image": "https://th.bing.com/th/id/R.8d9fe45d0e99e4b9f80e31d2ddab166e?rik=uogC3PgHUnkOmQ&riu=http%3a%2f%2fwww.rafinat.ro%2fwp-content%2fuploads%2f2015%2f06%2fHennesy-XO.jpg&ehk=2cRiVcW5gn4lo%2bRUMIAYmM7Z0wNuNoj15UsWfHx73wQ%3d&risl=&pid=ImgRaw&r=0",
-    "category": "alcohol",
-    "price": 27000,
-    "originalPrice": 28060,
-    "description": "Special Hennessy Offer",
-    "items": [
-      "1Hennessy"
-    ]
-  },
-  {
-    "id": "heineken-6pack",
-    "name": "Heineken 6pack",
-    "image": "https://www.mompshop.com/cdn/shop/products/DRINKS_Heineken_6_Pa_285bd1b579_large.png?v=1662469063",
-    "category": "alcohol",
-    "price": 1300,
-    "originalPrice": 1600,
-    "description": "Perfect Friday Chill Down After Work",
-    "items": [
-      "6 Pack Beer"
-    ]
-  },
-  {
-    "id": "bachelor-basket",
-    "name": "Bachelor Basket",
-    "image": "https://c8.alamy.com/comp/BY5WTY/photo-of-a-wire-shopping-basket-full-of-fresh-fruit-and-vegetables-BY5WTY.jpg",
-    "category": "basket",
-    "price": 6000,
-    "originalPrice": 5000,
-    "description": "Perfect for Bachelors",
-    "items": [
-      "10 Bananas",
-      "2kg Rice",
-      "2 Litre Cooking oil",
-      "6Rolls Tissue paper",
-      "Royco Satchet of 50"
-    ]
-  },
-  {
-    "id": "family-basket-WIhXav",
-    "name": "Family Basket",
-    "image": "src/assets/family-basket.jpg",
-    "category": "basket",
-    "price": 20000,
-    "originalPrice": 24000,
-    "description": "Perfect for Monthly Family needs",
-    "items": [
-      "5kg Rice",
-      "5kg",
-      "5Litres Cooking Oil",
-      "Salt",
-      "12 Rolls Tissue Paper",
-      "Baking Flour"
-    ]
-  },
-  {
-    "id": "test-basket-2",
-    "name": "TEST BASKET 2",
-    "image": "src/assets/family-basket.jpg",
-    "category": "basket",
-    "price": 10000,
-    "originalPrice": 8000,
-    "description": "Save 2000",
-    "items": [
-      "2kg Rice",
-      "2kg Sugar",
-      "2litres cooking oil"
-    ]
-  },
-  {
-    "id": "test",
-    "name": "TEST Basket",
-    "image": "src/assets/essential-basket.jpg",
-    "category": "basket",
-    "price": 10000,
-    "originalPrice": 12000,
-    "description": ""
-  },
-  {
     "id": "essential-basket",
     "name": "Essential Basket",
     "price": 3000,
     "originalPrice": 3500,
-    "image": "/src/assets/essential-basket.jpg",
+    "image": "src/assets/essential-basket.jpg",
     "items": [
       "2kg Rice",
       "1kg Sugar",
@@ -255,6 +160,33 @@
     "description": "Bulk buy essentials for bigger savings"
   },
   {
+    "id": "beer-pack",
+    "name": "Beer Pack (6x500ml)",
+    "price": 1200,
+    "originalPrice": 1500,
+    "image": "/placeholder.svg",
+    "category": "alcohol",
+    "description": "Great value 6-pack beer deal"
+  },
+  {
+    "id": "red-wine",
+    "name": "Red Wine 750ml",
+    "price": 1500,
+    "originalPrice": 1950,
+    "image": "/placeholder.svg",
+    "category": "alcohol",
+    "description": "Bold and smooth red wine"
+  },
+  {
+    "id": "whisky",
+    "name": "Whisky 700ml",
+    "price": 2800,
+    "originalPrice": 3500,
+    "image": "/placeholder.svg",
+    "category": "alcohol",
+    "description": "Premium whisky at a discount"
+  },
+  {
     "id": "christmas-basket",
     "name": "Christmas Special Basket",
     "price": 8500,
@@ -321,6 +253,38 @@
     ],
     "category": "school",
     "description": "Perfect for university students"
+  },
+  {
+    "id": "weekend-spirits",
+    "name": "Weekend Spirits Pack",
+    "price": 12000,
+    "originalPrice": 15000,
+    "image": "src/assets/family-basket.jpg",
+    "items": [
+      "Premium Whiskey (750ml)",
+      "Red Wine (750ml)",
+      "Beer Pack (12 bottles)",
+      "Mixers Set",
+      "Bar Snacks"
+    ],
+    "category": "alcohol",
+    "description": "Perfect for weekend entertainment"
+  },
+  {
+    "id": "wine-collection",
+    "name": "Wine Collection Pack",
+    "price": 8500,
+    "originalPrice": 11000,
+    "image": "src/assets/family-basket.jpg",
+    "items": [
+      "Red Wine (750ml)",
+      "White Wine (750ml)",
+      "Rosé Wine (750ml)",
+      "Wine Glasses Set",
+      "Cheese Platter"
+    ],
+    "category": "alcohol",
+    "description": "Curated wine selection for connoisseurs"
   },
   {
     "id": "black-friday-mega",

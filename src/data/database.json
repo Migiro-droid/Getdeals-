@@ -484,7 +484,8 @@
       "originalPrice": 220,
       "description": "Sifted wheat flour",
       "id": "product-1755769133741-mx1wqc263",
-      "createdAt": "2025-08-21T09:38:53.741Z"
+      "createdAt": "2025-08-21T09:38:53.741Z",
+      "updatedAt": "2025-08-22T08:26:07.558Z"
     },
     {
       "name": "Cooking Oil 1L",
@@ -668,36 +669,54 @@
       "createdAt": "2025-08-21T11:06:22.630Z"
     },
     {
-      "name": "SampleProduct",
-      "image": "https://149449856.v2.pressablecdn.com/wp-content/uploads/2017/09/Shopping-Basket.jpg",
+      "name": "sampledata",
+      "image": "https://image.shutterstock.com/image-photo/wire-shopping-basket-full-groceries-260nw-183247076.jpg",
       "category": "basket",
-      "price": 15000,
-      "originalPrice": 16000,
+      "price": 14000,
+      "originalPrice": 15000,
       "description": "sampledata",
       "items": [
         "sampledata"
       ],
-      "id": "product-1755846650117-m5kyp8xol",
-      "createdAt": "2025-08-22T07:10:50.117Z"
+      "id": "product-1755853383787-6er6usd1b",
+      "createdAt": "2025-08-22T09:03:03.787Z"
     },
     {
-      "name": "Sampledata1",
-      "image": "https://149449856.v2.pressablecdn.com/wp-content/uploads/2017/09/Shopping-Basket.jpg",
+      "name": "sampledata",
+      "image": "https://m.media-amazon.com/images/I/91ZDwboqZ+L._AC_SX300_SY300_.jpg",
       "category": "basket",
-      "price": 60000,
-      "originalPrice": 70000,
+      "price": 17000,
+      "originalPrice": 18000,
       "description": "sampledata",
       "items": [
         "sampledata"
       ],
-      "id": "product-1755848068508-1f2juq8xj",
-      "createdAt": "2025-08-22T07:34:28.508Z"
+      "id": "product-1755887556703-icvol7vch",
+      "createdAt": "2025-08-22T18:32:36.703Z"
+    },
+    {
+      "name": "Family Basket",
+      "image": "https://d2qc09rl1gfuof.cloudfront.net/product/GWCHLZJS12ZZPZJ01/m100-5.jpg",
+      "category": "alcohol",
+      "price": 17000,
+      "originalPrice": 18000,
+      "description": "Perfect for End Month Deals",
+      "items": [
+        "5kg Rice",
+        "4ltrs Cooking Oil",
+        "3kgs Sugar Salt",
+        "12Rolls Tissue",
+        "Harpic"
+      ],
+      "id": "product-1755887762665-pjc0jghsg",
+      "createdAt": "2025-08-22T18:36:02.665Z",
+      "updatedAt": "2025-08-22T18:37:03.863Z"
     }
   ],
   "users": [],
   "orders": [],
   "settings": {
-    "lastProductId": 53,
+    "lastProductId": 58,
     "lastOrderId": 0,
     "lastUserId": 0
   }

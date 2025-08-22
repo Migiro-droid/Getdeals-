@@ -75,7 +75,7 @@ export function AuthModals({ open, onOpenChange, defaultTab = "signin" }: AuthMo
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-md bg-gradient-to-br from-background to-muted/30 border-2 border-primary/10">
+      <DialogContent className="max-w-md bg-white dark:bg-white border shadow-lg">
         <DialogHeader className="text-center pb-4">
           <DialogTitle className="text-xl font-bold bg-gradient-to-r from-primary to-primary/70 bg-clip-text text-transparent">
             Welcome to GetDeals
@@ -162,9 +162,9 @@ export function AuthModals({ open, onOpenChange, defaultTab = "signin" }: AuthMo
             </form>
           </TabsContent>
 
-          <TabsContent value="signup" className="space-y-3 mt-4">
-            <form onSubmit={handleSignUp} className="space-y-3">
-              <div className="grid grid-cols-2 gap-3">
+          <TabsContent value="signup" className="space-y-2 mt-3">
+            <form onSubmit={handleSignUp} className="space-y-2">
+              <div className="grid grid-cols-2 gap-2">
                 <div className="space-y-1">
                   <Label htmlFor="signup-name" className="text-xs font-medium">Full Name</Label>
                   <div className="relative">
@@ -173,7 +173,7 @@ export function AuthModals({ open, onOpenChange, defaultTab = "signin" }: AuthMo
                       id="signup-name"
                       type="text"
                       placeholder="Your name"
-                      className="pl-7 h-10 text-sm border-2 focus:border-primary/50 transition-colors"
+                      className="pl-7 h-9 text-sm border-2 focus:border-primary/50 transition-colors"
                       required
                     />
                   </div>
@@ -187,7 +187,7 @@ export function AuthModals({ open, onOpenChange, defaultTab = "signin" }: AuthMo
                       id="signup-phone"
                       type="tel"
                       placeholder="+254... (optional)"
-                      className="pl-7 h-10 text-sm border-2 focus:border-primary/50 transition-colors"
+                      className="pl-7 h-9 text-sm border-2 focus:border-primary/50 transition-colors"
                     />
                   </div>
                 </div>
@@ -201,7 +201,7 @@ export function AuthModals({ open, onOpenChange, defaultTab = "signin" }: AuthMo
                     id="signup-email"
                     type="email"
                     placeholder="Enter your email"
-                    className="pl-10 h-10 border-2 focus:border-primary/50 transition-colors"
+                    className="pl-10 h-9 border-2 focus:border-primary/50 transition-colors"
                     required
                   />
                 </div>
@@ -215,7 +215,7 @@ export function AuthModals({ open, onOpenChange, defaultTab = "signin" }: AuthMo
                     id="signup-password"
                     type={showSignUpPassword ? "text" : "password"}
                     placeholder="Create a password"
-                    className="pl-10 pr-10 h-10 border-2 focus:border-primary/50 transition-colors"
+                    className="pl-10 pr-10 h-9 border-2 focus:border-primary/50 transition-colors"
                     required
                   />
                   <button
@@ -229,11 +229,11 @@ export function AuthModals({ open, onOpenChange, defaultTab = "signin" }: AuthMo
               </div>
 
               {error && <p className="text-xs text-red-600">{error}</p>}
-              <Button disabled={loading} type="submit" className="w-full h-10 bg-gradient-to-r from-primary to-primary/80 hover:from-primary/90 hover:to-primary/70 transition-all">
+              <Button disabled={loading} type="submit" className="w-full h-9 bg-gradient-to-r from-primary to-primary/80 hover:from-primary/90 hover:to-primary/70 transition-all">
                 Create Account
               </Button>
               
-              <div className="flex items-center gap-2">
+              <div className="flex items-center gap-2 pt-1">
                 <div className="h-px bg-border flex-1" />
                 <span className="text-xs text-muted-foreground">or</span>
                 <div className="h-px bg-border flex-1" />
@@ -244,7 +244,7 @@ export function AuthModals({ open, onOpenChange, defaultTab = "signin" }: AuthMo
                 <Button type="button" variant="outline" size="sm">Facebook</Button>
               </div>
               
-              <p className="text-center text-xs text-muted-foreground">
+              <p className="text-center text-xs text-muted-foreground pt-1">
                 Already have an account?{" "}
                 <button
                   type="button"

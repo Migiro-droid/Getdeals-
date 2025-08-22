@@ -41,6 +41,14 @@ DATABASE_URL = [Your Neon connection string from .env]
 DATABASE_URL_UNPOOLED = [Your unpooled Neon connection string]
 ```
 
+Additionally, set the frontend API base URL so the client knows where to call the serverless API:
+
+```
+VITE_API_URL = https://your-app.vercel.app
+```
+
+If you omit `VITE_API_URL`, the app will default to `window.location.origin` in production which works when your frontend and API are served from the same origin on Vercel.
+
 ### 3. Seed Production Database
 
 After deployment, run this to add initial products:

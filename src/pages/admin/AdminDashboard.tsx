@@ -9,12 +9,13 @@ import { Line, LineChart, XAxis, YAxis, CartesianGrid, PieChart, Pie, Cell } fro
 import { useOrders, OrderStatus, Order } from "@/contexts/OrdersContext";
 import { useInventory } from "@/contexts/InventoryContext";
 import { useAdmin } from "@/contexts/AdminContext";
-import { Link } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 import { ShoppingBag, AlertTriangle, Truck, Clock, FileDown, User, Shield, Crown, MapPin, Phone, LogOut } from "lucide-react";
 
 export default function AdminDashboard() {
   const { orders, metrics } = useOrders();
   const { settings, logout, role, user } = useAdmin();
+  const navigate = useNavigate();
   const [range, setRange] = useState<"7d" | "30d" | "all">("7d");
   const [customerModalOpen, setCustomerModalOpen] = useState(false);
 
@@ -573,7 +574,7 @@ export default function AdminDashboard() {
                       </PieChart>
                     </ChartContainer>
                     {/* Center content */}
-                    <div className="absolute inset-0 flex flex-col items-center justify-center">
+                    <div className="absolute inset-0 flex flex-col items-center justify-center pointer-events-none">
                       <div className="text-2xl font-bold text-green-600">
                         {statusLegend.find(s => s.key === "delivered")?.perc || 0}%
                       </div>
@@ -1090,17 +1091,17 @@ export default function AdminDashboard() {
                   <CardTitle>Quick Actions</CardTitle>
                 </CardHeader>
                 <CardContent className="space-y-3">
-                  <Button className="w-full" asChild><Link to="/admin/products">Add or Edit Products</Link></Button>
-                  <Button variant="outline" className="w-full" asChild><Link to="/admin/orders">Manage Orders</Link></Button>
-                  <Button variant="outline" className="w-full" asChild><Link to="/admin/users">User Management</Link></Button>
-                  <Button variant="outline" className="w-full" asChild><Link to="/admin/inventory">View Inventory</Link></Button>
-                  <Button variant="outline" className="w-full" asChild><Link to="/admin/inventory/out-of-stock">Out of Stock Items</Link></Button>
-                  <Button variant="outline" className="w-full" asChild><Link to="/admin/settings">Site Settings</Link></Button>
-                  {!settings.blackFridayEnabled && (
+                  <Button asChild className="w-full"><a href="/admin/products">Add or Edit Products</a></Button>
+                  <Button asChild variant="outline" className="w-full"><a href="/admin/orders">Manage Orders</a></Button>
+                  <Button asChild variant="outline" className="w-full"><a href="/admin/users">User Management</a></Button>
+                  <Button asChild variant="outline" className="w-full"><a href="/admin/inventory">View Inventory</a></Button>
+                  <Button asChild variant="outline" className="w-full"><a href="/admin/inventory/out-of-stock">Out of Stock Items</a></Button>
+                  <Button asChild variant="outline" className="w-full"><a href="/admin/settings">Site Settings</a></Button>
+                  { !settings.blackFridayEnabled && (
                     <div className="pt-2">
                       <Badge variant="secondary" className="w-full justify-center py-2">Black Friday disabled</Badge>
                     </div>
-                  )}
+                  ) }
                 </CardContent>
               </Card>
 

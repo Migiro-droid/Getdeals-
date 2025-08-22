@@ -16,5 +16,23 @@
     "passwordHash": "$2a$10$apWgU7Tsm0v2v4.g2SR14OC.mAsTc.gQOkZhNEH8hJJi9vX7CqS/O",
     "role": "user",
     "createdAt": "2025-08-16T14:08:49.741Z"
+  },
+  {
+    "id": "quickmart-admin-001",
+    "name": "QuickMart Admin",
+    "phone": "+254700000000",
+    "email": "quickmart@getdeals.co.ke",
+    "passwordHash": "$2a$10$7rdF9EyoBP7wN9VincQ5g.U8oZSxbadZT3wGnS4gnTInfEIHQ2Wua",
+    "role": "quickmart",
+    "createdAt": "2025-08-22T10:07:46.630Z"
+  },
+  {
+    "id": "admin-001",
+    "name": "J Eric Ndivo",
+    "phone": "+254700000000",
+    "email": "j.ericndivo@gmail.com",
+    "passwordHash": "$2a$10$3bqZ8Zk1a8Q6o0Y1LZ5gNe8UQx0QwKZc9F8d1e2f3g4h5j6k7l8m",
+    "role": "admin",
+    "createdAt": "2025-08-22T11:00:00.000Z"
   }
 ]

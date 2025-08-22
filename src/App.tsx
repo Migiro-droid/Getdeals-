@@ -34,24 +34,18 @@ import InventoryPage from "./pages/admin/InventoryPage";
 import OutOfStockPage from "./pages/admin/OutOfStockPage";
 import TestProductsPage from "./pages/TestProductsPage";
 import WalletPage from "./pages/WalletPage";
+import AuthPage from "./pages/AuthPage";
+import { QuickMartDashboard } from "./pages/quickmart/QuickMartDashboard";
 
 const queryClient = new QueryClient();
 
 import { useAuth } from "./contexts/AuthContext";
-import { SupabaseAuthProvider } from "./contexts/SupabaseAuthContext";
-import { SupabaseProductsProvider } from "./contexts/SupabaseProductsContext";
-import { SupabaseAdminProvider } from "./contexts/SupabaseAdminContext";
-import { SupabaseWalletProvider } from "./contexts/SupabaseWalletContext";
-import SupabaseAdminProducts from "./pages/admin/SupabaseAdminProducts";
-import SupabaseAdminSettings from "./pages/admin/SupabaseAdminSettings";
-import AuthPage from "./pages/AuthPage";
-import SupabaseWalletPage from "./pages/SupabaseWalletPage";
+
 
 function AdminGuard({ children }: { children: JSX.Element }) {
   const { isAuthenticated, user } = useAuth();
   const { setIsAdmin, setAdminUser } = useAdmin();
   
-  // Check if user is authenticated and has admin role
   useEffect(() => {
     if (isAuthenticated && user?.role === 'admin') {
       setAdminUser({ name: user.name, email: user.email });
@@ -100,68 +94,101 @@ function AdminGuard({ children }: { children: JSX.Element }) {
   return children;
 }
 
+function QuickMartGuard({ children }: { children: JSX.Element }) {
+  const { isAuthenticated, user } = useAuth();
+
+  if (!isAuthenticated) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-gray-50">
+        <div className="max-w-md w-full space-y-8">
+          <div className="text-center">
+            <h2 className="mt-6 text-3xl font-extrabold text-gray-900">
+              QuickMart Access Required
+            </h2>
+            <p className="mt-2 text-sm text-gray-600">
+              Please sign in with a QuickMart account to access this area.
+            </p>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  if (user?.role !== 'quickmart') {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-gray-50">
+        <div className="max-w-md w-full space-y-8">
+          <div className="text-center">
+            <h2 className="mt-6 text-3xl font-extrabold text-gray-900">
+              QuickMart Access Only
+            </h2>
+            <p className="mt-2 text-sm text-gray-600">
+              You don't have permission to access the QuickMart dashboard.
+            </p>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  return children;
+}
+
 const App = () => (
   <QueryClientProvider client={queryClient}>
     <TooltipProvider>
-      <SupabaseAuthProvider>
-        <SupabaseAdminProvider>
-          <SupabaseProductsProvider>
-            <SupabaseWalletProvider>
-              <CartProvider>
-                <WalletProvider>
-                <OrdersProvider>
-                <AdminProvider>
-                <ProductsProvider>
+      <CartProvider>
+        <WalletProvider>
+          <OrdersProvider>
+            <AdminProvider>
+              <ProductsProvider>
                 <InventoryProvider>
-          <AuthProvider>
-          <AccountProvider>
-        <Toaster />
-        <Sonner />
-        <BrowserRouter>
-          <div className="min-h-screen flex flex-col">
-            <Header />
-            <main className="flex-1">
-              {/* Maintenance banner */}
-              <MaintenanceBanner />
-              <Routes>
-                <Route path="/" element={<HomePage />} />
-                <Route path="/baskets" element={<BasketsPage />} />
-                <Route path="/cart" element={<CartPage />} />
-                <Route path="/checkout" element={<CheckoutPage />} />
-                <Route path="/contact" element={<ContactPage />} />
-                <Route path="/about" element={<AboutPage />} />
-                <Route path="/how-it-works" element={<HowItWorksPage />} />
-                <Route path="/account" element={<AccountPage />} />
-                <Route path="/faq" element={<FAQPage />} />
-                <Route path="/test-products" element={<TestProductsPage />} />
-                <Route path="/wallet" element={<SupabaseWalletPage />} />
-                <Route path="/auth" element={<AuthPage />} />
-                <Route path="/admin" element={<AdminGuard><AdminDashboard /></AdminGuard>} />
-                <Route path="/admin/orders" element={<AdminGuard><AdminOrders /></AdminGuard>} />
-                <Route path="/admin/users" element={<AdminGuard><AdminUsers /></AdminGuard>} />
-                <Route path="/admin/settings" element={<AdminGuard><SupabaseAdminSettings /></AdminGuard>} />
-                <Route path="/admin/products" element={<AdminGuard><AdminProducts /></AdminGuard>} />
-                <Route path="/admin/inventory" element={<AdminGuard><InventoryPage /></AdminGuard>} />
-                <Route path="/admin/inventory/out-of-stock" element={<AdminGuard><OutOfStockPage /></AdminGuard>} />
-    {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
-                <Route path="*" element={<NotFound />} />
-              </Routes>
-            </main>
-      <Footer />
-          </div>
-        </BrowserRouter>
-          </AccountProvider>
-          </AuthProvider>
+                  <AuthProvider>
+                    <AccountProvider>
+                      <Toaster />
+                      <Sonner />
+                      <BrowserRouter>
+                        <div className="min-h-screen flex flex-col">
+                          <Header />
+                          <main className="flex-1">
+                            {/* Maintenance banner */}
+                            <MaintenanceBanner />
+                            <Routes>
+                              <Route path="/" element={<HomePage />} />
+                              <Route path="/baskets" element={<BasketsPage />} />
+                              <Route path="/cart" element={<CartPage />} />
+                              <Route path="/checkout" element={<CheckoutPage />} />
+                              <Route path="/contact" element={<ContactPage />} />
+                              <Route path="/about" element={<AboutPage />} />
+                              <Route path="/how-it-works" element={<HowItWorksPage />} />
+                              <Route path="/account" element={<AccountPage />} />
+                              <Route path="/faq" element={<FAQPage />} />
+                              <Route path="/test-products" element={<TestProductsPage />} />
+                              <Route path="/wallet" element={<WalletPage />} />
+                              <Route path="/auth" element={<AuthPage />} />
+                              <Route path="/admin" element={<AdminGuard><AdminDashboard /></AdminGuard>} />
+                              <Route path="/admin/orders" element={<AdminGuard><AdminOrders /></AdminGuard>} />
+                              <Route path="/admin/users" element={<AdminGuard><AdminUsers /></AdminGuard>} />
+                              <Route path="/admin/settings" element={<AdminGuard><AdminSettings /></AdminGuard>} />
+                              <Route path="/admin/products" element={<AdminGuard><AdminProducts /></AdminGuard>} />
+                              <Route path="/admin/inventory" element={<AdminGuard><InventoryPage /></AdminGuard>} />
+                              <Route path="/admin/inventory/out-of-stock" element={<AdminGuard><OutOfStockPage /></AdminGuard>} />
+                              <Route path="/quickmart" element={<QuickMartDashboard />} />
+                              {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
+                              <Route path="*" element={<NotFound />} />
+                            </Routes>
+                          </main>
+                          <Footer />
+                        </div>
+                      </BrowserRouter>
+                    </AccountProvider>
+                  </AuthProvider>
                 </InventoryProvider>
-                </ProductsProvider>
-                </AdminProvider>
-                </OrdersProvider>
-                </WalletProvider>
-              </CartProvider>
-            </SupabaseWalletProvider>
-          </SupabaseProductsProvider>
-        </SupabaseAdminProvider>
-      </SupabaseAuthProvider>
+              </ProductsProvider>
+            </AdminProvider>
+          </OrdersProvider>
+        </WalletProvider>
+      </CartProvider>
     </TooltipProvider>
   </QueryClientProvider>
 );

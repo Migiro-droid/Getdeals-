@@ -1,6 +1,7 @@
 import React, { createContext, useCallback, useContext, useEffect, useMemo, useState } from "react";
 import type { Product } from "@/data/products";
 import { products as staticProducts } from "@/data/products";
+import { getApiBase } from '@/lib/api';
 
 type ProductsCtx = {
   all: Product[];
@@ -25,10 +26,7 @@ export const ProductsProvider: React.FC<{ children: React.ReactNode }> = ({ chil
   const api = {
     async list() {
       try {
-        // Use production API or local development server
-        const baseUrl = process.env.NODE_ENV === 'production' 
-          ? window.location.origin 
-          : 'http://localhost:4000';
+        const baseUrl = getApiBase();
         const response = await fetch(`${baseUrl}/api/products`);
         if (!response.ok) throw new Error('Failed to fetch products');
         return await response.json();
@@ -39,10 +37,8 @@ export const ProductsProvider: React.FC<{ children: React.ReactNode }> = ({ chil
     },
     async add(p: Omit<Product, "id">) {
       try {
-        const baseUrl = process.env.NODE_ENV === 'production' 
-          ? window.location.origin 
-          : 'http://localhost:4000';
-        const response = await fetch(`${baseUrl}/api/products`, {
+  const baseUrl = getApiBase();
+  const response = await fetch(`${baseUrl}/api/products`, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify(p)
@@ -56,10 +52,8 @@ export const ProductsProvider: React.FC<{ children: React.ReactNode }> = ({ chil
     },
     async update(id: string, patch: Partial<Product>) {
       try {
-        const baseUrl = process.env.NODE_ENV === 'production' 
-          ? window.location.origin 
-          : 'http://localhost:4000';
-        const response = await fetch(`${baseUrl}/api/products/${id}`, {
+  const baseUrl = getApiBase();
+  const response = await fetch(`${baseUrl}/api/products/${id}`, {
           method: 'PATCH',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify(patch)
@@ -73,10 +67,8 @@ export const ProductsProvider: React.FC<{ children: React.ReactNode }> = ({ chil
     },
     async remove(id: string) {
       try {
-        const baseUrl = process.env.NODE_ENV === 'production' 
-          ? window.location.origin 
-          : 'http://localhost:4000';
-        const response = await fetch(`${baseUrl}/api/products/${id}`, {
+  const baseUrl = getApiBase();
+  const response = await fetch(`${baseUrl}/api/products/${id}`, {
           method: 'DELETE'
         });
         if (!response.ok) throw new Error('Failed to delete product');
@@ -88,10 +80,8 @@ export const ProductsProvider: React.FC<{ children: React.ReactNode }> = ({ chil
     },
     async reset() {
       try {
-        const baseUrl = process.env.NODE_ENV === 'production' 
-          ? window.location.origin 
-          : 'http://localhost:4000';
-        const response = await fetch(`${baseUrl}/api/products/reset`, {
+  const baseUrl = getApiBase();
+  const response = await fetch(`${baseUrl}/api/products/reset`, {
           method: 'POST'
         });
         if (!response.ok) throw new Error('Failed to reset products');

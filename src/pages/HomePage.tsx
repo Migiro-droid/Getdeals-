@@ -38,7 +38,8 @@ export default function HomePage() {
   const [dismissed, setDismissed] = useState(false);
 
   useEffect(() => {
-    const target = new Date("2025-11-28T00:00:00");
+    // Set target to 45 days from now
+    const target = new Date(Date.now() + 45 * 24 * 60 * 60 * 1000);
     const tick = () => {
       const now = new Date();
       const diff = target.getTime() - now.getTime();
@@ -230,7 +231,7 @@ export default function HomePage() {
                   <Sparkles className="h-4 w-4" /> Black Friday 2025
                 </div>
                 <h3 className="mt-3 text-3xl lg:text-4xl font-extrabold tracking-tight bg-clip-text text-transparent bg-gradient-to-r from-primary to-primary/60">
-                  Early Access is coming
+                  {countdown.days} Days — Early Access is coming
                 </h3>
                 {countdown.ended ? (
                   <p className="text-muted-foreground">It’s live now — check out the deals below.</p>
