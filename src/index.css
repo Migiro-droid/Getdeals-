@@ -2,6 +2,23 @@
 @tailwind components;
 @tailwind utilities;
 
+/* Prevent image flickering and layout shift */
+img {
+  max-width: 100%;
+  height: auto;
+}
+
+.image-container {
+  position: relative;
+}
+
+.image-container img {
+  display: block;
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+}
+
 /* GetDeals Kenya Design System - Premium E-commerce
 Brand Colors: Blue (#2563eb), Dark Blue (#1e40af), White (#ffffff)
 Typography: Inter font family for modern, clean design
