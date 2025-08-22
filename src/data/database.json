@@ -666,12 +666,38 @@
       "description": "Test",
       "id": "product-1755774382630-vkeceyrqi",
       "createdAt": "2025-08-21T11:06:22.630Z"
+    },
+    {
+      "name": "SampleProduct",
+      "image": "https://149449856.v2.pressablecdn.com/wp-content/uploads/2017/09/Shopping-Basket.jpg",
+      "category": "basket",
+      "price": 15000,
+      "originalPrice": 16000,
+      "description": "sampledata",
+      "items": [
+        "sampledata"
+      ],
+      "id": "product-1755846650117-m5kyp8xol",
+      "createdAt": "2025-08-22T07:10:50.117Z"
+    },
+    {
+      "name": "Sampledata1",
+      "image": "https://149449856.v2.pressablecdn.com/wp-content/uploads/2017/09/Shopping-Basket.jpg",
+      "category": "basket",
+      "price": 60000,
+      "originalPrice": 70000,
+      "description": "sampledata",
+      "items": [
+        "sampledata"
+      ],
+      "id": "product-1755848068508-1f2juq8xj",
+      "createdAt": "2025-08-22T07:34:28.508Z"
     }
   ],
   "users": [],
   "orders": [],
   "settings": {
-    "lastProductId": 51,
+    "lastProductId": 53,
     "lastOrderId": 0,
     "lastUserId": 0
   }

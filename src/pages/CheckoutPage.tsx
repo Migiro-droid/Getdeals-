@@ -1,17 +1,17 @@
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { CreditCard, MapPin, Phone, User, Smartphone, DollarSign, Clock } from "lucide-react";
-import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
-import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Separator } from "@/components/ui/separator";
-import { Badge } from "@/components/ui/badge";
-import { Alert, AlertDescription } from "@/components/ui/alert";
-import { useCart } from "@/contexts/CartContext";
-import { useToast } from "@/hooks/use-toast";
+import { Button } from "../components/ui/button";
+import { Card, CardContent, CardHeader, CardTitle } from "../components/ui/card";
+import { Input } from "../components/ui/input";
+import { Label } from "../components/ui/label";
+import { RadioGroup, RadioGroupItem } from "../components/ui/radio-group";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "../components/ui/select";
+import { Separator } from "../components/ui/separator";
+import { Badge } from "../components/ui/badge";
+import { Alert, AlertDescription } from "../components/ui/alert";
+import { useCart } from "../contexts/CartContext";
+import { useToast } from "../hooks/use-toast";
 
 export default function CheckoutPage() {
   const { items, total, clearCart } = useCart();

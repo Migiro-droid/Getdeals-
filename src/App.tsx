@@ -140,7 +140,7 @@ const App = () => (
                 <Route path="/admin/orders" element={<AdminGuard><AdminOrders /></AdminGuard>} />
                 <Route path="/admin/users" element={<AdminGuard><AdminUsers /></AdminGuard>} />
                 <Route path="/admin/settings" element={<AdminGuard><SupabaseAdminSettings /></AdminGuard>} />
-                <Route path="/admin/products" element={<SupabaseAdminProducts />} />
+                <Route path="/admin/products" element={<AdminGuard><AdminProducts /></AdminGuard>} />
                 <Route path="/admin/inventory" element={<AdminGuard><InventoryPage /></AdminGuard>} />
                 <Route path="/admin/inventory/out-of-stock" element={<AdminGuard><OutOfStockPage /></AdminGuard>} />
     {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
