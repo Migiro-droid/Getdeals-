@@ -39,7 +39,8 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
         description,
       } = req.body
 
-      if (!id || !name || !price || !image || !category) {
+      // if (!id || !name || !price || !image || !category) {
+         if (!name || !price || !image || !category) {
         return res.status(400).json({ error: 'Missing required fields' })
       }
 
@@ -51,7 +52,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       `
 
       const values = [
-        id,
+        // id,
         name,
         price,
         originalPrice,
