@@ -315,7 +315,7 @@ export const QuickMartDashboard: React.FC = () => {
                         <div key={product.id} className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
                           <div className="flex items-center space-x-3">
                             <span className="font-bold text-lg text-gray-600">#{index + 1}</span>
-                            <img src={product.image} alt={product.name} className="w-10 h-10 object-cover rounded" />
+                                <img src={product.image} alt={product.name} loading="lazy" decoding="async" className="w-10 h-10 object-cover rounded" onError={(e) => { (e.currentTarget as HTMLImageElement).src = '/placeholder.svg'; }} />
                             <div>
                               <p className="font-medium">{product.name}</p>
                               <p className="text-sm text-gray-600">KES {product.price}</p>

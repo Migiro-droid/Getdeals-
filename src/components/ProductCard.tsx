@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Heart, ShoppingCart, Eye } from "lucide-react";
 import { useProducts } from "@/contexts/ProductsContext";
 import { Button } from "@/components/ui/button";
@@ -43,6 +43,15 @@ export function ProductCard({ product, onQuickView }: ProductCardProps) {
   const { toast } = useToast();
   const { isAuthenticated } = useAuth();
 
+  // placeholder image (versioned) used as a safe fallback
+  const placeholder = withVersion("/placeholder.svg") || "/placeholder.svg";
+  const [imgSrc, setImgSrc] = useState<string>(withVersion(product.image) || placeholder);
+
+  useEffect(() => {
+    // whenever the product image or app version changes, reset to the new src
+    setImgSrc(withVersion(product.image) || placeholder);
+  }, [product.image, version]);
+
   const handleAddToCart = () => {
     if (!isAuthenticated) {
       setShowAuthDialog(true);
@@ -84,11 +93,30 @@ export function ProductCard({ product, onQuickView }: ProductCardProps) {
     >
       <div className="relative overflow-hidden">
         <div className="w-full aspect-[4/3] bg-muted flex items-center justify-center">
-          <img
-            src={withVersion(product.image)}
-            alt={product.name}
-            className="max-w-full max-h-full object-contain transition-transform duration-300"
-          />
+          {/* Ensure a stable src with a fallback placeholder and preserve aspect via container */}
+          {/* Use state so we can swap to placeholder on error and react to product/version changes */}
+          {
+            (() => {
+              const placeholder = withVersion("/placeholder.svg") || "/placeholder.svg";
+              // image state is managed below
+              return (
+                <img
+                  src={imgSrc}
+                  alt={product.name}
+                  loading="lazy"
+                  decoding="async"
+                  className="w-full h-full object-contain transition-transform duration-300"
+                  onError={(e) => {
+                    const img = e.currentTarget as HTMLImageElement;
+                    // avoid infinite loop if placeholder also fails
+                    if (img.src.includes("placeholder.svg")) return;
+                    img.onerror = null;
+                    setImgSrc(placeholder);
+                  }}
+                />
+              );
+            })()
+          }
         </div>
         
         {/* Discount Badge */}

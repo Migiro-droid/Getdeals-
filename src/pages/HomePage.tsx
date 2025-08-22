@@ -316,7 +316,7 @@ export default function HomePage() {
                     <Link key={p.id} to="#black-friday" className="group w-48 shrink-0">
                       <div className="rounded-lg border bg-background overflow-hidden">
                         <div className="aspect-[4/3] w-full overflow-hidden bg-muted flex items-center justify-center">
-                          <img src={p.image} alt={p.name} className="max-w-full max-h-full object-contain transition-transform" />
+                          <img src={p.image} alt={p.name} loading="lazy" decoding="async" className="max-w-full max-h-full object-contain transition-transform" onError={(e) => { (e.currentTarget as HTMLImageElement).src = '/placeholder.svg'; }} />
                         </div>
                         <div className="p-3">
                           <div className="text-sm font-medium line-clamp-1">{p.name}</div>
@@ -483,7 +483,10 @@ export default function HomePage() {
               <img
                 src={deliveryImage}
                 alt="Delivery service"
+                loading="lazy"
+                decoding="async"
                 className="rounded-2xl shadow-strong w-full object-cover"
+                onError={(e) => { (e.currentTarget as HTMLImageElement).src = '/placeholder.svg'; }}
               />
             </div>
           </div>
