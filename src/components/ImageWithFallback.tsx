@@ -1,4 +1,4 @@
-import { useState, useRef, useEffect } from "react";
+import { useState, useRef, useEffect, useLayoutEffect } from "react";
 
 interface ImageWithFallbackProps {
   src: string;
@@ -24,9 +24,9 @@ export function ImageWithFallback({
   const [currentSrc, setCurrentSrc] = useState(src);
   const [hasErrored, setHasErrored] = useState(false);
   const [isLoaded, setIsLoaded] = useState(false);
-  const [retryCount, setRetryCount] = useState(0);
   const imgRef = useRef<HTMLImageElement>(null);
-  const maxRetries = 2;
+  const [retryCount, setRetryCount] = useState(0);
+  const maxRetries = 1;
 
   // Reset state when src changes
   useEffect(() => {
@@ -38,8 +38,16 @@ export function ImageWithFallback({
     }
   }, [src]);
 
+  // If the image is already cached, ensure we mark it as loaded
+  useLayoutEffect(() => {
+    const img = imgRef.current;
+    if (img && img.complete && img.naturalWidth > 0) {
+      setIsLoaded(true);
+    }
+  }, [currentSrc]);
+
   const handleError = () => {
-    if (retryCount < maxRetries && !hasErrored) {
+  if (retryCount < maxRetries && !hasErrored) {
       // First retry with a slight delay
       setTimeout(() => {
         setRetryCount(prev => prev + 1);
@@ -58,7 +66,7 @@ export function ImageWithFallback({
   };
 
   return (
-    <div className={`relative ${className}`} style={{ minHeight: '100%', minWidth: '100%' }}>
+    <div className={className} style={{ minHeight: '100%', minWidth: '100%' }}>
       {!isLoaded && (
         <div className="absolute inset-0 bg-muted animate-pulse flex items-center justify-center">
           <div className="w-8 h-8 border-2 border-primary border-t-transparent rounded-full animate-spin" />

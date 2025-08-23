@@ -87,11 +87,11 @@ export function ProductCard({ product, onQuickView }: ProductCardProps) {
       onMouseLeave={() => setIsHovered(false)}
     >
       <div className="relative overflow-hidden">
-        <div className="w-full aspect-[4/3] bg-muted flex items-center justify-center relative overflow-hidden">
+    <div className="w-full aspect-[4/3] bg-muted flex items-center justify-center relative overflow-hidden">
           <ImageWithFallback
             src={withVersion(product.image)}
             alt={product.name}
-            className="absolute inset-0"
+      className="absolute inset-0"
             loading="eager"
             decoding="sync"
           />
