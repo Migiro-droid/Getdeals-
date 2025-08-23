@@ -3,9 +3,6 @@ import App from './App.tsx'
 import './index.css'
 import { ErrorBoundary } from './components/ErrorBoundary.tsx'
 
-// Add hydrated class to prevent FOUC
-document.documentElement.classList.add('hydrated');
-
 // Ensure favicon uses our logo in both dev and prod (safe guard)
 (() => {
 	try {
