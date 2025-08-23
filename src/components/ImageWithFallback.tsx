@@ -26,7 +26,7 @@ export function ImageWithFallback({
   const [isLoaded, setIsLoaded] = useState(false);
   const imgRef = useRef<HTMLImageElement>(null);
   const [retryCount, setRetryCount] = useState(0);
-  const maxRetries = 1;
+  const maxRetries = 0; // disable retry-based src changes to avoid post-load swaps
 
   // Reset state when src changes
   useEffect(() => {
@@ -48,11 +48,7 @@ export function ImageWithFallback({
 
   const handleError = () => {
   if (retryCount < maxRetries && !hasErrored) {
-      // First retry with a slight delay
-      setTimeout(() => {
-        setRetryCount(prev => prev + 1);
-        setCurrentSrc(src + (src.includes('?') ? '&' : '?') + 't=' + Date.now());
-      }, 100 * (retryCount + 1));
+      // retries disabled
     } else if (!hasErrored && currentSrc !== fallbackSrc) {
       setHasErrored(true);
       setCurrentSrc(fallbackSrc);
@@ -66,27 +62,16 @@ export function ImageWithFallback({
   };
 
   return (
-    <div className={className} style={{ minHeight: '100%', minWidth: '100%' }}>
-      {!isLoaded && (
-        <div className="absolute inset-0 bg-muted animate-pulse flex items-center justify-center">
-          <div className="w-8 h-8 border-2 border-primary border-t-transparent rounded-full animate-spin" />
-        </div>
-      )}
-      <img
-        ref={imgRef}
-        src={currentSrc}
-        alt={alt}
-        className={`w-full h-full object-contain transition-opacity duration-300 ${!isLoaded ? 'opacity-0' : 'opacity-100'}`}
-        loading={loading}
-        decoding={decoding}
-        onError={handleError}
-        onLoad={handleLoad}
-        style={{ 
-          display: 'block',
-          maxWidth: '100%',
-          maxHeight: '100%'
-        }}
-      />
-    </div>
+    <img
+      ref={imgRef}
+      src={currentSrc}
+      alt={alt}
+      className={className}
+      loading={loading}
+      decoding={decoding}
+      onError={handleError}
+      onLoad={handleLoad}
+      style={{ display: 'block', maxWidth: '100%', maxHeight: '100%' }}
+    />
   );
 }
