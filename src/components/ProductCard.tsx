@@ -32,18 +32,27 @@ export function ProductCard({ product, onQuickView }: ProductCardProps) {
   const [isHovered, setIsHovered] = useState(false);
   const [showDetailModal, setShowDetailModal] = useState(false);
   const [showAuthDialog, setShowAuthDialog] = useState(false);
+
   const { version } = useProducts();
-  const withVersion = (url: string) => {
-    if (!url) return "/placeholder.svg";
-    if (url.startsWith("http://") || url.startsWith("https://")) return url;
-    const ensured = url.startsWith("/") ? url : `/${url}`;
-    return `${ensured}${ensured.includes('?') ? '&' : '?'}v=${version}`;
-  };
   const { addItem } = useCart();
   const { toast } = useToast();
   const { isAuthenticated } = useAuth();
 
-  const handleAddToCart = () => {
+  // ✅ Fixed versioning
+  const withVersion = (url: string) => {
+    if (!url) return "/placeholder.svg";
+
+    // Only append version for external URLs
+    if (url.startsWith("http://") || url.startsWith("https://")) {
+      return `${url}${url.includes("?") ? "&" : "?"}v=${version}`;
+    }
+
+    // Local/public assets - no ?v needed
+    return url.startsWith("/") ? url : `/${url}`;
+  };
+
+  const handleAddToCart = (e: React.MouseEvent) => {
+    e.stopPropagation();
     if (!isAuthenticated) {
       setShowAuthDialog(true);
       return;
@@ -62,7 +71,8 @@ export function ProductCard({ product, onQuickView }: ProductCardProps) {
     });
   };
 
-  const handleWishlist = () => {
+  const handleWishlist = (e: React.MouseEvent) => {
+    e.stopPropagation();
     setIsWishlisted(!isWishlisted);
     toast({
       title: isWishlisted ? "Removed from wishlist" : "Added to wishlist",
@@ -72,9 +82,12 @@ export function ProductCard({ product, onQuickView }: ProductCardProps) {
     });
   };
 
-  const discountPercentage = product.originalPrice
-    ? Math.round(((product.originalPrice - product.price) / product.originalPrice) * 100)
-    : product.discount;
+  const discountPercentage =
+    product.originalPrice && product.price < product.originalPrice
+      ? Math.round(
+          ((product.originalPrice - product.price) / product.originalPrice) * 100
+        )
+      : product.discount;
 
   return (
     <Card
@@ -87,8 +100,11 @@ export function ProductCard({ product, onQuickView }: ProductCardProps) {
           <img
             src={withVersion(product.image)}
             alt={product.name}
-            className="w-full h-full object-contain"
             loading="lazy"
+            className="w-full h-full object-contain opacity-0 transition-opacity duration-300"
+            onLoad={(e) => {
+              e.currentTarget.style.opacity = "1"; // ✅ fade-in
+            }}
             onError={(e) => {
               const img = e.currentTarget as HTMLImageElement;
               if (!img.src.includes("placeholder.svg")) {
@@ -97,7 +113,7 @@ export function ProductCard({ product, onQuickView }: ProductCardProps) {
             }}
           />
         </div>
-        
+
         {/* Discount Badge */}
         {discountPercentage && (
           <Badge className="absolute top-2 left-2 bg-destructive text-destructive-foreground">
@@ -107,35 +123,40 @@ export function ProductCard({ product, onQuickView }: ProductCardProps) {
 
         {/* Wishlist Button */}
         <Button
+          aria-label="Add to wishlist"
           variant="ghost"
           size="icon"
           className={`absolute top-2 right-2 h-8 w-8 transition-all duration-300 ${
-            isHovered ? "opacity-100 translate-y-0" : "opacity-0 translate-y-2"
-          } ${isWishlisted ? "text-destructive" : "text-muted-foreground hover:text-destructive"}`}
+            isHovered
+              ? "opacity-100 translate-y-0"
+              : "opacity-0 translate-y-2"
+          } ${isWishlisted
+            ? "text-destructive"
+            : "text-muted-foreground hover:text-destructive"}`}
           onClick={handleWishlist}
         >
           <Heart className={`h-4 w-4 ${isWishlisted ? "fill-current" : ""}`} />
         </Button>
 
         {/* Quick Actions Overlay */}
-  <div
+        <div
           className={`absolute inset-x-0 bottom-0 p-3 bg-gradient-to-t from-black/60 to-transparent transition-all duration-300 ${
             isHovered ? "opacity-100 translate-y-0" : "opacity-0 translate-y-4"
           }`}
         >
           <div className="flex space-x-2">
-            <Button
-              size="sm"
-              className="flex-1"
-              onClick={handleAddToCart}
-            >
+            <Button size="sm" className="flex-1" onClick={handleAddToCart}>
               <ShoppingCart className="h-4 w-4 mr-2" />
               Add to Cart
             </Button>
             <Button
+              aria-label="Quick view"
               variant="secondary"
               size="sm"
-              onClick={() => setShowDetailModal(true)}
+              onClick={(e) => {
+                e.stopPropagation();
+                onQuickView ? onQuickView(product) : setShowDetailModal(true);
+              }}
             >
               <Eye className="h-4 w-4" />
             </Button>
@@ -144,11 +165,16 @@ export function ProductCard({ product, onQuickView }: ProductCardProps) {
       </div>
 
       <CardContent className="p-4">
-        <h3 className="font-semibold text-sm mb-2 line-clamp-2">{product.name}</h3>
-        
+        <h3 className="font-semibold text-sm mb-2 line-clamp-2">
+          {product.name}
+        </h3>
+
         {product.items && (
           <p className="text-xs text-muted-foreground mb-2">
-            {product.items.length} Items • Save KES {product.originalPrice ? (product.originalPrice - product.price) : 0}
+            {product.items.length} Items • Save KES{" "}
+            {product.originalPrice
+              ? product.originalPrice - product.price
+              : 0}
           </p>
         )}
 
@@ -171,13 +197,16 @@ export function ProductCard({ product, onQuickView }: ProductCardProps) {
           </p>
         )}
       </CardContent>
-      
-      <ProductDetailModal 
+
+      <ProductDetailModal
         product={product}
         open={showDetailModal}
         onOpenChange={setShowDetailModal}
       />
-  <AuthRequiredDialog open={showAuthDialog} onOpenChange={setShowAuthDialog} />
+      <AuthRequiredDialog
+        open={showAuthDialog}
+        onOpenChange={setShowAuthDialog}
+      />
     </Card>
   );
 }
