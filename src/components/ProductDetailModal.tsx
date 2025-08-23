@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { ShoppingCart, X } from "lucide-react";
@@ -48,6 +48,9 @@ export function ProductDetailModal({ product, open, onOpenChange }: ProductDetai
     <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
         <DialogHeader>
       <DialogTitle className="text-2xl font-bold">{live.name}</DialogTitle>
+      <DialogDescription className="text-muted-foreground">
+        View product details and add to cart
+      </DialogDescription>
         </DialogHeader>
         
         <div className="grid md:grid-cols-2 gap-8">
