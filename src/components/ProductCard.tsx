@@ -1,4 +1,4 @@
-import { useState } from "react";
+﻿import { useState } from "react";
 import { Heart, ShoppingCart, Eye } from "lucide-react";
 import { useProducts } from "@/contexts/ProductsContext";
 import { Button } from "@/components/ui/button";
@@ -9,7 +9,6 @@ import { useToast } from "@/hooks/use-toast";
 import { ProductDetailModal } from "./ProductDetailModal";
 import { useAuth } from "@/contexts/AuthContext";
 import { AuthRequiredDialog } from "./AuthRequiredDialog";
-import { ImageWithFallback } from "./ImageWithFallback";
 
 interface Product {
   id: string;
@@ -43,9 +42,6 @@ export function ProductCard({ product, onQuickView }: ProductCardProps) {
   const { addItem } = useCart();
   const { toast } = useToast();
   const { isAuthenticated } = useAuth();
-
-  // Simple placeholder fallback without complex state management
-  const placeholder = "/placeholder.svg";
 
   const handleAddToCart = () => {
     if (!isAuthenticated) {
@@ -87,13 +83,11 @@ export function ProductCard({ product, onQuickView }: ProductCardProps) {
       onMouseLeave={() => setIsHovered(false)}
     >
       <div className="relative overflow-hidden">
-    <div className="w-full aspect-[4/3] bg-muted flex items-center justify-center relative overflow-hidden">
-          <ImageWithFallback
+        <div className="w-full aspect-[4/3] bg-muted flex items-center justify-center">
+          <img
             src={withVersion(product.image)}
             alt={product.name}
-      className="absolute inset-0"
-            loading="eager"
-            decoding="sync"
+            className="max-w-full max-h-full object-contain transition-transform duration-300"
           />
         </div>
         
@@ -147,7 +141,7 @@ export function ProductCard({ product, onQuickView }: ProductCardProps) {
         
         {product.items && (
           <p className="text-xs text-muted-foreground mb-2">
-            {product.items.length} Items • Save KES {product.originalPrice ? (product.originalPrice - product.price) : 0}
+            {product.items.length} Items ΓÇó Save KES {product.originalPrice ? (product.originalPrice - product.price) : 0}
           </p>
         )}
 
