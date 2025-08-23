@@ -7,7 +7,6 @@ import { Badge } from "@/components/ui/badge";
 import { useCart } from "@/contexts/CartContext";
 import { useToast } from "@/hooks/use-toast";
 import { ProductDetailModal } from "./ProductDetailModal";
-import { ImageWithFallback } from "./ImageWithFallback";
 import { useAuth } from "@/contexts/AuthContext";
 import { AuthRequiredDialog } from "./AuthRequiredDialog";
 
@@ -85,12 +84,18 @@ export function ProductCard({ product, onQuickView }: ProductCardProps) {
     >
       <div className="relative overflow-hidden">
         <div className="w-full aspect-[4/3] bg-muted flex items-center justify-center">
-          <ImageWithFallback
+          <img
             src={withVersion(product.image)}
             alt={product.name}
             className="w-full h-full object-contain"
             loading="eager"
             decoding="sync"
+            onError={(e) => {
+              const img = e.currentTarget as HTMLImageElement;
+              if (!img.src.includes("placeholder.svg")) {
+                img.src = "/placeholder.svg";
+              }
+            }}
           />
         </div>
         
