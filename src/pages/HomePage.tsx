@@ -37,6 +37,22 @@ export default function HomePage() {
   const [showSticky, setShowSticky] = useState(false);
   const [dismissed, setDismissed] = useState(false);
 
+  // Preload critical homepage images after component mounts
+  useEffect(() => {
+    const preloadImages = [
+      "/essential-basket.jpg",
+      "/family-basket.jpg"
+    ];
+    
+    preloadImages.forEach(src => {
+      const link = document.createElement('link');
+      link.rel = 'preload';
+      link.as = 'image';
+      link.href = src;
+      document.head.appendChild(link);
+    });
+  }, []);
+
   useEffect(() => {
     // Set target to 45 days from now
     const target = new Date(Date.now() + 45 * 24 * 60 * 60 * 1000);

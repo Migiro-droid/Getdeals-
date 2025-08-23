@@ -34,10 +34,10 @@ export function ProductCard({ product, onQuickView }: ProductCardProps) {
   const [showAuthDialog, setShowAuthDialog] = useState(false);
   const { version } = useProducts();
   const withVersion = (url: string) => {
-    if (!url) return url;
+    if (!url) return "/placeholder.svg";
     if (url.startsWith("http://") || url.startsWith("https://")) return url;
-  const ensured = url.startsWith("/") ? url : `/${url}`;
-  return `${ensured}${ensured.includes('?') ? '&' : '?'}v=${version}`;
+    const ensured = url.startsWith("/") ? url : `/${url}`;
+    return `${ensured}${ensured.includes('?') ? '&' : '?'}v=${version}`;
   };
   const { addItem } = useCart();
   const { toast } = useToast();
@@ -88,8 +88,7 @@ export function ProductCard({ product, onQuickView }: ProductCardProps) {
             src={withVersion(product.image)}
             alt={product.name}
             className="w-full h-full object-contain"
-            loading="eager"
-            decoding="sync"
+            loading="lazy"
             onError={(e) => {
               const img = e.currentTarget as HTMLImageElement;
               if (!img.src.includes("placeholder.svg")) {
@@ -149,7 +148,7 @@ export function ProductCard({ product, onQuickView }: ProductCardProps) {
         
         {product.items && (
           <p className="text-xs text-muted-foreground mb-2">
-            {product.items.length} Items ΓÇó Save KES {product.originalPrice ? (product.originalPrice - product.price) : 0}
+            {product.items.length} Items • Save KES {product.originalPrice ? (product.originalPrice - product.price) : 0}
           </p>
         )}
 
