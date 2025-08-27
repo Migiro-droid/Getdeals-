@@ -49,10 +49,12 @@ async function testPrismaConnection() {
     console.log(`✅ Found ${categoryCount} categories in database\n`);
     
     console.log('🎉 All database tests passed!');
-    console.log('� Summary:');
+    console.log('📊 Summary:');
     console.log(`   - Products: ${productCount}`);
     console.log(`   - Users: ${userCount}`);
     console.log(`   - Categories: ${categoryCount}`);
+    
+    return true;
     
   } catch (error) {
     console.error('❌ Database test failed:', error);
@@ -61,6 +63,7 @@ async function testPrismaConnection() {
     console.log('2. Verify Supabase project is accessible');
     console.log('3. Run: npx prisma db push --force-reset');
     console.log('4. Run: npx prisma db seed');
+    return false;
   } finally {
     await prisma.$disconnect();
   }
@@ -74,7 +77,7 @@ async function testSupabaseAPI() {
   
   if (!supabaseUrl || !serviceRoleKey) {
     console.log('❌ Missing Supabase environment variables');
-    return;
+    return false;
   }
   
   try {
@@ -91,55 +94,31 @@ async function testSupabaseAPI() {
       const data = await response.json();
       console.log('✅ Supabase API is accessible');
       console.log(`✅ Response: ${JSON.stringify(data, null, 2)}`);
+      return true;
     } else {
       console.log(`❌ Supabase API error: ${response.status} ${response.statusText}`);
       const errorText = await response.text();
       console.log(`   Error details: ${errorText}`);
+      return false;
     }
   } catch (error) {
     console.log('❌ Failed to connect to Supabase API:', error);
+    return false;
+  }
+}
+
+async function main() {
+  const prismaOk = await testPrismaConnection();
+  const supabaseOk = await testSupabaseAPI();
+  
+  if (prismaOk && supabaseOk) {
+    console.log('\n🎉 ALL TESTS PASSED! Your database setup is working correctly!');
+    console.log('🚀 Ready to deploy to Vercel!');
+  } else {
+    console.log('\n❌ Some tests failed. Please fix the issues above.');
   }
 }
 
 if (require.main === module) {
-  Promise.resolve()
-    .then(testPrismaConnection)
-    .then(testSupabaseAPI)
-    .catch(console.error);
+  main().catch(console.error);
 }
-
-      console.log('📋 Table schema:');
-      columns.forEach((col: any) => {
-        console.log(`  - ${col.column_name}: ${col.data_type} (nullable: ${col.is_nullable})`);
-      });
-    // Test inserting a sample product via supabase client
-    console.log('🧪 Testing product insert...');
-    const testId = `test-${Date.now()}`;
-    const { data: testProduct, error: insertErr } = await supabase.from('products').insert([
-      {
-        id: testId,
-        name: 'Test Product',
-        price: 100,
-        category: 'test',
-        description: 'This is a test product',
-        image: '/placeholder.svg',
-        createdAt: new Date().toISOString(),
-        updatedAt: new Date().toISOString(),
-      }
-    ]).select().single();
-
-    if (insertErr) throw insertErr;
-    console.log('✅ Test product inserted:', testProduct);
-
-    // Clean up test product
-    await supabase.from('products').delete().eq('id', testId);
-    console.log('🧹 Test product cleaned up');
-
-    console.log('🎉 Database is ready for production!');
-
-  } catch (error) {
-    console.error('❌ Database test failed:', error);
-  }
-}
-
-testDatabaseConnection();

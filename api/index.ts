@@ -1,8 +1,5 @@
 import { VercelRequest, VercelResponse } from '@vercel/node';
-import { neon } from '@neondatabase/serverless';
-
-// Initialize Neon database connection
-const sql = neon(process.env.DATABASE_URL!);
+// Using Supabase-backed DB helpers from ../lib/db (server-side service role)
 
 // Validate product input
 function validateProductInput(data: any) {
@@ -60,7 +57,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
         status: 'ok', 
         timestamp: new Date().toISOString(),
         environment: 'vercel',
-        database: 'neon-postgres'
+        database: 'supabase'
       });
     }
 

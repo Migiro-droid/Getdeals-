@@ -1,10 +1,9 @@
 import { defineConfig } from "vite";
 import react from "@vitejs/plugin-react-swc";
 import path from "path";
-import { componentTagger } from "lovable-tagger";
 
 // https://vitejs.dev/config/
-export default defineConfig(({ mode }) => ({
+export default defineConfig(async ({ mode }) => ({
   server: {
     host: "::",
     port: 8080,
@@ -18,8 +17,9 @@ export default defineConfig(({ mode }) => ({
   },
   plugins: [
     react(),
-    mode === 'development' &&
-    componentTagger(),
+    // Dynamically import lovable-tagger only in development so Vite doesn't try to require an ESM-only
+    // package when loading the config in environments that use CommonJS/require.
+    mode === 'development' ? (await import('lovable-tagger')).componentTagger() : false,
   ].filter(Boolean),
   resolve: {
     alias: {

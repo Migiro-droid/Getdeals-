@@ -5,9 +5,11 @@ import path from 'path';
 import dotenv from 'dotenv';
 import bcrypt from 'bcryptjs';
 import jwt from 'jsonwebtoken';
+import nodemailer from 'nodemailer';
 import { fileURLToPath } from 'url';
 import { nanoid } from 'nanoid';
 import { JSONDatabase } from './lib/database.js';
+import { supabase, getProducts, getUsers, getOrders, createProduct, updateProduct, deleteProduct, seedDatabase } from '../lib/db.js';
 // Removed Prisma import - using JSON database now
 // import MpesaService from './lib/mpesa.js';
 // import SMSService from './lib/sms.js';
@@ -22,6 +24,8 @@ const app = express();
 const PORT = process.env.PORT || 4000;
 const JWT_SECRET = process.env.JWT_SECRET || 'devsecret';
 const JWT_EXPIRES_IN = process.env.JWT_EXPIRES_IN || '7d';
+
+// Supabase client is imported from lib/db
 
 // Initialize services (disabled for now - using JSON database)
 // const mpesaService = new MpesaService();
@@ -77,50 +81,181 @@ function authMiddleware(req, res, next) {
 app.get('/api/health', (req, res) => res.json({ ok: true }));
 
 app.post('/api/auth/signup', async (req, res) => {
-  const { name, phone, email, password } = req.body || {};
-  if (!name || !phone || !email || !password) return res.status(400).json({ message: 'Missing fields' });
+  try {
+    const { name, phone, email, password } = req.body || {};
+    if (!name || !email || !password) return res.status(400).json({ message: 'Missing fields' });
+    // Create Supabase user using admin API (server-side with service role)
+    const { data: created, error } = await supabase.auth.admin.createUser({
+      email: String(email).toLowerCase(),
+      password: String(password),
+      user_metadata: { name: String(name), phone: phone || null, role: 'customer' },
+      email_confirm: true,
+    });
 
-  const users = readUsers();
-  const exists = users.find(u => u.email.toLowerCase() === String(email).toLowerCase());
-  if (exists) return res.status(409).json({ message: 'Email already registered' });
+    if (error) {
+      console.error('Supabase createUser error:', error);
+      return res.status(500).json({ message: 'Signup failed' });
+    }
 
-  const hash = await bcrypt.hash(String(password), 10);
-  const user = {
-    id: nanoid(),
-    name: String(name),
-    phone: String(phone),
-    email: String(email).toLowerCase(),
-    passwordHash: hash,
-    role: 'user',
-    createdAt: new Date().toISOString()
-  };
-  users.push(user);
-  writeUsers(users);
-
-  const token = signToken(user);
-  const { passwordHash, ...safe } = user;
-  return res.status(201).json({ token, user: safe });
+    // Generate a JWT for the app (optionally rely on Supabase session instead)
+    const token = signToken({ id: created.user.id, email: created.user.email });
+    return res.status(201).json({ token, user: created.user });
+  } catch (err) {
+    console.error('Signup error:', err);
+    return res.status(500).json({ message: 'Signup failed' });
+  }
 });
 
 app.post('/api/auth/signin', async (req, res) => {
-  const { email, password } = req.body || {};
-  if (!email || !password) return res.status(400).json({ message: 'Missing credentials' });
-  const users = readUsers();
-  const user = users.find(u => u.email.toLowerCase() === String(email).toLowerCase());
-  if (!user) return res.status(401).json({ message: 'Invalid email or password' });
-  const ok = await bcrypt.compare(String(password), user.passwordHash);
-  if (!ok) return res.status(401).json({ message: 'Invalid email or password' });
-  const token = signToken(user);
-  const { passwordHash, ...safe } = user;
-  return res.json({ token, user: safe });
+  try {
+    const { email, password } = req.body || {};
+    if (!email || !password) return res.status(400).json({ message: 'Missing credentials' });
+    const { data, error } = await supabase.auth.signInWithPassword({
+      email: String(email).toLowerCase(),
+      password: String(password),
+    });
+
+    if (error) {
+      console.error('Supabase signIn error:', error);
+      return res.status(401).json({ message: 'Invalid email or password' });
+    }
+
+    const session = data.session;
+    const user = data.user;
+    return res.json({ token: session?.access_token, user });
+  } catch (err) {
+    console.error('Signin error:', err);
+    return res.status(500).json({ message: 'Sign in failed' });
+  }
 });
 
-app.get('/api/auth/me', authMiddleware, (req, res) => {
-  const users = readUsers();
-  const user = users.find(u => u.id === req.user.sub);
-  if (!user) return res.status(404).json({ message: 'User not found' });
-  const { passwordHash, ...safe } = user;
-  return res.json({ user: safe });
+app.get('/api/auth/me', authMiddleware, async (req, res) => {
+  try {
+    const id = req.user && req.user.sub;
+    if (!id) return res.status(401).json({ message: 'Unauthorized' });
+  const { data, error } = await supabase.auth.getUserById(id);
+  if (error) return res.status(404).json({ message: 'User not found' });
+  return res.json({ user: data.user });
+  } catch (err) {
+    console.error('Me error:', err);
+    return res.status(500).json({ message: 'Failed to fetch user' });
+  }
+});
+
+// Update profile (name, phone) or change password
+app.put('/api/auth/profile', authMiddleware, async (req, res) => {
+  try {
+    const userId = req.user && req.user.sub;
+    if (!userId) return res.status(401).json({ message: 'Unauthorized' });
+
+    const { firstName, lastName, phone, currentPassword, newPassword } = req.body || {};
+
+  const { data: user, error: getUserErr } = await supabase.auth.getUserById(userId);
+  if (getUserErr || !user) return res.status(404).json({ message: 'User not found' });
+
+    // If changing password, verify current password
+    if (newPassword) {
+  if (!currentPassword) return res.status(400).json({ message: 'Current password required' });
+  // Supabase doesn't expose password hashes; attempt to signIn to verify current password
+  const { error: verifyErr } = await supabase.auth.signInWithPassword({ email: user.email, password: currentPassword });
+  if (verifyErr) return res.status(401).json({ message: 'Current password is incorrect' });
+  // Update password
+  const { data: updated, error: updErr } = await supabase.auth.updateUser({ password: newPassword });
+  if (updErr) return res.status(500).json({ message: 'Failed to update password' });
+    }
+
+    // Update name/phone
+    const updates = {};
+    if (firstName || lastName) {
+      updates.name = [firstName || '', lastName || ''].filter(Boolean).join(' ').trim();
+    }
+    if (phone) updates.phone = phone;
+
+    if (Object.keys(updates).length) {
+      const { data: updated, error: updErr } = await supabase.auth.updateUser({ data: { name: updates.name, phone: updates.phone } });
+      if (updErr) return res.status(500).json({ message: 'Failed to update profile' });
+      return res.json({ success: true, user: updated.user });
+    }
+
+    return res.json({ success: true, user });
+  } catch (err) {
+    console.error('Update profile error:', err);
+    return res.status(500).json({ message: 'Failed to update profile' });
+  }
+});
+
+// Password reset: request reset (sends token to email if SMTP configured)
+app.post('/api/auth/forgot-password', async (req, res) => {
+  try {
+    const { email } = req.body || {};
+    if (!email) return res.status(400).json({ message: 'Email is required' });
+
+    const { data: userLookup } = await supabase.auth.getUserByEmail(String(email).toLowerCase());
+    const user = userLookup.user;
+    if (!user) {
+      // respond success to avoid leaking existence
+      return res.json({ ok: true, message: 'If a matching account exists, a reset email has been sent.' });
+    }
+
+    // Use Supabase to generate password reset link via admin API
+    const { data: linkData, error: linkErr } = await supabase.auth.resetPasswordForEmail(String(email).toLowerCase(), {
+      redirectTo: `${process.env.APP_URL || 'http://localhost:8080'}/auth/reset`
+    });
+
+    if (linkErr) console.error('Supabase reset password error:', linkErr);
+
+    // Attempt to send email if SMTP configured (fallback)
+    if (process.env.SMTP_HOST && process.env.SMTP_USER && process.env.SMTP_PASS) {
+      try {
+        const transporter = nodemailer.createTransport({
+          host: process.env.SMTP_HOST,
+          port: Number(process.env.SMTP_PORT) || 587,
+          secure: process.env.SMTP_SECURE === 'true',
+          auth: { user: process.env.SMTP_USER, pass: process.env.SMTP_PASS }
+        });
+
+        const resetUrl = `${process.env.APP_URL || 'http://localhost:8080'}/auth/reset?token=${resetToken}`;
+        await transporter.sendMail({
+          from: process.env.EMAIL_FROM || 'no-reply@getdeals.co.ke',
+          to: user.email,
+          subject: 'Reset your password',
+          text: `Reset your password using this link: ${resetUrl}`,
+          html: `<p>Reset your password using this link: <a href="${resetUrl}">${resetUrl}</a></p>`
+        });
+      } catch (emailErr) {
+        console.error('Failed to send reset email:', emailErr);
+      }
+    } else {
+      console.log('Reset token for', user.email, resetToken);
+    }
+
+  return res.json({ ok: true, message: 'If a matching account exists, a reset email has been sent.' });
+  } catch (err) {
+    console.error('Forgot password error:', err);
+    return res.status(500).json({ message: 'Failed to process request' });
+  }
+});
+
+app.post('/api/auth/reset-password', async (req, res) => {
+  try {
+    const { token, password } = req.body || {};
+    if (!token || !password) return res.status(400).json({ message: 'Token and password are required' });
+
+    let payload;
+    try {
+      payload = jwt.verify(token, JWT_SECRET);
+    } catch (e) {
+      return res.status(400).json({ message: 'Invalid or expired token' });
+    }
+
+    const userId = payload.sub;
+    const hash = await bcrypt.hash(String(password), 10);
+    await prisma.user.update({ where: { id: userId }, data: { passwordHash: hash } });
+    return res.json({ ok: true, message: 'Password reset successfully' });
+  } catch (err) {
+    console.error('Reset password error:', err);
+    return res.status(500).json({ message: 'Failed to reset password' });
+  }
 });
 
 // --- Products store helpers ---
