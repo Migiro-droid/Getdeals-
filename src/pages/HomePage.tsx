@@ -37,6 +37,25 @@ export default function HomePage() {
   const [showSticky, setShowSticky] = useState(false);
   const [dismissed, setDismissed] = useState(false);
 
+  // Define all available categories
+  const categories = [
+    { name: 'Electronics', slug: 'electronics', icon: '📱' },
+    { name: 'Fashion', slug: 'fashion', icon: '👕' },
+    { name: 'Home & Garden', slug: 'home-garden', icon: '🏠' },
+    { name: 'Sports & Outdoors', slug: 'sports-outdoors', icon: '⚽' },
+    { name: 'Health & Beauty', slug: 'health-beauty', icon: '💄' },
+    { name: 'Books & Media', slug: 'books-media', icon: '📚' },
+    { name: 'Toys & Games', slug: 'toys-games', icon: '🎮' },
+    { name: 'Automotive', slug: 'automotive', icon: '🚗' },
+    { name: 'Food & Beverages', slug: 'food-beverages', icon: '🍕' },
+    { name: 'Office Supplies', slug: 'office-supplies', icon: '📎' }
+  ];
+
+  // Function to get products by category
+  const getProductsByCategory = (categoryName: string) => {
+    return all.filter(p => p.category === categoryName).slice(0, 6); // Show max 6 products per category
+  };
+
   useEffect(() => {
     const target = new Date("2025-11-28T00:00:00");
     const tick = () => {
@@ -419,6 +438,35 @@ export default function HomePage() {
           </div>
         </div>
       </section>
+
+      {/* Category Sections */}
+      {categories.map((category) => {
+        const categoryProducts = getProductsByCategory(category.name);
+        if (categoryProducts.length === 0) return null;
+
+        return (
+          <section key={category.slug} className="py-16 bg-muted/20">
+            <div className="container mx-auto px-4">
+              <div className="flex items-center justify-between mb-8">
+                <div className="flex items-center gap-3">
+                  <span className="text-3xl">{category.icon}</span>
+                  <h2 className="text-2xl lg:text-3xl font-bold">{category.name}</h2>
+                </div>
+                <Button variant="outline" asChild>
+                  <Link to={`/category/${category.slug}`}>
+                    View All <ArrowRight className="ml-2 h-4 w-4" />
+                  </Link>
+                </Button>
+              </div>
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6 gap-6">
+                {categoryProducts.map((product) => (
+                  <ProductCard key={product.id} product={product} />
+                ))}
+              </div>
+            </div>
+          </section>
+        );
+      })}
 
       {/* How It Works */}
       <section className="py-20 bg-muted/30">

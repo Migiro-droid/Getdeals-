@@ -1,51 +1,108 @@
 // api/products.ts
 
-import pkg from 'pg';
-const { Pool } = pkg;
+import { PrismaClient } from '@prisma/client';
 
-const pool = new Pool({
-  connectionString: process.env.DATABASE_URL,
-  ssl: { rejectUnauthorized: false }, // Neon requires SSL
-});
+const prisma = new PrismaClient();
 
-export default async function handler(req, res) {
+export default async function handler(req: any, res: any) {
+  // Set CORS headers
   res.setHeader('Access-Control-Allow-Origin', '*');
-  res.setHeader('Access-Control-Allow-Methods', 'GET, POST, OPTIONS');
-  res.setHeader('Access-Control-Allow-Headers', 'Content-Type');
+  res.setHeader('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS');
+  res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization');
 
   if (req.method === 'OPTIONS') {
-    return res.status(200).end();
+    res.status(200).end();
+    return;
   }
 
-  try {
-    if (req.method === 'GET') {
-      const result = await pool.query('SELECT * FROM products ORDER BY "createdAt" DESC');
-      return res.status(200).json(result.rows);
+  if (req.method === 'GET') {
+    try {
+      const products = await prisma.product.findMany({
+        orderBy: { createdAt: 'desc' }
+      });
+      
+      res.status(200).json({ data: products, error: null });
+    } catch (error) {
+      console.error('Error fetching products:', error);
+      res.status(500).json({ 
+        data: null, 
+        error: { message: 'Failed to fetch products' } 
+      });
     }
-
-    if (req.method === 'POST') {
-      const { id, name, price, originalPrice, image, discount, items, itemsDetail, category, description } = req.body;
-
-      if (!id || !name || !price || !image || !category) {
-        return res.status(400).json({ error: 'Missing required fields' });
-      }
-
-      const query = `
-        INSERT INTO products 
-        (id, name, price, "originalPrice", image, discount, items, "itemsDetail", category, description, "createdAt", "updatedAt") 
-        VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,NOW(),NOW())
-        RETURNING *;
-      `;
-
-      const values = [id, name, price, originalPrice, image, discount, items, itemsDetail, category, description];
-
-      const result = await pool.query(query, values);
-      return res.status(201).json(result.rows[0]);
+  } 
+  else if (req.method === 'POST') {
+    try {
+      const productData = req.body;
+      
+      const product = await prisma.product.create({
+        data: {
+          name: productData.name,
+          price: parseInt(productData.price),
+          originalPrice: productData.originalPrice ? parseInt(productData.originalPrice) : null,
+          image: productData.imageUrl || productData.image,
+          category: productData.category,
+          description: productData.description || null,
+          featured: productData.featured || false,
+          items: productData.items || [],
+          discount: productData.discount || null
+        }
+      });
+      
+      res.status(201).json({ data: product, error: null });
+    } catch (error) {
+      console.error('Error creating product:', error);
+      res.status(500).json({ 
+        data: null, 
+        error: { message: 'Failed to create product' } 
+      });
     }
-
-    return res.status(405).json({ error: 'Method not allowed' });
-  } catch (error) {
-    console.error('Products API Error:', error);
-    return res.status(500).json({ error: 'Internal Server Error', details: error.message });
+  }
+  else if (req.method === 'PUT') {
+    try {
+      const { id, ...updates } = req.body;
+      
+      const product = await prisma.product.update({
+        where: { id },
+        data: {
+          ...(updates.name && { name: updates.name }),
+          ...(updates.price && { price: parseInt(updates.price) }),
+          ...(updates.originalPrice && { originalPrice: parseInt(updates.originalPrice) }),
+          ...(updates.imageUrl && { image: updates.imageUrl }),
+          ...(updates.category && { category: updates.category }),
+          ...(updates.description && { description: updates.description }),
+          ...(updates.featured !== undefined && { featured: updates.featured }),
+          ...(updates.items && { items: updates.items }),
+          ...(updates.discount && { discount: updates.discount })
+        }
+      });
+      
+      res.status(200).json({ data: product, error: null });
+    } catch (error) {
+      console.error('Error updating product:', error);
+      res.status(500).json({ 
+        data: null, 
+        error: { message: 'Failed to update product' } 
+      });
+    }
+  }
+  else if (req.method === 'DELETE') {
+    try {
+      const { id } = req.query;
+      
+      await prisma.product.delete({
+        where: { id: id as string }
+      });
+      
+      res.status(200).json({ error: null });
+    } catch (error) {
+      console.error('Error deleting product:', error);
+      res.status(500).json({ 
+        error: { message: 'Failed to delete product' } 
+      });
+    }
+  }
+  else {
+    res.setHeader('Allow', ['GET', 'POST', 'PUT', 'DELETE']);
+    res.status(405).end(`Method ${req.method} Not Allowed`);
   }
 }

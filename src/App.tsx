@@ -34,6 +34,7 @@ import InventoryPage from "./pages/admin/InventoryPage";
 import OutOfStockPage from "./pages/admin/OutOfStockPage";
 import TestProductsPage from "./pages/TestProductsPage";
 import WalletPage from "./pages/WalletPage";
+import { AuthTestPage } from "./components/AuthTestPage";
 
 const queryClient = new QueryClient();
 
@@ -134,13 +135,14 @@ const App = () => (
                 <Route path="/account" element={<AccountPage />} />
                 <Route path="/faq" element={<FAQPage />} />
                 <Route path="/test-products" element={<TestProductsPage />} />
+                <Route path="/test-auth" element={<AuthTestPage />} />
                 <Route path="/wallet" element={<SupabaseWalletPage />} />
                 <Route path="/auth" element={<AuthPage />} />
                 <Route path="/admin" element={<AdminGuard><AdminDashboard /></AdminGuard>} />
                 <Route path="/admin/orders" element={<AdminGuard><AdminOrders /></AdminGuard>} />
                 <Route path="/admin/users" element={<AdminGuard><AdminUsers /></AdminGuard>} />
                 <Route path="/admin/settings" element={<AdminGuard><SupabaseAdminSettings /></AdminGuard>} />
-                <Route path="/admin/products" element={<SupabaseAdminProducts />} />
+                <Route path="/admin/products" element={<AdminProducts />} />
                 <Route path="/admin/inventory" element={<AdminGuard><InventoryPage /></AdminGuard>} />
                 <Route path="/admin/inventory/out-of-stock" element={<AdminGuard><OutOfStockPage /></AdminGuard>} />
     {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}

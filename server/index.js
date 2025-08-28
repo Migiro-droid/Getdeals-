@@ -9,7 +9,7 @@ import nodemailer from 'nodemailer';
 import { fileURLToPath } from 'url';
 import { nanoid } from 'nanoid';
 import { JSONDatabase } from './lib/database.js';
-import { supabase, getProducts, getUsers, getOrders, createProduct, updateProduct, deleteProduct, seedDatabase } from '../lib/db.js';
+import { supabase, getProducts, getUsers, getOrders, createProduct, updateProduct, deleteProduct, seedDatabase }  from "./lib/db.js";
 // Removed Prisma import - using JSON database now
 // import MpesaService from './lib/mpesa.js';
 // import SMSService from './lib/sms.js';

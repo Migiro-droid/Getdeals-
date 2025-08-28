@@ -3,27 +3,36 @@ import react from "@vitejs/plugin-react-swc";
 import path from "path";
 
 // https://vitejs.dev/config/
-export default defineConfig(async ({ mode }) => ({
-  server: {
-    host: "::",
-    port: 8080,
-    allowedHosts: ["d857c9c7964a.ngrok-free.app"],
-    proxy: {
-      "/api": {
-        target: "http://localhost:4000",
-        changeOrigin: true,
+export default defineConfig(async ({ mode }) => {
+  const plugins = [react()];
+  
+  // Try to import lovable-tagger only in development mode
+  if (mode === 'development') {
+    try {
+      const { componentTagger } = await import('lovable-tagger');
+      plugins.push(componentTagger());
+    } catch (error) {
+      console.warn('lovable-tagger not available:', (error as Error).message);
+    }
+  }
+
+  return {
+    server: {
+      host: "::",
+      port: 8080,
+      allowedHosts: ["d857c9c7964a.ngrok-free.app"],
+      proxy: {
+        "/api": {
+          target: "http://localhost:4000",
+          changeOrigin: true,
+        },
       },
     },
-  },
-  plugins: [
-    react(),
-    // Dynamically import lovable-tagger only in development so Vite doesn't try to require an ESM-only
-    // package when loading the config in environments that use CommonJS/require.
-    mode === 'development' ? (await import('lovable-tagger')).componentTagger() : false,
-  ].filter(Boolean),
-  resolve: {
-    alias: {
-      "@": path.resolve(__dirname, "./src"),
+    plugins,
+    resolve: {
+      alias: {
+        "@": path.resolve(__dirname, "./src"),
+      },
     },
-  },
-}));
+  };
+});
