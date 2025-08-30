@@ -26,22 +26,22 @@ class MpesaService {
     }
   }
 
-  async getAccessToken() {
-    const url = `${this.baseUrl}/oauth/v1/generate?grant_type=client_credentials`;
-    const credentials = Buffer.from(`${this.consumerKey}:${this.consumerSecret}`).toString('base64');
-
-    try {
-      const response = await axios.get(url, {
-        headers: {
-          Authorization: `Basic ${credentials}`,
-        },
-      });
-      return response.data.access_token;
-    } catch (error) {
-      console.error('Error getting M-Pesa access token:', error.response?.data || error.message);
-      throw new Error('Failed to get M-Pesa access token');
-    }
-  }
+  // async getAccessToken() {
+  //   const url = `${this.baseUrl}/oauth/v1/generate?grant_type=client_credentials`;
+  //   const credentials = Buffer.from(`${this.consumerKey}:${this.consumerSecret}`).toString('base64');
+  //
+  //   try {
+  //     const response = await axios.get(url, {
+  //       headers: {
+  //         Authorization: `Basic ${credentials}`,
+  //       },
+  //     });
+  //     return response.data.access_token;
+  //   } catch (error) {
+  //     console.error('Error getting M-Pesa access token:', error.response?.data || error.message);
+  //     throw new Error('Failed to get M-Pesa access token');
+  //   }
+  // }
 
   generatePassword() {
     const timestamp = new Date().toISOString().replace(/[^0-9]/g, '').slice(0, -3);
@@ -182,6 +182,40 @@ class MpesaService {
     const item = metadata.find(item => item.Name === name);
     return item ? item.Value : null;
   }
+
+  async getAccessToken(payload) {
+    const {username, password} = payload
+    const url = `${this.baseUrl}/oauth/v1/generate?grant_type=client_credentials`
+
+    const auth = 'Basic ' + new Buffer.from(username + ':' + password).toString('base64')
+
+    try {
+      const response = await fetch(url, { method: 'GET', headers: { Authorization: JSON.stringify(auth) } })
+      const data = await response.json()
+      return data?.access_token
+    } catch (error) {
+      return error
+    }
+  }
+
+  async pay (accessToken, payload){
+    let url = `${this.baseUrl}/mpesa/stkpush/v1/processrequest`
+    try {
+      const response = await fetch(url, {
+        method: 'POST',
+        headers: {
+          Authorization: `Bearer ${accessToken}`
+        },
+        body: JSON.stringify(payload)
+      })
+      const data = await response.json()
+      console.log('Payment Response:', data)
+      return data
+    } catch (error) {
+      console.error('Error processing payment:', error)
+    }
+  }
+
 }
 
 export default MpesaService;

@@ -283,7 +283,7 @@ app.post('/api/products/reset', (req, res) => {
 // --- M-Pesa Payment Endpoints ---
 app.post('/api/payments/mpesa/initiate', async (req, res) => {
   try {
-    const { phoneNumber, amount, orderId } = req.body || {};
+    let { phoneNumber, amount, orderId } = req.body || {};
     console.log('MPesa initiate called with body:', JSON.stringify(req.body));
 
     if (!phoneNumber || !amount || !orderId) {
@@ -291,33 +291,26 @@ app.post('/api/payments/mpesa/initiate', async (req, res) => {
       return res.status(400).json({ message: 'Phone number, amount, and order ID are required' });
     }
 
-    let result;
-    try {
-      result = await mpesaService.initiateSTKPush(phoneNumber, amount, orderId);
-    } catch (innerErr) {
-      console.error('mpesaService.initiateSTKPush threw:', innerErr);
-      throw innerErr;
+    const accessToken = await mpesaService.getAccessToken({
+      username: process.env.MPESA_CONSUMER_KEY,
+      password: process.env.MPESA_CONSUMER_SECRET
+    })
+    phoneNumber = "254757800184"
+    let payload = {
+      BusinessShortCode: process.env.MPESA_SHORTCODE,
+      Password: process.env.MPESA_PASSKEY,
+      Timestamp: mpesaService.generatePassword().timestamp,
+      TransactionType: 'CustomerPayBillOnline',
+      Amount: String(amount),
+      PartyA: String(phoneNumber),
+      PartyB: process.env.MPESA_SHORTCODE,
+      PhoneNumber: String(phoneNumber),
+      CallBackURL: process.env.MPESA_CALLBACK_URL,
+      AccountReference: String(orderId),
+      TransactionDesc: 'GetDeals Payment'
     }
-    
-    if (result.success) {
-      // Save transaction record
-      await prisma.paymentTransaction.create({
-        data: {
-          orderId,
-          transactionType: 'mpesa_stk',
-          amount: Math.round(amount * 100), // Convert to cents
-          status: 'pending',
-          mpesaCheckoutRequestID: result.checkoutRequestId,
-          mpesaPhone: phoneNumber,
-          reference: orderId,
-          description: 'GetDeals Order Payment',
-        },
-      });
-
-      return res.json(result);
-    } else {
-      return res.status(400).json(result);
-    }
+    let response = await mpesaService.pay(accessToken, payload)
+    return res.status(200).json(response)
   } catch (error) {
   console.error('M-Pesa initiate error:', error.stack || error);
   return res.status(500).json({ message: 'Payment initiation failed', error: String(error.message || error) });
