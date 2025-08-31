@@ -7,11 +7,8 @@ import bcrypt from 'bcryptjs';
 import jwt from 'jsonwebtoken';
 import { fileURLToPath } from 'url';
 import { nanoid } from 'nanoid';
+import axios from 'axios';
 import { JSONDatabase } from './lib/database.js';
-// Removed Prisma import - using JSON database now
-// import MpesaService from './lib/mpesa.js';
-// import SMSService from './lib/sms.js';
-// import EmailService from './lib/email.js';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -285,7 +282,14 @@ app.post('/api/payments/mpesa/initiate', authMiddleware, async (req, res) => {
       return res.status(400).json({ message: 'Phone number, amount, and order ID are required' });
     }
 
-    const result = await mpesaService.initiateSTKPush(phoneNumber, amount, orderId);
+    // Call M-Pesa microservice
+    const microserviceResponse = await axios.post('http://localhost:3001/api/payments/mpesa/initiate', {
+      phoneNumber,
+      amount,
+      orderId
+    });
+
+    const result = microserviceResponse.data;
     
     if (result.success) {
       // Save transaction record
@@ -307,14 +311,16 @@ app.post('/api/payments/mpesa/initiate', authMiddleware, async (req, res) => {
       return res.status(400).json(result);
     }
   } catch (error) {
-    console.error('M-Pesa initiate error:', error);
+    console.error('M-Pesa initiate error:', error.response?.data || error.message);
     return res.status(500).json({ message: 'Payment initiation failed' });
   }
 });
 
 app.post('/api/payments/mpesa/callback', async (req, res) => {
   try {
-    const callbackResult = mpesaService.processCallback(req.body);
+    // Forward callback to M-Pesa microservice
+    const microserviceResponse = await axios.post('http://localhost:3001/api/payments/mpesa/callback', req.body);
+    const callbackResult = microserviceResponse.data;
     
     if (callbackResult.success) {
       // Update payment transaction
@@ -342,15 +348,15 @@ app.post('/api/payments/mpesa/callback', async (req, res) => {
           include: { items: true, user: true },
         });
 
-        // Send SMS confirmation
-        if (order.mpesaPhone) {
-          await smsService.sendOrderConfirmationSMS(order.mpesaPhone, order);
-        }
+        // Send SMS confirmation (disabled - service not initialized)
+        // if (order.mpesaPhone) {
+        //   await smsService.sendOrderConfirmationSMS(order.mpesaPhone, order);
+        // }
 
-        // Send email confirmation
-        if (order.user?.email) {
-          await emailService.sendOrderConfirmation(order, order.user.email);
-        }
+        // Send email confirmation (disabled - service not initialized)
+        // if (order.user?.email) {
+        //   await emailService.sendOrderConfirmation(order, order.user.email);
+        // }
       }
     } else {
       // Update payment as failed
@@ -374,7 +380,7 @@ app.post('/api/payments/mpesa/callback', async (req, res) => {
 
     res.json({ message: 'Callback processed successfully' });
   } catch (error) {
-    console.error('M-Pesa callback error:', error);
+    console.error('M-Pesa callback error:', error.response?.data || error.message);
     res.status(500).json({ message: 'Callback processing failed' });
   }
 });
@@ -382,10 +388,14 @@ app.post('/api/payments/mpesa/callback', async (req, res) => {
 app.get('/api/payments/mpesa/status/:checkoutRequestId', authMiddleware, async (req, res) => {
   try {
     const { checkoutRequestId } = req.params;
-    const result = await mpesaService.querySTKPushStatus(checkoutRequestId);
+    
+    // Call M-Pesa microservice for status query
+    const microserviceResponse = await axios.get(`http://localhost:3001/api/payments/mpesa/status/${checkoutRequestId}`);
+    const result = microserviceResponse.data;
+    
     res.json(result);
   } catch (error) {
-    console.error('M-Pesa status query error:', error);
+    console.error('M-Pesa status query error:', error.response?.data || error.message);
     res.status(500).json({ message: 'Status query failed' });
   }
 });

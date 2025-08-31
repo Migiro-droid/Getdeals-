@@ -23,7 +23,6 @@ export default function CheckoutPage() {
   const [paymentMethod, setPaymentMethod] = useState("wallet");
   const [paymentStatus, setPaymentStatus] = useState<"idle" | "processing" | "success" | "failed">("idle");
   
-  // Customer details
   const [firstName, setFirstName] = useState("");
   const [lastName, setLastName] = useState("");
   const [phone, setPhone] = useState("");
@@ -31,14 +30,11 @@ export default function CheckoutPage() {
   const [address, setAddress] = useState("");
   const [pickupLocation, setPickupLocation] = useState("");
   
-  // Payment details
   const [mpesaPhone, setMpesaPhone] = useState("");
 
   const formatPhoneNumber = (phone: string) => {
-    // Remove all non-digit characters
     const digits = phone.replace(/\D/g, '');
     
-    // Handle different formats
     if (digits.startsWith('254')) {
       return digits;
     } else if (digits.startsWith('0')) {
@@ -63,7 +59,6 @@ export default function CheckoutPage() {
         }),
       });
 
-      // Check if response has content before trying to parse JSON
       const responseText = await response.text();
       console.log('STK Push response text:', responseText);
       
@@ -94,7 +89,6 @@ export default function CheckoutPage() {
     try {
       const response = await fetch(`/api/payments/mpesa/query/${checkoutRequestId}`);
       
-      // Check if response has content before trying to parse JSON
       const responseText = await response.text();
       console.log('Payment status response text:', responseText);
       
@@ -147,9 +141,7 @@ export default function CheckoutPage() {
     setIsLoading(true);
 
     try {
-      // Check M-Pesa availability first
       if (paymentMethod === "mpesa") {
-        // Show M-Pesa unavailable message
         toast({
           title: "M-Pesa Not Available 📱",
           description: "M-Pesa integration is currently underway. Please use wallet payment or contact support for assistance.",
@@ -159,13 +151,10 @@ export default function CheckoutPage() {
         return;
       }
 
-      // Set processing status only for available payment methods
       setPaymentStatus("processing");
 
-      // Generate order reference
       const orderReference = `GD${Date.now()}${Math.random().toString(36).substr(2, 4).toUpperCase()}`;
       
-      // Prepare order data
       const orderData = {
         orderReference,
         customerInfo: {
@@ -191,7 +180,6 @@ export default function CheckoutPage() {
         status: 'pending'
       };
 
-      // Handle wallet and other payment methods
       const orderResult = await createOrder(orderData);
       
       if (!orderResult.success) {
@@ -231,9 +219,9 @@ export default function CheckoutPage() {
         <h1 className="text-3xl font-bold mb-8">Checkout</h1>
         
         <form onSubmit={handleSubmit} className="grid lg:grid-cols-3 gap-8">
-          {/* Checkout Form */}
+          {}
           <div className="lg:col-span-2 space-y-6">
-            {/* Personal Information */}
+            {}
             <Card>
               <CardHeader>
                 <CardTitle className="flex items-center">
@@ -263,7 +251,7 @@ export default function CheckoutPage() {
               </CardContent>
             </Card>
 
-            {/* Delivery Options */}
+            {}
             <Card>
               <CardHeader>
                 <CardTitle className="flex items-center">
@@ -320,7 +308,7 @@ export default function CheckoutPage() {
               </CardContent>
             </Card>
 
-            {/* Payment Method */}
+            {}
             <Card>
               <CardHeader>
                 <CardTitle className="flex items-center">
@@ -330,15 +318,27 @@ export default function CheckoutPage() {
               </CardHeader>
               <CardContent className="space-y-4">
                 <RadioGroup value={paymentMethod} onValueChange={setPaymentMethod}>
-                  <div className="flex items-center space-x-2 p-4 border rounded-lg bg-gradient-to-r from-green-50 to-green-100 border-green-200">
+                  <div className="flex items-center space-x-2 p-4 border rounded-lg bg-gradient-to-r from-primary/10 to-primary/5 border-primary/20">
+                    <RadioGroupItem value="wallet" id="wallet" />
+                    <Label htmlFor="wallet" className="flex-1">
+                      <div className="flex items-center gap-2">
+                        <DollarSign className="h-4 w-4 text-primary" />
+                        <span className="font-medium">GetDeals Wallet</span>
+                        <Badge variant="secondary" className="bg-primary/10 text-primary border-primary/20">✨ Recommended</Badge>
+                      </div>
+                      <div className="text-sm text-primary/80">
+                        🚀 Instant payment • 💰 Earn rewards • 🔒 Secure & convenient • ⚡ No extra fees
+                      </div>
+                    </Label>
+                  </div>
+                  <div className="flex items-center space-x-2 p-4 border rounded-lg">
                     <RadioGroupItem value="mpesa" id="mpesa" />
                     <Label htmlFor="mpesa" className="flex-1">
                       <div className="flex items-center gap-2">
-                        <Smartphone className="h-4 w-4 text-green-600" />
+                        <Smartphone className="h-4 w-4" />
                         <span className="font-medium">M-Pesa</span>
-                        <Badge variant="secondary" className="bg-green-100 text-green-700">Recommended</Badge>
                       </div>
-                      <div className="text-sm text-green-700">
+                      <div className="text-sm text-muted-foreground">
                         Pay instantly with M-Pesa STK Push - Fast & Secure
                       </div>
                     </Label>
@@ -355,22 +355,10 @@ export default function CheckoutPage() {
                       </div>
                     </Label>
                   </div>
-                  <div className="flex items-center space-x-2 p-4 border rounded-lg">
-                    <RadioGroupItem value="wallet" id="wallet" />
-                    <Label htmlFor="wallet" className="flex-1">
-                      <div className="flex items-center gap-2">
-                        <DollarSign className="h-4 w-4" />
-                        <span className="font-medium">Wallet Payment</span>
-                      </div>
-                      <div className="text-sm text-muted-foreground">
-                        Pay using your GetDeals wallet balance
-                      </div>
-                    </Label>
-                  </div>
                 </RadioGroup>
 
                 {paymentMethod === "mpesa" && (
-                  <div className="space-y-4 bg-green-50 p-4 rounded-lg border border-green-200">
+                  <div className="space-y-4 bg-muted/50 p-4 rounded-lg border">
                     <div>
                       <Label htmlFor="mpesaPhone" className="text-sm font-medium">
                         M-Pesa Phone Number
@@ -383,7 +371,7 @@ export default function CheckoutPage() {
                         onChange={(e) => setMpesaPhone(e.target.value)}
                         className="bg-white"
                       />
-                      <p className="text-xs text-green-700 mt-1">
+                      <p className="text-xs text-muted-foreground mt-1">
                         Leave empty to use your contact phone number
                       </p>
                     </div>

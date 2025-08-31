@@ -38,7 +38,7 @@ export default function HomePage() {
   const [dismissed, setDismissed] = useState(false);
 
   useEffect(() => {
-    const target = new Date("2025-11-28T00:00:00");
+    const target = new Date("2025-10-15T00:00:00");
     const tick = () => {
       const now = new Date();
       const diff = target.getTime() - now.getTime();
@@ -446,7 +446,7 @@ export default function HomePage() {
         </div>
       </section>
 
-      {/* Delivery Options */}
+      {}
       <section className="py-20">
         <div className="container mx-auto px-4">
           <div className="grid lg:grid-cols-2 gap-12 items-center">
@@ -489,7 +489,7 @@ export default function HomePage() {
         </div>
       </section>
 
-      {/* CTA Section (clean, no background) */}
+      {}
       <section className="py-20">
         <div className="container mx-auto px-4">
           <div className="max-w-3xl mx-auto text-center">

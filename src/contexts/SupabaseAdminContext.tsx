@@ -1,5 +1,4 @@
 import React, { createContext, useContext, useEffect, useState, useCallback } from 'react';
-import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
 
 type AdminSettings = {
@@ -35,26 +34,16 @@ export function SupabaseAdminProvider({ children }: { children: React.ReactNode 
   const fetchSettings = useCallback(async () => {
     try {
       setLoading(true);
-      const { data, error } = await supabase
-        .from('admin_settings')
-        .select('*')
-        .eq('id', 'default')
-        .single();
-
-      if (error && error.code !== 'PGRST116') { // PGRST116 is "not found"
-        throw error;
-      }
-
-      if (data) {
-        setSettings({
-          black_friday_enabled: data.black_friday_enabled,
-          black_friday_date: data.black_friday_date,
-          maintenance_mode: data.maintenance_mode,
-          support_phone: data.support_phone,
-          support_email: data.support_email,
-          location: data.location,
-        });
-      }
+      // For now, use default settings since backend doesn't have admin settings endpoint
+      // In production, this would fetch from /api/admin/settings
+      setSettings({
+        black_friday_enabled: true,
+        black_friday_date: '2025-11-28T00:00:00Z',
+        maintenance_mode: false,
+        support_phone: '+254 700 123 456',
+        support_email: 'support@getdeals.co.ke',
+        location: 'Karen Green, Nairobi, Kenya',
+      });
     } catch (error) {
       console.error('Error fetching admin settings:', error);
       toast({
@@ -73,19 +62,10 @@ export function SupabaseAdminProvider({ children }: { children: React.ReactNode 
 
   const updateSettings = useCallback(async (updates: Partial<AdminSettings>) => {
     try {
-      const { error } = await supabase
-        .from('admin_settings')
-        .upsert({
-          id: 'default',
-          ...updates
-        }, {
-          onConflict: 'id'
-        });
-
-      if (error) throw error;
-
+      // For now, just update local state since backend doesn't have admin settings endpoint
+      // In production, this would POST to /api/admin/settings
       setSettings(prev => ({ ...prev, ...updates }));
-      
+
       toast({
         title: "Success",
         description: "Settings updated successfully",

@@ -1,5 +1,4 @@
 import React, { createContext, useCallback, useContext, useEffect, useMemo, useState } from "react";
-import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 
 export interface Product {
@@ -46,14 +45,12 @@ export const SupabaseProductsProvider: React.FC<{ children: React.ReactNode }> =
   const fetchProducts = useCallback(async () => {
     try {
       setLoading(true);
-      const { data, error } = await supabase
-        .from('products')
-        .select('*')
-        .order('created_at', { ascending: false });
-
-      if (error) throw error;
-
-      setAll((data as Product[]) || []);
+      const response = await fetch('/api/products');
+      if (!response.ok) {
+        throw new Error('Failed to fetch products');
+      }
+      const data = await response.json();
+      setAll(data || []);
     } catch (error) {
       console.error('Error fetching products:', error);
       toast({
@@ -72,9 +69,12 @@ export const SupabaseProductsProvider: React.FC<{ children: React.ReactNode }> =
 
   const add: SupabaseProductsCtx["add"] = useCallback(async (productData) => {
     try {
-      const { data, error } = await supabase
-        .from('products')
-        .insert([{
+      const response = await fetch('/api/products', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
           name: productData.name,
           price: productData.price,
           original_price: productData.original_price,
@@ -86,21 +86,23 @@ export const SupabaseProductsProvider: React.FC<{ children: React.ReactNode }> =
           is_basket: productData.is_basket || false,
           stock_quantity: productData.stock_quantity || 0,
           basket_items: productData.basket_items
-        }])
-        .select()
-        .single();
+        }),
+      });
 
-      if (error) throw error;
+      if (!response.ok) {
+        throw new Error('Failed to add product');
+      }
 
-      setAll((prev) => [data as Product, ...prev]);
+      const data = await response.json();
+      setAll((prev) => [data, ...prev]);
       setVersion((v) => v + 1);
-      
+
       toast({
         title: "Success",
         description: "Product added successfully",
       });
 
-      return data as Product;
+      return data;
     } catch (error) {
       console.error('Error adding product:', error);
       toast({
@@ -114,16 +116,21 @@ export const SupabaseProductsProvider: React.FC<{ children: React.ReactNode }> =
 
   const update: SupabaseProductsCtx["update"] = useCallback(async (id, patch) => {
     try {
-      const { error } = await supabase
-        .from('products')
-        .update(patch)
-        .eq('id', id);
+      const response = await fetch(`/api/products/${id}`, {
+        method: 'PATCH',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(patch),
+      });
 
-      if (error) throw error;
+      if (!response.ok) {
+        throw new Error('Failed to update product');
+      }
 
       setAll((prev) => prev.map((p) => (p.id === id ? { ...p, ...patch } : p)));
       setVersion((v) => v + 1);
-      
+
       toast({
         title: "Success",
         description: "Product updated successfully",
@@ -141,16 +148,17 @@ export const SupabaseProductsProvider: React.FC<{ children: React.ReactNode }> =
 
   const remove: SupabaseProductsCtx["remove"] = useCallback(async (id) => {
     try {
-      const { error } = await supabase
-        .from('products')
-        .delete()
-        .eq('id', id);
+      const response = await fetch(`/api/products/${id}`, {
+        method: 'DELETE',
+      });
 
-      if (error) throw error;
+      if (!response.ok) {
+        throw new Error('Failed to delete product');
+      }
 
       setAll((prev) => prev.filter((p) => p.id !== id));
       setVersion((v) => v + 1);
-      
+
       toast({
         title: "Success",
         description: "Product deleted successfully",

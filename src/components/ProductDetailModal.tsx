@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { ShoppingCart, X } from "lucide-react";
@@ -8,7 +8,6 @@ import { useCart } from "@/contexts/CartContext";
 import { useProducts } from "@/contexts/ProductsContext";
 import { useAuth } from "@/contexts/AuthContext";
 import { AuthRequiredDialog } from "./AuthRequiredDialog";
-// Removed prebuilt item images to ensure we always use admin-provided images
 
 interface ProductDetailModalProps {
   product: Product | null;
@@ -16,7 +15,6 @@ interface ProductDetailModalProps {
   onOpenChange: (open: boolean) => void;
 }
 
-// We no longer map item names to prebuilt images. Admin-configured itemsDetail drives images.
 
 export function ProductDetailModal({ product, open, onOpenChange }: ProductDetailModalProps) {
   const { addItem } = useCart();
@@ -31,8 +29,7 @@ export function ProductDetailModal({ product, open, onOpenChange }: ProductDetai
   };
 
   if (!product) return null;
-  // Prefer the clicked product's data (so freshly added/edited descriptions show),
-  // but fall back to store copy for any missing fields.
+
   const liveFromStore = all.find(p => p.id === product.id);
   const live = { ...liveFromStore, ...product } as Product;
 
@@ -47,11 +44,14 @@ export function ProductDetailModal({ product, open, onOpenChange }: ProductDetai
     <Dialog open={open} onOpenChange={onOpenChange}>
     <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
         <DialogHeader>
-      <DialogTitle className="text-2xl font-bold">{live.name}</DialogTitle>
+          <DialogTitle className="text-2xl font-bold">{live.name}</DialogTitle>
+          <DialogDescription className="text-muted-foreground">
+            View product details and add to cart
+          </DialogDescription>
         </DialogHeader>
         
         <div className="grid md:grid-cols-2 gap-8">
-          {/* Product Image */}
+          {}
           <div className="space-y-4">
             <div className="w-full aspect-[4/3] bg-muted rounded-lg overflow-hidden flex items-center justify-center">
               <img
@@ -80,7 +80,7 @@ export function ProductDetailModal({ product, open, onOpenChange }: ProductDetai
             </div>
           </div>
 
-          {/* Product Details */}
+          {}
           <div className="space-y-6">
             <div>
               <h3 className="text-lg font-semibold mb-2">Description</h3>

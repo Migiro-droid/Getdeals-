@@ -179,6 +179,13 @@ export default function WalletPage() {
             </CardContent>
           </Card>
         </div>
+
+        {}
+        <div className="mt-8 text-center">
+          <p className="text-sm text-muted-foreground">
+            Powered by <span className="font-semibold text-primary">CPF</span>
+          </p>
+        </div>
       </div>
     </div>
   );

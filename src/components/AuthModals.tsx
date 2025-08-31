@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -24,7 +24,6 @@ export function AuthModals({ open, onOpenChange, defaultTab = "signin" }: AuthMo
   const { signIn, signUp } = useAuth();
   const { toast } = useToast();
 
-  // Keep tab in sync with caller preference and reset transient state on open
   useEffect(() => {
     if (open) {
       setActiveTab(defaultTab);
@@ -80,7 +79,9 @@ export function AuthModals({ open, onOpenChange, defaultTab = "signin" }: AuthMo
           <DialogTitle className="text-xl font-bold bg-gradient-to-r from-primary to-primary/70 bg-clip-text text-transparent">
             Welcome to GetDeals
           </DialogTitle>
-          <p className="text-center text-xs text-muted-foreground">Sign in or create an account to continue</p>
+          <DialogDescription className="text-center text-xs text-muted-foreground">
+            Sign in or create an account to continue shopping
+          </DialogDescription>
         </DialogHeader>
 
         <Tabs

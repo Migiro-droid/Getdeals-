@@ -59,6 +59,63 @@ This project is built with:
 - React
 - shadcn-ui
 - Tailwind CSS
+- Node.js/Express (Backend)
+- M-Pesa Daraja API (Payment Processing)
+
+## Architecture Overview
+
+This application uses a microservices architecture for payment processing:
+
+### Main Application (Port 4000)
+- Frontend: React + TypeScript + Vite
+- Backend: Express.js server handling user authentication, orders, and product management
+- Database: JSON-based storage with Prisma ORM support
+
+### M-Pesa Microservice (Port 3001)
+- Dedicated payment processing service
+- Handles all M-Pesa STK Push transactions
+- Processes payment callbacks and status queries
+- Independent deployment and scaling
+
+## Development Setup
+
+### Running Both Services
+
+```sh
+# Install dependencies for both services
+npm install
+cd mpesa-service && npm install && cd ..
+
+# Start both services together
+node start-dev.js
+```
+
+### Running Services Individually
+
+```sh
+# Main application (includes frontend dev server)
+npm run dev
+
+# M-Pesa microservice only
+cd mpesa-service && npm start
+
+# Main server only
+cd server && npm start
+```
+
+### Testing M-Pesa Integration
+
+```sh
+# Run integration tests
+node test-mpesa-integration.js
+```
+
+## M-Pesa Configuration
+
+1. Copy `mpesa-service/.env.example` to `mpesa-service/.env`
+2. Add your M-Pesa Daraja API credentials
+3. Configure callback URLs to point to your main server
+4. Update environment variables for production deployment
 
 ## How can I deploy this project?
 
