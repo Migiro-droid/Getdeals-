@@ -1,51 +1,57 @@
-// api/products.ts
+// src/data/products.ts
 
-import pkg from 'pg';
-const { Pool } = pkg;
-
-const pool = new Pool({
-  connectionString: process.env.DATABASE_URL,
-  ssl: { rejectUnauthorized: false }, // Neon requires SSL
-});
-
-export default async function handler(req, res) {
-  res.setHeader('Access-Control-Allow-Origin', '*');
-  res.setHeader('Access-Control-Allow-Methods', 'GET, POST, OPTIONS');
-  res.setHeader('Access-Control-Allow-Headers', 'Content-Type');
-
-  if (req.method === 'OPTIONS') {
-    return res.status(200).end();
-  }
-
-  try {
-    if (req.method === 'GET') {
-      const result = await pool.query('SELECT * FROM products ORDER BY "createdAt" DESC');
-      return res.status(200).json(result.rows);
-    }
-
-    if (req.method === 'POST') {
-      const { id, name, price, originalPrice, image, discount, items, itemsDetail, category, description } = req.body;
-
-      if (!id || !name || !price || !image || !category) {
-        return res.status(400).json({ error: 'Missing required fields' });
-      }
-
-      const query = `
-        INSERT INTO products 
-        (id, name, price, "originalPrice", image, discount, items, "itemsDetail", category, description, "createdAt", "updatedAt") 
-        VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,NOW(),NOW())
-        RETURNING *;
-      `;
-
-      const values = [id, name, price, originalPrice, image, discount, items, itemsDetail, category, description];
-
-      const result = await pool.query(query, values);
-      return res.status(201).json(result.rows[0]);
-    }
-
-    return res.status(405).json({ error: 'Method not allowed' });
-  } catch (error) {
-    console.error('Products API Error:', error);
-    return res.status(500).json({ error: 'Internal Server Error', details: error.message });
-  }
+export interface Product {
+  id: string;
+  name: string;
+  price: number;
+  originalPrice?: number;
+  image?: string;
+  discount?: number;
+  items?: string[];
+  category: string;
+  description?: string;
 }
+
+const withImage = (path?: string) => {
+  if (!path) return "/placeholder.svg";
+  if (path.startsWith("http://") || path.startsWith("https://")) return path;
+  return path.startsWith("/") ? path : `/${path}`;
+};
+
+export const products: Product[] = [
+  {
+    id: "essential-basket",
+    name: "Essential Basket",
+    price: 2500,
+    originalPrice: 3000,
+    image: withImage("essential-basket.jpg"),
+    category: "Bundles",
+    description: "A selection of daily essentials for your household.",
+    items: ["Rice", "Sugar", "Cooking Oil", "Flour"],
+  },
+  {
+    id: "family-basket",
+    name: "Family Basket",
+    price: 4500,
+    originalPrice: 5200,
+    image: withImage("family-basket.jpg"),
+    category: "Bundles",
+    description: "Perfect for family needs with more savings.",
+    items: ["Milk", "Bread", "Eggs", "Snacks"],
+  },
+  {
+    id: "detergent",
+    name: "Detergent 1kg",
+    price: 450,
+    image: withImage("https://examplecdn.com/products/detergent.jpg"),
+    category: "Cleaning",
+    description: "High-quality detergent for bright clothes.",
+  },
+  {
+    id: "placeholder-sample",
+    name: "Coming Soon Product",
+    price: 999,
+    image: withImage(""), // intentionally blank → uses placeholder.svg
+    category: "Upcoming",
+  },
+];

@@ -11,6 +11,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useToast } from "@/hooks/use-toast";
+import { getApiBase } from '@/lib/api';
 import { 
   Users, 
   UserPlus, 
@@ -101,7 +102,8 @@ export default function AdminUsers() {
 
   const loadCustomers = async () => {
     try {
-      const response = await fetch('/api/admin/customers');
+  const baseUrl = getApiBase();
+  const response = await fetch(`${baseUrl}/api/admin/customers`);
       if (response.ok) {
         const data = await response.json();
         setCustomers(data.customers || []);
@@ -124,7 +126,8 @@ export default function AdminUsers() {
 
   const loadAdminUsers = async () => {
     try {
-      const response = await fetch('/api/admin/users');
+  const baseUrl = getApiBase();
+  const response = await fetch(`${baseUrl}/api/admin/users`);
       if (response.ok) {
         const data = await response.json();
         setAdminUsers(data.users || []);
@@ -222,7 +225,8 @@ export default function AdminUsers() {
   // Action handlers
   const handleUpdateCustomerStatus = async (customerId: string, newStatus: Customer['status']) => {
     try {
-      const response = await fetch(`/api/admin/customers/${customerId}`, {
+  const baseUrl = getApiBase();
+  const response = await fetch(`${baseUrl}/api/admin/customers/${customerId}`, {
         method: 'PATCH',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ status: newStatus }),
@@ -264,7 +268,8 @@ export default function AdminUsers() {
 
     try {
       const recipientType = selectedCustomerIds.length > 0 ? "selected" : "all";
-      const response = await fetch('/api/admin/message', {
+  const baseUrl = getApiBase();
+  const response = await fetch(`${baseUrl}/api/admin/message`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -313,7 +318,8 @@ export default function AdminUsers() {
     }
 
     try {
-      const response = await fetch('/api/admin/users', {
+  const baseUrl = getApiBase();
+  const response = await fetch(`${baseUrl}/api/admin/users`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(newAdminForm),

@@ -1,6 +1,6 @@
 import { useState } from "react";
 import logo from "../assets/logo.png";
-import { Link, useLocation } from "react-router-dom";
+import { Link, NavLink, useLocation, useNavigate } from "react-router-dom";
 import { Search, ShoppingCart, User, Menu, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -14,6 +14,7 @@ export function Header() {
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
   const location = useLocation();
+  const navigate = useNavigate();
   const { items } = useCart();
   const { balance } = useWallet();
   const { isAuthenticated } = useAuth();
@@ -39,7 +40,7 @@ export function Header() {
 
   return (
     <>
-    <header className="sticky top-0 z-50 w-full border-b bg-white dark:bg-white shadow-sm">
+  <header className="sticky top-0 z-[200] pointer-events-auto w-full border-b bg-white dark:bg-white shadow-sm">
       <div className="container mx-auto px-4">
         <div className="flex h-16 items-center justify-between">
           {/* Logo */}
@@ -48,20 +49,24 @@ export function Header() {
           </Link>
 
           {/* Desktop Navigation */}
-          <nav className="hidden md:flex items-center space-x-8">
-            {navigation.map((item) => (
-              <Link
-                key={item.name}
-                to={item.href}
-                className={`text-sm font-medium transition-colors hover:text-primary ${
-                  isActive(item.href)
-                    ? "text-primary border-b-2 border-primary"
-                    : "text-muted-foreground"
-                }`}
-              >
-                {item.name}
-              </Link>
-            ))}
+          <nav className="hidden md:flex items-center space-x-4">
+            {navigation.map((item) => {
+              const active = isActive(item.href);
+              return (
+                <button
+                  key={item.name}
+                  onClick={(e) => {
+                    e.preventDefault();
+                    navigate(item.href);
+                  }}
+                  className={`inline-flex items-center justify-center gap-2 whitespace-nowrap rounded-md text-sm font-medium ring-offset-background transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 h-10 px-4 py-2 hover:bg-accent hover:text-accent-foreground cursor-pointer ${
+                    active ? 'text-primary border-b-2 border-primary' : 'text-muted-foreground'
+                  }`}
+                >
+                  {item.name}
+                </button>
+              );
+            })}
           </nav>
 
           {/* Search Bar */}
@@ -154,16 +159,19 @@ export function Header() {
                 </div>
               </div>
               {navigation.map((item) => (
-                <Link
+                <button
                   key={item.name}
-                  to={item.href}
-                  className={`block px-3 py-2 text-base font-medium transition-colors hover:text-primary ${
+                  onClick={(e) => {
+                    e.preventDefault();
+                    navigate(item.href);
+                    setIsMobileMenuOpen(false);
+                  }}
+                  className={`block px-3 py-2 text-base font-medium transition-colors hover:text-primary cursor-pointer w-full text-left ${
                     isActive(item.href) ? "text-primary bg-primary/5" : "text-muted-foreground"
                   }`}
-                  onClick={() => setIsMobileMenuOpen(false)}
                 >
                   {item.name}
-                </Link>
+                </button>
               ))}
               
               {/* Mobile Authentication */}

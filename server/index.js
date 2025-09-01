@@ -9,6 +9,8 @@ import { fileURLToPath } from 'url';
 import { nanoid } from 'nanoid';
 import axios from 'axios';
 import { JSONDatabase } from './lib/database.js';
+import mpesaRoutes from './routes/mpesa.js';
+import MpesaService from './lib/mpesa.js';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -17,16 +19,22 @@ dotenv.config({ path: path.join(__dirname, '.env') });
 
 const app = express();
 const PORT = process.env.PORT || 4000;
-const JWT_SECRET = process.env.JWT_SECRET || 'devsecret';
+const JWT_SECRET = process.env.JWT_SECRET;
 const JWT_EXPIRES_IN = process.env.JWT_EXPIRES_IN || '7d';
 
-// Initialize services (disabled for now - using JSON database)
-// const mpesaService = new MpesaService();
-// const smsService = new SMSService();
-// const emailService = new EmailService();
+if (!JWT_SECRET) {
+  console.error('FATAL ERROR: JWT_SECRET is not defined in the environment variables. Please add it to the .env file.');
+  process.exit(1);
+}
 
 app.use(cors());
 app.use(express.json());
+
+// API routes
+app.use('/api/mpesa', mpesaRoutes);
+
+// Instantiate MpesaService used by inline payment routes below
+const mpesaService = new MpesaService();
 
 // Legacy file-based functions (for migration support)
 const dataDir = path.join(__dirname, 'data');
@@ -274,14 +282,17 @@ app.post('/api/products/reset', (req, res) => {
 });
 
 // --- M-Pesa Payment Endpoints ---
-app.post('/api/payments/mpesa/initiate', authMiddleware, async (req, res) => {
+app.post('/api/payments/mpesa/initiate', async (req, res) => {
   try {
-    const { phoneNumber, amount, orderId } = req.body;
-    
+    const { phoneNumber, amount, orderId } = req.body || {};
+    console.log('MPesa initiate called with body:', JSON.stringify(req.body));
+
     if (!phoneNumber || !amount || !orderId) {
+      console.error('MPesa initiate missing fields', { phoneNumber, amount, orderId });
       return res.status(400).json({ message: 'Phone number, amount, and order ID are required' });
     }
 
+<<<<<<< HEAD
     // Call M-Pesa microservice
     const microserviceResponse = await axios.post('http://localhost:3001/api/payments/mpesa/initiate', {
       phoneNumber,
@@ -385,7 +396,7 @@ app.post('/api/payments/mpesa/callback', async (req, res) => {
   }
 });
 
-app.get('/api/payments/mpesa/status/:checkoutRequestId', authMiddleware, async (req, res) => {
+app.get('/api/payments/mpesa/status/:checkoutRequestId', async (req, res) => {
   try {
     const { checkoutRequestId } = req.params;
     

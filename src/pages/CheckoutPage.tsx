@@ -1,20 +1,23 @@
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { CreditCard, MapPin, Phone, User, Smartphone, DollarSign, Clock } from "lucide-react";
-import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
-import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Separator } from "@/components/ui/separator";
-import { Badge } from "@/components/ui/badge";
-import { Alert, AlertDescription } from "@/components/ui/alert";
-import { useCart } from "@/contexts/CartContext";
-import { useToast } from "@/hooks/use-toast";
+import { Button } from "../components/ui/button";
+import { Card, CardContent, CardHeader, CardTitle } from "../components/ui/card";
+import { Input } from "../components/ui/input";
+import { Label } from "../components/ui/label";
+import { RadioGroup, RadioGroupItem } from "../components/ui/radio-group";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "../components/ui/select";
+import { Separator } from "../components/ui/separator";
+import { Badge } from "../components/ui/badge";
+import { Alert, AlertDescription } from "../components/ui/alert";
+import { useCart } from "../contexts/CartContext";
+import { useToast } from '../hooks/use-toast';
+import { useAuth } from '../contexts/AuthContext';
+import { getApiBase } from '@/lib/api';
 
 export default function CheckoutPage() {
   const { items, total, clearCart } = useCart();
+  const auth = useAuth();
   const { toast } = useToast();
   const navigate = useNavigate();
   
@@ -31,6 +34,7 @@ export default function CheckoutPage() {
   const [pickupLocation, setPickupLocation] = useState("");
   
   const [mpesaPhone, setMpesaPhone] = useState("");
+  const [loading, setLoading] = useState(false);
 
   const formatPhoneNumber = (phone: string) => {
     const digits = phone.replace(/\D/g, '');
@@ -46,6 +50,7 @@ export default function CheckoutPage() {
     return digits;
   };
 
+<<<<<<< HEAD
   const initiateSTKPush = async (amount: number, phoneNumber: string, orderReference: string) => {
     try {
       const response = await fetch('/api/payments/mpesa/stk-push', {
@@ -115,9 +120,12 @@ export default function CheckoutPage() {
     }
   };
 
+=======
+>>>>>>> e13c6d4dae5c3ccba3e00f197741838a4d48811e
   const createOrder = async (orderData: any) => {
     try {
-      const response = await fetch('/api/orders', {
+  const baseUrl = getApiBase();
+  const response = await fetch(`${baseUrl}/api/orders`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(orderData),
@@ -138,19 +146,31 @@ export default function CheckoutPage() {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    setIsLoading(true);
+    if (!auth.isAuthenticated || !auth.token) {
+      toast({
+        variant: 'destructive',
+        title: 'Authentication Error',
+        description: 'You must be logged in to place an order.',
+      });
+      return;
+    }
 
+<<<<<<< HEAD
     try {
       if (paymentMethod === "mpesa") {
+=======
+    if (paymentMethod === 'mpesa') {
+      if (!mpesaPhone) {
+>>>>>>> e13c6d4dae5c3ccba3e00f197741838a4d48811e
         toast({
-          title: "M-Pesa Not Available 📱",
-          description: "M-Pesa integration is currently underway. Please use wallet payment or contact support for assistance.",
-          variant: "destructive",
+          variant: 'destructive',
+          title: 'M-Pesa Phone Number Required',
+          description: 'Please enter your M-Pesa phone number.',
         });
-        setIsLoading(false);
         return;
       }
 
+<<<<<<< HEAD
       setPaymentStatus("processing");
 
       const orderReference = `GD${Date.now()}${Math.random().toString(36).substr(2, 4).toUpperCase()}`;
@@ -184,29 +204,70 @@ export default function CheckoutPage() {
       
       if (!orderResult.success) {
         throw new Error(orderResult.error || "Failed to create order");
+=======
+      try {
+        setLoading(true);
+        const phone = mpesaPhone.startsWith('254') ? mpesaPhone : `254${parseInt(mpesaPhone, 10)}`;
+        
+        // In a real app, you would create the order in your database first
+        // and get a unique order ID to pass to the payment gateway.
+        const orderId = `GD-TEST-${Date.now()}`;
+
+        const response = await fetch('/api/payments/mpesa/initiate', {
+          method: 'POST',
+          headers: { 
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${auth.token}`
+          },
+          body: JSON.stringify({
+            amount: total,
+            phoneNumber: phone,
+            orderId: orderId, 
+          }),
+        });
+
+        // It's crucial to handle non-JSON responses
+        const responseText = await response.text();
+        let result;
+        try {
+          result = JSON.parse(responseText);
+        } catch (err) {
+          console.error("Failed to parse server response:", responseText);
+          throw new Error("Received an invalid response from the server. Please check the console for details.");
+        }
+
+        if (!response.ok) {
+          throw new Error(result.message || `HTTP error! status: ${response.status}`);
+        }
+
+        if (result.success) {
+          toast({
+            title: 'M-Pesa STK Push Initiated',
+            description: 'Please check your phone to complete the payment.',
+          });
+          // Here you might want to start polling for payment status or redirect the user
+        } else {
+          throw new Error(result.message || 'Failed to initiate M-Pesa payment.');
+        }
+
+      } catch (error) {
+        console.error('M-Pesa payment error:', error);
+        toast({
+          variant: 'destructive',
+          title: 'Payment Error',
+          description: error.message || 'Could not connect to the payment service.',
+        });
+      } finally {
+        setLoading(false);
+>>>>>>> e13c6d4dae5c3ccba3e00f197741838a4d48811e
       }
-
-      setPaymentStatus("success");
+    } else {
+      // Handle other payment methods or show an error
       toast({
-        title: "Order Placed Successfully! 🎉",
-        description: "You will receive confirmation details shortly.",
+        variant: 'destructive',
+        title: 'Unsupported Payment Method',
+        description: 'This payment method is not yet supported.',
       });
-
-      clearCart();
-      setTimeout(() => {
-        navigate(`/account?tab=orders&orderId=${orderResult.order.id}`);
-      }, 1500);
-
-    } catch (error) {
-      setPaymentStatus("failed");
-      console.error('Checkout error:', error);
-      toast({
-        title: "Checkout Failed",
-        description: error instanceof Error ? error.message : "An unexpected error occurred",
-        variant: "destructive",
-      });
-    } finally {
-      setIsLoading(false);
     }
   };
 
@@ -461,10 +522,8 @@ export default function CheckoutPage() {
                 </Button>
                 
                 {paymentMethod === "mpesa" && (
-                  <div className="text-xs text-center text-muted-foreground space-y-1">
-                    <p>• M-Pesa integration is currently underway</p>
-                    <p>• Please use wallet payment for now</p>
-                    <p>• Contact support for assistance</p>
+                  <div className="text-xs text-center text-muted-foreground">
+                    <p>You will be prompted to enter your M-Pesa PIN on your phone.</p>
                   </div>
                 )}
 

@@ -49,7 +49,7 @@ model Address {
 }
 
 model Product {
-  id            String    @id @default(cuid())
+  id            String    @id @default(uuid()) @db.Uuid
   slug          String?   @unique
   name          String
   category      String

@@ -207,7 +207,7 @@ export default function AdminProducts() {
                   {/* Name with thumbnail */}
                   <div className="flex items-center gap-3 md:col-span-2">
                     <div className="h-12 w-12 rounded bg-muted overflow-hidden flex items-center justify-center">
-                      <img src={p.image} alt={p.name} className="max-w-full max-h-full object-contain" onError={(e) => { (e.currentTarget as HTMLImageElement).src = "/placeholder.svg"; }} />
+                      <img src={p.image} alt={p.name} loading="lazy" decoding="async" className="max-w-full max-h-full object-contain" onError={(e) => { (e.currentTarget as HTMLImageElement).src = "/placeholder.svg"; }} />
                     </div>
                     <Input defaultValue={p.name} onBlur={(e) => update(p.id, { name: e.target.value }).catch(console.error)} />
                   </div>

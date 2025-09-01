@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import { useSupabaseAuth } from '@/contexts/SupabaseAuthContext';
+import { useAuth } from '@/contexts/AuthContext';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -19,7 +19,7 @@ export default function AuthPage() {
   const [signUpPhone, setSignUpPhone] = useState('');
   const [loading, setLoading] = useState(false);
   
-  const { signIn, signUp, isAuthenticated } = useSupabaseAuth();
+    const { signIn, signUp, isAuthenticated } = useAuth();
   const { toast } = useToast();
   const navigate = useNavigate();
 
@@ -74,11 +74,12 @@ export default function AuthPage() {
 
     setLoading(true);
     try {
-      await signUp(signUpEmail, signUpPassword, {
-        first_name: signUpFirstName,
-        last_name: signUpLastName,
-        phone: signUpPhone
-      });
+      await signUp(
+        `${signUpFirstName} ${signUpLastName}`,
+        signUpPhone,
+        signUpEmail,
+        signUpPassword
+      );
       
       toast({
         title: "Account Created!",

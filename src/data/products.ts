@@ -193,7 +193,7 @@ export const products: Product[] = [
     name: "Red Wine 750ml",
     price: 1500,
     originalPrice: 1950,
-    image: "https://www.istockphoto.com/photos/wine-bottle",
+    image: "/placeholder.svg",
     category: "alcohol",
     description: "Bold and smooth red wine"
   },
@@ -506,7 +506,7 @@ export const products: Product[] = [
     name: "Black Friday Electronics Bundle",
     price: 15000,
     originalPrice: 25000,
-    image: "https://www.istockphoto.com/photos/electronics-store-sales",
+    image: "/placeholder.svg",
     items: [
       "Smartphone Accessories",
       "Bluetooth Speaker",

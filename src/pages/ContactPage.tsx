@@ -5,6 +5,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { getApiBase } from '@/lib/api';
 import { useToast } from "@/hooks/use-toast";
 import { useRef, useState } from "react";
 
@@ -27,7 +28,8 @@ export default function ContactPage() {
         message: formData.get('message'),
       };
 
-      const response = await fetch('/api/contact', {
+            const baseUrl = getApiBase();
+            const response = await fetch(`${baseUrl}/api/contact`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(data),

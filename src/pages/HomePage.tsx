@@ -37,8 +37,29 @@ export default function HomePage() {
   const [showSticky, setShowSticky] = useState(false);
   const [dismissed, setDismissed] = useState(false);
 
+  // Preload critical homepage images after component mounts
   useEffect(() => {
+<<<<<<< HEAD
     const target = new Date("2025-10-15T00:00:00");
+=======
+    const preloadImages = [
+      "/essential-basket.jpg",
+      "/family-basket.jpg"
+    ];
+    
+    preloadImages.forEach(src => {
+      const link = document.createElement('link');
+      link.rel = 'preload';
+      link.as = 'image';
+      link.href = src;
+      document.head.appendChild(link);
+    });
+  }, []);
+
+  useEffect(() => {
+    // Set target to 45 days from now
+    const target = new Date(Date.now() + 45 * 24 * 60 * 60 * 1000);
+>>>>>>> e13c6d4dae5c3ccba3e00f197741838a4d48811e
     const tick = () => {
       const now = new Date();
       const diff = target.getTime() - now.getTime();
@@ -230,7 +251,7 @@ export default function HomePage() {
                   <Sparkles className="h-4 w-4" /> Black Friday 2025
                 </div>
                 <h3 className="mt-3 text-3xl lg:text-4xl font-extrabold tracking-tight bg-clip-text text-transparent bg-gradient-to-r from-primary to-primary/60">
-                  Early Access is coming
+                  {countdown.days} Days — Early Access is coming
                 </h3>
                 {countdown.ended ? (
                   <p className="text-muted-foreground">It’s live now — check out the deals below.</p>
@@ -315,7 +336,7 @@ export default function HomePage() {
                     <Link key={p.id} to="#black-friday" className="group w-48 shrink-0">
                       <div className="rounded-lg border bg-background overflow-hidden">
                         <div className="aspect-[4/3] w-full overflow-hidden bg-muted flex items-center justify-center">
-                          <img src={p.image} alt={p.name} className="max-w-full max-h-full object-contain transition-transform" />
+                          <img src={p.image} alt={p.name} loading="eager" decoding="sync" className="max-w-full max-h-full object-contain transition-transform" onError={(e) => { (e.currentTarget as HTMLImageElement).src = '/placeholder.svg'; }} />
                         </div>
                         <div className="p-3">
                           <div className="text-sm font-medium line-clamp-1">{p.name}</div>
@@ -482,7 +503,10 @@ export default function HomePage() {
               <img
                 src={deliveryImage}
                 alt="Delivery service"
+                loading="eager"
+                decoding="sync"
                 className="rounded-2xl shadow-strong w-full object-cover"
+                onError={(e) => { (e.currentTarget as HTMLImageElement).src = '/placeholder.svg'; }}
               />
             </div>
           </div>

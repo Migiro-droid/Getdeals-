@@ -44,10 +44,10 @@ export function ProductDetailModal({ product, open, onOpenChange }: ProductDetai
     <Dialog open={open} onOpenChange={onOpenChange}>
     <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
         <DialogHeader>
-          <DialogTitle className="text-2xl font-bold">{live.name}</DialogTitle>
-          <DialogDescription className="text-muted-foreground">
-            View product details and add to cart
-          </DialogDescription>
+      <DialogTitle className="text-2xl font-bold">{live.name}</DialogTitle>
+      <DialogDescription className="text-muted-foreground">
+        View product details and add to cart
+      </DialogDescription>
         </DialogHeader>
         
         <div className="grid md:grid-cols-2 gap-8">
@@ -57,6 +57,8 @@ export function ProductDetailModal({ product, open, onOpenChange }: ProductDetai
               <img
                 src={withVersion(live.image)}
                 alt={live.name}
+                loading="lazy"
+                decoding="async"
                 className="max-w-full max-h-full object-contain"
                 onError={(e) => { (e.currentTarget as HTMLImageElement).src = `/placeholder.svg?v=${version}`; }}
               />
@@ -101,6 +103,8 @@ export function ProductDetailModal({ product, open, onOpenChange }: ProductDetai
                               <img
                                 src={src}
                                 alt={item.name}
+                                loading="lazy"
+                                decoding="async"
                                 className="max-w-full max-h-full object-contain"
                                 onError={(e) => { (e.currentTarget as HTMLImageElement).src = `/placeholder.svg?v=${version}`; }}
                               />
@@ -112,7 +116,7 @@ export function ProductDetailModal({ product, open, onOpenChange }: ProductDetai
                     : nameOnlyItems.map((name, index) => (
                         <div key={index} className="flex items-center space-x-3 p-3 bg-muted/30 rounded-lg">
                           <div className="w-12 h-12 bg-muted rounded overflow-hidden flex items-center justify-center">
-                            <img src={`/placeholder.svg?v=${version}`} alt={String(name)} className="max-w-full max-h-full object-contain" />
+                            <img src={`/placeholder.svg?v=${version}`} alt={String(name)} loading="lazy" decoding="async" className="max-w-full max-h-full object-contain" />
                           </div>
                           <span className="text-sm font-medium">{String(name)}</span>
                         </div>
