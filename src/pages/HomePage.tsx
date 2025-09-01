@@ -39,14 +39,11 @@ export default function HomePage() {
 
   // Preload critical homepage images after component mounts
   useEffect(() => {
-<<<<<<< HEAD
-    const target = new Date("2025-10-15T00:00:00");
-=======
     const preloadImages = [
       "/essential-basket.jpg",
       "/family-basket.jpg"
     ];
-    
+
     preloadImages.forEach(src => {
       const link = document.createElement('link');
       link.rel = 'preload';
@@ -59,7 +56,6 @@ export default function HomePage() {
   useEffect(() => {
     // Set target to 45 days from now
     const target = new Date(Date.now() + 45 * 24 * 60 * 60 * 1000);
->>>>>>> e13c6d4dae5c3ccba3e00f197741838a4d48811e
     const tick = () => {
       const now = new Date();
       const diff = target.getTime() - now.getTime();
