@@ -147,19 +147,7 @@ export default function CheckoutPage() {
     setIsLoading(true);
 
     try {
-      // Check M-Pesa availability first
-      if (paymentMethod === "mpesa") {
-        // Show M-Pesa unavailable message
-        toast({
-          title: "M-Pesa Not Available 📱",
-          description: "M-Pesa integration is currently underway. Please use wallet payment or contact support for assistance.",
-          variant: "destructive",
-        });
-        setIsLoading(false);
-        return;
-      }
-
-      // Set processing status only for available payment methods
+      // Set processing status
       setPaymentStatus("processing");
 
       // Generate order reference
@@ -191,23 +179,95 @@ export default function CheckoutPage() {
         status: 'pending'
       };
 
-      // Handle wallet and other payment methods
-      const orderResult = await createOrder(orderData);
-      
-      if (!orderResult.success) {
-        throw new Error(orderResult.error || "Failed to create order");
+      if (paymentMethod === "mpesa") {
+        // Handle M-Pesa payment
+        const phoneToUse = mpesaPhone || phone;
+        if (!phoneToUse) {
+          throw new Error("Phone number is required for M-Pesa payment");
+        }
+
+        const stkResult = await initiateSTKPush(finalTotal, phoneToUse, orderReference);
+        
+        if (!stkResult.success) {
+          throw new Error(stkResult.error || "Failed to initiate M-Pesa payment");
+        }
+
+        orderData.mpesaPhone = formatPhoneNumber(phoneToUse);
+        orderData.checkoutRequestId = stkResult.checkoutRequestId;
+        orderData.merchantRequestId = stkResult.merchantRequestId;
+
+        // Create order with M-Pesa details
+        const orderResult = await createOrder(orderData);
+        
+        if (!orderResult.success) {
+          throw new Error(orderResult.error || "Failed to create order");
+        }
+
+        toast({
+          title: "M-Pesa Payment Initiated! 📱",
+          description: `Please check your phone (${phoneToUse}) and enter your M-Pesa PIN to complete the payment.`,
+        });
+
+        // Poll for payment status
+        const maxAttempts = 20;
+        let attempts = 0;
+        
+        const checkStatus = async () => {
+          if (attempts >= maxAttempts) {
+            setPaymentStatus("failed");
+            toast({
+              title: "Payment Timeout",
+              description: "Payment verification timed out. Please contact support if money was deducted.",
+              variant: "destructive",
+            });
+            return;
+          }
+
+          attempts++;
+          const statusResult = await checkPaymentStatus(stkResult.checkoutRequestId);
+          
+          if (statusResult.success && statusResult.status === "completed") {
+            setPaymentStatus("success");
+            toast({
+              title: "Payment Successful! ✅",
+              description: "Your order has been confirmed and you'll receive an SMS shortly.",
+            });
+            clearCart();
+            setTimeout(() => {
+              navigate(`/account?tab=orders&orderId=${orderResult.order.id}`);
+            }, 2000);
+          } else if (statusResult.success && statusResult.status === "failed") {
+            setPaymentStatus("failed");
+            toast({
+              title: "Payment Failed",
+              description: statusResult.error || "M-Pesa payment was not completed.",
+              variant: "destructive",
+            });
+          } else {
+            setTimeout(checkStatus, 6000);
+          }
+        };
+
+        setTimeout(checkStatus, 3000);
+      } else {
+        // Handle wallet and other payment methods
+        const orderResult = await createOrder(orderData);
+        
+        if (!orderResult.success) {
+          throw new Error(orderResult.error || "Failed to create order");
+        }
+
+        setPaymentStatus("success");
+        toast({
+          title: "Order Placed Successfully! 🎉",
+          description: "You will receive confirmation details shortly.",
+        });
+
+        clearCart();
+        setTimeout(() => {
+          navigate(`/account?tab=orders&orderId=${orderResult.order.id}`);
+        }, 1500);
       }
-
-      setPaymentStatus("success");
-      toast({
-        title: "Order Placed Successfully! 🎉",
-        description: "You will receive confirmation details shortly.",
-      });
-
-      clearCart();
-      setTimeout(() => {
-        navigate(`/account?tab=orders&orderId=${orderResult.order.id}`);
-      }, 1500);
 
     } catch (error) {
       setPaymentStatus("failed");
@@ -474,9 +534,9 @@ export default function CheckoutPage() {
                 
                 {paymentMethod === "mpesa" && (
                   <div className="text-xs text-center text-muted-foreground space-y-1">
-                    <p>• M-Pesa integration is currently underway</p>
-                    <p>• Please use wallet payment for now</p>
-                    <p>• Contact support for assistance</p>
+                    <p>• You'll receive an STK Push on your phone</p>
+                    <p>• Enter your M-Pesa PIN to complete payment</p>
+                    <p>• Payment confirmation is instant</p>
                   </div>
                 )}
 

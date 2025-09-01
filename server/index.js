@@ -10,10 +10,9 @@ import { fileURLToPath } from 'url';
 import { nanoid } from 'nanoid';
 import { JSONDatabase } from './lib/database.js';
 import { supabase, getProducts, getUsers, getOrders, createProduct, updateProduct, deleteProduct, seedDatabase }  from "./lib/db.js";
-// Removed Prisma import - using JSON database now
-// import MpesaService from './lib/mpesa.js';
-// import SMSService from './lib/sms.js';
-// import EmailService from './lib/email.js';
+import MpesaService from './lib/mpesa.js';
+import SMSService from './lib/sms.js';
+import EmailService from './lib/email.js';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -27,10 +26,10 @@ const JWT_EXPIRES_IN = process.env.JWT_EXPIRES_IN || '7d';
 
 // Supabase client is imported from lib/db
 
-// Initialize services (disabled for now - using JSON database)
-// const mpesaService = new MpesaService();
-// const smsService = new SMSService();
-// const emailService = new EmailService();
+// Initialize services
+const mpesaService = new MpesaService();
+const smsService = new SMSService();
+const emailService = new EmailService();
 
 app.use(cors());
 app.use(express.json());
@@ -415,27 +414,30 @@ app.post('/api/products/reset', (req, res) => {
 app.post('/api/payments/mpesa/initiate', authMiddleware, async (req, res) => {
   try {
     const { phoneNumber, amount, orderId } = req.body;
-    
+
     if (!phoneNumber || !amount || !orderId) {
       return res.status(400).json({ message: 'Phone number, amount, and order ID are required' });
     }
 
     const result = await mpesaService.initiateSTKPush(phoneNumber, amount, orderId);
-    
+
     if (result.success) {
-      // Save transaction record
-      await prisma.paymentTransaction.create({
-        data: {
-          orderId,
-          transactionType: 'mpesa_stk',
-          amount: Math.round(amount * 100), // Convert to cents
+      // Save transaction record to Supabase
+      const { error } = await supabase
+        .from('payments')
+        .insert({
+          order_id: orderId,
+          amount: Math.round(amount),
+          method: 'mpesa',
           status: 'pending',
-          mpesaCheckoutRequestID: result.checkoutRequestId,
-          mpesaPhone: phoneNumber,
+          phone_number: phoneNumber,
           reference: orderId,
-          description: 'GetDeals Order Payment',
-        },
-      });
+          transaction_id: result.checkoutRequestId,
+        });
+
+      if (error) {
+        console.error('Error saving payment record:', error);
+      }
 
       return res.json(result);
     } else {
@@ -447,63 +449,150 @@ app.post('/api/payments/mpesa/initiate', authMiddleware, async (req, res) => {
   }
 });
 
+// Add the stk-push endpoint that the frontend is calling
+app.post('/api/payments/mpesa/stk-push', authMiddleware, async (req, res) => {
+  try {
+    const { phoneNumber, amount, orderReference, description } = req.body;
+
+    if (!phoneNumber || !amount || !orderReference) {
+      return res.status(400).json({ success: false, error: 'Phone number, amount, and order reference are required' });
+    }
+
+    const result = await mpesaService.initiateSTKPush(phoneNumber, amount, orderReference, description);
+
+    if (result.success) {
+      // Save transaction record to Supabase
+      const { error } = await supabase
+        .from('payments')
+        .insert({
+          order_id: orderReference,
+          amount: Math.round(amount),
+          method: 'mpesa',
+          status: 'pending',
+          phone_number: phoneNumber,
+          reference: orderReference,
+          transaction_id: result.checkoutRequestId,
+        });
+
+      if (error) {
+        console.error('Error saving payment record:', error);
+      }
+
+      return res.json({
+        success: true,
+        CheckoutRequestID: result.checkoutRequestId,
+        MerchantRequestID: result.merchantRequestId,
+        ResponseCode: result.responseCode,
+        ResponseDescription: result.responseDescription,
+        CustomerMessage: result.customerMessage
+      });
+    } else {
+      return res.status(400).json({ success: false, error: result.error });
+    }
+  } catch (error) {
+    console.error('M-Pesa stk-push error:', error);
+    return res.status(500).json({ success: false, error: 'Payment initiation failed' });
+  }
+});
+
 app.post('/api/payments/mpesa/callback', async (req, res) => {
   try {
     const callbackResult = mpesaService.processCallback(req.body);
-    
+
     if (callbackResult.success) {
-      // Update payment transaction
-      await prisma.paymentTransaction.updateMany({
-        where: { mpesaCheckoutRequestID: callbackResult.checkoutRequestId },
-        data: {
+      // Update payment transaction in Supabase
+      const { error: updateError } = await supabase
+        .from('payments')
+        .update({
           status: 'success',
-          mpesaReceiptNumber: callbackResult.mpesaReceiptNumber,
-          mpesaTransactionDate: callbackResult.transactionDate,
-        },
-      });
+          transaction_id: callbackResult.mpesaReceiptNumber,
+          processed_at: new Date().toISOString(),
+        })
+        .eq('transaction_id', callbackResult.checkoutRequestId);
 
-      // Update order status
-      const transaction = await prisma.paymentTransaction.findFirst({
-        where: { mpesaCheckoutRequestID: callbackResult.checkoutRequestId },
-      });
+      if (updateError) {
+        console.error('Error updating payment:', updateError);
+      }
 
-      if (transaction?.orderId) {
-        const order = await prisma.order.update({
-          where: { id: transaction.orderId },
-          data: { 
+      // Get the payment record to find the order
+      const { data: payment } = await supabase
+        .from('payments')
+        .select('order_id')
+        .eq('transaction_id', callbackResult.checkoutRequestId)
+        .single();
+
+      if (payment?.order_id) {
+        // Update order status
+        const { error: orderError } = await supabase
+          .from('orders')
+          .update({
             status: 'CONFIRMED',
-            mpesaReceipt: callbackResult.mpesaReceiptNumber,
-          },
-          include: { items: true, user: true },
-        });
+            payment_status: 'paid',
+            updated_at: new Date().toISOString(),
+          })
+          .eq('id', payment.order_id);
 
-        // Send SMS confirmation
-        if (order.mpesaPhone) {
-          await smsService.sendOrderConfirmationSMS(order.mpesaPhone, order);
+        if (orderError) {
+          console.error('Error updating order:', orderError);
         }
 
-        // Send email confirmation
-        if (order.user?.email) {
-          await emailService.sendOrderConfirmation(order, order.user.email);
+        // Get order details for notifications
+        const { data: order } = await supabase
+          .from('orders')
+          .select(`
+            *,
+            user:users(*),
+            items:order_items(*, product:products(*))
+          `)
+          .eq('id', payment.order_id)
+          .single();
+
+        if (order) {
+          // Send SMS confirmation
+          if (order.mpesa_phone) {
+            await smsService.sendOrderConfirmationSMS(order.mpesa_phone, {
+              orderNumber: order.id,
+              total: order.total,
+            });
+          }
+
+          // Send email confirmation
+          if (order.user?.email) {
+            await emailService.sendOrderConfirmation(order, order.user.email);
+          }
         }
       }
     } else {
       // Update payment as failed
-      await prisma.paymentTransaction.updateMany({
-        where: { mpesaCheckoutRequestID: callbackResult.checkoutRequestId },
-        data: { status: 'failed' },
-      });
+      const { error } = await supabase
+        .from('payments')
+        .update({
+          status: 'failed',
+          failure_reason: callbackResult.error,
+          processed_at: new Date().toISOString(),
+        })
+        .eq('transaction_id', callbackResult.checkoutRequestId);
 
-      // Update order status
-      const transaction = await prisma.paymentTransaction.findFirst({
-        where: { mpesaCheckoutRequestID: callbackResult.checkoutRequestId },
-      });
+      if (error) {
+        console.error('Error updating failed payment:', error);
+      }
 
-      if (transaction?.orderId) {
-        await prisma.order.update({
-          where: { id: transaction.orderId },
-          data: { status: 'PAYMENT_FAILED' },
-        });
+      // Update order status to failed
+      const { data: payment } = await supabase
+        .from('payments')
+        .select('order_id')
+        .eq('transaction_id', callbackResult.checkoutRequestId)
+        .single();
+
+      if (payment?.order_id) {
+        await supabase
+          .from('orders')
+          .update({
+            status: 'PAYMENT_FAILED',
+            payment_status: 'failed',
+            updated_at: new Date().toISOString(),
+          })
+          .eq('id', payment.order_id);
       }
     }
 
@@ -525,6 +614,29 @@ app.get('/api/payments/mpesa/status/:checkoutRequestId', authMiddleware, async (
   }
 });
 
+// Add the query endpoint that the frontend is calling
+app.get('/api/payments/mpesa/query/:checkoutRequestId', authMiddleware, async (req, res) => {
+  try {
+    const { checkoutRequestId } = req.params;
+    const result = await mpesaService.querySTKPushStatus(checkoutRequestId);
+
+    if (result.success) {
+      return res.json({
+        success: true,
+        status: result.resultCode === 0 ? 'completed' : 'failed',
+        ResultCode: result.resultCode,
+        ResultDesc: result.resultDesc,
+        CheckoutRequestID: checkoutRequestId
+      });
+    } else {
+      return res.status(400).json({ success: false, error: result.error });
+    }
+  } catch (error) {
+    console.error('M-Pesa query error:', error);
+    res.status(500).json({ success: false, error: 'Status query failed' });
+  }
+});
+
 // --- Orders API ---
 app.post('/api/orders', authMiddleware, async (req, res) => {
   try {
@@ -539,32 +651,63 @@ app.post('/api/orders', authMiddleware, async (req, res) => {
     // Generate order number
     const orderNumber = `GD${Date.now().toString().slice(-8)}`;
 
-    // Create order
-    const order = await prisma.order.create({
-      data: {
-        orderNumber,
-        userId,
-        subtotal: Math.round(subtotal * 100), // Convert to cents
-        deliveryFee: Math.round(deliveryFee * 100),
-        total: Math.round(total * 100),
-        paymentMethod,
-        mpesaPhone,
-        deliveryMethod,
-        deliveryAddress,
-        items: {
-          create: items.map(item => ({
-            productId: item.id,
-            name: item.name,
-            price: Math.round(item.price * 100),
-            quantity: item.quantity,
-            image: item.image,
-          })),
-        },
-      },
-      include: { items: true, user: true },
-    });
+    // Create order in Supabase
+    const { data: order, error: orderError } = await supabase
+      .from('orders')
+      .insert({
+        user_id: userId,
+        total: Math.round(total),
+        subtotal: Math.round(subtotal),
+        delivery_fee: Math.round(deliveryFee),
+        status: 'pending',
+        payment_status: 'pending',
+        payment_method: paymentMethod,
+        delivery_method: deliveryMethod,
+        delivery_date: null,
+        notes: null,
+        address_id: null,
+      })
+      .select()
+      .single();
 
-    res.status(201).json(order);
+    if (orderError) {
+      console.error('Order creation error:', orderError);
+      return res.status(500).json({ message: 'Failed to create order' });
+    }
+
+    // Create order items
+    const orderItems = items.map(item => ({
+      order_id: order.id,
+      product_id: item.id,
+      quantity: item.quantity,
+      price: Math.round(item.price),
+    }));
+
+    const { error: itemsError } = await supabase
+      .from('order_items')
+      .insert(orderItems);
+
+    if (itemsError) {
+      console.error('Order items creation error:', itemsError);
+      return res.status(500).json({ message: 'Failed to create order items' });
+    }
+
+    // Get complete order with items
+    const { data: completeOrder, error: fetchError } = await supabase
+      .from('orders')
+      .select(`
+        *,
+        items:order_items(*, product:products(*))
+      `)
+      .eq('id', order.id)
+      .single();
+
+    if (fetchError) {
+      console.error('Order fetch error:', fetchError);
+      return res.status(500).json({ message: 'Failed to fetch complete order' });
+    }
+
+    res.status(201).json(completeOrder);
   } catch (error) {
     console.error('Order creation error:', error);
     res.status(500).json({ message: 'Failed to create order' });
@@ -574,11 +717,19 @@ app.post('/api/orders', authMiddleware, async (req, res) => {
 app.get('/api/orders', authMiddleware, async (req, res) => {
   try {
     const userId = req.user.sub;
-    const orders = await prisma.order.findMany({
-      where: { userId },
-      include: { items: true },
-      orderBy: { createdAt: 'desc' },
-    });
+    const { data: orders, error } = await supabase
+      .from('orders')
+      .select(`
+        *,
+        items:order_items(*, product:products(*))
+      `)
+      .eq('user_id', userId)
+      .order('created_at', { ascending: false });
+
+    if (error) {
+      console.error('Get orders error:', error);
+      return res.status(500).json({ message: 'Failed to fetch orders' });
+    }
 
     res.json(orders);
   } catch (error) {
@@ -590,22 +741,36 @@ app.get('/api/orders', authMiddleware, async (req, res) => {
 // --- Admin Endpoints ---
 app.get('/api/admin/users', authMiddleware, async (req, res) => {
   try {
-    const users = await prisma.user.findMany({
-      select: {
-        id: true,
-        name: true,
-        email: true,
-        phone: true,
-        location: true,
-        city: true,
-        country: true,
-        createdAt: true,
-        _count: { select: { orders: true } },
-      },
-      orderBy: { createdAt: 'desc' },
-    });
+    const { data: users, error } = await supabase
+      .from('profiles')
+      .select(`
+        id,
+        user_id,
+        first_name,
+        last_name,
+        phone,
+        role,
+        created_at
+      `)
+      .order('created_at', { ascending: false });
 
-    res.json(users);
+    if (error) {
+      console.error('Get users error:', error);
+      return res.status(500).json({ message: 'Failed to fetch users' });
+    }
+
+    // Transform the data to match expected format
+    const transformedUsers = users.map(user => ({
+      id: user.user_id,
+      name: [user.first_name, user.last_name].filter(Boolean).join(' ') || 'Unknown',
+      email: 'N/A', // Email not in profiles table
+      phone: user.phone,
+      role: user.role,
+      createdAt: user.created_at,
+      _count: { orders: 0 } // Would need to join with orders table
+    }));
+
+    res.json(transformedUsers);
   } catch (error) {
     console.error('Get users error:', error);
     res.status(500).json({ message: 'Failed to fetch users' });
@@ -615,17 +780,37 @@ app.get('/api/admin/users', authMiddleware, async (req, res) => {
 app.post('/api/admin/notifications/email', authMiddleware, async (req, res) => {
   try {
     const { userIds, subject, message } = req.body;
-    
+
     let recipients;
     if (userIds && userIds.length > 0) {
-      recipients = await prisma.user.findMany({
-        where: { id: { in: userIds } },
-        select: { name: true, email: true },
-      });
+      const { data, error } = await supabase
+        .from('profiles')
+        .select('first_name, last_name')
+        .in('user_id', userIds);
+
+      if (error) {
+        console.error('Error fetching recipients:', error);
+        return res.status(500).json({ message: 'Failed to fetch recipients' });
+      }
+
+      recipients = data.map(profile => ({
+        name: [profile.first_name, profile.last_name].filter(Boolean).join(' ') || 'Customer',
+        email: 'user@example.com' // Would need to get from auth.users
+      }));
     } else {
-      recipients = await prisma.user.findMany({
-        select: { name: true, email: true },
-      });
+      const { data, error } = await supabase
+        .from('profiles')
+        .select('first_name, last_name');
+
+      if (error) {
+        console.error('Error fetching all recipients:', error);
+        return res.status(500).json({ message: 'Failed to fetch recipients' });
+      }
+
+      recipients = data.map(profile => ({
+        name: [profile.first_name, profile.last_name].filter(Boolean).join(' ') || 'Customer',
+        email: 'user@example.com' // Would need to get from auth.users
+      }));
     }
 
     const results = await emailService.sendBulkEmail(recipients, subject, message);
@@ -642,14 +827,34 @@ app.post('/api/admin/notifications/sms', authMiddleware, async (req, res) => {
     
     let recipients;
     if (userIds && userIds.length > 0) {
-      recipients = await prisma.user.findMany({
-        where: { id: { in: userIds } },
-        select: { name: true, phone: true },
-      });
+      const { data, error } = await supabase
+        .from('profiles')
+        .select('first_name, last_name, phone')
+        .in('user_id', userIds);
+
+      if (error) {
+        console.error('Error fetching recipients:', error);
+        return res.status(500).json({ message: 'Failed to fetch recipients' });
+      }
+
+      recipients = data.map(profile => ({
+        name: [profile.first_name, profile.last_name].filter(Boolean).join(' ') || 'Customer',
+        phone: profile.phone
+      })).filter(recipient => recipient.phone);
     } else {
-      recipients = await prisma.user.findMany({
-        select: { name: true, phone: true },
-      });
+      const { data, error } = await supabase
+        .from('profiles')
+        .select('first_name, last_name, phone');
+
+      if (error) {
+        console.error('Error fetching all recipients:', error);
+        return res.status(500).json({ message: 'Failed to fetch recipients' });
+      }
+
+      recipients = data.map(profile => ({
+        name: [profile.first_name, profile.last_name].filter(Boolean).join(' ') || 'Customer',
+        phone: profile.phone
+      })).filter(recipient => recipient.phone);
     }
 
     const result = await smsService.sendBulkSMS(recipients, message);
@@ -662,10 +867,19 @@ app.post('/api/admin/notifications/sms', authMiddleware, async (req, res) => {
 
 app.get('/api/admin/orders', authMiddleware, async (req, res) => {
   try {
-    const orders = await prisma.order.findMany({
-      include: { items: true, user: { select: { name: true, email: true, phone: true } } },
-      orderBy: { createdAt: 'desc' },
-    });
+    const { data: orders, error } = await supabase
+      .from('orders')
+      .select(`
+        *,
+        user:users(*),
+        items:order_items(*, product:products(*))
+      `)
+      .order('created_at', { ascending: false });
+
+    if (error) {
+      console.error('Get admin orders error:', error);
+      return res.status(500).json({ message: 'Failed to fetch orders' });
+    }
 
     res.json(orders);
   } catch (error) {

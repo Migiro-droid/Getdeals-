@@ -22,7 +22,7 @@ CREATE TABLE IF NOT EXISTS public.profiles (
 
 -- Create products table
 CREATE TABLE IF NOT EXISTS public.products (
-  id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   name TEXT NOT NULL,
   price NUMERIC NOT NULL,
   original_price NUMERIC,
@@ -40,7 +40,7 @@ CREATE TABLE IF NOT EXISTS public.products (
 
 -- Create categories table
 CREATE TABLE IF NOT EXISTS public.categories (
-  id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   name TEXT UNIQUE NOT NULL,
   slug TEXT UNIQUE NOT NULL,
   description TEXT,
@@ -52,7 +52,7 @@ CREATE TABLE IF NOT EXISTS public.categories (
 
 -- Create addresses table
 CREATE TABLE IF NOT EXISTS public.addresses (
-  id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   user_id UUID REFERENCES auth.users(id) ON DELETE CASCADE NOT NULL,
   name TEXT NOT NULL,
   street TEXT NOT NULL,
@@ -67,7 +67,7 @@ CREATE TABLE IF NOT EXISTS public.addresses (
 
 -- Create orders table
 CREATE TABLE IF NOT EXISTS public.orders (
-  id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   user_id UUID REFERENCES auth.users(id) ON DELETE CASCADE NOT NULL,
   total NUMERIC NOT NULL,
   subtotal NUMERIC NOT NULL,
@@ -85,7 +85,7 @@ CREATE TABLE IF NOT EXISTS public.orders (
 
 -- Create order_items table
 CREATE TABLE IF NOT EXISTS public.order_items (
-  id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   order_id UUID REFERENCES public.orders(id) ON DELETE CASCADE NOT NULL,
   product_id UUID REFERENCES public.products(id) ON DELETE CASCADE NOT NULL,
   quantity INTEGER NOT NULL,
@@ -94,7 +94,7 @@ CREATE TABLE IF NOT EXISTS public.order_items (
 
 -- Create payments table
 CREATE TABLE IF NOT EXISTS public.payments (
-  id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   order_id UUID REFERENCES public.orders(id) ON DELETE CASCADE NOT NULL,
   amount NUMERIC NOT NULL,
   method TEXT NOT NULL,
@@ -109,7 +109,7 @@ CREATE TABLE IF NOT EXISTS public.payments (
 
 -- Create payment_methods table
 CREATE TABLE IF NOT EXISTS public.payment_methods (
-  id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   user_id UUID REFERENCES auth.users(id) ON DELETE CASCADE NOT NULL,
   type TEXT NOT NULL,
   phone_number TEXT,
@@ -121,7 +121,7 @@ CREATE TABLE IF NOT EXISTS public.payment_methods (
 
 -- Create settings table
 CREATE TABLE IF NOT EXISTS public.settings (
-  id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   key TEXT UNIQUE NOT NULL,
   value TEXT NOT NULL,
   type TEXT DEFAULT 'string'
@@ -137,6 +137,8 @@ ALTER TABLE public.order_items ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.payments ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.payment_methods ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.settings ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.wallets ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.admin_settings ENABLE ROW LEVEL SECURITY;
 
 -- Create policies for profiles
 CREATE POLICY "Users can view own profile" ON public.profiles
@@ -231,6 +233,20 @@ CREATE POLICY "Everyone can view settings" ON public.settings
 CREATE POLICY "Authenticated users can manage settings" ON public.settings
   FOR ALL USING (auth.role() = 'authenticated');
 
+-- Create policies for wallets
+CREATE POLICY "Users can view own wallet" ON public.wallets
+  FOR SELECT USING (auth.uid() = user_id);
+
+CREATE POLICY "Users can manage own wallet" ON public.wallets
+  FOR ALL USING (auth.uid() = user_id);
+
+-- Create policies for admin_settings
+CREATE POLICY "Everyone can view admin settings" ON public.admin_settings
+  FOR SELECT USING (true);
+
+CREATE POLICY "Authenticated users can manage admin settings" ON public.admin_settings
+  FOR ALL USING (auth.role() = 'authenticated');
+
 -- Create function to handle new user signup
 CREATE OR REPLACE FUNCTION public.handle_new_user()
 RETURNS TRIGGER AS $$
@@ -281,6 +297,14 @@ CREATE TRIGGER orders_updated_at
   BEFORE UPDATE ON public.orders
   FOR EACH ROW EXECUTE FUNCTION public.update_updated_at_column();
 
+CREATE TRIGGER wallets_updated_at
+  BEFORE UPDATE ON public.wallets
+  FOR EACH ROW EXECUTE FUNCTION public.update_updated_at_column();
+
+CREATE TRIGGER admin_settings_updated_at
+  BEFORE UPDATE ON public.admin_settings
+  FOR EACH ROW EXECUTE FUNCTION public.update_updated_at_column();
+
 -- Insert default categories
 INSERT INTO public.categories (name, slug, description, is_active, sort_order) VALUES
   ('Baskets', 'baskets', 'Complete food baskets for families', true, 1),
@@ -290,8 +314,3 @@ INSERT INTO public.categories (name, slug, description, is_active, sort_order) V
   ('School', 'school', 'School and student items', true, 5),
   ('Black Friday', 'blackfriday', 'Black Friday special deals', true, 6)
 ON CONFLICT (slug) DO NOTHING;
-
--- Insert default admin settings if not exists
-INSERT INTO public.admin_settings (id, black_friday_enabled, maintenance_mode, support_phone, support_email, location) VALUES
-  ('default', true, false, '+254 700 123 456', 'support@getdeals.co.ke', 'Karen Green, Nairobi, Kenya')
-ON CONFLICT (id) DO NOTHING;
