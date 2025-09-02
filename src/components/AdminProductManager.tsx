@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -10,7 +10,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { useToast } from '@/hooks/use-toast';
 import { productAPI } from '../../lib/supabase';
-import { Plus, Edit, Trash2, Package, AlertCircle, Check } from 'lucide-react';
+import { Plus, Edit, Trash2, Package, AlertCircle, Check, Search, Filter, X, SlidersHorizontal } from 'lucide-react';
 
 type Product = {
   id: string;
@@ -59,6 +59,15 @@ export function AdminProductManager() {
   const [submitting, setSubmitting] = useState(false);
   const { toast } = useToast();
 
+  // Filter states
+  const [searchQuery, setSearchQuery] = useState('');
+  const [selectedCategory, setSelectedCategory] = useState<string>('all');
+  const [stockFilter, setStockFilter] = useState<string>('all');
+  const [featuredFilter, setFeaturedFilter] = useState<string>('all');
+  const [minPrice, setMinPrice] = useState<string>('');
+  const [maxPrice, setMaxPrice] = useState<string>('');
+  const [showFilters, setShowFilters] = useState(false);
+
   const categories = [
     'Electronics',
     'Fashion',
@@ -71,6 +80,58 @@ export function AdminProductManager() {
     'Food & Beverages',
     'Office Supplies'
   ];
+
+  // Filtered products based on search and filters
+  const filteredProducts = useMemo(() => {
+    return products.filter(product => {
+      // Search filter
+      if (searchQuery && !product.name.toLowerCase().includes(searchQuery.toLowerCase()) &&
+          !product.description?.toLowerCase().includes(searchQuery.toLowerCase())) {
+        return false;
+      }
+
+      // Category filter
+      if (selectedCategory !== 'all' && product.category !== selectedCategory) {
+        return false;
+      }
+
+      // Stock filter
+      if (stockFilter !== 'all') {
+        const isInStock = stockFilter === 'in-stock';
+        if (product.inStock !== isInStock) {
+          return false;
+        }
+      }
+
+      // Featured filter
+      if (featuredFilter !== 'all') {
+        const isFeatured = featuredFilter === 'featured';
+        if (product.featured !== isFeatured) {
+          return false;
+        }
+      }
+
+      // Price range filter
+      const minPriceNum = minPrice ? parseFloat(minPrice) : 0;
+      const maxPriceNum = maxPrice ? parseFloat(maxPrice) : Infinity;
+
+      if (product.price < minPriceNum || product.price > maxPriceNum) {
+        return false;
+      }
+
+      return true;
+    });
+  }, [products, searchQuery, selectedCategory, stockFilter, featuredFilter, minPrice, maxPrice]);
+
+  // Clear all filters
+  const clearFilters = () => {
+    setSearchQuery('');
+    setSelectedCategory('all');
+    setStockFilter('all');
+    setFeaturedFilter('all');
+    setMinPrice('');
+    setMaxPrice('');
+  };
 
   useEffect(() => {
     loadProducts();
@@ -315,23 +376,196 @@ export function AdminProductManager() {
         </Button>
       </div>
 
+      {/* Search and Filters */}
+      <Card>
+        <CardContent className="p-4">
+          <div className="flex flex-col space-y-4">
+            {/* Search Bar */}
+            <div className="relative">
+              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground w-4 h-4" />
+              <Input
+                placeholder="Search products by name or description..."
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                className="pl-10"
+              />
+            </div>
+
+            {/* Filter Toggle */}
+            <div className="flex items-center justify-between">
+              <Button
+                variant="outline"
+                onClick={() => setShowFilters(!showFilters)}
+                className="gap-2"
+              >
+                <SlidersHorizontal className="w-4 h-4" />
+                {showFilters ? 'Hide Filters' : 'Show Filters'}
+                {(selectedCategory !== 'all' || stockFilter !== 'all' || featuredFilter !== 'all' || minPrice || maxPrice) && (
+                  <Badge variant="secondary" className="ml-2">
+                    {[selectedCategory !== 'all', stockFilter !== 'all', featuredFilter !== 'all', minPrice, maxPrice].filter(Boolean).length}
+                  </Badge>
+                )}
+              </Button>
+
+              {(selectedCategory !== 'all' || stockFilter !== 'all' || featuredFilter !== 'all' || minPrice || maxPrice || searchQuery) && (
+                <Button variant="ghost" onClick={clearFilters} className="gap-2 text-muted-foreground">
+                  <X className="w-4 h-4" />
+                  Clear Filters
+                </Button>
+              )}
+            </div>
+
+            {/* Advanced Filters */}
+            {showFilters && (
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 pt-4 border-t">
+                {/* Category Filter */}
+                <div>
+                  <Label htmlFor="category-filter">Category</Label>
+                  <Select value={selectedCategory} onValueChange={setSelectedCategory}>
+                    <SelectTrigger>
+                      <SelectValue placeholder="All Categories" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="all">All Categories</SelectItem>
+                      {categories.map((category) => (
+                        <SelectItem key={category} value={category}>
+                          {category}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+
+                {/* Stock Status Filter */}
+                <div>
+                  <Label htmlFor="stock-filter">Stock Status</Label>
+                  <Select value={stockFilter} onValueChange={setStockFilter}>
+                    <SelectTrigger>
+                      <SelectValue placeholder="All Stock" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="all">All Stock</SelectItem>
+                      <SelectItem value="in-stock">In Stock</SelectItem>
+                      <SelectItem value="out-of-stock">Out of Stock</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+
+                {/* Featured Filter */}
+                <div>
+                  <Label htmlFor="featured-filter">Featured Status</Label>
+                  <Select value={featuredFilter} onValueChange={setFeaturedFilter}>
+                    <SelectTrigger>
+                      <SelectValue placeholder="All Products" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="all">All Products</SelectItem>
+                      <SelectItem value="featured">Featured Only</SelectItem>
+                      <SelectItem value="not-featured">Not Featured</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+
+                {/* Price Range */}
+                <div className="space-y-2">
+                  <Label>Price Range (KES)</Label>
+                  <div className="flex gap-2">
+                    <Input
+                      type="number"
+                      placeholder="Min"
+                      value={minPrice}
+                      onChange={(e) => setMinPrice(e.target.value)}
+                      className="flex-1"
+                    />
+                    <Input
+                      type="number"
+                      placeholder="Max"
+                      value={maxPrice}
+                      onChange={(e) => setMaxPrice(e.target.value)}
+                      className="flex-1"
+                    />
+                  </div>
+                </div>
+              </div>
+            )}
+          </div>
+        </CardContent>
+      </Card>
+
+      {/* Active Filters Display */}
+      {(selectedCategory !== 'all' || stockFilter !== 'all' || featuredFilter !== 'all' || minPrice || maxPrice) && (
+        <div className="flex flex-wrap gap-2">
+          {selectedCategory !== 'all' && (
+            <Badge variant="secondary" className="gap-1">
+              Category: {selectedCategory}
+              <X
+                className="w-3 h-3 cursor-pointer"
+                onClick={() => setSelectedCategory('all')}
+              />
+            </Badge>
+          )}
+          {stockFilter !== 'all' && (
+            <Badge variant="secondary" className="gap-1">
+              Stock: {stockFilter === 'in-stock' ? 'In Stock' : 'Out of Stock'}
+              <X
+                className="w-3 h-3 cursor-pointer"
+                onClick={() => setStockFilter('all')}
+              />
+            </Badge>
+          )}
+          {featuredFilter !== 'all' && (
+            <Badge variant="secondary" className="gap-1">
+              {featuredFilter === 'featured' ? 'Featured' : 'Not Featured'}
+              <X
+                className="w-3 h-3 cursor-pointer"
+                onClick={() => setFeaturedFilter('all')}
+              />
+            </Badge>
+          )}
+          {(minPrice || maxPrice) && (
+            <Badge variant="secondary" className="gap-1">
+              Price: {minPrice || '0'} - {maxPrice || '∞'} KES
+              <X
+                className="w-3 h-3 cursor-pointer"
+                onClick={() => {
+                  setMinPrice('');
+                  setMaxPrice('');
+                }}
+              />
+            </Badge>
+          )}
+        </div>
+      )}
+
       <div className="grid gap-4">
-        {products.length === 0 ? (
+        {filteredProducts.length === 0 ? (
           <Card>
             <CardContent className="p-8 text-center">
               <Package className="w-12 h-12 mx-auto mb-4 text-muted-foreground" />
-              <h3 className="text-lg font-semibold mb-2">No Products Found</h3>
+              <h3 className="text-lg font-semibold mb-2">
+                {products.length === 0 ? 'No Products Found' : 'No Products Match Filters'}
+              </h3>
               <p className="text-muted-foreground mb-4">
-                Start building your catalog by adding your first product.
+                {products.length === 0
+                  ? 'Start building your catalog by adding your first product.'
+                  : 'Try adjusting your filters or search terms.'
+                }
               </p>
-              <Button onClick={openAddModal} className="gap-2">
-                <Plus className="w-4 h-4" />
-                Add Your First Product
-              </Button>
+              {products.length === 0 ? (
+                <Button onClick={openAddModal} className="gap-2">
+                  <Plus className="w-4 h-4" />
+                  Add Your First Product
+                </Button>
+              ) : (
+                <Button onClick={clearFilters} variant="outline" className="gap-2">
+                  <X className="w-4 h-4" />
+                  Clear Filters
+                </Button>
+              )}
             </CardContent>
           </Card>
         ) : (
-          products.map((product) => (
+          filteredProducts.map((product) => (
             <Card key={product.id}>
               <CardContent className="p-6">
                 <div className="flex items-start gap-4">

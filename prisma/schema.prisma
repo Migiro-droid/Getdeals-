@@ -38,6 +38,8 @@ model User {
   twoFactorSecret  String?
   emailVerified    Boolean         @default(false)
   phoneVerified    Boolean         @default(false)
+  preferences      String?         // JSON string for user preferences
+  onboardingCompleted Boolean      @default(false)
   createdAt        DateTime        @default(now())
   updatedAt        DateTime        @updatedAt
   addresses        Address[]

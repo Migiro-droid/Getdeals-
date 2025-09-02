@@ -35,6 +35,7 @@ import InventoryPage from "./pages/admin/InventoryPage";
 import OutOfStockPage from "./pages/admin/OutOfStockPage";
 import TestProductsPage from "./pages/TestProductsPage";
 import WalletPage from "./pages/WalletPage";
+import CategoryPage from "./pages/CategoryPage";
 import AuthPage from "./pages/AuthPage";
 import { AuthTestPage } from "./components/AuthTestPage";
 
@@ -173,6 +174,7 @@ const App = () => (
                 <Route path="/admin/products" element={<AdminProducts />} />
                 <Route path="/admin/inventory" element={<AdminGuard><InventoryPage /></AdminGuard>} />
                 <Route path="/admin/inventory/out-of-stock" element={<AdminGuard><OutOfStockPage /></AdminGuard>} />
+                <Route path="/category/:slug" element={<CategoryPage />} />
     {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
                 <Route path="*" element={<NotFound />} />
               </Routes>

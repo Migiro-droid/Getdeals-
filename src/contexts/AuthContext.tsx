@@ -11,6 +11,8 @@ export type AuthUser = {
   role?: string;
   createdAt?: string;
   twoFactorEnabled?: boolean;
+  preferences?: string;
+  onboardingCompleted?: boolean;
 };
 
 type AuthContextType = {
@@ -156,7 +158,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
             role: 'customer',
             emailVerified: !!supabaseUser.email_confirmed_at,
             phoneVerified: false,
-            twoFactorEnabled: false
+            preferences: null,
+            onboardingCompleted: false
           };
 
           const { data: createdProfile, error: createError } = await userAPI.create(newProfile);
@@ -180,7 +183,9 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
             email: profile.email,
             role: profile.role,
             createdAt: profile.createdAt,
-            twoFactorEnabled: profile.twoFactorEnabled || false
+            twoFactorEnabled: profile.twoFactorEnabled || false,
+            preferences: profile.preferences,
+            onboardingCompleted: profile.onboardingCompleted || false
           };
           console.log('Setting user state:', userData);
           setUser(userData);
@@ -376,6 +381,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       const dbUpdates: any = {};
       if (updates.name) dbUpdates.name = updates.name;
       if (updates.phone !== undefined) dbUpdates.phone = updates.phone;
+      if (updates.preferences !== undefined) dbUpdates.preferences = updates.preferences;
+      if (updates.onboardingCompleted !== undefined) dbUpdates.onboardingCompleted = updates.onboardingCompleted;
 
       if (Object.keys(dbUpdates).length > 0) {
         const { data, error } = await userAPI.update(user.id, dbUpdates);

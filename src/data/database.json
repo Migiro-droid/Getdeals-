@@ -724,12 +724,132 @@
       ],
       "id": "product-1755892669803-uak9l8tct",
       "createdAt": "2025-08-22T19:57:49.803Z"
+    },
+    {
+      "name": "Samsung 32\" Smart TV",
+      "image": "https://images.samsung.com/is/image/samsung/p6pim/levant/ua32t5300auxzn/gallery/levant-fullview-tv-t5300-ua32t5300auxzn-531425889?$650_519_PNG$",
+      "category": "Electronics",
+      "price": 25000,
+      "originalPrice": 32000,
+      "description": "32-inch HD Smart TV with built-in streaming apps",
+      "id": "product-electronics-001",
+      "createdAt": "2025-09-02T10:00:00.000Z"
+    },
+    {
+      "name": "Wireless Bluetooth Headphones",
+      "image": "https://m.media-amazon.com/images/I/61SUj2aKoEL._AC_SL1500_.jpg",
+      "category": "Electronics",
+      "price": 3500,
+      "originalPrice": 4500,
+      "description": "Noise-cancelling wireless headphones with 30-hour battery",
+      "id": "product-electronics-002",
+      "createdAt": "2025-09-02T10:05:00.000Z"
+    },
+    {
+      "name": "iPhone 15 Pro Max",
+      "image": "https://store.storeimages.cdn-apple.com/4982/as-images.apple.com/is/iphone-15-pro-max-gold-select-202309_FMT_WHH?wid=1408&hei=1332&fmt=jpeg&qlt=90&.v=1693009285268",
+      "category": "Electronics",
+      "price": 180000,
+      "originalPrice": 200000,
+      "description": "Latest iPhone with Pro camera system and titanium design",
+      "id": "product-electronics-003",
+      "createdAt": "2025-09-02T10:10:00.000Z"
+    },
+    {
+      "name": "Gaming Laptop RTX 4060",
+      "image": "https://m.media-amazon.com/images/I/71pvhT1RHWL._AC_SL1500_.jpg",
+      "category": "Electronics",
+      "price": 120000,
+      "originalPrice": 140000,
+      "description": "High-performance gaming laptop with RTX 4060 graphics",
+      "id": "product-electronics-004",
+      "createdAt": "2025-09-02T10:15:00.000Z"
+    },
+    {
+      "name": "Smart Home Security Camera",
+      "image": "https://m.media-amazon.com/images/I/51j0B1f5HLL._AC_SL1000_.jpg",
+      "category": "Electronics",
+      "price": 4500,
+      "originalPrice": 6000,
+      "description": "1080p wireless security camera with night vision",
+      "id": "product-electronics-005",
+      "createdAt": "2025-09-02T10:20:00.000Z"
+    },
+    {
+      "name": "Portable Power Bank 20000mAh",
+      "image": "https://m.media-amazon.com/images/I/71lVwl3LW2L._AC_SL1500_.jpg",
+      "category": "Electronics",
+      "price": 2500,
+      "originalPrice": 3500,
+      "description": "Fast-charging power bank with multiple USB ports",
+      "id": "product-electronics-006",
+      "createdAt": "2025-09-02T10:25:00.000Z"
+    },
+    {
+      "name": "Car Engine Oil 5L",
+      "image": "https://m.media-amazon.com/images/I/61v5Q8Q8qL._AC_SL1500_.jpg",
+      "category": "Automotive",
+      "price": 4500,
+      "originalPrice": 5500,
+      "description": "Premium synthetic engine oil for optimal performance",
+      "id": "product-automotive-001",
+      "createdAt": "2025-09-02T11:00:00.000Z"
+    },
+    {
+      "name": "Car Air Freshener Set",
+      "image": "https://m.media-amazon.com/images/I/71pvhT1RHWL._AC_SL1500_.jpg",
+      "category": "Automotive",
+      "price": 800,
+      "originalPrice": 1200,
+      "description": "Long-lasting car air fresheners with multiple scents",
+      "id": "product-automotive-002",
+      "createdAt": "2025-09-02T11:05:00.000Z"
+    },
+    {
+      "name": "Car Tire Pressure Gauge",
+      "image": "https://m.media-amazon.com/images/I/51j0B1f5HLL._AC_SL1000_.jpg",
+      "category": "Automotive",
+      "price": 600,
+      "originalPrice": 900,
+      "description": "Digital tire pressure gauge with LCD display",
+      "id": "product-automotive-003",
+      "createdAt": "2025-09-02T11:10:00.000Z"
+    },
+    {
+      "name": "Car Wash Kit",
+      "image": "https://m.media-amazon.com/images/I/71lVwl3LW2L._AC_SL1500_.jpg",
+      "category": "Automotive",
+      "price": 2500,
+      "originalPrice": 3500,
+      "description": "Complete car cleaning kit with shampoo and microfiber cloths",
+      "id": "product-automotive-004",
+      "createdAt": "2025-09-02T11:15:00.000Z"
+    },
+    {
+      "name": "Car Battery Charger",
+      "image": "https://m.media-amazon.com/images/I/61SUj2aKoEL._AC_SL1500_.jpg",
+      "category": "Automotive",
+      "price": 3500,
+      "originalPrice": 4500,
+      "description": "Portable car battery charger and jump starter",
+      "id": "product-automotive-005",
+      "createdAt": "2025-09-02T11:20:00.000Z"
+    },
+    {
+      "name": "Car Seat Covers",
+      "image": "https://m.media-amazon.com/images/I/71pvhT1RHWL._AC_SL1500_.jpg",
+      "category": "Automotive",
+      "price": 4200,
+      "originalPrice": 5500,
+      "description": "Universal car seat covers with waterproof protection",
+      "id": "product-automotive-006",
+      "createdAt": "2025-09-02T11:25:00.000Z"
     }
   ],
   "users": [],
   "orders": [],
   "settings": {
-    "lastProductId": 59,
+    "lastProductId": 71,
     "lastOrderId": 0,
     "lastUserId": 0
   }
