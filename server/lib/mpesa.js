@@ -14,18 +14,6 @@ class MpesaService {
       : 'https://api.safaricom.co.ke';
   }
 
-  validateCredentials() {
-    const missing = [];
-    if (!this.consumerKey) missing.push('MPESA_CONSUMER_KEY');
-    if (!this.consumerSecret) missing.push('MPESA_CONSUMER_SECRET');
-    if (!this.passkey) missing.push('MPESA_PASSKEY');
-    if (!this.callbackUrl) missing.push('MPESA_CALLBACK_URL');
-    
-    if (missing.length > 0) {
-      throw new Error(`Missing M-Pesa credentials: ${missing.join(', ')}. Please add them to your .env file.`);
-    }
-  }
-
   async getAccessToken() {
     const url = `${this.baseUrl}/oauth/v1/generate?grant_type=client_credentials`;
     const credentials = Buffer.from(`${this.consumerKey}:${this.consumerSecret}`).toString('base64');
@@ -54,9 +42,6 @@ class MpesaService {
 
   async initiateSTKPush(phoneNumber, amount, orderId, description = 'GetDeals Payment') {
     try {
-      // Validate credentials first
-      this.validateCredentials();
-      
       const accessToken = await this.getAccessToken();
       const { password, timestamp } = this.generatePassword();
       
@@ -89,6 +74,7 @@ class MpesaService {
           },
         }
       );
+      console.log('Access Token:', accessToken ? 'Present' : 'Missing');
 
       console.log('STK Push Response:', response.data);
 
