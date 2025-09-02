@@ -8,7 +8,6 @@ import { Label } from "../components/ui/label";
 import { RadioGroup, RadioGroupItem } from "../components/ui/radio-group";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "../components/ui/select";
 import { Separator } from "../components/ui/separator";
-import { Badge } from "../components/ui/badge";
 import { Alert, AlertDescription } from "../components/ui/alert";
 import { useCart } from "../contexts/CartContext";
 import { useToast } from '../hooks/use-toast';
@@ -34,7 +33,6 @@ export default function CheckoutPage() {
   const [pickupLocation, setPickupLocation] = useState("");
   
   const [mpesaPhone, setMpesaPhone] = useState("");
-  const [loading, setLoading] = useState(false);
 
   const formatPhoneNumber = (phone: string) => {
     const digits = phone.replace(/\D/g, '');
@@ -140,98 +138,10 @@ export default function CheckoutPage() {
       return { success: false, error: error instanceof Error ? error.message : 'Order creation failed' };
     }
   };
-    try {
-      const response = await fetch('/api/payments/mpesa/stk-push', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          amount,
-          phoneNumber: formatPhoneNumber(phoneNumber),
-          orderReference,
-          description: `Payment for GetDeals order ${orderReference}`
-        }),
-      });
-
-      const responseText = await response.text();
-      console.log('STK Push response text:', responseText);
-
-      if (!responseText) {
-        throw new Error('Empty response from server');
-      }
-
-      let result;
-      try {
-        result = JSON.parse(responseText);
-      } catch (jsonError) {
-        console.error('JSON parsing error:', jsonError);
-        throw new Error(`Invalid JSON response: ${responseText.substring(0, 100)}`);
-      }
-
-      if (response.ok) {
-        return { success: true, ...result };
-      } else {
-        throw new Error(result.error || 'Payment initiation failed');
-      }
-    } catch (error) {
-      console.error('STK Push error:', error);
-      return { success: false, error: error instanceof Error ? error.message : 'Payment failed' };
-    }
-  };
-
-  const checkPaymentStatus = async (checkoutRequestId: string) => {
-    try {
-      const response = await fetch(`/api/payments/mpesa/query/${checkoutRequestId}`);
-
-      const responseText = await response.text();
-      console.log('Payment status response text:', responseText);
-
-      if (!responseText) {
-        throw new Error('Empty response from server');
-      }
-
-      let result;
-      try {
-        result = JSON.parse(responseText);
-      } catch (jsonError) {
-        console.error('JSON parsing error:', jsonError);
-        throw new Error(`Invalid JSON response: ${responseText.substring(0, 100)}`);
-      }
-
-      if (response.ok) {
-        return result;
-      } else {
-        throw new Error(result.error || 'Failed to check payment status');
-      }
-    } catch (error) {
-      console.error('Payment status check error:', error);
-      return { success: false, error: error instanceof Error ? error.message : 'Status check failed' };
-    }
-  };
-
-  const createOrder = async (orderData: any) => {
-    try {
-      const baseUrl = getApiBase();
-      const response = await fetch(`${baseUrl}/api/orders`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(orderData),
-      });
-
-      const result = await response.json();
-
-      if (response.ok) {
-        return { success: true, order: result };
-      } else {
-        throw new Error(result.error || 'Failed to create order');
-      }
-    } catch (error) {
-      console.error('Order creation error:', error);
-      return { success: false, error: error instanceof Error ? error.message : 'Order creation failed' };
-    }
-  };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+
     if (!auth.isAuthenticated) {
       toast({
         variant: 'destructive',
@@ -240,6 +150,55 @@ export default function CheckoutPage() {
       });
       return;
     }
+
+    if (items.length === 0) {
+      toast({
+        variant: 'destructive',
+        title: 'Cart Empty',
+        description: 'Please add items to your cart before checkout.',
+      });
+      return;
+    }
+
+    // Validate required fields
+    if (!firstName.trim() || !lastName.trim() || !email.trim() || !phone.trim()) {
+      toast({
+        variant: 'destructive',
+        title: 'Missing Information',
+        description: 'Please fill in all required customer information fields.',
+      });
+      return;
+    }
+
+    if (deliveryMethod === 'speedy' && !address.trim()) {
+      toast({
+        variant: 'destructive',
+        title: 'Delivery Address Required',
+        description: 'Please provide a delivery address for speedy delivery.',
+      });
+      return;
+    }
+
+    if (deliveryMethod === 'pickup' && !pickupLocation) {
+      toast({
+        variant: 'destructive',
+        title: 'Pickup Location Required',
+        description: 'Please select a pickup location.',
+      });
+      return;
+    }
+
+    if (paymentMethod === 'mpesa' && !mpesaPhone.trim()) {
+      toast({
+        variant: 'destructive',
+        title: 'M-Pesa Phone Required',
+        description: 'Please provide your M-Pesa phone number.',
+      });
+      return;
+    }
+
+    setIsLoading(true);
+    setPaymentStatus("processing");
 
     try {
       if (paymentMethod === "mpesa") {
@@ -345,6 +304,9 @@ export default function CheckoutPage() {
           navigate(`/account?tab=orders&orderId=${orderResult.order.id}`);
         }, 1500);
       }
+    } catch (error) {
+      setPaymentStatus("failed");
+      console.error('Checkout error:', error);
       toast({
         title: "Checkout Failed",
         description: error instanceof Error ? error.message : "An unexpected error occurred",
@@ -608,24 +570,6 @@ export default function CheckoutPage() {
                     </AlertDescription>
                   </Alert>
                 )}
-
-                <Button 
-                  type="submit" 
-                  className="w-full" 
-                  disabled={isLoading || paymentStatus === "processing"}
-                >
-                  {loading ? (
-                    <>
-                      <div className="mr-2 h-4 w-4 animate-spin rounded-full border-2 border-background border-t-foreground" />
-                      Processing...
-                    </>
-                  ) : (
-                    <>
-                      <DollarSign className="mr-2 h-4 w-4" />
-                      Place Order - KES {finalTotal.toLocaleString()}
-                    </>
-                  )}
-                </Button>
               </CardContent>
             </Card>
           </div>
