@@ -41,7 +41,7 @@ app.use(cors());
 app.use(express.json());
 
 // API routes
-app.use('/api/mpesa', mpesaRoutes);
+// app.use('/api/mpesa', mpesaRoutes); // Removed - routes are defined individually below
 
 // Legacy file-based functions (for migration support)
 const dataDir = path.join(__dirname, 'data');
