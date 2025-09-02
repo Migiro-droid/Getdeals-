@@ -8,7 +8,6 @@ const PORT = process.env.PORT || 4000;
 app.use(cors());
 app.use(express.json());
 
-// Simple product validation
 function validateProductInput(data) {
   const errors = [];
   

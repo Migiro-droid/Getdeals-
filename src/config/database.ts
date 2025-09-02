@@ -1,9 +1,9 @@
 /**
- * Database Configuration for Supabase Migration
+ * Database Configuration for Supabase
  * 
- * This file centralizes database configuration to easily switch between:
+ * This file centralizes database configuration:
  * - Supabase (Primary)
- * - Neon/Prisma (Legacy)
+ * - Prisma (ORM)
  * - File-based (Fallback)
  */
 

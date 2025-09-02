@@ -1,79 +1,144 @@
-import { neon } from '@neondatabase/serverless';
+import { PrismaClient } from '@prisma/client';
+import { config } from 'dotenv';
 
-async function testDatabaseConnection() {
+// Load environment variables
+config();
+
+const prisma = new PrismaClient();
+
+async function testPrismaConnection() {
+  console.log('🧪 Testing Prisma database connection...\n');
+  
   try {
-    const sql = neon(process.env.DATABASE_URL!);
+    // Test 1: Check connection
+    console.log('1️⃣ Testing database connection...');
+    await prisma.$connect();
+    console.log('✅ Connected to database successfully!\n');
     
-    console.log('🔍 Testing database connection...');
+    // Test 2: Count products
+    console.log('2️⃣ Counting products...');
+    const productCount = await prisma.product.count();
+    console.log(`✅ Found ${productCount} products in database\n`);
     
-    // Test basic connection
-    const result = await sql`SELECT NOW() as current_time`;
-    console.log('✅ Database connected successfully:', result[0].current_time);
+    // Test 3: Get sample products
+    console.log('3️⃣ Fetching sample products...');
+    const sampleProducts = await prisma.product.findMany({
+      take: 3,
+      select: {
+        id: true,
+        name: true,
+        price: true,
+        category: true
+      }
+    });
     
-    // Check if products table exists
-    const tables = await sql`
-      SELECT table_name 
-      FROM information_schema.tables 
-      WHERE table_schema = 'public' AND table_name = 'products'
-    `;
+    console.log('✅ Sample products:');
+    sampleProducts.forEach((product, index) => {
+      console.log(`   ${index + 1}. ${product.name} - KSh ${product.price} (${product.category})`);
+    });
+    console.log('');
     
-    if (tables.length === 0) {
-      console.log('❌ Products table does not exist!');
-      console.log('📝 Creating products table...');
-      
-      await sql`
-        CREATE TABLE IF NOT EXISTS products (
-          id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-          name VARCHAR(255) NOT NULL,
-          price DECIMAL(10, 2) NOT NULL,
-          original_price DECIMAL(10, 2),
-          image_url TEXT,
-          category VARCHAR(100) NOT NULL,
-          description TEXT,
-          items JSONB DEFAULT '[]',
-          items_detail JSONB DEFAULT '[]',
-          created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-          updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-        )
-      `;
-      
-      console.log('✅ Products table created successfully!');
-    } else {
-      console.log('✅ Products table exists');
-      
-      // Check table schema
-      const columns = await sql`
-        SELECT column_name, data_type, is_nullable
-        FROM information_schema.columns 
-        WHERE table_name = 'products' AND table_schema = 'public'
-        ORDER BY ordinal_position
-      `;
-      
-      console.log('📋 Table schema:');
-      columns.forEach(col => {
-        console.log(`  - ${col.column_name}: ${col.data_type} (nullable: ${col.is_nullable})`);
-      });
-    }
+    // Test 4: Count users
+    console.log('4️⃣ Checking users...');
+    const userCount = await prisma.user.count();
+    console.log(`✅ Found ${userCount} users in database\n`);
     
-    // Test inserting a sample product
-    console.log('🧪 Testing product insert...');
-    const testProduct = await sql`
-      INSERT INTO products (id, name, price, category, description, image, "createdAt", "updatedAt")
-      VALUES (${`test-${Date.now()}`}, 'Test Product', 100, 'test', 'This is a test product', '/placeholder.svg', NOW(), NOW())
-      RETURNING id, name, price, category
-    `;
+    // Test 5: Count categories
+    console.log('5️⃣ Checking categories...');
+    const categoryCount = await prisma.category.count();
+    console.log(`✅ Found ${categoryCount} categories in database\n`);
     
-    console.log('✅ Test product inserted:', testProduct[0]);
-    
-    // Clean up test product
-    await sql`DELETE FROM products WHERE name = 'Test Product'`;
-    console.log('🧹 Test product cleaned up');
-    
-    console.log('🎉 Database is ready for production!');
+    console.log('🎉 All database tests passed!');
+    console.log('� Summary:');
+    console.log(`   - Products: ${productCount}`);
+    console.log(`   - Users: ${userCount}`);
+    console.log(`   - Categories: ${categoryCount}`);
     
   } catch (error) {
     console.error('❌ Database test failed:', error);
-    console.error('Stack:', (error as Error).stack);
+    console.log('\n🔧 Troubleshooting suggestions:');
+    console.log('1. Check your .env file has correct database URLs');
+    console.log('2. Verify Supabase project is accessible');
+    console.log('3. Run: npx prisma db push --force-reset');
+    console.log('4. Run: npx prisma db seed');
+  } finally {
+    await prisma.$disconnect();
+  }
+}
+
+async function testSupabaseAPI() {
+  console.log('\n🔗 Testing Supabase API connection...\n');
+  
+  const supabaseUrl = process.env.SUPABASE_URL;
+  const serviceRoleKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
+  
+  if (!supabaseUrl || !serviceRoleKey) {
+    console.log('❌ Missing Supabase environment variables');
+    return;
+  }
+  
+  try {
+    // Test direct API call
+    const response = await fetch(`${supabaseUrl}/rest/v1/Product?select=*&limit=1`, {
+      headers: {
+        'apikey': serviceRoleKey,
+        'Authorization': `Bearer ${serviceRoleKey}`,
+        'Content-Type': 'application/json'
+      }
+    });
+    
+    if (response.ok) {
+      const data = await response.json();
+      console.log('✅ Supabase API is accessible');
+      console.log(`✅ Response: ${JSON.stringify(data, null, 2)}`);
+    } else {
+      console.log(`❌ Supabase API error: ${response.status} ${response.statusText}`);
+      const errorText = await response.text();
+      console.log(`   Error details: ${errorText}`);
+    }
+  } catch (error) {
+    console.log('❌ Failed to connect to Supabase API:', error);
+  }
+}
+
+if (require.main === module) {
+  Promise.resolve()
+    .then(testPrismaConnection)
+    .then(testSupabaseAPI)
+    .catch(console.error);
+}
+
+      console.log('📋 Table schema:');
+      columns.forEach((col: any) => {
+        console.log(`  - ${col.column_name}: ${col.data_type} (nullable: ${col.is_nullable})`);
+      });
+    // Test inserting a sample product via supabase client
+    console.log('🧪 Testing product insert...');
+    const testId = `test-${Date.now()}`;
+    const { data: testProduct, error: insertErr } = await supabase.from('products').insert([
+      {
+        id: testId,
+        name: 'Test Product',
+        price: 100,
+        category: 'test',
+        description: 'This is a test product',
+        image: '/placeholder.svg',
+        createdAt: new Date().toISOString(),
+        updatedAt: new Date().toISOString(),
+      }
+    ]).select().single();
+
+    if (insertErr) throw insertErr;
+    console.log('✅ Test product inserted:', testProduct);
+
+    // Clean up test product
+    await supabase.from('products').delete().eq('id', testId);
+    console.log('🧹 Test product cleaned up');
+
+    console.log('🎉 Database is ready for production!');
+
+  } catch (error) {
+    console.error('❌ Database test failed:', error);
   }
 }
 

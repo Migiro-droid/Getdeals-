@@ -1,6 +1,4 @@
-import { neon } from '@neondatabase/serverless';
-
-const sql = neon(process.env.DATABASE_URL!);
+import { supabase } from '../lib/db';
 
 const seedProducts = [
   {
@@ -38,32 +36,30 @@ async function seedDatabase() {
     
     // Insert each product
     for (const product of seedProducts) {
-      await sql`
-        INSERT INTO products (
-          name, 
-          price, 
-          original_price, 
-          image_url, 
-          category, 
-          description, 
-          items
-        ) VALUES (
-          ${product.name},
-          ${product.price},
-          ${product.original_price},
-          ${product.image_url},
-          ${product.category},
-          ${product.description},
-          ${JSON.stringify(product.items)}
-        )
-        ON CONFLICT (name) DO NOTHING
-      `;
-      console.log(`✅ Added: ${product.name}`);
+      const { error } = await supabase.from('products').insert([
+        {
+          name: product.name,
+          price: product.price,
+          originalPrice: product.original_price,
+          image: product.image_url,
+          category: product.category,
+          description: product.description,
+          items: product.items
+        }
+      ]).select();
+
+      if (error) {
+        // ignore unique constraint errors (ON CONFLICT DO NOTHING equivalent)
+        console.error('Error inserting', product.name, error.message || error);
+      } else {
+        console.log(`✅ Added: ${product.name}`);
+      }
     }
     
     // Get count of products
-    const count = await sql`SELECT COUNT(*) as total FROM products`;
-    console.log(`🎉 Database seeded successfully! Total products: ${count[0].total}`);
+    const { data: countData, error: countErr } = await supabase.from('products').select('id', { count: 'exact' });
+    const total = Array.isArray(countData) ? countData.length : undefined;
+    console.log(`🎉 Database seeded successfully! Total products: ${total}`);
     
   } catch (error) {
     console.error('❌ Error seeding database:', error);

@@ -50,7 +50,6 @@ export default function CheckoutPage() {
     return digits;
   };
 
-<<<<<<< HEAD
   const initiateSTKPush = async (amount: number, phoneNumber: string, orderReference: string) => {
     try {
       const response = await fetch('/api/payments/mpesa/stk-push', {
@@ -66,7 +65,7 @@ export default function CheckoutPage() {
 
       const responseText = await response.text();
       console.log('STK Push response text:', responseText);
-      
+
       if (!responseText) {
         throw new Error('Empty response from server');
       }
@@ -78,7 +77,7 @@ export default function CheckoutPage() {
         console.error('JSON parsing error:', jsonError);
         throw new Error(`Invalid JSON response: ${responseText.substring(0, 100)}`);
       }
-      
+
       if (response.ok) {
         return { success: true, ...result };
       } else {
@@ -93,10 +92,10 @@ export default function CheckoutPage() {
   const checkPaymentStatus = async (checkoutRequestId: string) => {
     try {
       const response = await fetch(`/api/payments/mpesa/query/${checkoutRequestId}`);
-      
+
       const responseText = await response.text();
       console.log('Payment status response text:', responseText);
-      
+
       if (!responseText) {
         throw new Error('Empty response from server');
       }
@@ -108,7 +107,7 @@ export default function CheckoutPage() {
         console.error('JSON parsing error:', jsonError);
         throw new Error(`Invalid JSON response: ${responseText.substring(0, 100)}`);
       }
-      
+
       if (response.ok) {
         return result;
       } else {
@@ -120,19 +119,17 @@ export default function CheckoutPage() {
     }
   };
 
-=======
->>>>>>> e13c6d4dae5c3ccba3e00f197741838a4d48811e
   const createOrder = async (orderData: any) => {
     try {
-  const baseUrl = getApiBase();
-  const response = await fetch(`${baseUrl}/api/orders`, {
+      const baseUrl = getApiBase();
+      const response = await fetch(`${baseUrl}/api/orders`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(orderData),
       });
 
       const result = await response.json();
-      
+
       if (response.ok) {
         return { success: true, order: result };
       } else {
@@ -146,7 +143,7 @@ export default function CheckoutPage() {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!auth.isAuthenticated || !auth.token) {
+    if (!auth.isAuthenticated) {
       toast({
         variant: 'destructive',
         title: 'Authentication Error',
@@ -155,119 +152,122 @@ export default function CheckoutPage() {
       return;
     }
 
-<<<<<<< HEAD
     try {
       if (paymentMethod === "mpesa") {
-=======
-    if (paymentMethod === 'mpesa') {
-      if (!mpesaPhone) {
->>>>>>> e13c6d4dae5c3ccba3e00f197741838a4d48811e
+        // Handle M-Pesa payment
+        const phoneToUse = mpesaPhone || phone;
+        if (!phoneToUse) {
+          throw new Error("Phone number is required for M-Pesa payment");
+        }
+
+        const orderReference = `GD${Date.now()}${Math.random().toString(36).substr(2, 4).toUpperCase()}`;
+
+        const stkResult = await initiateSTKPush(finalTotal, phoneToUse, orderReference);
+
+        if (!stkResult.success) {
+          throw new Error(stkResult.error || "Failed to initiate M-Pesa payment");
+        }
+
+        const orderData = {
+          items,
+          deliveryMethod,
+          deliveryAddress: deliveryMethod === "speedy" ? address : undefined,
+          paymentMethod,
+          mpesaPhone: formatPhoneNumber(phoneToUse),
+          checkoutRequestId: stkResult.checkoutRequestId,
+          merchantRequestId: stkResult.merchantRequestId,
+        };
+
+        // Create order with M-Pesa details
+        const orderResult = await createOrder(orderData);
+
+        if (!orderResult.success) {
+          throw new Error(orderResult.error || "Failed to create order");
+        }
+
         toast({
-          variant: 'destructive',
-          title: 'M-Pesa Phone Number Required',
-          description: 'Please enter your M-Pesa phone number.',
+          title: "M-Pesa Payment Initiated! 📱",
+          description: `Please check your phone (${phoneToUse}) and enter your M-Pesa PIN to complete the payment.`,
         });
-        return;
+
+        // Poll for payment status
+        const maxAttempts = 20;
+        let attempts = 0;
+
+        const checkStatus = async () => {
+          if (attempts >= maxAttempts) {
+            setPaymentStatus("failed");
+            toast({
+              title: "Payment Timeout",
+              description: "Payment verification timed out. Please contact support if money was deducted.",
+              variant: "destructive",
+            });
+            return;
+          }
+
+          attempts++;
+          const statusResult = await checkPaymentStatus(stkResult.checkoutRequestId);
+
+          if (statusResult.success && statusResult.status === "completed") {
+            setPaymentStatus("success");
+            toast({
+              title: "Payment Successful! ✅",
+              description: "Your order has been confirmed and you'll receive an SMS shortly.",
+            });
+            clearCart();
+            setTimeout(() => {
+              navigate(`/account?tab=orders&orderId=${orderResult.order.id}`);
+            }, 2000);
+          } else if (statusResult.success && statusResult.status === "failed") {
+            setPaymentStatus("failed");
+            toast({
+              title: "Payment Failed",
+              description: statusResult.error || "M-Pesa payment was not completed.",
+              variant: "destructive",
+            });
+          } else {
+            setTimeout(checkStatus, 6000);
+          }
+        };
+
+        setTimeout(checkStatus, 3000);
+      } else {
+        // Handle wallet and other payment methods
+        const orderData = {
+          items,
+          deliveryMethod,
+          deliveryAddress: deliveryMethod === "speedy" ? address : undefined,
+          paymentMethod,
+        };
+
+        const orderResult = await createOrder(orderData);
+
+        if (!orderResult.success) {
+          throw new Error(orderResult.error || "Failed to create order");
+        }
+
+        setPaymentStatus("success");
+        toast({
+          title: "Order Placed Successfully! 🎉",
+          description: "You will receive confirmation details shortly.",
+        });
+
+        clearCart();
+        setTimeout(() => {
+          navigate(`/account?tab=orders&orderId=${orderResult.order.id}`);
+        }, 1500);
       }
 
-<<<<<<< HEAD
-      setPaymentStatus("processing");
-
-      const orderReference = `GD${Date.now()}${Math.random().toString(36).substr(2, 4).toUpperCase()}`;
-      
-      const orderData = {
-        orderReference,
-        customerInfo: {
-          firstName,
-          lastName,
-          phone: formatPhoneNumber(phone),
-          email,
-          address: deliveryMethod === "speedy" ? address : undefined,
-          pickupLocation: deliveryMethod === "pickup" ? pickupLocation : undefined,
-        },
-        items: items.map(item => ({
-          productId: item.id,
-          name: item.name,
-          price: item.price,
-          quantity: item.quantity,
-          image: item.image
-        })),
-        subtotal: total,
-        deliveryFee,
-        total: finalTotal,
-        deliveryMethod,
-        paymentMethod,
-        status: 'pending'
-      };
-
-      const orderResult = await createOrder(orderData);
-      
-      if (!orderResult.success) {
-        throw new Error(orderResult.error || "Failed to create order");
-=======
-      try {
-        setLoading(true);
-        const phone = mpesaPhone.startsWith('254') ? mpesaPhone : `254${parseInt(mpesaPhone, 10)}`;
-        
-        // In a real app, you would create the order in your database first
-        // and get a unique order ID to pass to the payment gateway.
-        const orderId = `GD-TEST-${Date.now()}`;
-
-        const response = await fetch('/api/payments/mpesa/initiate', {
-          method: 'POST',
-          headers: { 
-            'Content-Type': 'application/json',
-            'Authorization': `Bearer ${auth.token}`
-          },
-          body: JSON.stringify({
-            amount: total,
-            phoneNumber: phone,
-            orderId: orderId, 
-          }),
-        });
-
-        // It's crucial to handle non-JSON responses
-        const responseText = await response.text();
-        let result;
-        try {
-          result = JSON.parse(responseText);
-        } catch (err) {
-          console.error("Failed to parse server response:", responseText);
-          throw new Error("Received an invalid response from the server. Please check the console for details.");
-        }
-
-        if (!response.ok) {
-          throw new Error(result.message || `HTTP error! status: ${response.status}`);
-        }
-
-        if (result.success) {
-          toast({
-            title: 'M-Pesa STK Push Initiated',
-            description: 'Please check your phone to complete the payment.',
-          });
-          // Here you might want to start polling for payment status or redirect the user
-        } else {
-          throw new Error(result.message || 'Failed to initiate M-Pesa payment.');
-        }
-
-      } catch (error) {
-        console.error('M-Pesa payment error:', error);
-        toast({
-          variant: 'destructive',
-          title: 'Payment Error',
-          description: error.message || 'Could not connect to the payment service.',
-        });
-      } finally {
-        setLoading(false);
->>>>>>> e13c6d4dae5c3ccba3e00f197741838a4d48811e
-      }
-    } else {
-      // Handle other payment methods or show an error
+    } catch (error) {
+      setPaymentStatus("failed");
+      console.error('Checkout error:', error);
       toast({
-        variant: 'destructive',
-        title: 'Unsupported Payment Method',
-        description: 'This payment method is not yet supported.',
+        title: "Checkout Failed",
+        description: error instanceof Error ? error.message : "An unexpected error occurred",
+        variant: "destructive",
       });
+    } finally {
+      setIsLoading(false);
     }
   };
 
@@ -522,8 +522,10 @@ export default function CheckoutPage() {
                 </Button>
                 
                 {paymentMethod === "mpesa" && (
-                  <div className="text-xs text-center text-muted-foreground">
-                    <p>You will be prompted to enter your M-Pesa PIN on your phone.</p>
+                  <div className="text-xs text-center text-muted-foreground space-y-1">
+                    <p>• You'll receive an STK Push on your phone</p>
+                    <p>• Enter your M-Pesa PIN to complete payment</p>
+                    <p>• Payment confirmation is instant</p>
                   </div>
                 )}
 

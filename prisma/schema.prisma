@@ -5,7 +5,7 @@ generator client {
 datasource db {
   provider  = "postgresql"
   url       = env("DATABASE_URL")
-  directUrl = env("DATABASE_URL_UNPOOLED")
+  directUrl = env("DIRECT_URL")
 }
 
 model Product {
@@ -21,6 +21,7 @@ model Product {
   description   String?
   createdAt     DateTime    @default(now())
   updatedAt     DateTime    @updatedAt
+  featured      Boolean     @default(false)
   orderItems    OrderItem[]
 
   @@map("products")
