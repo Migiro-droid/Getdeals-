@@ -85,6 +85,23 @@ export const auth = {
       data: updates
     });
     return { data, error };
+  },
+
+  // Sign in with OAuth provider
+  signInWithOAuth: async (provider: 'google' | 'facebook') => {
+    const { data, error } = await supabase.auth.signInWithOAuth({
+      provider,
+      options: {
+        redirectTo: `${window.location.origin}/auth/callback`
+      }
+    });
+    return { data, error };
+  },
+
+  // Handle OAuth callback
+  handleOAuthCallback: async () => {
+    const { data, error } = await supabase.auth.getSession();
+    return { data, error };
   }
 };
 

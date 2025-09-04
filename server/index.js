@@ -662,7 +662,7 @@ app.get('/api/payments/mpesa/query/:checkoutRequestId', authMiddleware, async (r
 // --- Orders API ---
 app.post('/api/orders', authMiddleware, async (req, res) => {
   try {
-    const { items, deliveryMethod, deliveryAddress, paymentMethod, mpesaPhone } = req.body;
+    const { items, deliveryMethod, deliveryAddress, paymentMethod, mpesaPhone, orderReference } = req.body;
     const userId = req.user.sub;
 
     // Calculate totals
@@ -712,6 +712,20 @@ app.post('/api/orders', authMiddleware, async (req, res) => {
     if (itemsError) {
       console.error('Order items creation error:', itemsError);
       return res.status(500).json({ message: 'Failed to create order items' });
+    }
+
+    // If this is an M-Pesa payment, update the payment record with the actual order ID
+    if (paymentMethod === 'mpesa' && orderReference) {
+      const { error: paymentUpdateError } = await supabase
+        .from('payments')
+        .update({ order_id: order.id })
+        .eq('reference', orderReference)
+        .eq('status', 'pending'); // Only update pending payments to avoid race conditions
+
+      if (paymentUpdateError) {
+        console.error('Error updating payment record:', paymentUpdateError);
+        // Don't fail the order creation for this, just log it
+      }
     }
 
     // Get complete order with items
