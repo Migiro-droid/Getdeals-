@@ -18,7 +18,6 @@ export default function ContactPage() {
     e.preventDefault();
     setIsSubmitting(true);
     
-    // Simulate form submission
     await new Promise(resolve => setTimeout(resolve, 1000));
     
     toast({ 
@@ -31,7 +30,7 @@ export default function ContactPage() {
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-background via-background to-muted/20">
-      {/* Hero Section */}
+      {}
       <div className="relative overflow-hidden bg-gradient-to-r from-primary/10 via-primary/5 to-background">
         <div className="absolute inset-0 bg-grid-white/[0.02] bg-[size:60px_60px]" />
         <div className="container mx-auto px-4 pt-16 pb-24">
