@@ -1,25 +1,22 @@
 import dotenv from 'dotenv';
 import path from 'path';
-import { fileURLToPath } from 'url';
-
-const __filename = fileURLToPath(import.meta.url);
-const __dirname = path.dirname(__filename);
-
-dotenv.config({ path: path.join(__dirname, '.env') });
-
+import {fileURLToPath} from 'url';
 import express from 'express';
 import cors from 'cors';
 import fs from 'fs';
 import bcrypt from 'bcryptjs';
 import jwt from 'jsonwebtoken';
 import nodemailer from 'nodemailer';
-import { nanoid } from 'nanoid';
-import axios from 'axios';
-import { JSONDatabase } from './lib/database.js';
-import { supabase, getProducts, getUsers, getOrders, createProduct, updateProduct, deleteProduct, seedDatabase }  from "./lib/db.js";
+import {JSONDatabase} from './lib/database.js';
+import {supabase} from "./lib/db.js";
 import MpesaService from './lib/mpesa.js';
 import SMSService from './lib/sms.js';
 import EmailService from './lib/email.js';
+
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
+
+dotenv.config({ path: path.join(__dirname, '.env') });
 
 const app = express();
 const PORT = process.env.PORT || 4000;
@@ -423,11 +420,11 @@ app.post('/api/products/reset', (req, res) => {
 // --- M-Pesa Payment Endpoints ---
 app.post('/api/payments/mpesa/initiate', async (req, res) => {
   try {
-    let { phoneNumber, amount, orderId } = req.body || {};
+    let { phoneNumber, amount, orderReference } = req.body || {};
     console.log('MPesa initiate called with body:', JSON.stringify(req.body));
 
-    if (!phoneNumber || !amount || !orderId) {
-      console.error('MPesa initiate missing fields', { phoneNumber, amount, orderId });
+    if (!phoneNumber || !amount || !orderReference) {
+      console.error('MPesa initiate missing fields', { phoneNumber, amount, orderReference });
       return res.status(400).json({ message: 'Phone number, amount, and order ID are required' });
     }
 
@@ -435,19 +432,24 @@ app.post('/api/payments/mpesa/initiate', async (req, res) => {
       username: process.env.MPESA_CONSUMER_KEY,
       password: process.env.MPESA_CONSUMER_SECRET
     })
-    phoneNumber = "254757800184"
+    const timestamp = new Date().toISOString().replace(/[-:TZ.]/g, '').slice(0, 14)
+        const passkey = process.env.MPESA_PASSKEY
+        const shortcode = process.env.MPESA_SHORTCODE
+        const str = `${shortcode}${passkey}${timestamp}`
+    let password = Buffer.from(str).toString('base64')
+
     let payload = {
-      BusinessShortCode: process.env.MPESA_SHORTCODE,
-      Password: process.env.MPESA_PASSKEY,
-      Timestamp: mpesaService.generatePassword().timestamp,
+      BusinessShortCode: Number(shortcode),
+      Password: password,
+      Timestamp: timestamp,
       TransactionType: 'CustomerPayBillOnline',
-      Amount: String(amount),
-      PartyA: String(phoneNumber),
-      PartyB: process.env.MPESA_SHORTCODE,
-      PhoneNumber: String(phoneNumber),
+      Amount: Number(amount),
+      PartyA: Number(phoneNumber),
+      PartyB: Number(shortcode),
+      PhoneNumber: Number(phoneNumber),
       CallBackURL: process.env.MPESA_CALLBACK_URL,
-      AccountReference: String(orderId),
-      TransactionDesc: 'GetDeals Payment'
+      AccountReference: String(orderReference),
+      TransactionDesc: 'GetDealsPayment'
     }
     let response = await mpesaService.pay(accessToken, payload)
     return res.status(200).json(response)
@@ -506,6 +508,7 @@ app.post('/api/payments/mpesa/stk-push', authMiddleware, async (req, res) => {
 app.post('/api/payments/mpesa/callback', async (req, res) => {
   try {
     const callbackResult = mpesaService.processCallback(req.body);
+    console.log(`--- M-Pesa Callback Received ---`, callbackResult)
 
     if (callbackResult.success) {
       // Update payment transaction in Supabase

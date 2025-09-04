@@ -50,7 +50,7 @@ export default function CheckoutPage() {
 
   const initiateSTKPush = async (amount: number, phoneNumber: string, orderReference: string) => {
     try {
-      const response = await fetch('/api/payments/mpesa/stk-push', {
+      const response = await fetch('/api/payments/mpesa/initiate', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
