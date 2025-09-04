@@ -1,10 +1,11 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Label } from "@/components/ui/label";
 import { Card, CardContent } from "@/components/ui/card";
-import { CheckCircle, ShoppingCart, Truck, Home, Utensils, Car, Smartphone, Shirt, Baby, Heart } from "lucide-react";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { CheckCircle, ShoppingCart, Truck, Home, Utensils, Car, Smartphone, Shirt, Baby, Heart, Clock } from "lucide-react";
 import { useAuth } from "@/contexts/AuthContext";
 import { useToast } from "@/components/ui/use-toast";
 
@@ -13,77 +14,169 @@ interface PostSignupChecklistProps {
   onComplete: () => void;
 }
 
-const preferenceOptions = [
+interface PreferenceOption {
+  id: string;
+  label: string;
+  description: string;
+  icon: any;
+  category: string;
+  subcategories?: string[];
+  frequency?: string;
+}
+
+const preferenceOptions: PreferenceOption[] = [
   {
     id: "groceries",
     label: "Groceries & Food",
     description: "Rice, cooking oil, sugar, flour, and other essentials",
     icon: Utensils,
-    category: "food"
+    category: "food",
+    subcategories: ["Staples (rice, flour, sugar)", "Fruits & Vegetables", "Meat & Dairy", "Beverages", "Snacks"]
   },
   {
     id: "household",
     label: "Household Items",
     description: "Cleaning supplies, toiletries, and home essentials",
     icon: Home,
-    category: "household"
+    category: "household",
+    subcategories: ["Cleaning Products", "Personal Care", "Laundry Supplies", "Kitchen Essentials", "Bathroom Items"]
   },
   {
     id: "electronics",
     label: "Electronics",
     description: "Phones, laptops, TVs, and electronic gadgets",
     icon: Smartphone,
-    category: "electronics"
+    category: "electronics",
+    subcategories: ["Mobile Phones", "Laptops & Computers", "TVs & Audio", "Accessories", "Home Appliances"]
   },
   {
     id: "automotive",
     label: "Automotive",
     description: "Car parts, accessories, and maintenance items",
     icon: Car,
-    category: "automotive"
+    category: "automotive",
+    subcategories: ["Car Parts", "Oil & Fluids", "Tires", "Accessories", "Tools & Equipment"]
   },
   {
     id: "clothing",
     label: "Clothing & Fashion",
     description: "Clothes, shoes, and fashion accessories",
     icon: Shirt,
-    category: "clothing"
+    category: "clothing",
+    subcategories: ["Men's Clothing", "Women's Clothing", "Children's Wear", "Shoes", "Accessories"]
   },
   {
     id: "baby",
     label: "Baby & Kids",
     description: "Baby products, toys, and children's items",
     icon: Baby,
-    category: "baby"
+    category: "baby",
+    subcategories: ["Baby Food & Formula", "Diapers & Wipes", "Clothing", "Toys & Games", "Baby Care"]
   },
   {
     id: "health",
     label: "Health & Beauty",
     description: "Personal care, cosmetics, and wellness products",
     icon: Heart,
-    category: "health"
+    category: "health",
+    subcategories: ["Skincare", "Hair Care", "Makeup", "Supplements", "Personal Hygiene"]
   }
 ];
 
+const frequencyOptions = [
+  { value: "daily", label: "Daily" },
+  { value: "weekly", label: "Weekly" },
+  { value: "monthly", label: "Monthly" },
+  { value: "occasionally", label: "Occasionally" }
+];
+
 export function PostSignupChecklist({ open, onComplete }: PostSignupChecklistProps) {
-  const [selectedPreferences, setSelectedPreferences] = useState<string[]>([]);
+  const [selectedCategories, setSelectedCategories] = useState<string[]>([]);
+  const [categoryDetails, setCategoryDetails] = useState<Record<string, {
+    subcategories: string[];
+    frequency: string;
+  }>>({});
   const [loading, setLoading] = useState(false);
   const { user, updateProfile } = useAuth();
   const { toast } = useToast();
 
-  const handlePreferenceToggle = (preferenceId: string) => {
-    setSelectedPreferences(prev =>
-      prev.includes(preferenceId)
-        ? prev.filter(id => id !== preferenceId)
-        : [...prev, preferenceId]
+  // Wait for user to be available
+  useEffect(() => {
+    if (!user?.id && open) {
+      const timer = setTimeout(() => {
+        if (!user?.id) {
+          toast({
+            title: "Account setup in progress",
+            description: "Please wait while we set up your account...",
+          });
+        }
+      }, 2000);
+
+      return () => clearTimeout(timer);
+    }
+  }, [user?.id, open, toast]);
+
+  // Don't show checklist if user has already completed onboarding
+  if (user?.onboardingCompleted && open) {
+    onComplete();
+    return null;
+  }
+
+  const handleCategoryToggle = (categoryId: string) => {
+    setSelectedCategories(prev =>
+      prev.includes(categoryId)
+        ? prev.filter(id => id !== categoryId)
+        : [...prev, categoryId]
     );
+
+    // Initialize category details when selected
+    if (!selectedCategories.includes(categoryId)) {
+      setCategoryDetails(prev => ({
+        ...prev,
+        [categoryId]: {
+          subcategories: [],
+          frequency: "weekly"
+        }
+      }));
+    }
+  };
+
+  const handleSubcategoryToggle = (categoryId: string, subcategory: string) => {
+    setCategoryDetails(prev => ({
+      ...prev,
+      [categoryId]: {
+        ...prev[categoryId],
+        subcategories: prev[categoryId]?.subcategories?.includes(subcategory)
+          ? prev[categoryId].subcategories.filter(s => s !== subcategory)
+          : [...(prev[categoryId]?.subcategories || []), subcategory]
+      }
+    }));
+  };
+
+  const handleFrequencyChange = (categoryId: string, frequency: string) => {
+    setCategoryDetails(prev => ({
+      ...prev,
+      [categoryId]: {
+        ...prev[categoryId],
+        frequency
+      }
+    }));
   };
 
   const handleComplete = async () => {
-    if (selectedPreferences.length === 0) {
+    if (selectedCategories.length === 0) {
       toast({
-        title: "Please select at least one preference",
+        title: "Please select at least one category",
         description: "This helps us personalize your shopping experience.",
+        variant: "destructive"
+      });
+      return;
+    }
+
+    if (!user?.id) {
+      toast({
+        title: "Please wait",
+        description: "We're setting up your account. Please try again in a moment.",
         variant: "destructive"
       });
       return;
@@ -91,24 +184,29 @@ export function PostSignupChecklist({ open, onComplete }: PostSignupChecklistPro
 
     setLoading(true);
     try {
-      // Store preferences in user profile
-      const preferences = {
-        shoppingPreferences: selectedPreferences,
+      // Prepare detailed preferences data
+      const detailedPreferences = {
+        categories: selectedCategories,
+        categoryDetails,
+        shoppingPreferences: selectedCategories, // Keep for backward compatibility
         preferencesSetAt: new Date().toISOString(),
         onboardingCompleted: true
       };
 
+      console.log('Saving preferences:', detailedPreferences); // Debug log
+
       const result = await updateProfile({
-        preferences: JSON.stringify(preferences)
+        preferences: JSON.stringify(detailedPreferences)
       } as any);
 
       if (result.ok) {
         toast({
-          title: "Preferences saved!",
+          title: "Preferences saved successfully!",
           description: "We'll use this to personalize your shopping experience.",
         });
         onComplete();
       } else {
+        console.error('Save failed:', result.error);
         throw new Error(result.error);
       }
     } catch (error) {
@@ -129,7 +227,7 @@ export function PostSignupChecklist({ open, onComplete }: PostSignupChecklistPro
 
   return (
     <Dialog open={open} onOpenChange={() => {}}>
-      <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
+      <DialogContent className="max-w-4xl w-full max-h-[90vh] overflow-y-auto mx-4">
         <DialogHeader className="text-center pb-4">
           <div className="w-16 h-16 bg-primary/10 rounded-full flex items-center justify-center mx-auto mb-4">
             <ShoppingCart className="w-8 h-8 text-primary" />
@@ -138,21 +236,22 @@ export function PostSignupChecklist({ open, onComplete }: PostSignupChecklistPro
             Welcome to GetDeals, {user?.name}!
           </DialogTitle>
           <DialogDescription className="text-base">
-            Help us personalize your shopping experience by telling us what you usually buy
+            Help us create a highly personalized shopping experience by sharing your specific interests and shopping frequency
           </DialogDescription>
         </DialogHeader>
 
         <div className="space-y-6">
           <div className="text-center">
             <p className="text-sm text-muted-foreground mb-4">
-              Select all categories that interest you. We'll use this to show you relevant products and deals.
+              Select categories that interest you and provide details to get highly personalized recommendations and deals tailored to your shopping habits.
             </p>
           </div>
 
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-2 gap-4">
             {preferenceOptions.map((option) => {
               const Icon = option.icon;
-              const isSelected = selectedPreferences.includes(option.id);
+              const isSelected = selectedCategories.includes(option.id);
+              const details = categoryDetails[option.id];
 
               return (
                 <Card
@@ -160,14 +259,14 @@ export function PostSignupChecklist({ open, onComplete }: PostSignupChecklistPro
                   className={`cursor-pointer transition-all hover:shadow-md ${
                     isSelected ? 'ring-2 ring-primary bg-primary/5' : ''
                   }`}
-                  onClick={() => handlePreferenceToggle(option.id)}
+                  onClick={() => handleCategoryToggle(option.id)}
                 >
                   <CardContent className="p-4">
                     <div className="flex items-start space-x-3">
                       <Checkbox
                         id={option.id}
                         checked={isSelected}
-                        onChange={() => handlePreferenceToggle(option.id)}
+                        onChange={() => handleCategoryToggle(option.id)}
                         className="mt-1"
                       />
                       <div className="flex-1 min-w-0">
@@ -180,9 +279,65 @@ export function PostSignupChecklist({ open, onComplete }: PostSignupChecklistPro
                             {option.label}
                           </Label>
                         </div>
-                        <p className="text-xs text-muted-foreground">
+                        <p className="text-xs text-muted-foreground mb-3">
                           {option.description}
                         </p>
+
+                        {isSelected && (
+                          <div className="space-y-3 border-t pt-3">
+                            {/* Subcategories */}
+                            {option.subcategories && (
+                              <div>
+                                <Label className="text-xs font-medium text-muted-foreground mb-2 block">
+                                  Specific interests:
+                                </Label>
+                                <div className="flex flex-wrap gap-1">
+                                  {option.subcategories.map((sub) => (
+                                    <button
+                                      key={sub}
+                                      type="button"
+                                      onClick={(e) => {
+                                        e.stopPropagation();
+                                        handleSubcategoryToggle(option.id, sub);
+                                      }}
+                                      className={`text-xs px-2 py-1 rounded-full border transition-colors ${
+                                        details?.subcategories?.includes(sub)
+                                          ? 'bg-primary text-primary-foreground border-primary'
+                                          : 'bg-muted text-muted-foreground border-muted-foreground/20 hover:bg-muted/80'
+                                      }`}
+                                    >
+                                      {sub}
+                                    </button>
+                                  ))}
+                                </div>
+                              </div>
+                            )}
+
+                            {/* Frequency */}
+                            <div>
+                              <Label className="text-xs font-medium text-muted-foreground mb-1 block flex items-center gap-1">
+                                <Clock className="w-3 h-3" />
+                                Shopping frequency:
+                              </Label>
+                              <Select
+                                value={details?.frequency || "weekly"}
+                                onValueChange={(value) => handleFrequencyChange(option.id, value)}
+                              >
+                                <SelectTrigger className="h-8 text-xs">
+                                  <SelectValue />
+                                </SelectTrigger>
+                                <SelectContent>
+                                  {frequencyOptions.map((freq) => (
+                                    <SelectItem key={freq.value} value={freq.value} className="text-xs">
+                                      {freq.label}
+                                    </SelectItem>
+                                  ))}
+                                </SelectContent>
+                              </Select>
+                            </div>
+
+                          </div>
+                        )}
                       </div>
                     </div>
                   </CardContent>
@@ -195,12 +350,13 @@ export function PostSignupChecklist({ open, onComplete }: PostSignupChecklistPro
             <div className="flex items-start space-x-3">
               <CheckCircle className="w-5 h-5 text-green-600 mt-0.5 flex-shrink-0" />
               <div>
-                <h4 className="font-medium text-sm mb-1">Why share your preferences?</h4>
+                <h4 className="font-medium text-sm mb-1">Why provide detailed preferences?</h4>
                 <ul className="text-xs text-muted-foreground space-y-1">
-                  <li>• Get personalized product recommendations</li>
-                  <li>• See relevant deals and promotions first</li>
-                  <li>• Faster checkout with suggested items</li>
-                  <li>• Better curated baskets for your needs</li>
+                  <li>• Get hyper-personalized product recommendations based on your specific interests</li>
+                  <li>• Receive deals and promotions that match your shopping frequency</li>
+                  <li>• Faster checkout with pre-suggested items from your preferred subcategories</li>
+                  <li>• Better curated baskets tailored to your exact needs</li>
+                  <li>• Timely notifications for deals in categories you care about most</li>
                 </ul>
               </div>
             </div>
@@ -209,8 +365,8 @@ export function PostSignupChecklist({ open, onComplete }: PostSignupChecklistPro
           <div className="flex flex-col sm:flex-row gap-3 pt-4">
             <Button
               onClick={handleComplete}
-              disabled={loading || selectedPreferences.length === 0}
-              className="flex-1"
+              disabled={loading || selectedCategories.length === 0}
+              className="flex-1 order-2 sm:order-1"
             >
               {loading ? "Saving..." : "Save Preferences"}
             </Button>
@@ -218,7 +374,7 @@ export function PostSignupChecklist({ open, onComplete }: PostSignupChecklistPro
               variant="outline"
               onClick={handleSkip}
               disabled={loading}
-              className="flex-1"
+              className="flex-1 order-1 sm:order-2"
             >
               Skip for Now
             </Button>

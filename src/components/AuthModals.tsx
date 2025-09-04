@@ -67,7 +67,7 @@ export function AuthModals({ open, onOpenChange, defaultTab = "signin" }: AuthMo
     try {
       await signUp(name, phone, email, password);
       toast({ title: "Account created", description: "Welcome to GetDeals" });
-      // Show checklist instead of closing modal immediately
+      // Show checklist for new users (onboardingCompleted will be false by default)
       setShowChecklist(true);
     } catch (err: any) {
       setError(err?.message || 'Failed to sign up');

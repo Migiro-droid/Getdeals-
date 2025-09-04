@@ -1,12 +1,18 @@
+import dotenv from 'dotenv';
+import path from 'path';
+import { fileURLToPath } from 'url';
+
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
+
+dotenv.config({ path: path.join(__dirname, '.env') });
+
 import express from 'express';
 import cors from 'cors';
 import fs from 'fs';
-import path from 'path';
-import dotenv from 'dotenv';
 import bcrypt from 'bcryptjs';
 import jwt from 'jsonwebtoken';
 import nodemailer from 'nodemailer';
-import { fileURLToPath } from 'url';
 import { nanoid } from 'nanoid';
 import axios from 'axios';
 import { JSONDatabase } from './lib/database.js';
@@ -14,11 +20,6 @@ import { supabase, getProducts, getUsers, getOrders, createProduct, updateProduc
 import MpesaService from './lib/mpesa.js';
 import SMSService from './lib/sms.js';
 import EmailService from './lib/email.js';
-
-const __filename = fileURLToPath(import.meta.url);
-const __dirname = path.dirname(__filename);
-
-dotenv.config({ path: path.join(__dirname, '.env') });
 
 const app = express();
 const PORT = process.env.PORT || 4000;

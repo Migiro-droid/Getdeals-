@@ -54,7 +54,7 @@ app.post('/api/payments/mpesa/initiate', async (req, res) => {
   }
 });
 
-// Query STK Push status
+
 app.get('/api/payments/mpesa/status/:checkoutRequestId', async (req, res) => {
   try {
     const { checkoutRequestId } = req.params;
@@ -82,7 +82,7 @@ app.get('/api/payments/mpesa/status/:checkoutRequestId', async (req, res) => {
   }
 });
 
-// M-Pesa callback endpoint
+
 app.post('/api/payments/mpesa/callback', (req, res) => {
   try {
     const callbackData = req.body;
@@ -90,24 +90,19 @@ app.post('/api/payments/mpesa/callback', (req, res) => {
 
     const result = mpesaService.processCallback(callbackData);
 
-    // Always respond with success to M-Pesa
+
     res.json({ success: true });
 
-    // Here you would typically:
-    // 1. Update your database with the payment result
-    // 2. Send notifications to the main application
-    // 3. Trigger order fulfillment processes
 
     console.log('Processed callback result:', result);
 
   } catch (error) {
     console.error('Error processing M-Pesa callback:', error);
-    // Still respond with success to avoid retries
+
     res.json({ success: true });
   }
 });
 
-// Error handling middleware
 app.use((error, req, res, next) => {
   console.error('Unhandled error:', error);
   res.status(500).json({
@@ -116,13 +111,18 @@ app.use((error, req, res, next) => {
   });
 });
 
-// 404 handler
+
 app.use('*', (req, res) => {
   res.status(404).json({
     success: false,
     error: 'Endpoint not found'
   });
 });
+app.use('*',req, res) => {
+    res.status(500).json({
+        success: false,
+        error: 'Internal Sever err                   '
+}
 
 app.listen(PORT, () => {
   console.log(`🚀 M-Pesa Microservice running on port ${PORT}`);
