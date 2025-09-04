@@ -9,6 +9,7 @@ export interface Product {
   itemsDetail?: { name: string; image: string }[];
   category: string;
   description?: string;
+  featured?: boolean;
 }
 
 export const products: Product[] = [
@@ -801,6 +802,142 @@ export const products: Product[] = [
     description: "Ring in the new year in style"
   },
 
+  // Electronics Products
+  {
+    id: "samsung-32-smart-tv",
+    name: "Samsung 32\" Smart TV",
+    price: 25000,
+    originalPrice: 32000,
+    image: "https://images.samsung.com/is/image/samsung/p6pim/levant/ua32t5300auxzn/gallery/levant-fullview-tv-t5300-ua32t5300auxzn-531425889?$650_519_PNG$",
+    category: "Electronics",
+    description: "32-inch HD Smart TV with built-in streaming apps",
+    featured: false,
+    items: []
+  },
+  {
+    id: "wireless-bluetooth-headphones",
+    name: "Wireless Bluetooth Headphones",
+    price: 3500,
+    originalPrice: 4500,
+    image: "https://m.media-amazon.com/images/I/61SUj2aKoEL._AC_SL1500_.jpg",
+    category: "Electronics",
+    description: "Noise-cancelling wireless headphones with 30-hour battery",
+    featured: false,
+    items: []
+  },
+  {
+    id: "iphone-15-pro-max",
+    name: "iPhone 15 Pro Max",
+    price: 180000,
+    originalPrice: 200000,
+    image: "https://store.storeimages.cdn-apple.com/4982/as-images.apple.com/is/iphone-15-pro-max-gold-select-202309_FMT_WHH?wid=1408&hei=1332&fmt=jpeg&qlt=90&.v=1693009285268",
+    category: "Electronics",
+    description: "Latest iPhone with Pro camera system and titanium design",
+    featured: true,
+    items: []
+  },
+  {
+    id: "gaming-laptop-rtx-4060",
+    name: "Gaming Laptop RTX 4060",
+    price: 120000,
+    originalPrice: 140000,
+    image: "https://m.media-amazon.com/images/I/71pvhT1RHWL._AC_SL1500_.jpg",
+    category: "Electronics",
+    description: "High-performance gaming laptop with RTX 4060 graphics",
+    featured: false,
+    items: []
+  },
+  {
+    id: "smart-home-security-camera",
+    name: "Smart Home Security Camera",
+    price: 4500,
+    originalPrice: 6000,
+    image: "https://m.media-amazon.com/images/I/51j0B1f5HLL._AC_SL1000_.jpg",
+    category: "Electronics",
+    description: "1080p wireless security camera with night vision",
+    featured: false,
+    items: []
+  },
+  {
+    id: "portable-power-bank-20000mah",
+    name: "Portable Power Bank 20000mAh",
+    price: 2500,
+    originalPrice: 3500,
+    image: "https://m.media-amazon.com/images/I/71lVwl3LW2L._AC_SL1500_.jpg",
+    category: "Electronics",
+    description: "Fast-charging power bank with multiple USB ports",
+    featured: false,
+    items: []
+  },
+
+  // Automotive Products
+  {
+    id: "car-engine-oil-5l",
+    name: "Car Engine Oil 5L",
+    price: 4500,
+    originalPrice: 5500,
+    image: "https://m.media-amazon.com/images/I/61v5Q8Q8qL._AC_SL1500_.jpg",
+    category: "Automotive",
+    description: "Premium synthetic engine oil for optimal performance",
+    featured: false,
+    items: []
+  },
+  {
+    id: "car-air-freshener-set",
+    name: "Car Air Freshener Set",
+    price: 800,
+    originalPrice: 1200,
+    image: "https://m.media-amazon.com/images/I/71pvhT1RHWL._AC_SL1500_.jpg",
+    category: "Automotive",
+    description: "Long-lasting car air fresheners with multiple scents",
+    featured: false,
+    items: []
+  },
+  {
+    id: "car-tire-pressure-gauge",
+    name: "Car Tire Pressure Gauge",
+    price: 600,
+    originalPrice: 900,
+    image: "https://m.media-amazon.com/images/I/51j0B1f5HLL._AC_SL1000_.jpg",
+    category: "Automotive",
+    description: "Digital tire pressure gauge with LCD display",
+    featured: false,
+    items: []
+  },
+  {
+    id: "car-wash-kit",
+    name: "Car Wash Kit",
+    price: 2500,
+    originalPrice: 3500,
+    image: "https://m.media-amazon.com/images/I/71lVwl3LW2L._AC_SL1500_.jpg",
+    category: "Automotive",
+    description: "Complete car cleaning kit with shampoo and microfiber cloths",
+    featured: false,
+    items: []
+  },
+  {
+    id: "car-battery-charger",
+    name: "Car Battery Charger",
+    price: 3500,
+    originalPrice: 4500,
+    image: "https://m.media-amazon.com/images/I/61SUj2aKoEL._AC_SL1500_.jpg",
+    category: "Automotive",
+    description: "Portable car battery charger and jump starter",
+    featured: false,
+    items: []
+  },
+  {
+    id: "car-seat-covers",
+    name: "Car Seat Covers",
+    price: 4200,
+    originalPrice: 5500,
+    image: "https://m.media-amazon.com/images/I/71pvhT1RHWL._AC_SL1500_.jpg",
+    category: "Automotive",
+    description: "Universal car seat covers with waterproof protection",
+    featured: false,
+    items: []
+  },
+
   // Budget-Friendly Options
   {
     id: "student-budget-pack",
@@ -856,4 +993,6 @@ export const valentineProducts = products.filter(p => p.category === "valentine"
 export const celebrationProducts = products.filter(p => p.category === "celebration");
 export const budgetProducts = products.filter(p => p.category === "budget");
 export const singleProducts = products.filter(p => p.category === "single");
+export const electronicsProducts = products.filter(p => p.category === "Electronics");
+export const automotiveProducts = products.filter(p => p.category === "Automotive");
 export const discountedProducts = products.filter(p => p.originalPrice && p.originalPrice > p.price);

@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { LogIn, UserPlus } from "lucide-react";
 import { AuthModals } from "./AuthModals";
@@ -19,6 +19,9 @@ export function AuthRequiredDialog({ open, onOpenChange }: AuthRequiredDialogPro
         <DialogContent className="max-w-sm text-center">
           <DialogHeader>
             <DialogTitle className="text-xl">Sign in required</DialogTitle>
+            <DialogDescription>
+              Authentication is required to add items to your cart
+            </DialogDescription>
           </DialogHeader>
           <div className="space-y-4">
             <p className="text-sm text-muted-foreground">

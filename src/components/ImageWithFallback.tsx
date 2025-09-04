@@ -26,9 +26,8 @@ export function ImageWithFallback({
   const [isLoaded, setIsLoaded] = useState(false);
   const imgRef = useRef<HTMLImageElement>(null);
   const [retryCount, setRetryCount] = useState(0);
-  const maxRetries = 0; // disable retry-based src changes to avoid post-load swaps
+  const maxRetries = 0; 
 
-  // Reset state when src changes
   useEffect(() => {
     if (src !== currentSrc) {
       setCurrentSrc(src);

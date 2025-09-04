@@ -1,8 +1,5 @@
 import type { VercelRequest, VercelResponse } from '@vercel/node';
-import { neon } from '@neondatabase/serverless';
-
-// Initialize Neon database connection
-const sql = neon(process.env.DATABASE_URL!);
+import { updateProduct, deleteProduct, getProducts } from '../../lib/db';
 
 export default async function handler(req: VercelRequest, res: VercelResponse) {
   // Enable CORS
@@ -22,65 +19,22 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
 
   try {
     switch (req.method) {
-      case 'PATCH':
-        // Update product
+      case 'PATCH': {
         const updates = req.body;
-        const setClause = Object.keys(updates)
-          .filter(key => updates[key] !== undefined)
-          .map(key => {
-            switch (key) {
-              case 'originalPrice':
-                return 'original_price = ${updates.originalPrice}';
-              case 'image':
-                return 'image_url = ${updates.image}';
-              case 'itemsDetail':
-                return 'items_detail = ${JSON.stringify(updates.itemsDetail)}';
-              default:
-                return `${key} = ${typeof updates[key] === 'string' ? `'${updates[key]}'` : updates[key]}`;
-            }
-          })
-          .join(', ');
-
-        if (!setClause) {
+        if (!updates || Object.keys(updates).length === 0) {
           return res.status(400).json({ message: 'No valid updates provided' });
         }
 
-        const updatedProduct = await sql`
-          UPDATE products 
-          SET ${sql.unsafe(setClause)}, updated_at = NOW()
-          WHERE id = ${id}
-          RETURNING 
-            id, 
-            name, 
-            price, 
-            original_price as "originalPrice",
-            image_url as image,
-            category,
-            description,
-            items,
-            items_detail as "itemsDetail",
-            created_at as "createdAt"
-        `;
+        const updated = await updateProduct(id, updates);
+        if (!updated) return res.status(404).json({ message: 'Product not found' });
+        return res.json(updated);
+      }
 
-        if (updatedProduct.length === 0) {
-          return res.status(404).json({ message: 'Product not found' });
-        }
-
-        return res.json(updatedProduct[0]);
-
-      case 'DELETE':
-        // Delete product
-        const deletedProduct = await sql`
-          DELETE FROM products 
-          WHERE id = ${id}
-          RETURNING id
-        `;
-
-        if (deletedProduct.length === 0) {
-          return res.status(404).json({ message: 'Product not found' });
-        }
-
+      case 'DELETE': {
+        const deleted = await deleteProduct(id);
+        if (!deleted) return res.status(404).json({ message: 'Product not found' });
         return res.status(204).end();
+      }
 
       default:
         return res.status(405).json({ message: 'Method not allowed' });

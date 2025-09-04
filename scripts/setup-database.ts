@@ -2,7 +2,7 @@
 
 /**
  * GetDeals Kenya - Database Setup Script
- * This script initializes your Neon database with all the required tables and data
+ * This script initializes your Supabase database with all the required tables and data
  */
 
 import { execSync } from 'child_process';
@@ -36,13 +36,13 @@ function runCommand(command: string, description: string) {
 
 async function main() {
   log('🚀 GetDeals Kenya - Database Setup', 'bold');
-  log('Setting up your Neon database with all the required data...', 'yellow');
+  log('Setting up your Supabase database with all the required data...', 'yellow');
 
   // Check if .env file exists
   const envPath = path.join(process.cwd(), '.env');
   if (!fs.existsSync(envPath)) {
     log('❌ .env file not found!', 'red');
-    log('Please create a .env file with your Neon database connection string.', 'yellow');
+    log('Please create a .env file with your Supabase database connection string.', 'yellow');
     log('Example: DATABASE_URL="postgresql://user:pass@host/db?sslmode=require"', 'blue');
     process.exit(1);
   }
@@ -51,7 +51,7 @@ async function main() {
   const envContent = fs.readFileSync(envPath, 'utf8');
   if (!envContent.includes('DATABASE_URL=') || envContent.includes('your_database_url_here')) {
     log('❌ DATABASE_URL not configured in .env file!', 'red');
-    log('Please add your Neon database connection string to the .env file.', 'yellow');
+    log('Please add your Supabase database connection string to the .env file.', 'yellow');
     process.exit(1);
   }
 

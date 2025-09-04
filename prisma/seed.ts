@@ -8,7 +8,7 @@ async function main() {
 
   // Seed products
   console.log('📦 Seeding products...');
-  for (const product of products) {
+  for (const product of products.slice(0, 10)) { // Seed first 10 products to mark some as featured
     await prisma.product.upsert({
       where: { id: product.id },
       update: {
@@ -21,6 +21,7 @@ async function main() {
         itemsDetail: product.itemsDetail || [],
         category: product.category,
         description: product.description,
+        featured: products.indexOf(product) < 3, // Mark first 3 as featured
       },
       create: {
         id: product.id,
@@ -33,6 +34,39 @@ async function main() {
         itemsDetail: product.itemsDetail || [],
         category: product.category,
         description: product.description,
+        featured: products.indexOf(product) < 3, // Mark first 3 as featured
+      },
+    });
+  }
+
+  // Seed remaining products without featured flag
+  for (const product of products.slice(10)) {
+    await prisma.product.upsert({
+      where: { id: product.id },
+      update: {
+        name: product.name,
+        price: product.price,
+        originalPrice: product.originalPrice,
+        image: product.image,
+        discount: product.discount,
+        items: product.items || [],
+        itemsDetail: product.itemsDetail || [],
+        category: product.category,
+        description: product.description,
+        featured: false,
+      },
+      create: {
+        id: product.id,
+        name: product.name,
+        price: product.price,
+        originalPrice: product.originalPrice,
+        image: product.image,
+        discount: product.discount,
+        items: product.items || [],
+        itemsDetail: product.itemsDetail || [],
+        category: product.category,
+        description: product.description,
+        featured: false,
       },
     });
   }

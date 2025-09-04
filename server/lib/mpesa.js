@@ -14,34 +14,25 @@ class MpesaService {
       : 'https://api.safaricom.co.ke';
   }
 
-  validateCredentials() {
-    const missing = [];
-    if (!this.consumerKey) missing.push('MPESA_CONSUMER_KEY');
-    if (!this.consumerSecret) missing.push('MPESA_CONSUMER_SECRET');
-    if (!this.passkey) missing.push('MPESA_PASSKEY');
-    if (!this.callbackUrl) missing.push('MPESA_CALLBACK_URL');
-    
-    if (missing.length > 0) {
-      throw new Error(`Missing M-Pesa credentials: ${missing.join(', ')}. Please add them to your .env file.`);
+  async getAccessToken() {
+    const url = `${this.baseUrl}/oauth/v1/generate?grant_type=client_credentials`;
+    const credentials = Buffer.from(`${this.consumerKey}:${this.consumerSecret}`).toString('base64');
+
+    try {
+      const response = await axios.get(url, {
+        headers: {
+          Authorization: `Basic ${credentials}`,
+          'Content-Type': 'application/json',
+        },
+      });
+
+      console.log('M-Pesa Access Token Response:', response.data);
+      return response.data.access_token;
+    } catch (error) {
+      console.error('Error getting M-Pesa access token:', error.response?.data || error.message);
+      throw new Error('Failed to get M-Pesa access token');
     }
   }
-
-  // async getAccessToken() {
-  //   const url = `${this.baseUrl}/oauth/v1/generate?grant_type=client_credentials`;
-  //   const credentials = Buffer.from(`${this.consumerKey}:${this.consumerSecret}`).toString('base64');
-  //
-  //   try {
-  //     const response = await axios.get(url, {
-  //       headers: {
-  //         Authorization: `Basic ${credentials}`,
-  //       },
-  //     });
-  //     return response.data.access_token;
-  //   } catch (error) {
-  //     console.error('Error getting M-Pesa access token:', error.response?.data || error.message);
-  //     throw new Error('Failed to get M-Pesa access token');
-  //   }
-  // }
 
   generatePassword() {
     const timestamp = new Date().toISOString().replace(/[^0-9]/g, '').slice(0, -3);
@@ -51,13 +42,9 @@ class MpesaService {
 
   async initiateSTKPush(phoneNumber, amount, orderId, description = 'GetDeals Payment') {
     try {
-      // Validate credentials first
-      this.validateCredentials();
-      
       const accessToken = await this.getAccessToken();
       const { password, timestamp } = this.generatePassword();
-      
-      // Format phone number (remove + and ensure it starts with 254)
+
       const formattedPhone = phoneNumber.replace(/^\+?/, '').replace(/^0/, '254');
       
       const stkPushData = {
@@ -65,7 +52,7 @@ class MpesaService {
         Password: password,
         Timestamp: timestamp,
         TransactionType: 'CustomerPayBillOnline',
-        Amount: Math.round(amount), // Ensure integer
+        Amount: Math.round(amount),
         PartyA: formattedPhone,
         PartyB: this.shortcode,
         PhoneNumber: formattedPhone,
@@ -73,6 +60,9 @@ class MpesaService {
         AccountReference: orderId,
         TransactionDesc: description,
       };
+
+      console.log('STK Push Request Data:', stkPushData);
+      console.log('Access Token:', accessToken ? 'Present' : 'Missing');
 
       const response = await axios.post(
         `${this.baseUrl}/mpesa/stkpush/v1/processrequest`,
@@ -84,6 +74,9 @@ class MpesaService {
           },
         }
       );
+      console.log('Access Token:', accessToken ? 'Present' : 'Missing');
+
+      console.log('STK Push Response:', response.data);
 
       return {
         success: true,
@@ -94,7 +87,9 @@ class MpesaService {
         customerMessage: response.data.CustomerMessage,
       };
     } catch (error) {
-      console.error('STK Push error:', error.response?.data || error.message);
+      console.error('STK Push error details:', error.response?.data || error.message);
+      console.error('STK Push error status:', error.response?.status);
+      console.error('STK Push error headers:', error.response?.headers);
       return {
         success: false,
         error: error.response?.data?.errorMessage || 'Failed to initiate payment',
@@ -154,7 +149,6 @@ class MpesaService {
       };
 
       if (stkCallback.ResultCode === 0) {
-        // Payment successful
         const callbackMetadata = stkCallback.CallbackMetadata?.Item || [];
         
         result.success = true;
@@ -163,7 +157,6 @@ class MpesaService {
         result.transactionDate = this.getCallbackValue(callbackMetadata, 'TransactionDate');
         result.phoneNumber = this.getCallbackValue(callbackMetadata, 'PhoneNumber');
       } else {
-        // Payment failed
         result.success = false;
         result.error = stkCallback.ResultDesc;
       }

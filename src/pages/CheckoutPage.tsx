@@ -8,7 +8,6 @@ import { Label } from "../components/ui/label";
 import { RadioGroup, RadioGroupItem } from "../components/ui/radio-group";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "../components/ui/select";
 import { Separator } from "../components/ui/separator";
-import { Badge } from "../components/ui/badge";
 import { Alert, AlertDescription } from "../components/ui/alert";
 import { useCart } from "../contexts/CartContext";
 import { useToast } from '../hooks/use-toast';
@@ -26,7 +25,6 @@ export default function CheckoutPage() {
   const [paymentMethod, setPaymentMethod] = useState("wallet");
   const [paymentStatus, setPaymentStatus] = useState<"idle" | "processing" | "success" | "failed">("idle");
   
-  // Customer details
   const [firstName, setFirstName] = useState("");
   const [lastName, setLastName] = useState("");
   const [phone, setPhone] = useState("");
@@ -34,15 +32,11 @@ export default function CheckoutPage() {
   const [address, setAddress] = useState("");
   const [pickupLocation, setPickupLocation] = useState("");
   
-  // Payment details
   const [mpesaPhone, setMpesaPhone] = useState("");
-  const [loading, setLoading] = useState(false);
 
   const formatPhoneNumber = (phone: string) => {
-    // Remove all non-digit characters
     const digits = phone.replace(/\D/g, '');
     
-    // Handle different formats
     if (digits.startsWith('254')) {
       return digits;
     } else if (digits.startsWith('0')) {
@@ -54,17 +48,86 @@ export default function CheckoutPage() {
     return digits;
   };
 
+  const initiateSTKPush = async (amount: number, phoneNumber: string, orderReference: string) => {
+    try {
+      const response = await fetch('/api/payments/mpesa/stk-push', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          amount,
+          phoneNumber: formatPhoneNumber(phoneNumber),
+          orderReference,
+          description: `Payment for GetDeals order ${orderReference}`
+        }),
+      });
+
+      const responseText = await response.text();
+      console.log('STK Push response text:', responseText);
+
+      if (!responseText) {
+        throw new Error('Empty response from server');
+      }
+
+      let result;
+      try {
+        result = JSON.parse(responseText);
+      } catch (jsonError) {
+        console.error('JSON parsing error:', jsonError);
+        throw new Error(`Invalid JSON response: ${responseText.substring(0, 100)}`);
+      }
+
+      if (response.ok) {
+        return { success: true, ...result };
+      } else {
+        throw new Error(result.error || 'Payment initiation failed');
+      }
+    } catch (error) {
+      console.error('STK Push error:', error);
+      return { success: false, error: error instanceof Error ? error.message : 'Payment failed' };
+    }
+  };
+
+  const checkPaymentStatus = async (checkoutRequestId: string) => {
+    try {
+      const response = await fetch(`/api/payments/mpesa/query/${checkoutRequestId}`);
+
+      const responseText = await response.text();
+      console.log('Payment status response text:', responseText);
+
+      if (!responseText) {
+        throw new Error('Empty response from server');
+      }
+
+      let result;
+      try {
+        result = JSON.parse(responseText);
+      } catch (jsonError) {
+        console.error('JSON parsing error:', jsonError);
+        throw new Error(`Invalid JSON response: ${responseText.substring(0, 100)}`);
+      }
+
+      if (response.ok) {
+        return result;
+      } else {
+        throw new Error(result.error || 'Failed to check payment status');
+      }
+    } catch (error) {
+      console.error('Payment status check error:', error);
+      return { success: false, error: error instanceof Error ? error.message : 'Status check failed' };
+    }
+  };
+
   const createOrder = async (orderData: any) => {
     try {
-  const baseUrl = getApiBase();
-  const response = await fetch(`${baseUrl}/api/orders`, {
+      const baseUrl = getApiBase();
+      const response = await fetch(`${baseUrl}/api/orders`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(orderData),
       });
 
       const result = await response.json();
-      
+
       if (response.ok) {
         return { success: true, order: result };
       } else {
@@ -78,7 +141,8 @@ export default function CheckoutPage() {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!auth.isAuthenticated || !auth.token) {
+
+    if (!auth.isAuthenticated) {
       toast({
         variant: 'destructive',
         title: 'Authentication Error',
@@ -87,78 +151,169 @@ export default function CheckoutPage() {
       return;
     }
 
-    if (paymentMethod === 'mpesa') {
-      if (!mpesaPhone) {
-        toast({
-          variant: 'destructive',
-          title: 'M-Pesa Phone Number Required',
-          description: 'Please enter your M-Pesa phone number.',
-        });
-        return;
-      }
-
-      try {
-        setLoading(true);
-        const phone = mpesaPhone.startsWith('254') ? mpesaPhone : `254${parseInt(mpesaPhone, 10)}`;
-        
-        // In a real app, you would create the order in your database first
-        // and get a unique order ID to pass to the payment gateway.
-        const orderId = `GD-TEST-${Date.now()}`;
-
-        const response = await fetch('/api/payments/mpesa/initiate', {
-          method: 'POST',
-          headers: { 
-            'Content-Type': 'application/json',
-            'Authorization': `Bearer ${auth.token}`
-          },
-          body: JSON.stringify({
-            amount: total,
-            phoneNumber: phone,
-            orderId: orderId, 
-          }),
-        });
-
-        // It's crucial to handle non-JSON responses
-        const responseText = await response.text();
-        let result;
-        try {
-          result = JSON.parse(responseText);
-        } catch (err) {
-          console.error("Failed to parse server response:", responseText);
-          throw new Error("Received an invalid response from the server. Please check the console for details.");
-        }
-
-        if (!response.ok) {
-          throw new Error(result.message || `HTTP error! status: ${response.status}`);
-        }
-
-        if (result.success) {
-          toast({
-            title: 'M-Pesa STK Push Initiated',
-            description: 'Please check your phone to complete the payment.',
-          });
-          // Here you might want to start polling for payment status or redirect the user
-        } else {
-          throw new Error(result.message || 'Failed to initiate M-Pesa payment.');
-        }
-
-      } catch (error) {
-        console.error('M-Pesa payment error:', error);
-        toast({
-          variant: 'destructive',
-          title: 'Payment Error',
-          description: error.message || 'Could not connect to the payment service.',
-        });
-      } finally {
-        setLoading(false);
-      }
-    } else {
-      // Handle other payment methods or show an error
+    if (items.length === 0) {
       toast({
         variant: 'destructive',
-        title: 'Unsupported Payment Method',
-        description: 'This payment method is not yet supported.',
+        title: 'Cart Empty',
+        description: 'Please add items to your cart before checkout.',
       });
+      return;
+    }
+
+    // Validate required fields
+    if (!firstName.trim() || !lastName.trim() || !email.trim() || !phone.trim()) {
+      toast({
+        variant: 'destructive',
+        title: 'Missing Information',
+        description: 'Please fill in all required customer information fields.',
+      });
+      return;
+    }
+
+    if (deliveryMethod === 'speedy' && !address.trim()) {
+      toast({
+        variant: 'destructive',
+        title: 'Delivery Address Required',
+        description: 'Please provide a delivery address for speedy delivery.',
+      });
+      return;
+    }
+
+    if (deliveryMethod === 'pickup' && !pickupLocation) {
+      toast({
+        variant: 'destructive',
+        title: 'Pickup Location Required',
+        description: 'Please select a pickup location.',
+      });
+      return;
+    }
+
+    if (paymentMethod === 'mpesa' && !mpesaPhone.trim()) {
+      toast({
+        variant: 'destructive',
+        title: 'M-Pesa Phone Required',
+        description: 'Please provide your M-Pesa phone number.',
+      });
+      return;
+    }
+
+    setIsLoading(true);
+    setPaymentStatus("processing");
+
+    try {
+      if (paymentMethod === "mpesa") {
+        // Handle M-Pesa payment
+        const phoneToUse = mpesaPhone || phone;
+        if (!phoneToUse) {
+          throw new Error("Phone number is required for M-Pesa payment");
+        }
+
+        const orderReference = `GD${Date.now()}${Math.random().toString(36).substr(2, 4).toUpperCase()}`;
+
+        const stkResult = await initiateSTKPush(finalTotal, phoneToUse, orderReference);
+
+        if (!stkResult.success) {
+          throw new Error(stkResult.error || "Failed to initiate M-Pesa payment");
+        }
+
+        const orderData = {
+          items,
+          deliveryMethod,
+          deliveryAddress: deliveryMethod === "speedy" ? address : undefined,
+          paymentMethod,
+          mpesaPhone: formatPhoneNumber(phoneToUse),
+          checkoutRequestId: stkResult.checkoutRequestId,
+          merchantRequestId: stkResult.merchantRequestId,
+        };
+
+        // Create order with M-Pesa details
+        const orderResult = await createOrder(orderData);
+
+        if (!orderResult.success) {
+          throw new Error(orderResult.error || "Failed to create order");
+        }
+        toast({
+          title: "M-Pesa Payment Initiated! 📱",
+          description: `Please check your phone (${phoneToUse}) and enter your M-Pesa PIN to complete the payment.`,
+        });
+
+        // Poll for payment status
+        const maxAttempts = 20;
+        let attempts = 0;
+
+        const checkStatus = async () => {
+          if (attempts >= maxAttempts) {
+            setPaymentStatus("failed");
+            toast({
+              title: "Payment Timeout",
+              description: "Payment verification timed out. Please contact support if money was deducted.",
+              variant: "destructive",
+            });
+            return;
+          }
+
+          attempts++;
+          const statusResult = await checkPaymentStatus(stkResult.checkoutRequestId);
+
+          if (statusResult.success && statusResult.status === "completed") {
+            setPaymentStatus("success");
+            toast({
+              title: "Payment Successful! ✅",
+              description: "Your order has been confirmed and you'll receive an SMS shortly.",
+            });
+            clearCart();
+            setTimeout(() => {
+              navigate(`/account?tab=orders&orderId=${orderResult.order.id}`);
+            }, 2000);
+          } else if (statusResult.success && statusResult.status === "failed") {
+            setPaymentStatus("failed");
+            toast({
+              title: "Payment Failed",
+              description: statusResult.error || "M-Pesa payment was not completed.",
+              variant: "destructive",
+            });
+          } else {
+            setTimeout(checkStatus, 6000);
+          }
+        };
+
+        setTimeout(checkStatus, 3000);
+      } else {
+        // Handle wallet and other payment methods
+        const orderData = {
+          items,
+          deliveryMethod,
+          deliveryAddress: deliveryMethod === "speedy" ? address : undefined,
+          paymentMethod,
+        };
+
+        const orderResult = await createOrder(orderData);
+
+        if (!orderResult.success) {
+          throw new Error(orderResult.error || "Failed to create order");
+        }
+
+        setPaymentStatus("success");
+        toast({
+          title: "Order Placed Successfully! 🎉",
+          description: "You will receive confirmation details shortly.",
+        });
+
+        clearCart();
+        setTimeout(() => {
+          navigate(`/account?tab=orders&orderId=${orderResult.order.id}`);
+        }, 1500);
+      }
+    } catch (error) {
+      setPaymentStatus("failed");
+      console.error('Checkout error:', error);
+      toast({
+        title: "Checkout Failed",
+        description: error instanceof Error ? error.message : "An unexpected error occurred",
+        variant: "destructive",
+      });
+    } finally {
+      setIsLoading(false);
     }
   };
 
@@ -171,211 +326,198 @@ export default function CheckoutPage() {
         <h1 className="text-3xl font-bold mb-8">Checkout</h1>
         
         <form onSubmit={handleSubmit} className="grid lg:grid-cols-3 gap-8">
-          {/* Checkout Form */}
           <div className="lg:col-span-2 space-y-6">
-            {/* Personal Information */}
             <Card>
               <CardHeader>
-                <CardTitle className="flex items-center">
-                  <User className="h-5 w-5 mr-2" />
-                  Personal Information
+                <CardTitle className="flex items-center gap-2">
+                  <User className="h-5 w-5" />
+                  Customer Information
                 </CardTitle>
               </CardHeader>
               <CardContent className="space-y-4">
-                <div className="grid md:grid-cols-2 gap-4">
+                <div className="grid grid-cols-2 gap-4">
                   <div>
                     <Label htmlFor="firstName">First Name</Label>
-                    <Input id="firstName" required value={firstName} onChange={(e) => setFirstName(e.target.value)} />
+                    <Input
+                      id="firstName"
+                      value={firstName}
+                      onChange={(e) => setFirstName(e.target.value)}
+                      required
+                    />
                   </div>
                   <div>
                     <Label htmlFor="lastName">Last Name</Label>
-                    <Input id="lastName" required value={lastName} onChange={(e) => setLastName(e.target.value)} />
+                    <Input
+                      id="lastName"
+                      value={lastName}
+                      onChange={(e) => setLastName(e.target.value)}
+                      required
+                    />
                   </div>
                 </div>
                 <div>
                   <Label htmlFor="phone">Phone Number</Label>
-                  <Input id="phone" type="tel" placeholder="+254 7XX XXX XXX" required value={phone} onChange={(e) => setPhone(e.target.value)} />
+                  <Input
+                    id="phone"
+                    type="tel"
+                    value={phone}
+                    onChange={(e) => setPhone(e.target.value)}
+                    placeholder="0712345678"
+                    required
+                  />
                 </div>
                 <div>
                   <Label htmlFor="email">Email Address</Label>
-                  <Input id="email" type="email" required value={email} onChange={(e) => setEmail(e.target.value)} />
+                  <Input
+                    id="email"
+                    type="email"
+                    value={email}
+                    onChange={(e) => setEmail(e.target.value)}
+                    required
+                  />
                 </div>
               </CardContent>
             </Card>
 
-            {/* Delivery Options */}
             <Card>
               <CardHeader>
-                <CardTitle className="flex items-center">
-                  <MapPin className="h-5 w-5 mr-2" />
-                  Delivery Options
+                <CardTitle className="flex items-center gap-2">
+                  <MapPin className="h-5 w-5" />
+                  Delivery Method
                 </CardTitle>
               </CardHeader>
-              <CardContent className="space-y-4">
+              <CardContent>
                 <RadioGroup value={deliveryMethod} onValueChange={setDeliveryMethod}>
-                  <div className="flex items-center space-x-2 p-4 border rounded-lg">
+                  <div className="flex items-center space-x-2">
                     <RadioGroupItem value="pickup" id="pickup" />
                     <Label htmlFor="pickup" className="flex-1">
-                      <div className="font-medium">Pickup Point - Free</div>
+                      <div className="font-medium">Store Pickup (Free)</div>
                       <div className="text-sm text-muted-foreground">
-                        Collect from your nearest Quickmart at your convenience
+                        Pick up your order at our store
                       </div>
                     </Label>
                   </div>
-                  <div className="flex items-center space-x-2 p-4 border rounded-lg">
+                  <div className="flex items-center space-x-2">
                     <RadioGroupItem value="speedy" id="speedy" />
                     <Label htmlFor="speedy" className="flex-1">
-                      <div className="font-medium">Speedy Drop - KES 200</div>
+                      <div className="font-medium">Speedy Delivery (KES 200)</div>
                       <div className="text-sm text-muted-foreground">
-                        Fast delivery to your doorstep within 2 hours
+                        Fast delivery to your doorstep
                       </div>
                     </Label>
                   </div>
                 </RadioGroup>
 
                 {deliveryMethod === "pickup" && (
-                  <div>
-                    <Label htmlFor="quickmart">Select Quickmart Location</Label>
-                    <Select required value={pickupLocation} onValueChange={setPickupLocation}>
+                  <div className="mt-4">
+                    <Label htmlFor="pickupLocation">Pickup Location</Label>
+                    <Select value={pickupLocation} onValueChange={setPickupLocation}>
                       <SelectTrigger>
-                        <SelectValue placeholder="Choose your pickup location" />
+                        <SelectValue placeholder="Select pickup location" />
                       </SelectTrigger>
                       <SelectContent>
-                        <SelectItem value="westlands">Westlands Quickmart</SelectItem>
-                        <SelectItem value="karen">Karen Quickmart</SelectItem>
-                        <SelectItem value="kiambu">Kiambu Quickmart</SelectItem>
-                        <SelectItem value="thika">Thika Quickmart</SelectItem>
-                        <SelectItem value="nakuru">Nakuru Quickmart</SelectItem>
+                        <SelectItem value="nairobi-cbd">Nairobi CBD Store</SelectItem>
+                        <SelectItem value="westlands">Westlands Branch</SelectItem>
+                        <SelectItem value="karen">Karen Branch</SelectItem>
                       </SelectContent>
                     </Select>
                   </div>
                 )}
 
                 {deliveryMethod === "speedy" && (
-                  <div>
+                  <div className="mt-4">
                     <Label htmlFor="address">Delivery Address</Label>
-                    <Input id="address" placeholder="Enter your full address" required value={address} onChange={(e) => setAddress(e.target.value)} />
+                    <Input
+                      id="address"
+                      value={address}
+                      onChange={(e) => setAddress(e.target.value)}
+                      placeholder="Enter your full address"
+                      required
+                    />
                   </div>
                 )}
               </CardContent>
             </Card>
 
-            {/* Payment Method */}
             <Card>
               <CardHeader>
-                <CardTitle className="flex items-center">
-                  <CreditCard className="h-5 w-5 mr-2" />
+                <CardTitle className="flex items-center gap-2">
+                  <CreditCard className="h-5 w-5" />
                   Payment Method
                 </CardTitle>
               </CardHeader>
-              <CardContent className="space-y-4">
+              <CardContent>
                 <RadioGroup value={paymentMethod} onValueChange={setPaymentMethod}>
-                  <div className="flex items-center space-x-2 p-4 border rounded-lg bg-gradient-to-r from-green-50 to-green-100 border-green-200">
-                    <RadioGroupItem value="mpesa" id="mpesa" />
-                    <Label htmlFor="mpesa" className="flex-1">
-                      <div className="flex items-center gap-2">
-                        <Smartphone className="h-4 w-4 text-green-600" />
-                        <span className="font-medium">M-Pesa</span>
-                        <Badge variant="secondary" className="bg-green-100 text-green-700">Recommended</Badge>
-                      </div>
-                      <div className="text-sm text-green-700">
-                        Pay instantly with M-Pesa STK Push - Fast & Secure
-                      </div>
-                    </Label>
-                  </div>
-                  <div className="flex items-center space-x-2 p-4 border rounded-lg">
-                    <RadioGroupItem value="card" id="card" />
-                    <Label htmlFor="card" className="flex-1">
-                      <div className="flex items-center gap-2">
-                        <CreditCard className="h-4 w-4" />
-                        <span className="font-medium">Card Payment</span>
-                      </div>
-                      <div className="text-sm text-muted-foreground">
-                        Visa, Mastercard accepted
-                      </div>
-                    </Label>
-                  </div>
-                  <div className="flex items-center space-x-2 p-4 border rounded-lg">
+                  <div className="flex items-center space-x-2">
                     <RadioGroupItem value="wallet" id="wallet" />
                     <Label htmlFor="wallet" className="flex-1">
-                      <div className="flex items-center gap-2">
-                        <DollarSign className="h-4 w-4" />
-                        <span className="font-medium">Wallet Payment</span>
-                      </div>
+                      <div className="font-medium">GetDeals Wallet</div>
                       <div className="text-sm text-muted-foreground">
-                        Pay using your GetDeals wallet balance
+                        Pay using your wallet balance
+                      </div>
+                    </Label>
+                  </div>
+                  <div className="flex items-center space-x-2">
+                    <RadioGroupItem value="mpesa" id="mpesa" />
+                    <Label htmlFor="mpesa" className="flex-1">
+                      <div className="font-medium">M-Pesa</div>
+                      <div className="text-sm text-muted-foreground">
+                        Pay with M-Pesa mobile money
                       </div>
                     </Label>
                   </div>
                 </RadioGroup>
 
                 {paymentMethod === "mpesa" && (
-                  <div className="space-y-4 bg-green-50 p-4 rounded-lg border border-green-200">
-                    <div>
-                      <Label htmlFor="mpesaPhone" className="text-sm font-medium">
-                        M-Pesa Phone Number
-                      </Label>
-                      <Input 
-                        id="mpesaPhone" 
-                        type="tel" 
-                        placeholder="+254 7XX XXX XXX" 
-                        value={mpesaPhone}
-                        onChange={(e) => setMpesaPhone(e.target.value)}
-                        className="bg-white"
-                      />
-                      <p className="text-xs text-green-700 mt-1">
-                        Leave empty to use your contact phone number
-                      </p>
-                    </div>
-                    
-                    {paymentStatus === "processing" && (
-                      <Alert className="bg-blue-50 border-blue-200">
-                        <Clock className="h-4 w-4 text-blue-600" />
-                        <AlertDescription className="text-blue-700">
-                          STK Push sent! Please check your phone and enter your M-Pesa PIN to complete payment.
-                        </AlertDescription>
-                      </Alert>
-                    )}
+                  <div className="mt-4">
+                    <Label htmlFor="mpesaPhone">M-Pesa Phone Number</Label>
+                    <Input
+                      id="mpesaPhone"
+                      type="tel"
+                      value={mpesaPhone}
+                      onChange={(e) => setMpesaPhone(e.target.value)}
+                      placeholder="254712345678"
+                      required
+                    />
                   </div>
                 )}
               </CardContent>
             </Card>
           </div>
 
-          {/* Order Summary */}
-          <div className="lg:col-span-1">
-            <Card className="sticky top-24">
+          <div className="space-y-6">
+            <Card>
               <CardHeader>
                 <CardTitle>Order Summary</CardTitle>
               </CardHeader>
               <CardContent className="space-y-4">
-                <div className="space-y-2">
-                  {items.map((item) => (
-                    <div key={item.id} className="flex justify-between text-sm">
-                      <span>{item.name} × {item.quantity}</span>
-                      <span>KES {(item.price * item.quantity).toLocaleString()}</span>
+                {items.map((item) => (
+                  <div key={item.id} className="flex justify-between">
+                    <div className="flex-1">
+                      <p className="font-medium">{item.name}</p>
+                      <p className="text-sm text-muted-foreground">Qty: {item.quantity}</p>
                     </div>
-                  ))}
-                </div>
+                    <p className="font-medium">KES {(item.price * item.quantity).toLocaleString()}</p>
+                  </div>
+                ))}
                 
                 <Separator />
                 
-                <div className="space-y-2">
-                  <div className="flex justify-between">
-                    <span>Subtotal</span>
-                    <span>KES {total.toLocaleString()}</span>
-                  </div>
-                  <div className="flex justify-between">
-                    <span>Delivery Fee</span>
-                    <span>KES {deliveryFee.toLocaleString()}</span>
-                  </div>
+                <div className="flex justify-between">
+                  <span>Subtotal</span>
+                  <span>KES {total.toLocaleString()}</span>
+                </div>
+                
+                <div className="flex justify-between">
+                  <span>Delivery Fee</span>
+                  <span>KES {deliveryFee.toLocaleString()}</span>
                 </div>
                 
                 <Separator />
                 
                 <div className="flex justify-between font-bold text-lg">
                   <span>Total</span>
-                  <span className="text-primary">KES {finalTotal.toLocaleString()}</span>
+                  <span>KES {finalTotal.toLocaleString()}</span>
                 </div>
                 
                 <Button 
@@ -413,17 +555,20 @@ export default function CheckoutPage() {
                 </Button>
                 
                 {paymentMethod === "mpesa" && (
-                  <div className="text-xs text-center text-muted-foreground">
-                    <p>You will be prompted to enter your M-Pesa PIN on your phone.</p>
+                  <div className="text-xs text-center text-muted-foreground space-y-1">
+                    <p>• You'll receive an STK Push on your phone</p>
+                    <p>• Enter your M-Pesa PIN to complete payment</p>
+                    <p>• Payment confirmation is instant</p>
                   </div>
                 )}
 
-                {paymentMethod === "wallet" && (
-                  <div className="text-xs text-center text-muted-foreground space-y-1">
-                    <p>• Payment will be deducted from your wallet balance</p>
-                    <p>• Top up your wallet for seamless payments</p>
-                    <p>• Instant order confirmation</p>
-                  </div>
+                {paymentStatus === "processing" && (
+                  <Alert>
+                    <Clock className="h-4 w-4" />
+                    <AlertDescription>
+                      Processing your payment...
+                    </AlertDescription>
+                  </Alert>
                 )}
               </CardContent>
             </Card>

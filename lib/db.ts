@@ -1,16 +1,15 @@
 import { PrismaClient } from '@prisma/client';
-import { neon } from '@neondatabase/serverless';
-import type { Product } from '@/data/products';
+import { supabase, supabaseAdmin } from './supabase';
 
 declare global {
   var prisma: PrismaClient | undefined;
 }
 
-// Prisma client for complex operations
+// Prisma client for database operations
 export const prisma = globalThis.prisma || new PrismaClient();
 
-// Neon serverless client for simple queries (faster cold starts)
-export const sql = neon(process.env.DATABASE_URL!);
+// Export Supabase clients
+export { supabase, supabaseAdmin };
 
 if (process.env.NODE_ENV === 'development') {
   globalThis.prisma = prisma;
@@ -20,7 +19,7 @@ export interface User {
   id: string;
   name: string;
   email: string;
-  phone: string;
+  phone: string | null;
   role?: string;
   createdAt: string;
 }
@@ -34,6 +33,20 @@ export interface Order {
   paymentMethod?: string;
   paymentStatus?: string;
   createdAt: string;
+}
+
+export interface Product {
+  id: string;
+  name: string;
+  price: number;
+  originalPrice?: number;
+  image: string;
+  discount?: number;
+  items: string[];
+  itemsDetail?: { name: string; image: string }[];
+  category: string;
+  description?: string;
+  createdAt?: string;
 }
 
 // Product operations
@@ -198,29 +211,8 @@ export async function getOrders(): Promise<Order[]> {
 
 // Seed data function for migration
 export async function seedDatabase() {
-  // Import products from your existing data
-  const { products } = await import('@/data/products');
+  console.log('🌱 Seeding database...');
   
-  console.log('🌱 Seeding database with products...');
-  
-  for (const product of products) {
-    await prisma.product.upsert({
-      where: { id: product.id },
-      update: {},
-      create: {
-        id: product.id,
-        name: product.name,
-        price: product.price,
-        originalPrice: product.originalPrice,
-        image: product.image,
-        discount: product.discount,
-        items: product.items || [],
-        itemsDetail: product.itemsDetail || [],
-        category: product.category,
-        description: product.description,
-      }
-    });
-  }
-  
-  console.log(`✅ Seeded ${products.length} products successfully!`);
+  // Add your seed data here or call this function with products parameter
+  console.log('✅ Database seeding function ready!');
 }

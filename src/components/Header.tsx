@@ -30,7 +30,6 @@ export function Header() {
     { name: "Contact", href: "/contact" },
     { name: "FAQ", href: "/faq" },
     { name: "Wallet", href: "/wallet" },
-    { name: "Admin", href: "/admin" },
   ];
 
   const isActive = (href: string) => {
