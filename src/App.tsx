@@ -38,6 +38,7 @@ import WalletPage from "./pages/WalletPage";
 import CategoryPage from "./pages/CategoryPage";
 import AuthPage from "./pages/AuthPage";
 import { AuthTestPage } from "./components/AuthTestPage";
+import { QuickMartDashboard } from "./pages/quickmart/QuickMartDashboard";
 
 const queryClient = new QueryClient();
 
@@ -192,7 +193,8 @@ const App = () => {
                   <Route path="/admin/inventory" element={<AdminGuard><InventoryPage /></AdminGuard>} />
                   <Route path="/admin/inventory/out-of-stock" element={<AdminGuard><OutOfStockPage /></AdminGuard>} />
                   <Route path="/category/:slug" element={<CategoryPage />} />
-      {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
+                  <Route path="/quickmart" element={<QuickMartDashboard />} />
+                  {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
                   <Route path="*" element={<NotFound />} />
                 </Routes>
               </main>
