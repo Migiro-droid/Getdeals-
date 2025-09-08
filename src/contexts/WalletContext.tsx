@@ -4,8 +4,8 @@ type TxType = "deposit" | "withdraw" | "payment";
 export interface WalletTransaction {
   id: string;
   type: TxType;
-  amount: number; // positive KES amount
-  date: string; // ISO string
+  amount: number; 
+  date: string;
   note?: string;
 }
 
@@ -80,6 +80,7 @@ export const WalletProvider: React.FC<{ children: React.ReactNode }> = ({ childr
 
   const deposit = (amount: number, note?: string) => {
     if (!Number.isFinite(amount) || amount <= 0)
+      
       return { ok: false, error: "Amount must be positive" };
     setBalance((b) => b + amount);
     addTx({ type: "deposit", amount, note });
