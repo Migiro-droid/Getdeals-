@@ -102,7 +102,7 @@ export const auth = {
     });
     return { data, error };
   },
-
+  
   // Handle OAuth callback
   handleOAuthCallback: async () => {
     const { data, error } = await supabase.auth.getSession();

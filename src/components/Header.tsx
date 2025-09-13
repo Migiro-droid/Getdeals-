@@ -9,6 +9,7 @@ import { useCart } from "@/contexts/CartContext";
 import { useWallet } from "@/contexts/WalletContext";
 import { useAuth } from "@/contexts/AuthContext";
 import { AuthModals } from "./AuthModals";
+import { WalletActivationModal } from "./WalletActivationModal";
 
 export function Header() {
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
@@ -19,6 +20,7 @@ export function Header() {
   const { balance } = useWallet();
   const { isAuthenticated } = useAuth();
   const [authOpen, setAuthOpen] = useState(false);
+  const [walletModalOpen, setWalletModalOpen] = useState(false);
 
   const cartItemsCount = items.reduce((sum, item) => sum + item.quantity, 0);
 
@@ -29,7 +31,6 @@ export function Header() {
     { name: "About", href: "/about" },
     { name: "Contact", href: "/contact" },
     { name: "FAQ", href: "/faq" },
-    { name: "Wallet", href: "/wallet" },
   ];
 
   const isActive = (href: string) => {
@@ -68,6 +69,16 @@ export function Header() {
             })}
           </nav>
 
+          {/* Wallet Button */}
+          {isAuthenticated && (
+            <button
+              onClick={() => setWalletModalOpen(true)}
+              className="hidden md:inline-flex items-center justify-center gap-2 whitespace-nowrap rounded-md text-sm font-medium ring-offset-background transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 h-10 px-4 py-2 hover:bg-accent hover:text-accent-foreground cursor-pointer text-muted-foreground hover:text-primary"
+            >
+              Wallet
+            </button>
+          )}
+
           {/* Search Bar */}
           <div className="hidden lg:flex flex-1 max-w-sm mx-8">
             <div className="relative w-full">
@@ -85,11 +96,12 @@ export function Header() {
           <div className="flex items-center space-x-4">
             {/* Wallet quick pill */}
             {isAuthenticated && (
-              <Link to="/wallet" className="hidden md:flex">
-                <div className="px-3 py-1 rounded-full text-xs bg-primary/10 text-primary font-medium">
-                  Wallet: KES {balance.toLocaleString()}
-                </div>
-              </Link>
+              <button 
+                onClick={() => setWalletModalOpen(true)}
+                className="hidden md:flex px-3 py-1 rounded-full text-xs bg-primary/10 text-primary font-medium hover:bg-primary/20 transition-colors"
+              >
+                Wallet: KES {balance.toLocaleString()}
+              </button>
             )}
             
             {/* Mobile Search Button */}
@@ -173,6 +185,20 @@ export function Header() {
                 </button>
               ))}
               
+              {/* Mobile Wallet Button */}
+              {isAuthenticated && (
+                <button
+                  onClick={(e) => {
+                    e.preventDefault();
+                    setWalletModalOpen(true);
+                    setIsMobileMenuOpen(false);
+                  }}
+                  className="block px-3 py-2 text-base font-medium transition-colors hover:text-primary cursor-pointer w-full text-left text-muted-foreground hover:text-primary"
+                >
+                  Wallet
+                </button>
+              )}
+              
               {/* Mobile Authentication */}
               {!isAuthenticated && (
                 <div className="px-3 py-2 border-t">
@@ -197,6 +223,9 @@ export function Header() {
     
     {/* Authentication Modals */}
     <AuthModals open={authOpen} onOpenChange={setAuthOpen} defaultTab="signin" />
+    
+    {/* Wallet Activation Modal */}
+    <WalletActivationModal open={walletModalOpen} onOpenChange={setWalletModalOpen} />
     </>
   );
 }
