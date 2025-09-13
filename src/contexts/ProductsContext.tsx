@@ -1,7 +1,7 @@
 import React, { createContext, useCallback, useContext, useEffect, useMemo, useState } from "react";
 import type { Product } from "@/data/products";
-import { products as staticProducts } from "@/data/products";
-import { getApiBase } from '@/lib/api';
+import SupabaseProductService from '@/services/SupabaseProductService';
+import { supabase } from '@/integrations/supabase/client';
 
 type ProductsCtx = {
   all: Product[];
@@ -10,7 +10,6 @@ type ProductsCtx = {
   remove: (id: string) => Promise<void>;
   restoreDefaults: () => Promise<void>;
   version: number;
-  // selectors
   featured: Product[];
   discounted: Product[];
   byCategory: (cat: string) => Product[];
@@ -19,139 +18,126 @@ type ProductsCtx = {
 const ProductsContext = createContext<ProductsCtx | undefined>(undefined);
 
 export const ProductsProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
-  const [all, setAll] = useState<Product[]>(staticProducts);
+  const [all, setAll] = useState<Product[]>([]);
   const [version, setVersion] = useState(0);
 
-  // API operations for real database management
-  const api = {
-    async list() {
-      try {
-        const baseUrl = getApiBase();
-        const response = await fetch(`${baseUrl}/api/products`);
-        if (!response.ok) throw new Error('Failed to fetch products');
-        return await response.json();
-      } catch (error) {
-        console.warn('API failed, using static products:', error);
-        return [...staticProducts];
-      }
-    },
-    async add(p: Omit<Product, "id">) {
-      try {
-  const baseUrl = getApiBase();
-  const response = await fetch(`${baseUrl}/api/products`, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify(p)
-        });
-        if (!response.ok) throw new Error('Failed to create product');
-        return await response.json();
-      } catch (error) {
-        console.error('Failed to add product:', error);
-        throw error;
-      }
-    },
-    async update(id: string, patch: Partial<Product>) {
-      try {
-  const baseUrl = getApiBase();
-  const response = await fetch(`${baseUrl}/api/products/${id}`, {
-          method: 'PATCH',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify(patch)
-        });
-        if (!response.ok) throw new Error('Failed to update product');
-        return await response.json();
-      } catch (error) {
-        console.error('Failed to update product:', error);
-        throw error;
-      }
-    },
-    async remove(id: string) {
-      try {
-  const baseUrl = getApiBase();
-  const response = await fetch(`${baseUrl}/api/products/${id}`, {
-          method: 'DELETE'
-        });
-        if (!response.ok) throw new Error('Failed to delete product');
-        return true;
-      } catch (error) {
-        console.error('Failed to delete product:', error);
-        throw error;
-      }
-    },
-    async reset() {
-      try {
-  const baseUrl = getApiBase();
-  const response = await fetch(`${baseUrl}/api/products/reset`, {
-          method: 'POST'
-        });
-        if (!response.ok) throw new Error('Failed to reset products');
-        return true;
-      } catch (error) {
-        console.error('Failed to reset products:', error);
-        throw error;
-      }
-    }
-  };
-
-  // Initial load - fetch products from API
   useEffect(() => {
-    api.list().then(products => {
+    console.log('🚀 ProductsContext: Component mounted, loading products from Supabase...');
+    loadProducts();
+  }, []);
+
+  useEffect(() => {
+    console.log('🔄 ProductsContext: Setting up real-time subscription for products...');
+
+    const subscription = supabase
+      .channel('products_changes')
+      .on('postgres_changes',
+        { event: '*', schema: 'public', table: 'products' },
+        (payload) => {
+          console.log('📡 ProductsContext: Real-time update received');
+          // Refresh products when any change occurs
+          loadProducts();
+        }
+      )
+      .subscribe((status) => {
+        console.log('📡 ProductsContext: Subscription status:', status);
+      });
+
+    return () => {
+      console.log('🔄 ProductsContext: Cleaning up real-time subscription...');
+      supabase.removeChannel(subscription);
+    };
+  }, []);
+
+  const loadProducts = useCallback(async () => {
+    try {
+      console.log('🔄 ProductsContext: Fetching products directly from Supabase...');
+      const products = await SupabaseProductService.getAllProducts();
+
+      console.log(`✅ ProductsContext: Retrieved ${products.length} products from Supabase`);
+      console.log('📊 ProductsContext: Products by category:');
+
+      const categoryCount = products.reduce((acc, product) => {
+        acc[product.category] = (acc[product.category] || 0) + 1;
+        return acc;
+      }, {} as Record<string, number>);
+
+      Object.entries(categoryCount).forEach(([category, count]) => {
+        console.log(`   • ${category}: ${count} products`);
+      });
+
       setAll(products);
-    }).catch(error => {
-      console.warn('Failed to load products from API, using static data:', error);
-      setAll([...staticProducts]);
-    });
+    } catch (error) {
+      console.error('❌ ProductsContext: Failed to load products from Supabase:', error);
+      setAll([]);
+    }
   }, []);
 
   const add: ProductsCtx["add"] = useCallback(async (p) => {
-    const created = await api.add(p);
-    setAll((prev) => [created, ...prev]);
-    setVersion((v) => v + 1);
-    return created;
-  }, []);
+    try {
+      console.log('🔄 ProductsContext: Adding product to Supabase...', p.name);
+      const created = await SupabaseProductService.addProduct(p);
+
+      if (!created) {
+        throw new Error('Failed to create product - no response from Supabase');
+      }
+
+      console.log('✅ ProductsContext: Product added, refreshing list...');
+      await loadProducts();
+      setVersion((v) => v + 1);
+      return created;
+    } catch (error) {
+      console.error('❌ ProductsContext: Failed to add product:', error);
+      throw error;
+    }
+  }, [loadProducts]);
 
   const update: ProductsCtx["update"] = useCallback(async (id, patch) => {
     try {
-      const updated = await api.update(id, patch);
-      setAll((prev) => prev.map((p) => (p.id === id ? updated : p)));
+      console.log('🔄 ProductsContext: Updating product in Supabase...', id);
+      await SupabaseProductService.updateProduct(id, patch);
+
+      console.log('✅ ProductsContext: Product updated, refreshing list...');
+      await loadProducts();
       setVersion((v) => v + 1);
     } catch (error) {
-      console.error('Failed to update product:', error);
-      // Fallback to local update for better UX
-      setAll((prev) => prev.map((p) => (p.id === id ? { ...p, ...patch } : p)));
-      setVersion((v) => v + 1);
+      console.error('❌ ProductsContext: Failed to update product:', error);
+      throw error;
     }
-  }, []);
+  }, [loadProducts]);
 
   const remove: ProductsCtx["remove"] = useCallback(async (id) => {
     try {
-      await api.remove(id);
-      setAll((prev) => prev.filter((p) => p.id !== id));
+      console.log('🔄 ProductsContext: Deleting product from Supabase...', id);
+      const success = await SupabaseProductService.deleteProduct(id);
+
+      if (!success) {
+        throw new Error('Failed to delete product from Supabase');
+      }
+
+      console.log('✅ ProductsContext: Product deleted, refreshing list...');
+      await loadProducts();
       setVersion((v) => v + 1);
     } catch (error) {
-      console.error('Failed to remove product:', error);
-      // Fallback to local removal for better UX
-      setAll((prev) => prev.filter((p) => p.id !== id));
-      setVersion((v) => v + 1);
+      console.error('❌ ProductsContext: Failed to remove product:', error);
+      throw error;
     }
-  }, []);
+  }, [loadProducts]);
 
   const restoreDefaults = useCallback(async () => {
-    try {
-      await api.reset();
-      const products = await api.list();
-      setAll(products);
-      setVersion((v) => v + 1);
-    } catch (error) {
-      console.error('Failed to restore defaults:', error);
-      setAll([...staticProducts]);
-      setVersion((v) => v + 1);
-    }
-  }, []);
+    console.log('⚠️ ProductsContext: Restore defaults not implemented for Supabase');
+
+    await loadProducts();
+    setVersion((v) => v + 1);
+  }, [loadProducts]);
 
   const featured = useMemo(() => all.slice(0, 3), [all]);
   const discounted = useMemo(() => all.filter((p) => p.originalPrice && p.originalPrice > p.price), [all]);
-  const byCategory = useCallback((cat: string) => all.filter((p) => p.category === cat), [all]);
+  const byCategory = useCallback((cat: string) => {
+    const categoryProducts = all.filter((p) => p.category === cat);
+    console.log(`📊 ProductsContext: byCategory('${cat}') returned ${categoryProducts.length} products`);
+    return categoryProducts;
+  }, [all]);
 
   const value: ProductsCtx = { all, add, update, remove, restoreDefaults, version, featured, discounted, byCategory };
   return <ProductsContext.Provider value={value}>{children}</ProductsContext.Provider>;

@@ -3,9 +3,14 @@ import { Database } from '../src/types/supabase';
 import { v4 as uuidv4 } from 'uuid';
 
 // Environment variables with fallbacks
-const supabaseUrl = import.meta.env.VITE_SUPABASE_URL || 'https://fxyifnckgllxqbggegtw.supabase.co';
-const supabaseAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY || 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImZ4eWlmbmNrZ2xseHFiZ2dlZ3R3Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTYyNzM3NjUsImV4cCI6MjA3MTg0OTc2NX0.GzVS2exQP8pGnbJNnkLwBZ_w52ioE6j18ibqpoA4slE';
-const supabaseServiceKey = import.meta.env.VITE_SUPABASE_SERVICE_ROLE_KEY || 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImZ4eWlmbmNrZ2xseHFiZ2dlZ3R3Iiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTc1NjI3Mzc2NSwiZXhwIjoyMDcxODQ5NzY1fQ.O37uiOPHKQoFOCUY4aor3wxYsYEUn10m0fH9h0uHoAU';
+// Support both Vite's import.meta.env (browser) and process.env (Node scripts)
+const _env: any = ((typeof (globalThis as any).process === 'object' && (globalThis as any).process.env && Object.keys((globalThis as any).process.env).length > 0)
+  ? (globalThis as any).process.env
+  : ((import.meta as any)?.env ?? {}));
+
+const supabaseUrl = _env.VITE_SUPABASE_URL || 'https://fxyifnckgllxqbggegtw.supabase.co';
+const supabaseAnonKey = _env.VITE_SUPABASE_ANON_KEY || 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImZ4eWlmbmNrZ2xseHFiZ2dlZ3R3Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTYyNzM3NjUsImV4cCI6MjA3MTg0OTc2NX0.GzVS2exQP8pGnbJNnkLwBZ_w52ioE6j18ibqpoA4slE';
+const supabaseServiceKey = _env.VITE_SUPABASE_SERVICE_ROLE_KEY || 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImZ4eWlmbmNrZ2xseHFiZ2dlZ3R3Iiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTc1NjI3Mzc2NSwiZXhwIjoyMDcxODQ5NzY1fQ.O37uiOPHKQoFOCUY4aor3wxYsYEUn10m0fH9h0uHoAU';
 
 // Client-side Supabase client for general use
 export const supabase = createClient<Database>(supabaseUrl, supabaseAnonKey, {
@@ -132,14 +137,14 @@ export const productAPI = {
     const productWithId = {
       ...product,
       id: uuidv4(),
-      createdAt: now,
-      updatedAt: now,
     };
-    
+    // normalize to DB column names / allowed fields
+    const dbProduct = normalizeProductForDb(productWithId, { noTimestamps: true });
+
     // @ts-ignore
     const { data, error } = await supabaseAdmin
       .from('products')
-      .insert(productWithId)
+      .insert(dbProduct)
       .select()
       .single();
     return { data, error };
@@ -147,10 +152,12 @@ export const productAPI = {
 
   // Update product (admin only)
   update: async (id: string, updates: any) => {
+    const dbUpdates = normalizeProductForDb(updates, { partial: true, noTimestamps: true });
+
     // @ts-ignore
     const { data, error } = await supabaseAdmin
       .from('products')
-      .update(updates)
+      .update(dbUpdates)
       .eq('id', id)
       .select()
       .single();
@@ -168,14 +175,32 @@ export const productAPI = {
 
   // Bulk operations
   createBulk: async (products: any[]) => {
+    const dbProducts = products.map(p => normalizeProductForDb(p, { noTimestamps: true }));
+
     // @ts-ignore
     const { data, error } = await supabaseAdmin
       .from('products')
-      .insert(products)
+      .insert(dbProducts)
       .select();
     return { data, error };
   }
 };
+
+// Helper: normalize product payload to DB-compatible shape
+function normalizeProductForDb(product: any, opts?: { partial?: boolean; noTimestamps?: boolean }) {
+  // Use a minimal safe whitelist to avoid sending columns that might not exist
+  // in the live Supabase schema. This keeps payloads minimal and lets the DB
+  // apply defaults (timestamps, flags) server-side.
+  const allowed = ['id', 'name', 'price', 'originalPrice', 'image', 'category', 'description'];
+  const out: any = {};
+
+  for (const k of Object.keys(product || {})) {
+    if (!allowed.includes(k)) continue;
+    out[k] = (product as any)[k];
+  }
+
+  return out;
+}
 
 // Categories management helpers
 export const categoryAPI = {

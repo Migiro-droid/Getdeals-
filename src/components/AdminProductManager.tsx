@@ -8,23 +8,24 @@ import { Badge } from '@/components/ui/badge';
 import { Switch } from '@/components/ui/switch';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { useToast } from '@/hooks/use-toast';
 import { productAPI } from '../../lib/supabase';
-import { Plus, Edit, Trash2, Package, AlertCircle, Check, Search, Filter, X, SlidersHorizontal } from 'lucide-react';
+import { AdminBulkUpload } from './AdminBulkUpload';
+import { useProducts } from '@/contexts/ProductsContext';
+import { Plus, Edit, Trash2, Package, AlertCircle, Check, Search, Filter, X, SlidersHorizontal, Upload } from 'lucide-react';
 
 type Product = {
   id: string;
   name: string;
-  description: string | null;
+  description?: string | null;
   price: number;
-  originalPrice: number | null;
+  originalPrice?: number | null;
   category: string;
   imageUrl: string | null;
-  inStock: boolean;
   tags: string[] | null;
-  featured: boolean;
-  createdAt: string;
-  updatedAt: string;
+  createdAt?: string;
+  updatedAt?: string;
 };
 
 type ProductFormData = {
@@ -34,13 +35,10 @@ type ProductFormData = {
   originalPrice: number | null;
   category: string;
   imageUrl: string;
-  inStock: boolean;
   tags: string;
-  featured: boolean;
 };
 
 export function AdminProductManager() {
-  const [products, setProducts] = useState<Product[]>([]);
   const [loading, setLoading] = useState(true);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [editingProduct, setEditingProduct] = useState<Product | null>(null);
@@ -51,34 +49,36 @@ export function AdminProductManager() {
     originalPrice: null,
     category: '',
     imageUrl: '',
-    inStock: true,
     tags: '',
-    featured: false,
   });
   const [formErrors, setFormErrors] = useState<Record<string, string>>({});
   const [submitting, setSubmitting] = useState(false);
   const { toast } = useToast();
+  const { all: contextProducts, add: addToContext, update: updateInContext, remove: removeFromContext, version } = useProducts();
+
+  // Use context products instead of local state
+  const products = contextProducts.map(product => ({
+    ...product,
+    imageUrl: product.image || null,
+    tags: product.items || null
+  }));
 
   // Filter states
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedCategory, setSelectedCategory] = useState<string>('all');
-  const [stockFilter, setStockFilter] = useState<string>('all');
-  const [featuredFilter, setFeaturedFilter] = useState<string>('all');
   const [minPrice, setMinPrice] = useState<string>('');
   const [maxPrice, setMaxPrice] = useState<string>('');
   const [showFilters, setShowFilters] = useState(false);
 
+  // ONLY these specific categories are allowed for GetDeals Kenya products
+  // These match the basket categories defined in the original requirements
   const categories = [
-    'Electronics',
-    'Fashion',
-    'Home & Garden',
-    'Sports & Outdoors',
-    'Health & Beauty',
-    'Books & Media',
-    'Toys & Games',
-    'Automotive',
-    'Food & Beverages',
-    'Office Supplies'
+    { value: 'essential', label: 'Essential Baskets' },
+    { value: 'family', label: 'Family Baskets' },
+    { value: 'basket', label: 'Custom Baskets' },
+    { value: 'holiday', label: 'Holiday Baskets' },
+    { value: 'school', label: 'School Baskets' },
+    { value: 'blackfriday', label: 'Black Friday' }
   ];
 
   // Filtered products based on search and filters
@@ -95,21 +95,7 @@ export function AdminProductManager() {
         return false;
       }
 
-      // Stock filter
-      if (stockFilter !== 'all') {
-        const isInStock = stockFilter === 'in-stock';
-        if (product.inStock !== isInStock) {
-          return false;
-        }
-      }
-
-      // Featured filter
-      if (featuredFilter !== 'all') {
-        const isFeatured = featuredFilter === 'featured';
-        if (product.featured !== isFeatured) {
-          return false;
-        }
-      }
+  // Note: stock/featured flags removed from product model — ignore those filters
 
       // Price range filter
       const minPriceNum = minPrice ? parseFloat(minPrice) : 0;
@@ -121,48 +107,19 @@ export function AdminProductManager() {
 
       return true;
     });
-  }, [products, searchQuery, selectedCategory, stockFilter, featuredFilter, minPrice, maxPrice]);
+  }, [products, searchQuery, selectedCategory, minPrice, maxPrice]);
 
   // Clear all filters
   const clearFilters = () => {
     setSearchQuery('');
     setSelectedCategory('all');
-    setStockFilter('all');
-    setFeaturedFilter('all');
     setMinPrice('');
     setMaxPrice('');
   };
 
   useEffect(() => {
-    loadProducts();
-  }, []);
-
-  const loadProducts = async () => {
-    try {
-      setLoading(true);
-      const { data, error } = await productAPI.getAll();
-      
-      if (error) {
-        throw new Error(error.message);
-      }
-      
-      setProducts((data || []).map(product => ({
-        ...(product as any),
-        imageUrl: (product as any).image || null,
-        inStock: (product as any).itemsDetail?.inStock !== undefined ? (product as any).itemsDetail.inStock : true,
-        tags: (product as any).items || null
-      })));
-    } catch (error) {
-      console.error('Error loading products:', error);
-      toast({
-        title: "Error Loading Products",
-        description: error instanceof Error ? error.message : "Failed to load products",
-        variant: "destructive",
-      });
-    } finally {
-      setLoading(false);
-    }
-  };
+    setLoading(false); // Products are loaded from context
+  }, [contextProducts]);
 
   const resetForm = () => {
     setFormData({
@@ -172,9 +129,7 @@ export function AdminProductManager() {
       originalPrice: null,
       category: '',
       imageUrl: '',
-      inStock: true,
       tags: '',
-      featured: false,
     });
     setFormErrors({});
     setEditingProduct(null);
@@ -194,9 +149,7 @@ export function AdminProductManager() {
       originalPrice: product.originalPrice,
       category: product.category,
       imageUrl: product.imageUrl || '',
-      inStock: product.inStock,
       tags: product.tags ? product.tags.join(', ') : '',
-      featured: product.featured,
     });
     setFormErrors({});
     setIsModalOpen(true);
@@ -256,50 +209,47 @@ export function AdminProductManager() {
         category: formData.category,
         image: formData.imageUrl.trim() || null,
         items: formData.tags.trim() ? formData.tags.split(',').map(tag => tag.trim()).filter(Boolean) : [],
-        itemsDetail: formData.inStock ? { inStock: true } : { inStock: false },
-        discount: 0
+        itemsDetail: [],
+        discount: 0,
+        // inStock and featured removed - not persisted in DB
       };
 
       if (editingProduct) {
-        // Update existing product
-        const { data, error } = await productAPI.update(editingProduct.id, productData);
+        // Update existing product using context
+        await updateInContext(editingProduct.id, {
+          name: formData.name.trim(),
+          description: formData.description.trim() || undefined,
+          price: formData.price,
+          originalPrice: formData.originalPrice && formData.originalPrice > 0 ? formData.originalPrice : undefined,
+          category: formData.category,
+          image: formData.imageUrl.trim() || undefined,
+          items: formData.tags.trim() ? formData.tags.split(',').map(tag => tag.trim()).filter(Boolean) : [],
+          itemsDetail: []
+        });
         
-        if (error) {
-          throw new Error(error.message);
-        }
-
-        if (data) {
-          setProducts(prev => prev.map(p => p.id === editingProduct.id ? {
-            ...(data as any),
-            imageUrl: (data as any).image || null,
-            inStock: (data as any).itemsDetail?.inStock !== undefined ? (data as any).itemsDetail.inStock : true,
-            tags: (data as any).items || null
-          } : p));
-          toast({
-            title: "Product Updated",
-            description: `${productData.name} has been updated successfully.`,
-          });
-        }
+        toast({
+          title: "Product Updated",
+          description: `${formData.name} has been updated and is now live on your website.`,
+        });
       } else {
-        // Create new product
-        const { data, error } = await productAPI.create(productData);
+        // Create new product using context
+        const newProduct = {
+          name: formData.name.trim(),
+          description: formData.description.trim() || undefined,
+          price: formData.price,
+          originalPrice: formData.originalPrice && formData.originalPrice > 0 ? formData.originalPrice : undefined,
+          category: formData.category,
+          image: formData.imageUrl.trim() || undefined,
+          items: formData.tags.trim() ? formData.tags.split(',').map(tag => tag.trim()).filter(Boolean) : [],
+          itemsDetail: []
+        };
         
-        if (error) {
-          throw new Error(error.message);
-        }
-
-        if (data) {
-          setProducts(prev => [{
-            ...(data as any),
-            imageUrl: (data as any).image || null,
-            inStock: (data as any).itemsDetail?.inStock !== undefined ? (data as any).itemsDetail.inStock : true,
-            tags: (data as any).items || null
-          }, ...prev]);
-          toast({
-            title: "Product Created",
-            description: `${productData.name} has been added successfully.`,
-          });
-        }
+        await addToContext(newProduct);
+        
+        toast({
+          title: "Product Created",
+          description: `${formData.name} has been added and is now live on your website.`,
+        });
       }
 
       setIsModalOpen(false);
@@ -322,16 +272,10 @@ export function AdminProductManager() {
     }
 
     try {
-      const { error } = await productAPI.delete(product.id);
-      
-      if (error) {
-        throw new Error(error.message);
-      }
-
-      setProducts(prev => prev.filter(p => p.id !== product.id));
+      await removeFromContext(product.id);
       toast({
         title: "Product Deleted",
-        description: `${product.name} has been deleted successfully.`,
+        description: `${product.name} has been removed from your website.`,
       });
     } catch (error) {
       console.error('Error deleting product:', error);
@@ -400,14 +344,14 @@ export function AdminProductManager() {
               >
                 <SlidersHorizontal className="w-4 h-4" />
                 {showFilters ? 'Hide Filters' : 'Show Filters'}
-                {(selectedCategory !== 'all' || stockFilter !== 'all' || featuredFilter !== 'all' || minPrice || maxPrice) && (
+                {(selectedCategory !== 'all' || minPrice || maxPrice) && (
                   <Badge variant="secondary" className="ml-2">
-                    {[selectedCategory !== 'all', stockFilter !== 'all', featuredFilter !== 'all', minPrice, maxPrice].filter(Boolean).length}
+                    {[selectedCategory !== 'all', minPrice, maxPrice].filter(Boolean).length}
                   </Badge>
                 )}
               </Button>
 
-              {(selectedCategory !== 'all' || stockFilter !== 'all' || featuredFilter !== 'all' || minPrice || maxPrice || searchQuery) && (
+              {(selectedCategory !== 'all' || minPrice || maxPrice || searchQuery) && (
                 <Button variant="ghost" onClick={clearFilters} className="gap-2 text-muted-foreground">
                   <X className="w-4 h-4" />
                   Clear Filters
@@ -428,43 +372,15 @@ export function AdminProductManager() {
                     <SelectContent>
                       <SelectItem value="all">All Categories</SelectItem>
                       {categories.map((category) => (
-                        <SelectItem key={category} value={category}>
-                          {category}
+                        <SelectItem key={category.value} value={category.value}>
+                          {category.label}
                         </SelectItem>
                       ))}
                     </SelectContent>
                   </Select>
                 </div>
 
-                {/* Stock Status Filter */}
-                <div>
-                  <Label htmlFor="stock-filter">Stock Status</Label>
-                  <Select value={stockFilter} onValueChange={setStockFilter}>
-                    <SelectTrigger>
-                      <SelectValue placeholder="All Stock" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="all">All Stock</SelectItem>
-                      <SelectItem value="in-stock">In Stock</SelectItem>
-                      <SelectItem value="out-of-stock">Out of Stock</SelectItem>
-                    </SelectContent>
-                  </Select>
-                </div>
-
-                {/* Featured Filter */}
-                <div>
-                  <Label htmlFor="featured-filter">Featured Status</Label>
-                  <Select value={featuredFilter} onValueChange={setFeaturedFilter}>
-                    <SelectTrigger>
-                      <SelectValue placeholder="All Products" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="all">All Products</SelectItem>
-                      <SelectItem value="featured">Featured Only</SelectItem>
-                      <SelectItem value="not-featured">Not Featured</SelectItem>
-                    </SelectContent>
-                  </Select>
-                </div>
+                {/* Stock/Featured filters removed - these flags are not persisted in DB */}
 
                 {/* Price Range */}
                 <div className="space-y-2">
@@ -492,8 +408,8 @@ export function AdminProductManager() {
         </CardContent>
       </Card>
 
-      {/* Active Filters Display */}
-      {(selectedCategory !== 'all' || stockFilter !== 'all' || featuredFilter !== 'all' || minPrice || maxPrice) && (
+      {/* Active Filters Display (stock/featured removed) */}
+      {(selectedCategory !== 'all' || minPrice || maxPrice || searchQuery) && (
         <div className="flex flex-wrap gap-2">
           {selectedCategory !== 'all' && (
             <Badge variant="secondary" className="gap-1">
@@ -504,24 +420,7 @@ export function AdminProductManager() {
               />
             </Badge>
           )}
-          {stockFilter !== 'all' && (
-            <Badge variant="secondary" className="gap-1">
-              Stock: {stockFilter === 'in-stock' ? 'In Stock' : 'Out of Stock'}
-              <X
-                className="w-3 h-3 cursor-pointer"
-                onClick={() => setStockFilter('all')}
-              />
-            </Badge>
-          )}
-          {featuredFilter !== 'all' && (
-            <Badge variant="secondary" className="gap-1">
-              {featuredFilter === 'featured' ? 'Featured' : 'Not Featured'}
-              <X
-                className="w-3 h-3 cursor-pointer"
-                onClick={() => setFeaturedFilter('all')}
-              />
-            </Badge>
-          )}
+
           {(minPrice || maxPrice) && (
             <Badge variant="secondary" className="gap-1">
               Price: {minPrice || '0'} - {maxPrice || '∞'} KES
@@ -531,6 +430,16 @@ export function AdminProductManager() {
                   setMinPrice('');
                   setMaxPrice('');
                 }}
+              />
+            </Badge>
+          )}
+
+          {searchQuery && (
+            <Badge variant="secondary" className="gap-1">
+              Search: {searchQuery}
+              <X
+                className="w-3 h-3 cursor-pointer"
+                onClick={() => setSearchQuery('')}
               />
             </Badge>
           )}
@@ -592,12 +501,6 @@ export function AdminProductManager() {
                         
                         <div className="flex items-center gap-2 mt-2">
                           <Badge variant="secondary">{product.category}</Badge>
-                          {product.featured && (
-                            <Badge variant="default">Featured</Badge>
-                          )}
-                          <Badge variant={product.inStock ? "default" : "destructive"}>
-                            {product.inStock ? "In Stock" : "Out of Stock"}
-                          </Badge>
                         </div>
 
                         {product.tags && product.tags.length > 0 && (
@@ -748,8 +651,8 @@ export function AdminProductManager() {
                   </SelectTrigger>
                   <SelectContent>
                     {categories.map((category) => (
-                      <SelectItem key={category} value={category}>
-                        {category}
+                      <SelectItem key={category.value} value={category.value}>
+                        {category.label}
                       </SelectItem>
                     ))}
                   </SelectContent>
@@ -789,23 +692,7 @@ export function AdminProductManager() {
                 />
               </div>
 
-              <div className="flex items-center space-x-2">
-                <Switch
-                  id="inStock"
-                  checked={formData.inStock}
-                  onCheckedChange={(checked) => setFormData(prev => ({ ...prev, inStock: checked }))}
-                />
-                <Label htmlFor="inStock">In Stock</Label>
-              </div>
-
-              <div className="flex items-center space-x-2">
-                <Switch
-                  id="featured"
-                  checked={formData.featured}
-                  onCheckedChange={(checked) => setFormData(prev => ({ ...prev, featured: checked }))}
-                />
-                <Label htmlFor="featured">Featured Product</Label>
-              </div>
+              {/* inStock and featured controls removed - not persisted in DB */}
             </div>
 
             <DialogFooter>

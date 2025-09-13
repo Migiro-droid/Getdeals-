@@ -7,8 +7,7 @@ import fs from 'fs';
 import bcrypt from 'bcryptjs';
 import jwt from 'jsonwebtoken';
 import nodemailer from 'nodemailer';
-import {JSONDatabase} from './lib/database.js';
-import {supabase} from "./lib/db.js";
+import { supabase } from "./lib/db.js";
 import MpesaService from './lib/mpesa.js';
 import SMSService from './lib/sms.js';
 import EmailService from './lib/email.js';
@@ -44,8 +43,6 @@ app.use(express.json());
 // Legacy file-based functions (for migration support)
 const dataDir = path.join(__dirname, 'data');
 const usersFile = path.join(dataDir, 'users.json');
-const productsFile = path.join(dataDir, 'products.json');
-const productsSeedFile = path.join(dataDir, 'products.seed.json');
 
 function ensureDataFiles() {
   if (!fs.existsSync(dataDir)) fs.mkdirSync(dataDir, { recursive: true });
@@ -255,37 +252,18 @@ app.post('/api/auth/reset-password', async (req, res) => {
     }
 
     const userId = payload.sub;
-    const hash = await bcrypt.hash(String(password), 10);
-    await prisma.user.update({ where: { id: userId }, data: { passwordHash: hash } });
+    // Use Supabase auth for password reset instead of Prisma
+    const { error } = await supabase.auth.admin.updateUserById(userId, { password });
+    if (error) {
+      console.error('Supabase password update error:', error);
+      return res.status(500).json({ message: 'Failed to reset password' });
+    }
     return res.json({ ok: true, message: 'Password reset successfully' });
   } catch (err) {
     console.error('Reset password error:', err);
     return res.status(500).json({ message: 'Failed to reset password' });
   }
 });
-
-// --- Products store helpers ---
-function ensureProducts() {
-  ensureDataFiles();
-  if (!fs.existsSync(productsFile)) {
-    // Start empty by default; admins can add manually or use the reset endpoint to load the seed.
-    fs.writeFileSync(productsFile, JSON.stringify([], null, 2));
-  }
-}
-
-function readProducts() {
-  ensureProducts();
-  try {
-    return JSON.parse(fs.readFileSync(productsFile, 'utf-8'));
-  } catch {
-    return [];
-  }
-}
-
-function writeProducts(list) {
-  ensureProducts();
-  fs.writeFileSync(productsFile, JSON.stringify(list, null, 2));
-}
 
 function validateProductInput(body) {
   const errors = [];
@@ -316,26 +294,66 @@ function validateProductInput(body) {
 }
 
 // --- Products API ---
-app.get('/api/products', (req, res) => {
+app.get('/api/products', async (req, res) => {
   try {
-    const products = JSONDatabase.getAllProducts();
-    return res.json(products);
-  } catch (error) {
-    console.error('Error fetching products:', error);
+    // Use direct Supabase admin client for products
+    const { data: products, error } = await supabase
+      .from('products')
+      .select('*')
+      .order('createdAt', { ascending: false });
+
+    if (error) {
+      console.error('Supabase products fetch error:', error);
+      return res.status(500).json({ message: 'Failed to fetch products' });
+    }
+
+    return res.json(products || []);
+  } catch (err) {
+    console.error('Error fetching products:', err);
     return res.status(500).json({ message: 'Failed to fetch products' });
   }
 });
 
-app.post('/api/products', (req, res) => {
+app.post('/api/products', async (req, res) => {
   try {
     const check = validateProductInput(req.body);
     if (!check.ok) return res.status(400).json({ message: 'Validation failed', errors: check.errors });
+
+    // Parse additional fields
+    const discount = req.body?.discount != null ? parseInt(req.body.discount) : null;
+    const inStock = req.body?.inStock !== undefined ? Boolean(req.body.inStock) : true;
+    const featured = req.body?.featured !== undefined ? Boolean(req.body.featured) : false;
     
-    const product = JSONDatabase.addProduct(check.value);
-    if (!product) {
-      return res.status(500).json({ message: 'Failed to create product' });
+    // Prepare product data for Supabase
+    const now = new Date().toISOString();
+    const productData = {
+      name: check.value.name,
+      price: parseInt(check.value.price),
+      originalPrice: check.value.originalPrice ? parseInt(check.value.originalPrice) : null,
+      image: check.value.image,
+      discount: discount,
+      items: check.value.items || [],
+      itemsDetail: check.value.itemsDetail || null,
+      category: check.value.category,
+      description: check.value.description || null,
+      inStock: inStock,
+      featured: featured,
+      createdAt: now,
+      updatedAt: now
+    };
+
+    // Create product in Supabase
+    const { data: product, error } = await supabase
+      .from('products')
+      .insert(productData)
+      .select()
+      .single();
+
+    if (error) {
+      console.error('Supabase product creation error:', error);
+      return res.status(500).json({ message: 'Failed to create product', error: error.message });
     }
-    
+
     return res.status(201).json(product);
   } catch (error) {
     console.error('Error creating product:', error);
@@ -343,26 +361,26 @@ app.post('/api/products', (req, res) => {
   }
 });
 
-app.patch('/api/products/:id', (req, res) => {
+app.patch('/api/products/:id', async (req, res) => {
   try {
     const { id } = req.params;
     const patch = req.body || {};
     
     // Partial validation: allow updating provided fields only
-    const allowed = ['name', 'price', 'originalPrice', 'image', 'discount', 'items', 'itemsDetail', 'category', 'description'];
+    const allowed = ['name', 'price', 'originalPrice', 'image', 'discount', 'items', 'itemsDetail', 'category', 'description', 'inStock', 'featured'];
     const updates = {};
     
     for (const key of allowed) {
       if (key in patch) {
-        if (key === 'price' || key === 'originalPrice') {
-          const num = Number(patch[key]);
+        if (key === 'price' || key === 'originalPrice' || key === 'discount') {
+          const num = parseInt(patch[key]);
           if (!Number.isFinite(num) || num < 0) return res.status(400).json({ message: `${key} must be a non-negative number` });
           updates[key] = num;
         } else if (key === 'items') {
-          updates.items = Array.isArray(patch.items) ? patch.items.map(String) : undefined;
+          updates.items = Array.isArray(patch.items) ? patch.items.map(String) : [];
         } else if (key === 'itemsDetail') {
           if (patch.itemsDetail == null) {
-            updates.itemsDetail = undefined;
+            updates.itemsDetail = null;
           } else if (!Array.isArray(patch.itemsDetail)) {
             return res.status(400).json({ message: 'itemsDetail must be an array' });
           } else {
@@ -371,19 +389,35 @@ app.patch('/api/products/:id', (req, res) => {
               .map((it) => ({ name: String(it.name || ''), image: String(it.image || '') }))
               .filter((it) => it.name);
           }
+        } else if (key === 'inStock' || key === 'featured') {
+          updates[key] = Boolean(patch[key]);
         } else if (patch[key] == null) {
-          updates[key] = undefined;
+          updates[key] = null;
         } else {
           updates[key] = String(patch[key]);
         }
       }
     }
     
-    const updatedProduct = JSONDatabase.updateProduct(id, updates);
-    if (!updatedProduct) {
-      return res.status(404).json({ message: 'Product not found' });
+    // Add updatedAt timestamp
+    updates.updatedAt = new Date().toISOString();
+
+    // Update product in Supabase
+    const { data: updatedProduct, error } = await supabase
+      .from('products')
+      .update(updates)
+      .eq('id', id)
+      .select()
+      .single();
+
+    if (error) {
+      console.error('Supabase product update error:', error);
+      if (error.code === 'PGRST116') {
+        return res.status(404).json({ message: 'Product not found' });
+      }
+      return res.status(500).json({ message: 'Failed to update product', error: error.message });
     }
-    
+
     return res.json(updatedProduct);
   } catch (error) {
     console.error('Error updating product:', error);
@@ -391,13 +425,30 @@ app.patch('/api/products/:id', (req, res) => {
   }
 });
 
-app.delete('/api/products/:id', (req, res) => {
+app.delete('/api/products/:id', async (req, res) => {
   try {
     const { id } = req.params;
-    const success = JSONDatabase.deleteProduct(id);
-    if (!success) {
-      return res.status(404).json({ message: 'Product not found' });
+
+    if (!id) {
+      return res.status(400).json({ message: 'Product ID is required' });
     }
+
+    // Delete product from Supabase
+    const { data: deletedProduct, error } = await supabase
+      .from('products')
+      .delete()
+      .eq('id', id)
+      .select()
+      .single();
+
+    if (error) {
+      console.error('Supabase product deletion error:', error);
+      if (error.code === 'PGRST116') {
+        return res.status(404).json({ message: 'Product not found' });
+      }
+      return res.status(500).json({ message: 'Failed to delete product', error: error.message });
+    }
+
     return res.status(204).send();
   } catch (error) {
     console.error('Error deleting product:', error);

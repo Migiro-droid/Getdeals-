@@ -11,7 +11,7 @@ import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, Di
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../../components/ui/select';
 import { Textarea } from '../../components/ui/textarea';
 import { useToast } from '../../hooks/use-toast';
-import { Plus, Package, TrendingUp, Eye } from 'lucide-react';
+import { Plus, Package, TrendingUp, Eye, AlertCircle } from 'lucide-react';
 
 interface NewProduct {
   name: string;
@@ -21,6 +21,7 @@ interface NewProduct {
   category: string;
   description?: string;
   items?: string[];
+  itemsDetail?: { name: string; image: string }[];
 }
 
 export const QuickMartDashboard: React.FC = () => {
@@ -31,26 +32,68 @@ export const QuickMartDashboard: React.FC = () => {
   const { all: products, add: addProduct } = useProducts();
   const { toast } = useToast();
   const [isAddingProduct, setIsAddingProduct] = useState(false);
+  const [formErrors, setFormErrors] = useState<Record<string, string>>({});
   const [newProduct, setNewProduct] = useState<NewProduct>({
     name: '',
     price: 0,
     image: '',
     category: '',
+    description: '',
+    items: [],
+    itemsDetail: [],
   });
 
   // Authentication check removed for testing
 
   const quickMartProducts = products.filter(product => 
-    product.category?.toLowerCase().includes('quickmart') || 
-    product.name?.toLowerCase().includes('quickmart')
+    product.category === 'quickmart' || 
+    product.category?.toLowerCase().includes('quickmart')
   );
 
+  const validateForm = (): boolean => {
+    const errors: Record<string, string> = {};
+
+    if (!newProduct.name.trim()) {
+      errors.name = 'Product name is required';
+    }
+
+    if (newProduct.price <= 0) {
+      errors.price = 'Price must be greater than 0';
+    }
+
+    if (newProduct.originalPrice && newProduct.originalPrice <= newProduct.price) {
+      errors.originalPrice = 'Original price must be greater than current price';
+    }
+
+    if (!newProduct.category) {
+      errors.category = 'Category is required';
+    }
+
+    if (!newProduct.image.trim()) {
+      errors.image = 'Image URL is required';
+    } else if (!isValidUrl(newProduct.image)) {
+      errors.image = 'Please enter a valid image URL';
+    }
+
+    setFormErrors(errors);
+    return Object.keys(errors).length === 0;
+  };
+
+  const isValidUrl = (string: string): boolean => {
+    try {
+      new URL(string);
+      return true;
+    } catch (_) {
+      return false;
+    }
+  };
+
   const handleAddProduct = async () => {
-    if (!newProduct.name || !newProduct.price || !newProduct.image || !newProduct.category) {
+    if (!validateForm()) {
       toast({
         variant: 'destructive',
-        title: 'Missing Information',
-        description: 'Please fill in all required fields.',
+        title: 'Form Validation Error',
+        description: 'Please fix the errors and try again.',
       });
       return;
     }
@@ -58,11 +101,17 @@ export const QuickMartDashboard: React.FC = () => {
     try {
       setIsAddingProduct(true);
       
-      // Add QuickMart prefix to category to identify QuickMart products
+      // Format the product data to match the admin structure
       const productToAdd = {
-        ...newProduct,
-        category: `QuickMart - ${newProduct.category}`,
-        items: newProduct.items?.filter(item => item.trim() !== '') || undefined,
+        name: newProduct.name.trim(),
+        description: newProduct.description?.trim() || undefined,
+        price: newProduct.price,
+        originalPrice: newProduct.originalPrice && newProduct.originalPrice > 0 ? newProduct.originalPrice : undefined,
+        category: newProduct.category,
+        image: newProduct.image.trim(),
+        items: newProduct.items?.filter(item => item.trim() !== '') || [],
+        itemsDetail: newProduct.itemsDetail || [],
+        discount: 0,
       };
 
       await addProduct(productToAdd);
@@ -72,18 +121,23 @@ export const QuickMartDashboard: React.FC = () => {
         description: 'Product has been successfully added to QuickMart catalog.',
       });
 
-      // Reset form
+      // Reset form and clear errors
       setNewProduct({
         name: '',
         price: 0,
         image: '',
         category: '',
+        description: '',
+        items: [],
+        itemsDetail: [],
       });
+      setFormErrors({});
     } catch (error) {
+      console.error('Error adding product:', error);
       toast({
         variant: 'destructive',
         title: 'Error',
-        description: 'Failed to add product. Please try again.',
+        description: error instanceof Error ? error.message : 'Failed to add product. Please try again.',
       });
     } finally {
       setIsAddingProduct(false);
@@ -195,26 +249,32 @@ export const QuickMartDashboard: React.FC = () => {
                       </DialogHeader>
                       <div className="space-y-3 py-2">
                         <div>
-                          <Label htmlFor="name">Product Name</Label>
+                          <Label htmlFor="name">Product Name *</Label>
                           <Input
                             id="name"
                             value={newProduct.name}
                             onChange={(e) => setNewProduct({ ...newProduct, name: e.target.value })}
                             placeholder="Enter product name"
-                            className="h-9"
+                            className={`h-9 ${formErrors.name ? 'border-red-500' : ''}`}
                           />
+                          {formErrors.name && (
+                            <p className="text-sm text-red-500 mt-1">{formErrors.name}</p>
+                          )}
                         </div>
                         <div className="grid grid-cols-2 gap-2">
                           <div>
-                            <Label htmlFor="price">Price (KES)</Label>
+                            <Label htmlFor="price">Price (KES) *</Label>
                             <Input
                               id="price"
                               type="number"
                               value={newProduct.price}
                               onChange={(e) => setNewProduct({ ...newProduct, price: Number(e.target.value) })}
                               placeholder="0"
-                              className="h-9"
+                              className={`h-9 ${formErrors.price ? 'border-red-500' : ''}`}
                             />
+                            {formErrors.price && (
+                              <p className="text-sm text-red-500 mt-1">{formErrors.price}</p>
+                            )}
                           </div>
                           <div>
                             <Label htmlFor="originalPrice">Original Price</Label>
@@ -224,35 +284,45 @@ export const QuickMartDashboard: React.FC = () => {
                               value={newProduct.originalPrice || ''}
                               onChange={(e) => setNewProduct({ ...newProduct, originalPrice: e.target.value ? Number(e.target.value) : undefined })}
                               placeholder="0"
-                              className="h-9"
+                              className={`h-9 ${formErrors.originalPrice ? 'border-red-500' : ''}`}
                             />
+                            {formErrors.originalPrice && (
+                              <p className="text-sm text-red-500 mt-1">{formErrors.originalPrice}</p>
+                            )}
                           </div>
                         </div>
                         <div>
-                          <Label htmlFor="image">Image URL</Label>
+                          <Label htmlFor="image">Image URL *</Label>
                           <Input
                             id="image"
                             value={newProduct.image}
                             onChange={(e) => setNewProduct({ ...newProduct, image: e.target.value })}
                             placeholder="https://example.com/image.jpg"
-                            className="h-9"
+                            className={`h-9 ${formErrors.image ? 'border-red-500' : ''}`}
                           />
+                          {formErrors.image && (
+                            <p className="text-sm text-red-500 mt-1">{formErrors.image}</p>
+                          )}
                         </div>
                         <div>
-                          <Label htmlFor="category">Category</Label>
+                          <Label htmlFor="category">Category *</Label>
                           <Select value={newProduct.category} onValueChange={(value) => setNewProduct({ ...newProduct, category: value })}>
-                            <SelectTrigger className="h-9">
+                            <SelectTrigger className={`h-9 ${formErrors.category ? 'border-red-500' : ''}`}>
                               <SelectValue placeholder="Select category" />
                             </SelectTrigger>
                             <SelectContent>
-                              <SelectItem value="Beverages">Beverages</SelectItem>
-                              <SelectItem value="Snacks">Snacks</SelectItem>
-                              <SelectItem value="Groceries">Groceries</SelectItem>
-                              <SelectItem value="Personal Care">Personal Care</SelectItem>
-                              <SelectItem value="Household">Household</SelectItem>
-                              <SelectItem value="Electronics">Electronics</SelectItem>
+                              <SelectItem value="essential">Essential Baskets</SelectItem>
+                              <SelectItem value="family">Family Baskets</SelectItem>
+                              <SelectItem value="basket">Custom Baskets</SelectItem>
+                              <SelectItem value="holiday">Holiday Baskets</SelectItem>
+                              <SelectItem value="school">School Baskets</SelectItem>
+                              <SelectItem value="blackfriday">Black Friday</SelectItem>
+                              <SelectItem value="quickmart">QuickMart Items</SelectItem>
                             </SelectContent>
                           </Select>
+                          {formErrors.category && (
+                            <p className="text-sm text-red-500 mt-1">{formErrors.category}</p>
+                          )}
                         </div>
                         <div>
                           <Label htmlFor="description">Description</Label>
@@ -262,6 +332,19 @@ export const QuickMartDashboard: React.FC = () => {
                             onChange={(e) => setNewProduct({ ...newProduct, description: e.target.value })}
                             placeholder="Product description..."
                             className="h-20 resize-none"
+                          />
+                        </div>
+                        <div>
+                          <Label htmlFor="items">Tags/Items (comma-separated)</Label>
+                          <Input
+                            id="items"
+                            value={newProduct.items?.join(', ') || ''}
+                            onChange={(e) => setNewProduct({ 
+                              ...newProduct, 
+                              items: e.target.value.split(',').map(item => item.trim()).filter(Boolean)
+                            })}
+                            placeholder="tag1, tag2, tag3"
+                            className="h-9"
                           />
                         </div>
                         <Button 
