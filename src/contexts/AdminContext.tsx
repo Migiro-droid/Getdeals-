@@ -6,8 +6,6 @@ interface SiteSettings {
   supportPhone: string;
   supportEmail: string;
   location: string;
-  blackFridayCountdownDate: string; // ISO date string
-  blackFridayCountdownEnabled: boolean;
 }
 
 type AdminRole = "guest" | "staff" | "admin";
@@ -54,8 +52,6 @@ const defaultSettings: SiteSettings = {
   supportPhone: "+254 700 123 456",
   supportEmail: "info@getdeals.co.ke",
   location: "Karen Green, Nairobi, Kenya",
-  blackFridayCountdownDate: new Date(Date.now() + 45 * 24 * 60 * 60 * 1000).toISOString(), // 45 days from now
-  blackFridayCountdownEnabled: true,
 };
 
 const AdminContext = createContext<AdminContextValue | undefined>(undefined);

@@ -1,10 +1,12 @@
-import { CheckCircle, Users, Award, Heart, Truck, ShoppingCart, ShieldCheck, Leaf, MapPin } from "lucide-react";
+import { CheckCircle, Users, Award, Heart, Truck, ShoppingCart, ShieldCheck, Leaf, MapPin, ArrowRight } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Separator } from "@/components/ui/separator";
 import { Link } from "react-router-dom";
 import heroFamily from "@/assets/hero-family.jpg";
+import deliveryService from "@/assets/delivery-service.jpg";
+import heroSupermarket from "@/assets/hero-supermarket.jpg";
 
 export default function AboutPage() {
   const values = [
@@ -115,7 +117,7 @@ export default function AboutPage() {
           </div>
           <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-6">
             {values.map((v, idx) => (
-              <Card key={idx}>
+              <Card key={idx} className="hover:shadow-lg transition-shadow">
                 <CardHeader className="pb-3">
                   <div className="w-10 h-10 rounded-md bg-muted flex items-center justify-center mb-2">
                     <v.icon className="h-5 w-5 text-primary" />
@@ -128,6 +130,30 @@ export default function AboutPage() {
               </Card>
             ))}
           </div>
+
+          {/* Visual showcase */}
+          <div className="mt-12 grid md:grid-cols-2 gap-8">
+            <div className="relative">
+              <img
+                src={heroSupermarket}
+                alt="Fresh produce and quality products at our facility"
+                className="rounded-2xl w-full h-64 object-cover shadow-lg"
+              />
+              <div className="absolute bottom-4 left-4 bg-white/90 backdrop-blur-sm rounded-lg p-3">
+                <p className="text-sm font-medium text-gray-900">Quality products sourced locally</p>
+              </div>
+            </div>
+            <div className="relative">
+              <img
+                src={deliveryService}
+                alt="Our delivery team ensuring timely service"
+                className="rounded-2xl w-full h-64 object-cover shadow-lg"
+              />
+              <div className="absolute bottom-4 left-4 bg-white/90 backdrop-blur-sm rounded-lg p-3">
+                <p className="text-sm font-medium text-gray-900">Reliable delivery service</p>
+              </div>
+            </div>
+          </div>
         </div>
 
         {/* How it works */}
@@ -138,9 +164,9 @@ export default function AboutPage() {
               A simple three‑step process designed around your routine.
             </p>
           </div>
-          <div className="grid md:grid-cols-3 gap-6">
+          <div className="grid md:grid-cols-3 gap-6 mb-8">
             {steps.map((s, i) => (
-              <Card key={i}>
+              <Card key={i} className="hover:shadow-lg transition-shadow">
                 <CardHeader className="pb-3">
                   <div className="w-10 h-10 rounded-md bg-muted flex items-center justify-center mb-2">
                     <s.icon className="h-5 w-5 text-primary" />
@@ -152,6 +178,35 @@ export default function AboutPage() {
                 </CardContent>
               </Card>
             ))}
+          </div>
+
+          {/* Process visualization */}
+          <div className="relative">
+            <div className="grid md:grid-cols-3 gap-8 items-center">
+              <div className="text-center">
+                <div className="w-16 h-16 rounded-full bg-primary/10 flex items-center justify-center mx-auto mb-4">
+                  <ShoppingCart className="h-8 w-8 text-primary" />
+                </div>
+                <h3 className="font-semibold mb-2">Browse & Select</h3>
+                <p className="text-sm text-muted-foreground">Choose your perfect basket</p>
+              </div>
+
+              <div className="hidden md:block text-center">
+                <div className="flex items-center justify-center">
+                  <div className="w-8 h-0.5 bg-primary/30"></div>
+                  <ArrowRight className="h-5 w-5 text-primary mx-2" />
+                  <div className="w-8 h-0.5 bg-primary/30"></div>
+                </div>
+              </div>
+
+              <div className="text-center">
+                <div className="w-16 h-16 rounded-full bg-primary/10 flex items-center justify-center mx-auto mb-4">
+                  <Truck className="h-8 w-8 text-primary" />
+                </div>
+                <h3 className="font-semibold mb-2">Delivery or Pickup</h3>
+                <p className="text-sm text-muted-foreground">Get it when you need it</p>
+              </div>
+            </div>
           </div>
         </div>
 

@@ -65,16 +65,13 @@ export default function AdminOrders() {
     return arr[h % arr.length];
   };
   const getDisplayLocation = (o: { deliveryMethod: string; customer: { pickupLocation?: string; address?: string } }) => {
-    const pickupPool = ["Quickmart Westlands", "Quickmart Karen", "Quickmart TRM", "Quickmart CBD", "Quickmart Lavington", "Quickmart Roysambu", "Quickmart Thindigua", "Quickmart Mombasa Road"];
+    const pickupPool = ["Quickmart Westlands", "Quickmart Karen", "Quickmart TRM", "Quickmart CBD"];
     const addressPool = [
       "Nairobi CBD, Kenyatta Ave",
       "Westlands, Waiyaki Way",
       "Kilimani, Lenana Rd",
       "South B, Mombasa Rd",
       "Roysambu, TRM Drive",
-      "Lavington, James Gichuru Rd",
-      "Thindigua, Kiambu Rd",
-      "Mombasa Road, Jogoo Rd",
     ];
     if (o.deliveryMethod === "pickup") return o.customer.pickupLocation || pickDeterministic(pickupPool, JSON.stringify(o));
     return o.customer.address || pickDeterministic(addressPool, JSON.stringify(o));

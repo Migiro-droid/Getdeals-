@@ -526,13 +526,11 @@ export default function CheckoutPage() {
                         <SelectValue placeholder="Select pickup location" />
                       </SelectTrigger>
                       <SelectContent>
-                        <SelectItem value="nairobi-cbd">Nairobi CBD Store</SelectItem>
-                        <SelectItem value="westlands">Westlands Branch</SelectItem>
-                        <SelectItem value="karen">Karen Branch</SelectItem>
-                        <SelectItem value="lavington">Lavington Branch</SelectItem>
-                        <SelectItem value="roysambu">Roysambu Branch</SelectItem>
-                        <SelectItem value="thindigua">Thindigua Branch</SelectItem>
-                        <SelectItem value="mombasa-road">Mombasa Road Branch</SelectItem>
+                        <SelectItem value="lavington">Quickmart Lavington</SelectItem>
+                        <SelectItem value="roysambu">Quickmart Roysambu</SelectItem>
+                        <SelectItem value="westlands">Quickmart Westlands</SelectItem>
+                        <SelectItem value="thindiuga">Quickmart Thindiuga</SelectItem>
+                        <SelectItem value="mombasa-road">Quickmart Mombasa Road</SelectItem>
                       </SelectContent>
                     </Select>
                   </div>

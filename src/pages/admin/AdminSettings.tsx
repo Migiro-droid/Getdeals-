@@ -36,34 +36,6 @@ export default function AdminSettings() {
 
           <Card>
             <CardHeader>
-              <CardTitle>Black Friday Countdown</CardTitle>
-            </CardHeader>
-            <CardContent className="space-y-4">
-              <div className="flex items-center justify-between">
-                <div>
-                  <Label>Enable Countdown</Label>
-                  <div className="text-sm text-muted-foreground">Show countdown timer on homepage</div>
-                </div>
-                <Switch checked={settings.blackFridayCountdownEnabled} onCheckedChange={(v) => updateSettings({ blackFridayCountdownEnabled: v })} />
-              </div>
-              <div>
-                <Label htmlFor="countdown-date">Countdown Target Date</Label>
-                <Input
-                  id="countdown-date"
-                  type="datetime-local"
-                  value={new Date(settings.blackFridayCountdownDate).toISOString().slice(0, 16)}
-                  onChange={(e) => updateSettings({ blackFridayCountdownDate: new Date(e.target.value).toISOString() })}
-                  disabled={!settings.blackFridayCountdownEnabled}
-                />
-                <div className="text-sm text-muted-foreground mt-1">
-                  Set the date and time when Black Friday officially starts
-                </div>
-              </div>
-            </CardContent>
-          </Card>
-
-          <Card>
-            <CardHeader>
               <CardTitle>Support & Contact</CardTitle>
             </CardHeader>
             <CardContent className="space-y-4">
