@@ -153,7 +153,7 @@ export default function AdminUsers() {
       { first: "Sarah", last: "Wambui" }
     ];
     
-    const locations = ["Karen Branch", "Westlands Branch", "CBD Branch", "Kilimani Branch"];
+    const locations = ["Karen Branch", "Westlands Branch", "CBD Branch", "Kilimani Branch", "Lavington Branch", "Roysambu Branch", "Thindigua Branch", "Mombasa Road Branch"];
     
     return names.map((name, index) => ({
       id: `cust_${Date.now()}_${index}`,

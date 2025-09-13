@@ -23,7 +23,10 @@ export function AuthModals({ open, onOpenChange, defaultTab = "signin" }: AuthMo
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [showChecklist, setShowChecklist] = useState(false);
-  const { signIn, signUp, user } = useAuth();
+  const [showForgotPassword, setShowForgotPassword] = useState(false);
+  const [resetEmail, setResetEmail] = useState("");
+  const [resetLoading, setResetLoading] = useState(false);
+  const { signIn, signUp, resetPassword, user } = useAuth();
   const { toast } = useToast();
 
   useEffect(() => {
@@ -34,6 +37,9 @@ export function AuthModals({ open, onOpenChange, defaultTab = "signin" }: AuthMo
       setShowSignInPassword(false);
       setShowSignUpPassword(false);
       setShowChecklist(false);
+      setShowForgotPassword(false);
+      setResetEmail("");
+      setResetLoading(false);
     }
   }, [open, defaultTab]);
 
@@ -79,6 +85,55 @@ export function AuthModals({ open, onOpenChange, defaultTab = "signin" }: AuthMo
   const handleChecklistComplete = () => {
     setShowChecklist(false);
     onOpenChange(false);
+  };
+
+  const handleForgotPassword = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setResetLoading(true);
+    try {
+      const result = await resetPassword(resetEmail);
+      if (result.ok) {
+        toast({
+          title: "Password Reset Email Sent",
+          description: "Check your email for password reset instructions.",
+        });
+        setShowForgotPassword(false);
+        setResetEmail("");
+      } else {
+        // Handle specific error cases
+        let errorMessage = result.error || "Failed to send password reset email.";
+        let errorTitle = "Error";
+        
+        if (result.error?.includes("over_email_send_rate_limit") || result.error?.includes("email rate limit exceeded")) {
+          errorTitle = "Email Rate Limit Exceeded";
+          errorMessage = "Too many password reset emails have been sent. Please wait a few minutes before trying again.";
+        } else if (result.error?.includes("User not found") || result.error?.includes("Invalid email")) {
+          errorMessage = "No account found with this email address. Please check your email or create a new account.";
+        }
+        
+        toast({
+          title: errorTitle,
+          description: errorMessage,
+          variant: "destructive",
+        });
+      }
+    } catch (err: any) {
+      let errorMessage = err?.message || "Failed to send password reset email.";
+      let errorTitle = "Error";
+      
+      if (errorMessage.includes("over_email_send_rate_limit") || errorMessage.includes("email rate limit exceeded")) {
+        errorTitle = "Email Rate Limit Exceeded";
+        errorMessage = "Too many password reset emails have been sent. Please wait a few minutes before trying again.";
+      }
+      
+      toast({
+        title: errorTitle,
+        description: errorMessage,
+        variant: "destructive",
+      });
+    } finally {
+      setResetLoading(false);
+    }
   };
 
   return (
@@ -148,6 +203,16 @@ export function AuthModals({ open, onOpenChange, defaultTab = "signin" }: AuthMo
                 <Button disabled={loading} type="submit" className="w-full h-10 bg-gradient-to-r from-primary to-primary/80 hover:from-primary/90 hover:to-primary/70 transition-all">
                   Sign In
                 </Button>
+
+                <div className="text-center">
+                  <button
+                    type="button"
+                    onClick={() => setShowForgotPassword(true)}
+                    className="text-xs text-primary hover:text-primary/80 font-medium hover:underline transition-colors"
+                  >
+                    Forgot Password?
+                  </button>
+                </div>
                 
                 <div className="flex items-center gap-2">
                   <div className="h-px bg-border flex-1" />
@@ -268,6 +333,57 @@ export function AuthModals({ open, onOpenChange, defaultTab = "signin" }: AuthMo
               </form>
             </TabsContent>
           </Tabs>
+        </DialogContent>
+      </Dialog>
+
+      {/* Forgot Password Modal */}
+      <Dialog open={showForgotPassword} onOpenChange={setShowForgotPassword}>
+        <DialogContent className="max-w-md bg-white dark:bg-white border shadow-lg">
+          <DialogHeader className="text-center pb-4">
+            <DialogTitle className="text-xl font-bold bg-gradient-to-r from-primary to-primary/70 bg-clip-text text-transparent">
+              Reset Password
+            </DialogTitle>
+            <DialogDescription className="text-center text-xs text-muted-foreground">
+              Enter your email address and we'll send you a link to reset your password
+            </DialogDescription>
+          </DialogHeader>
+
+          <form onSubmit={handleForgotPassword} className="space-y-4">
+            <div className="space-y-1">
+              <Label htmlFor="reset-email" className="text-xs font-medium">Email Address</Label>
+              <div className="relative">
+                <Mail className="absolute left-3 top-2.5 h-4 w-4 text-muted-foreground" />
+                <Input
+                  id="reset-email"
+                  type="email"
+                  placeholder="Enter your email"
+                  value={resetEmail}
+                  onChange={(e) => setResetEmail(e.target.value)}
+                  className="pl-10 h-10 border-2 focus:border-primary/50 transition-colors"
+                  required
+                />
+              </div>
+            </div>
+
+            <Button disabled={resetLoading} type="submit" className="w-full h-10 bg-gradient-to-r from-primary to-primary/80 hover:from-primary/90 hover:to-primary/70 transition-all">
+              {resetLoading ? "Sending..." : "Send Reset Link"}
+            </Button>
+
+            <div className="bg-muted/50 rounded-lg p-3 text-xs text-muted-foreground">
+              <p className="font-medium mb-1">📧 Email Delivery Note:</p>
+              <p>Reset emails may take a few minutes to arrive. If you don't receive it, please check your spam folder or try again later.</p>
+            </div>
+
+            <div className="text-center">
+              <button
+                type="button"
+                onClick={() => setShowForgotPassword(false)}
+                className="text-xs text-muted-foreground hover:text-primary font-medium hover:underline transition-colors"
+              >
+                Back to Sign In
+              </button>
+            </div>
+          </form>
         </DialogContent>
       </Dialog>
 

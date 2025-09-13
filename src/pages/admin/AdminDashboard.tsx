@@ -167,8 +167,10 @@ export default function AdminDashboard() {
 
   // Chart data: daily revenue for last N days
   const dailyData = useMemo(() => {
-    const days: { label: string; value: number }[] = [];
+    const days: { label: string; value: number; revenue: number }[] = [];
     const map: Record<string, number> = {};
+    
+    // Initialize all days in range with 0 revenue
     for (let i = rangeDays - 1; i >= 0; i--) {
       const d = new Date(now);
       d.setDate(d.getDate() - i);
@@ -176,17 +178,31 @@ export default function AdminDashboard() {
       const key = d.toISOString().slice(0, 10);
       map[key] = 0;
     }
-  for (const o of safeOrders) {
+    
+    // Aggregate revenue by date
+    for (const o of safeOrders) {
       const key = o.date.slice(0, 10);
-      if (key in map) map[key] += o.total;
+      if (key in map) {
+        map[key] += o.total;
+      }
     }
-    Object.keys(map).forEach((k) => {
-      const d = new Date(k);
-      const label = d.toLocaleDateString(undefined, { month: "short", day: "numeric" });
-      days.push({ label, value: map[k] });
-    });
+    
+    // Convert to chart data format
+    Object.keys(map)
+      .sort()
+      .forEach((k) => {
+        const d = new Date(k);
+        const label = d.toLocaleDateString(undefined, { month: "short", day: "numeric" });
+        const value = Math.round(map[k]);
+        days.push({ 
+          label, 
+          value, 
+          revenue: value // Add revenue field for chart tooltip
+        });
+      });
+    
     return days;
-  }, [safeOrders, rangeDays]);
+  }, [safeOrders, rangeDays, now]);
 
   const statusKeys: OrderStatus[] = [
     "pending",
@@ -503,15 +519,41 @@ export default function AdminDashboard() {
                 <CardTitle>Revenue Trend</CardTitle>
               </CardHeader>
               <CardContent>
-                <ChartContainer config={{ revenue: { label: "Revenue", color: "hsl(var(--primary))" } }} className="w-full">
-                  <LineChart data={dailyData} margin={{ left: 12, right: 12 }}>
-                    <CartesianGrid strokeDasharray="3 3" />
-                    <XAxis dataKey="label" tickLine={false} axisLine={false} />
-                    <YAxis tickLine={false} axisLine={false} tickFormatter={(v) => (v >= 1000 ? `${Math.round(v/1000)}k` : String(v))} />
-                    <ChartTooltip content={<ChartTooltipContent nameKey="revenue" />} />
-                    <Line type="monotone" dataKey="value" stroke="hsl(var(--primary))" strokeWidth={2} dot={false} />
-                  </LineChart>
-                </ChartContainer>
+                {dailyData && dailyData.length > 0 ? (
+                  <ChartContainer config={{ revenue: { label: "Revenue", color: "hsl(var(--primary))" } }} className="w-full">
+                    <LineChart 
+                      data={dailyData} 
+                      margin={{ left: 12, right: 12 }}
+                    >
+                      <CartesianGrid strokeDasharray="3 3" />
+                      <XAxis 
+                        dataKey="label" 
+                        tickLine={false} 
+                        axisLine={false} 
+                      />
+                      <YAxis 
+                        tickLine={false} 
+                        axisLine={false} 
+                        tickFormatter={(v) => (v >= 1000 ? `${Math.round(v/1000)}k` : String(v))}
+                      />
+                      <ChartTooltip content={<ChartTooltipContent nameKey="revenue" />} />
+                      <Line 
+                        type="monotone" 
+                        dataKey="value" 
+                        stroke="hsl(var(--primary))" 
+                        strokeWidth={2} 
+                        dot={false}
+                      />
+                    </LineChart>
+                  </ChartContainer>
+                ) : (
+                  <div className="flex items-center justify-center h-[300px] text-muted-foreground">
+                    <div className="text-center">
+                      <p>No revenue data available</p>
+                      <p className="text-sm">Data will appear when orders are placed</p>
+                    </div>
+                  </div>
+                )}
               </CardContent>
             </Card>
 

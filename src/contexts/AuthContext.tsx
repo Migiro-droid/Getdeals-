@@ -344,6 +344,10 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       const { error } = await auth.resetPassword(email);
 
       if (error) {
+        // Handle specific Supabase error codes
+        if (error.message.includes("over_email_send_rate_limit")) {
+          return { ok: false, error: "email rate limit exceeded" };
+        }
         return { ok: false, error: error.message };
       }
 
@@ -355,6 +359,12 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       return { ok: true };
     } catch (error) {
       const errorMessage = error instanceof Error ? error.message : 'Password reset failed';
+      
+      // Handle rate limit errors
+      if (errorMessage.includes("over_email_send_rate_limit") || errorMessage.includes("rate limit")) {
+        return { ok: false, error: "email rate limit exceeded" };
+      }
+      
       return { ok: false, error: errorMessage };
     }
   };

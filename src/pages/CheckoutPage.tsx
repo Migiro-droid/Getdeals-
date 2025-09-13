@@ -529,6 +529,10 @@ export default function CheckoutPage() {
                         <SelectItem value="nairobi-cbd">Nairobi CBD Store</SelectItem>
                         <SelectItem value="westlands">Westlands Branch</SelectItem>
                         <SelectItem value="karen">Karen Branch</SelectItem>
+                        <SelectItem value="lavington">Lavington Branch</SelectItem>
+                        <SelectItem value="roysambu">Roysambu Branch</SelectItem>
+                        <SelectItem value="thindigua">Thindigua Branch</SelectItem>
+                        <SelectItem value="mombasa-road">Mombasa Road Branch</SelectItem>
                       </SelectContent>
                     </Select>
                   </div>

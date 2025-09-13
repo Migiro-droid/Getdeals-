@@ -7,6 +7,7 @@ import { ProductCard } from "@/components/ProductCard";
 import { AuthModals } from "@/components/AuthModals";
 import { useProducts } from "@/contexts/ProductsContext";
 import { useAuth } from "@/contexts/AuthContext";
+import { useAdmin } from "@/contexts/AdminContext";
 import { Input } from "@/components/ui/input";
 import { useToast } from "@/hooks/use-toast";
 import heroBg from "@/assets/franki-chamaki-ivfp_yxZuYQ-unsplash.jpg";
@@ -26,6 +27,7 @@ function TimePill({ label, value }: { label: string; value: number }) {
 export default function HomePage() {
   const { all } = useProducts();
   const { isAuthenticated, signOut } = useAuth();
+  const { settings } = useAdmin();
   const featuredProducts = all.filter(p => p.category !== 'alcohol' && p.category !== 'blackfriday').slice(0, 3);
   const discountedProducts = all.filter(p => p.originalPrice && p.originalPrice > p.price);
   const blackFridayProducts = all.filter(p => p.category === 'blackfriday');
@@ -39,14 +41,9 @@ export default function HomePage() {
 
   // Hero Slideshow
   const heroImages = [
-    '/assets/IMG-20250913-WA0003.jpg',
-    '/assets/IMG-20250913-WA0004.jpg',
-    '/assets/IMG-20250913-WA0005.jpg',
     '/assets/IMG-20250913-WA0006.jpg',
-    '/assets/IMG-20250913-WA0007.jpg',
-    '/assets/IMG-20250913-WA0008.jpg',
-    '/assets/IMG-20250913-WA0009.jpg',
-    '/assets/IMG-20250913-WA0010.jpg'
+    '/assets/IMG-20250913-WA0025.jpg',
+    '/assets/IMG-20250913-WA0007.jpg'
   ];
   const [currentSlide, setCurrentSlide] = useState(0);
 
@@ -105,8 +102,11 @@ export default function HomePage() {
   };
 
   useEffect(() => {
-    // Set target to 45 days from now
-    const target = new Date(Date.now() + 45 * 24 * 60 * 60 * 1000);
+    // Use admin settings for countdown target date
+    const target = settings.blackFridayCountdownEnabled
+      ? new Date(settings.blackFridayCountdownDate)
+      : new Date(Date.now() + 45 * 24 * 60 * 60 * 1000); // fallback to 45 days
+
     const tick = () => {
       const now = new Date();
       const diff = target.getTime() - now.getTime();
@@ -123,7 +123,7 @@ export default function HomePage() {
     tick();
     const id = setInterval(tick, 1000);
     return () => clearInterval(id);
-  }, []);
+  }, [settings.blackFridayCountdownDate, settings.blackFridayCountdownEnabled]);
 
   // Hero slideshow effect
   useEffect(() => {
@@ -373,7 +373,7 @@ export default function HomePage() {
         </div>
 
         {/* Black Friday Countdown Badge */}
-        {!countdown.ended && (
+        {settings.blackFridayCountdownEnabled && !countdown.ended && (
           <div className="absolute right-4 top-4 md:right-8 md:top-8 z-20">
             <div className="px-3 py-1 rounded-full bg-gradient-to-r from-red-500/90 to-orange-500/90 backdrop-blur text-white text-sm font-medium flex items-center gap-2 shadow-lg animate-pulse">
               <div className="w-2 h-2 bg-white rounded-full"></div>
@@ -384,7 +384,7 @@ export default function HomePage() {
       </section>
 
       {}
-      {showSticky && !dismissed && (
+      {settings.blackFridayCountdownEnabled && showSticky && !dismissed && (
         <div className="fixed left-0 right-0 top-16 z-50">
           <div className="mx-auto max-w-6xl px-4">
             <div className="rounded-lg border bg-background shadow flex items-center justify-between gap-3 px-4 py-2">
@@ -538,14 +538,14 @@ export default function HomePage() {
                   Black Friday 2025
                 </div>
                 <h3 className="mt-3 text-3xl lg:text-4xl font-extrabold tracking-tight bg-clip-text text-transparent bg-gradient-to-r from-primary to-primary/60">
-                  {countdown.days} Days — Early Access is coming
+                  {settings.blackFridayCountdownEnabled ? `${countdown.days} Days — Early Access is coming` : 'Black Friday Deals'}
                 </h3>
-                {countdown.ended ? (
+                {!settings.blackFridayCountdownEnabled || countdown.ended ? (
                   <p className="text-muted-foreground">It’s live now — check out the deals below.</p>
                 ) : (
                   <p className="text-muted-foreground">Get notified and don’t miss the biggest savings of the year.</p>
                 )}
-                {!countdown.ended && (
+                {settings.blackFridayCountdownEnabled && !countdown.ended && (
                   <div className="mt-4 flex items-center gap-3 justify-center lg:justify-start">
                     <TimePill label="Days" value={countdown.days} />
                     <TimePill label="Hours" value={countdown.hours} />
