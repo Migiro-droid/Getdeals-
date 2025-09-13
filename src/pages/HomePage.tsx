@@ -1,6 +1,6 @@
 import { useEffect, useState, useMemo } from "react";
 import { Link } from "react-router-dom";
-import { ArrowRight, CheckCircle, Clock, Shield, Truck, LogIn, UserPlus, Megaphone, X, Star, ShieldCheck, Search } from "lucide-react";
+import { ArrowRight, CheckCircle, Clock, Shield, Truck, LogIn, UserPlus, Megaphone, X, Star, ShieldCheck, Search, Package, Users, CreditCard, Wallet, Zap } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { ProductCard } from "@/components/ProductCard";
@@ -10,7 +10,7 @@ import { useAuth } from "@/contexts/AuthContext";
 import { Input } from "@/components/ui/input";
 import { useToast } from "@/hooks/use-toast";
 import heroBg from "@/assets/franki-chamaki-ivfp_yxZuYQ-unsplash.jpg";
-import { electronicsProducts, automotiveProducts } from "@/data/products";
+import heroFamily from "@/assets/hero-family.jpg";
 const deliveryImage = "https://gulfbusiness.com/wp-content/uploads/2024/04/GettyImages-1824077027-800x534.jpg";
 
 function TimePill({ label, value }: { label: string; value: number }) {
@@ -28,7 +28,6 @@ export default function HomePage() {
   const { isAuthenticated, signOut } = useAuth();
   const featuredProducts = all.filter(p => p.category !== 'alcohol' && p.category !== 'blackfriday').slice(0, 3);
   const discountedProducts = all.filter(p => p.originalPrice && p.originalPrice > p.price);
-  const alcoholProducts = all.filter(p => p.category === 'alcohol');
   const blackFridayProducts = all.filter(p => p.category === 'blackfriday');
   const [authModalOpen, setAuthModalOpen] = useState(false);
   const [authModalTab, setAuthModalTab] = useState<"signin" | "signup">("signin");
@@ -37,6 +36,19 @@ export default function HomePage() {
   const [countdown, setCountdown] = useState({ days: 0, hours: 0, mins: 0, secs: 0, ended: false });
   const [showSticky, setShowSticky] = useState(false);
   const [dismissed, setDismissed] = useState(false);
+
+  // Hero Slideshow
+  const heroImages = [
+    '/assets/IMG-20250913-WA0003.jpg',
+    '/assets/IMG-20250913-WA0004.jpg',
+    '/assets/IMG-20250913-WA0005.jpg',
+    '/assets/IMG-20250913-WA0006.jpg',
+    '/assets/IMG-20250913-WA0007.jpg',
+    '/assets/IMG-20250913-WA0008.jpg',
+    '/assets/IMG-20250913-WA0009.jpg',
+    '/assets/IMG-20250913-WA0010.jpg'
+  ];
+  const [currentSlide, setCurrentSlide] = useState(0);
 
   // Search functionality
   const [searchQuery, setSearchQuery] = useState("");
@@ -113,6 +125,15 @@ export default function HomePage() {
     return () => clearInterval(id);
   }, []);
 
+  // Hero slideshow effect
+  useEffect(() => {
+    const slideInterval = setInterval(() => {
+      setCurrentSlide((prev) => (prev + 1) % heroImages.length);
+    }, 5000); // Change slide every 5 seconds
+
+    return () => clearInterval(slideInterval);
+  }, [heroImages.length]);
+
   useEffect(() => {
     const onScroll = () => {
       if (dismissed || countdown.ended) return setShowSticky(false);
@@ -188,44 +209,117 @@ export default function HomePage() {
 
   return (
     <div className="min-h-screen">
-      {}
-  <section 
-        className="relative py-20 lg:py-32 min-h-[600px]"
-        style={{
-          backgroundImage: `url(${heroBg})`,
-          backgroundSize: 'cover',
-          backgroundPosition: 'center center',
-          backgroundRepeat: 'no-repeat',
-        }}
-      >
-        {}
-        <div className="absolute inset-0 bg-black/40"></div>
+      {/* Enhanced Hero Section with Slideshow */}
+      <section className="relative py-20 lg:py-32 min-h-[700px] overflow-hidden">
+        {/* Background Slideshow */}
+        <div className="absolute inset-0">
+          {heroImages.map((image, index) => (
+            <div
+              key={index}
+              className={`absolute inset-0 transition-opacity duration-1000 ${
+                index === currentSlide ? 'opacity-100' : 'opacity-0'
+              }`}
+              style={{
+                backgroundImage: `url(${image})`,
+                backgroundSize: 'cover',
+                backgroundPosition: 'center center',
+                backgroundRepeat: 'no-repeat',
+              }}
+            />
+          ))}
+        </div>
+
+        {/* Enhanced Background Overlay */}
+        <div className="absolute inset-0 bg-gradient-to-r from-black/70 via-black/50 to-primary/30"></div>
+        
+        {/* Animated Background Elements */}
+        <div className="absolute inset-0 overflow-hidden pointer-events-none">
+          <div className="absolute top-20 left-10 w-64 h-64 bg-primary/10 rounded-full blur-3xl animate-pulse"></div>
+          <div className="absolute bottom-20 right-10 w-96 h-96 bg-blue-500/5 rounded-full blur-3xl animate-pulse" style={{ animationDelay: '2s' }}></div>
+        </div>
+
         <div className="container mx-auto px-4 relative z-10">
           <div className="grid lg:grid-cols-2 gap-12 items-center">
-            <div className="space-y-8">
-              <h1 className="text-4xl lg:text-6xl font-bold leading-tight text-balance text-white drop-shadow-lg">
-                Smart Shopping
-                <span className="text-primary block">Made Easy</span>
+            <div className="space-y-8 animate-in fade-in-0 slide-in-from-left-4 duration-1000">
+              {/* Hero Badge */}
+              <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-white/15 backdrop-blur-sm border border-white/20 text-white animate-in fade-in-0 slide-in-from-top-4 duration-700">
+                <div className="w-2 h-2 bg-green-400 rounded-full animate-pulse"></div>
+                <span className="text-sm font-medium">Kenya's #1 Smart Grocery Platform</span>
+              </div>
+
+              <h1 className="text-4xl lg:text-6xl font-bold leading-tight text-balance text-white drop-shadow-lg animate-in fade-in-0 slide-in-from-left-4 duration-1000 delay-200">
+                Unlock Massive Savings!
+                <span className="text-primary block bg-gradient-to-r from-primary to-blue-400 bg-clip-text text-transparent">
+                  Shop Smarter with GetDeals
+                </span>
               </h1>
-              <p className="text-xl text-white max-w-xl drop-shadow-md">
-                Get curated grocery baskets delivered to your doorstep or pickup at your nearest Quickmart. Save time, save money.
+              
+              <p className="text-xl text-white/90 max-w-xl drop-shadow-md animate-in fade-in-0 slide-in-from-left-4 duration-1000 delay-400">
+                Save up to <span className="text-yellow-400 font-bold">50% off</span> on curated family baskets! 
+                <span className="text-green-400 font-semibold">Free delivery</span> over KES 5,000. 
+                Exclusive deals on groceries, family baskets, and more. Join our growing community today!
               </p>
-              <div className="flex flex-col sm:flex-row gap-4">
-                <Button size="lg" className="text-lg px-8" asChild>
+
+              {/* Key Metrics - Professional Display */}
+              <div className="grid grid-cols-2 md:grid-cols-3 gap-4 py-6 animate-in fade-in-0 slide-in-from-bottom-4 duration-1000 delay-600">
+                <div className="text-center bg-white/10 backdrop-blur-sm rounded-lg p-3 hover:bg-white/15 transition-all duration-300 group">
+                  <div className="flex items-center justify-center mb-2">
+                    <Package className="h-5 w-5 text-blue-400 group-hover:scale-110 transition-transform" />
+                  </div>
+                  <div className="text-2xl font-bold text-white">10,000+</div>
+                  <div className="text-xs text-white/80">Products</div>
+                </div>
+                
+                <div className="text-center bg-white/10 backdrop-blur-sm rounded-lg p-3 hover:bg-white/15 transition-all duration-300 group">
+                  <div className="flex items-center justify-center mb-2">
+                    <Users className="h-5 w-5 text-green-400 group-hover:scale-110 transition-transform" />
+                  </div>
+                  <div className="text-2xl font-bold text-white">100K+</div>
+                  <div className="text-xs text-white/80">Customers</div>
+                </div>
+                
+                <div className="text-center bg-white/10 backdrop-blur-sm rounded-lg p-3 hover:bg-white/15 transition-all duration-300 group">
+                  <div className="flex items-center justify-center mb-2">
+                    <Truck className="h-5 w-5 text-yellow-400 group-hover:scale-110 transition-transform" />
+                  </div>
+                  <div className="text-2xl font-bold text-white">2-Hour</div>
+                  <div className="text-xs text-white/80">Delivery</div>
+                </div>
+              </div>
+
+              {/* Payment & Security Features */}
+              <div className="flex flex-wrap gap-3 py-4 animate-in fade-in-0 slide-in-from-bottom-4 duration-1000 delay-800">
+                <div className="flex items-center gap-2 bg-white/10 backdrop-blur-sm rounded-full px-3 py-1.5 text-white text-sm hover:bg-white/15 transition-all">
+                  <Shield className="h-4 w-4 text-green-400" />
+                  <span>Secure Payments</span>
+                </div>
+                <div className="flex items-center gap-2 bg-white/10 backdrop-blur-sm rounded-full px-3 py-1.5 text-white text-sm hover:bg-white/15 transition-all">
+                  <Zap className="h-4 w-4 text-blue-400" />
+                  <span>Instant M-Pesa</span>
+                </div>
+                <div className="flex items-center gap-2 bg-white/10 backdrop-blur-sm rounded-full px-3 py-1.5 text-white text-sm hover:bg-white/15 transition-all">
+                  <Wallet className="h-4 w-4 text-purple-400" />
+                  <span>Digital Wallet</span>
+                </div>
+              </div>
+
+              <div className="flex flex-col sm:flex-row gap-4 animate-in fade-in-0 slide-in-from-bottom-4 duration-1000 delay-1000">
+                <Button size="lg" className="text-lg px-8 bg-primary hover:bg-primary/90 shadow-xl shadow-primary/20 hover:shadow-2xl hover:shadow-primary/30 transition-all duration-300 transform hover:scale-105" asChild>
                   <Link to="/baskets">
-                    Start Shopping <ArrowRight className="ml-2 h-5 w-5" />
+                    Start Shopping <ArrowRight className="ml-2 h-5 w-5 animate-pulse" />
                   </Link>
                 </Button>
-                <Button variant="outline" size="lg" className="text-lg px-8 bg-white/20 border-white text-white hover:bg-white hover:text-black" asChild>
+                <Button variant="outline" size="lg" className="text-lg px-8 bg-white/20 border-white text-white hover:bg-white hover:text-black transition-all duration-300" asChild>
                   <Link to="/how-it-works">How It Works</Link>
                 </Button>
               </div>
+
               {!isAuthenticated ? (
-                <div className="flex flex-col sm:flex-row gap-3 mt-4">
+                <div className="flex flex-col sm:flex-row gap-3 mt-4 animate-in fade-in-0 slide-in-from-bottom-4 duration-1000 delay-1200">
                   <Button 
                     variant="secondary" 
                     size="lg"
-                    className="bg-white/20 border-white text-white hover:bg-white hover:text-black"
+                    className="bg-white/20 border-white text-white hover:bg-white hover:text-black transition-all duration-300"
                     onClick={() => {
                       setAuthModalTab("signin");
                       setAuthModalOpen(true);
@@ -237,7 +331,7 @@ export default function HomePage() {
                   <Button 
                     variant="outline" 
                     size="lg"
-                    className="bg-white/20 border-white text-white hover:bg-white hover:text-black"
+                    className="bg-white/20 border-white text-white hover:bg-white hover:text-black transition-all duration-300"
                     onClick={() => {
                       setAuthModalTab("signup");
                       setAuthModalOpen(true);
@@ -252,7 +346,7 @@ export default function HomePage() {
                   <Button 
                     variant="outline" 
                     size="lg"
-                    className="bg-white/20 border-white text-white hover:bg-white hover:text-black"
+                    className="bg-white/20 border-white text-white hover:bg-white hover:text-black transition-all duration-300"
                     onClick={() => {
                       signOut();
                     }}
@@ -264,10 +358,25 @@ export default function HomePage() {
             </div>
           </div>
         </div>
-        {}
+
+        {/* Slideshow Indicators */}
+        <div className="absolute bottom-6 left-1/2 transform -translate-x-1/2 flex space-x-2 z-20">
+          {heroImages.map((_, index) => (
+            <button
+              key={index}
+              onClick={() => setCurrentSlide(index)}
+              className={`w-3 h-3 rounded-full transition-all duration-300 ${
+                index === currentSlide ? 'bg-white' : 'bg-white/40'
+              } hover:bg-white/80`}
+            />
+          ))}
+        </div>
+
+        {/* Black Friday Countdown Badge */}
         {!countdown.ended && (
-          <div className="absolute right-4 top-4 md:right-8 md:top-8 z-10">
-            <div className="px-3 py-1 rounded-full bg-primary/20 backdrop-blur text-white text-sm font-medium flex items-center gap-2">
+          <div className="absolute right-4 top-4 md:right-8 md:top-8 z-20">
+            <div className="px-3 py-1 rounded-full bg-gradient-to-r from-red-500/90 to-orange-500/90 backdrop-blur text-white text-sm font-medium flex items-center gap-2 shadow-lg animate-pulse">
+              <div className="w-2 h-2 bg-white rounded-full"></div>
               Black Friday in {countdown.days}d {countdown.hours}h
             </div>
           </div>
@@ -309,7 +418,7 @@ export default function HomePage() {
                 <Search className="absolute left-4 top-1/2 transform -translate-y-1/2 text-muted-foreground w-5 h-5" />
                 <Input
                   type="text"
-                  placeholder="Search for products, baskets, electronics, automotive..."
+                  placeholder="Search for products, baskets, groceries..."
                   value={searchQuery}
                   onChange={handleSearchInput}
                   onKeyDown={handleSearchKeyDown}
@@ -403,7 +512,7 @@ export default function HomePage() {
               <div className="mt-6 text-center">
                 <p className="text-sm text-muted-foreground mb-3">Popular searches:</p>
                 <div className="flex flex-wrap gap-2 justify-center">
-                  {['Electronics', 'Automotive', 'Rice', 'Cooking Oil', 'Black Friday'].map((term) => (
+                  {['Rice', 'Cooking Oil', 'Black Friday', 'Family Baskets', 'Groceries'].map((term) => (
                     <button
                       key={term}
                       onClick={() => handleSearch(term)}
@@ -601,75 +710,6 @@ export default function HomePage() {
           </div>
         </div>
       </section>
-
-      {}
-      <section className="py-20">
-        <div className="container mx-auto px-4">
-          <div className="text-center mb-16">
-            <h2 className="text-3xl lg:text-4xl font-bold mb-4">Alcohol Deals</h2>
-            <p className="text-xl text-muted-foreground max-w-2xl mx-auto">
-              Explore discounted beer, wine, and spirits deals.
-            </p>
-          </div>
-          <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-8 mb-12">
-            {alcoholProducts.map((product) => (
-              <ProductCard key={product.id} product={product} />
-            ))}
-          </div>
-        </div>
-      </section>
-
-      {/* Electronics Section */}
-      {electronicsProducts.length > 0 && (
-        <section className="py-20 bg-muted/20">
-          <div className="container mx-auto px-4">
-            <div className="text-center mb-16">
-              <h2 className="text-3xl lg:text-4xl font-bold mb-4">Electronics</h2>
-              <p className="text-xl text-muted-foreground max-w-2xl mx-auto">
-                Discover the latest electronic appliances and gadgets.
-              </p>
-            </div>
-            <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-8 mb-12">
-              {electronicsProducts.map((product) => (
-                <ProductCard key={product.id} product={product} />
-              ))}
-            </div>
-            <div className="text-center">
-              <Button size="lg" variant="outline" asChild>
-                <Link to="/category/electronics">
-                  View All Electronics <ArrowRight className="ml-2 h-5 w-5" />
-                </Link>
-              </Button>
-            </div>
-          </div>
-        </section>
-      )}
-
-      {/* Automotive Section */}
-      {automotiveProducts.length > 0 && (
-        <section className="py-20 bg-muted/20">
-          <div className="container mx-auto px-4">
-            <div className="text-center mb-16">
-              <h2 className="text-3xl lg:text-4xl font-bold mb-4">Automotive</h2>
-              <p className="text-xl text-muted-foreground max-w-2xl mx-auto">
-                Quality automotive parts, accessories, and maintenance products.
-              </p>
-            </div>
-            <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-8 mb-12">
-              {automotiveProducts.map((product) => (
-                <ProductCard key={product.id} product={product} />
-              ))}
-            </div>
-            <div className="text-center">
-              <Button size="lg" variant="outline" asChild>
-                <Link to="/category/automotive">
-                  View All Automotive <ArrowRight className="ml-2 h-5 w-5" />
-                </Link>
-              </Button>
-            </div>
-          </div>
-        </section>
-      )}
 
       {/* Category Sections */}
       {categories.map((category) => {
