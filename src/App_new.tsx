@@ -7,10 +7,10 @@ import { Header } from "@/components/Header";
 import { Footer } from "@/components/Footer";
 
 // Supabase Providers (Primary)
-import { SupabaseAuthProvider, useSupabaseAuth } from "./contexts/SupabaseAuthContext";
+import { AuthProvider, useAuth } from "./contexts/AuthContext";
 import { SupabaseProductsProvider } from "./contexts/SupabaseProductsContext";
 import { SupabaseAdminProvider } from "./contexts/SupabaseAdminContext";
-import { SupabaseWalletProvider } from "./contexts/SupabaseWalletContext";
+import { WalletProvider } from "./contexts/WalletContext";
 
 // Legacy providers for compatibility
 import { CartProvider } from "@/contexts/CartContext";
@@ -40,7 +40,7 @@ import AdminUsers from "./pages/admin/AdminUsers";
 const queryClient = new QueryClient();
 
 function AuthGuard({ children }: { children: JSX.Element }) {
-  const { isAuthenticated } = useSupabaseAuth();
+  const { isAuthenticated } = useAuth();
   
   if (!isAuthenticated) {
     return (
@@ -63,7 +63,7 @@ function AuthGuard({ children }: { children: JSX.Element }) {
 }
 
 function MaintenanceBanner() {
-  const { isAuthenticated } = useSupabaseAuth();
+  const { isAuthenticated } = useAuth();
   
   return (
     <>
@@ -82,10 +82,10 @@ function MaintenanceBanner() {
 const App = () => (
   <QueryClientProvider client={queryClient}>
     <TooltipProvider>
-      <SupabaseAuthProvider>
+      <AuthProvider>
         <SupabaseAdminProvider>
           <SupabaseProductsProvider>
-            <SupabaseWalletProvider>
+            <WalletProvider>
               <CartProvider>
                 <Toaster />
                 <Sonner />
@@ -122,10 +122,10 @@ const App = () => (
                   </div>
                 </BrowserRouter>
               </CartProvider>
-            </SupabaseWalletProvider>
+            </WalletProvider>
           </SupabaseProductsProvider>
         </SupabaseAdminProvider>
-      </SupabaseAuthProvider>
+      </AuthProvider>
     </TooltipProvider>
   </QueryClientProvider>
 );
