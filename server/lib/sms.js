@@ -52,6 +52,15 @@ class SMSService {
     return this.sendSMS(phoneNumbers, message);
   }
 
+  async sendWelcomeSMS(phoneNumber, message) {
+    const formattedPhone = this.formatPhoneNumber(phoneNumber);
+    if (!formattedPhone) {
+      return { success: false, error: 'Invalid phone number' };
+    }
+    
+    return this.sendSMS(formattedPhone, message);
+  }
+
   async sendSMS(to, message) {
     if (this.provider === 'africastalking') {
       return this.sendAfricasTalkingSMS(to, message);

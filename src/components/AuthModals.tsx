@@ -23,7 +23,9 @@ export function AuthModals({ open, onOpenChange, defaultTab = "signin" }: AuthMo
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [showChecklist, setShowChecklist] = useState(false);
-  const { signIn, signUp, user } = useAuth();
+  const [showForgotPassword, setShowForgotPassword] = useState(false);
+  const [forgotPasswordEmail, setForgotPasswordEmail] = useState("");
+  const { signIn, signUp, resetPassword, signInWithOAuth, user } = useAuth();
   const { toast } = useToast();
 
   useEffect(() => {
@@ -34,6 +36,8 @@ export function AuthModals({ open, onOpenChange, defaultTab = "signin" }: AuthMo
       setShowSignInPassword(false);
       setShowSignUpPassword(false);
       setShowChecklist(false);
+      setShowForgotPassword(false);
+      setForgotPasswordEmail("");
     }
   }, [open, defaultTab]);
 
@@ -64,9 +68,17 @@ export function AuthModals({ open, onOpenChange, defaultTab = "signin" }: AuthMo
     const phone = (form.querySelector('#signup-phone') as HTMLInputElement)?.value;
     const email = (form.querySelector('#signup-email') as HTMLInputElement)?.value;
     const password = (form.querySelector('#signup-password') as HTMLInputElement)?.value;
+    
+    // Validate phone number is provided
+    if (!phone || phone.trim() === '') {
+      setError('Phone number is required for account creation');
+      setLoading(false);
+      return;
+    }
+    
     try {
       await signUp(name, phone, email, password);
-      toast({ title: "Account created", description: "Welcome to GetDeals" });
+      toast({ title: "Account created", description: "Welcome to GetDeals! A welcome SMS has been sent to your phone." });
       // Show checklist for new users (onboardingCompleted will be false by default)
       setShowChecklist(true);
     } catch (err: any) {
@@ -81,18 +93,88 @@ export function AuthModals({ open, onOpenChange, defaultTab = "signin" }: AuthMo
     onOpenChange(false);
   };
 
+  const handleForgotPassword = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setError(null);
+    setLoading(true);
+    try {
+      const result = await resetPassword(forgotPasswordEmail);
+      if (result.ok) {
+        setShowForgotPassword(false);
+        setForgotPasswordEmail("");
+      } else {
+        setError(result.error || 'Failed to send reset email');
+      }
+    } catch (err: any) {
+      setError(err?.message || 'Failed to send reset email');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleSocialLogin = async (provider: 'google' | 'facebook') => {
+    setError(null);
+    setLoading(true);
+    try {
+      const result = await signInWithOAuth(provider);
+      if (!result.ok) {
+        setError(result.error || `Failed to sign in with ${provider}`);
+      }
+      // OAuth will redirect, so no need to close modal here
+    } catch (err: any) {
+      setError(err?.message || `Failed to sign in with ${provider}`);
+      setLoading(false);
+    }
+  };
+
   return (
     <>
       <Dialog open={open} onOpenChange={onOpenChange}>
         <DialogContent className="max-w-md bg-white dark:bg-white border shadow-lg">
           <DialogHeader className="text-center pb-4">
             <DialogTitle className="text-xl font-bold bg-gradient-to-r from-primary to-primary/70 bg-clip-text text-transparent">
-              Welcome to GetDeals
+              {showForgotPassword ? "Reset Password" : "Welcome to GetDeals"}
             </DialogTitle>
             <DialogDescription className="text-center text-xs text-muted-foreground">
-              Sign in or create an account to continue shopping
+              {showForgotPassword ? "Enter your email to receive a password reset link" : "Sign in or create an account to continue shopping"}
             </DialogDescription>
           </DialogHeader>
+
+          {showForgotPassword ? (
+            <form onSubmit={handleForgotPassword} className="space-y-4">
+              <div className="space-y-1">
+                <Label htmlFor="forgot-email" className="text-xs font-medium">Email Address</Label>
+                <div className="relative">
+                  <Mail className="absolute left-3 top-2.5 h-4 w-4 text-muted-foreground" />
+                  <Input
+                    id="forgot-email"
+                    type="email"
+                    placeholder="Enter your email"
+                    value={forgotPasswordEmail}
+                    onChange={(e) => setForgotPasswordEmail(e.target.value)}
+                    className="pl-10 h-10 border-2 focus:border-primary/50 transition-colors"
+                    required
+                  />
+                </div>
+              </div>
+
+              {error && <p className="text-xs text-red-600">{error}</p>}
+              <Button disabled={loading} type="submit" className="w-full h-10 bg-gradient-to-r from-primary to-primary/80 hover:from-primary/90 hover:to-primary/70 transition-all">
+                Send Reset Link
+              </Button>
+
+              <p className="text-center text-xs text-muted-foreground">
+                Remember your password?{" "}
+                <button
+                  type="button"
+                  onClick={() => setShowForgotPassword(false)}
+                  className="text-primary hover:text-primary/80 font-medium hover:underline transition-colors"
+                >
+                  Back to Sign In
+                </button>
+              </p>
+            </form>
+          ) : (
 
           <Tabs
             value={activeTab}
@@ -124,7 +206,16 @@ export function AuthModals({ open, onOpenChange, defaultTab = "signin" }: AuthMo
                 </div>
                 
                 <div className="space-y-1">
-                  <Label htmlFor="signin-password" className="text-xs font-medium">Password</Label>
+                  <div className="flex items-center justify-between">
+                    <Label htmlFor="signin-password" className="text-xs font-medium">Password</Label>
+                    <button
+                      type="button"
+                      onClick={() => setShowForgotPassword(true)}
+                      className="text-xs text-primary hover:text-primary/80 hover:underline transition-colors"
+                    >
+                      Forgot Password?
+                    </button>
+                  </div>
                   <div className="relative">
                     <Lock className="absolute left-3 top-2.5 h-4 w-4 text-muted-foreground" />
                     <Input
@@ -156,8 +247,12 @@ export function AuthModals({ open, onOpenChange, defaultTab = "signin" }: AuthMo
                 </div>
                 
                 <div className="grid grid-cols-2 gap-2">
-                  <Button type="button" variant="outline" size="sm">Google</Button>
-                  <Button type="button" variant="outline" size="sm">Facebook</Button>
+                  <Button type="button" variant="outline" size="sm" onClick={() => handleSocialLogin('google')} disabled={loading}>
+                    Google
+                  </Button>
+                  <Button type="button" variant="outline" size="sm" disabled className="opacity-50 cursor-not-allowed">
+                    Facebook
+                  </Button>
                 </div>
                 
                 <p className="text-center text-xs text-muted-foreground">
@@ -191,14 +286,15 @@ export function AuthModals({ open, onOpenChange, defaultTab = "signin" }: AuthMo
                   </div>
 
                   <div className="space-y-1">
-                    <Label htmlFor="signup-phone" className="text-xs font-medium">Phone (Optional)</Label>
+                    <Label htmlFor="signup-phone" className="text-xs font-medium">Phone Number *</Label>
                     <div className="relative">
                       <Phone className="absolute left-2 top-2.5 h-3 w-3 text-muted-foreground" />
                       <Input
                         id="signup-phone"
                         type="tel"
-                        placeholder="+254... (optional)"
+                        placeholder="+254 700 123 456"
                         className="pl-7 h-9 text-sm border-2 focus:border-primary/50 transition-colors"
+                        required
                       />
                     </div>
                   </div>
@@ -251,8 +347,12 @@ export function AuthModals({ open, onOpenChange, defaultTab = "signin" }: AuthMo
                 </div>
                 
                 <div className="grid grid-cols-2 gap-2">
-                  <Button type="button" variant="outline" size="sm">Google</Button>
-                  <Button type="button" variant="outline" size="sm">Facebook</Button>
+                  <Button type="button" variant="outline" size="sm" onClick={() => handleSocialLogin('google')} disabled={loading}>
+                    Google
+                  </Button>
+                  <Button type="button" variant="outline" size="sm" disabled className="opacity-50 cursor-not-allowed">
+                    Facebook
+                  </Button>
                 </div>
                 
                 <p className="text-center text-xs text-muted-foreground pt-1">
@@ -268,6 +368,7 @@ export function AuthModals({ open, onOpenChange, defaultTab = "signin" }: AuthMo
               </form>
             </TabsContent>
           </Tabs>
+          )}
         </DialogContent>
       </Dialog>
 

@@ -3,8 +3,8 @@ import { useAuth } from "./AuthContext";
 
 export type Address = {
   id: string;
-  label: string; // e.g., Home, Office
-  details: string; // free text address
+  label: string; 
+  details: string; 
   isDefault?: boolean;
 };
 

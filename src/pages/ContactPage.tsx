@@ -28,6 +28,17 @@ export default function ContactPage() {
         message: formData.get('message'),
       };
 
+      // Validate phone number is provided
+      if (!data.phone || data.phone.toString().trim() === '') {
+        toast({
+          title: "Phone number required",
+          description: "Please provide your phone number so we can send you updates and offers.",
+          variant: "destructive"
+        });
+        setIsSubmitting(false);
+        return;
+      }
+
             const baseUrl = getApiBase();
             const response = await fetch(`${baseUrl}/api/contact`, {
         method: 'POST',
@@ -38,7 +49,7 @@ export default function ContactPage() {
       if (response.ok) {
         toast({ 
           title: "Message sent successfully! 🎉", 
-          description: "Thank you for reaching out. We'll get back to you within 2 hours during business hours." 
+          description: "Thank you for reaching out. We'll get back to you within 2 hours during business hours. You'll also receive SMS updates on your phone." 
         });
         formRef.current?.reset();
       } else {
@@ -205,13 +216,14 @@ export default function ContactPage() {
 
                   <div className="space-y-2">
                     <Label htmlFor="phone" className="text-sm font-medium">
-                      Phone Number
+                      Phone Number *
                     </Label>
                     <Input 
                       id="phone" 
                       name="phone"
                       type="tel" 
                       placeholder="+254 700 123 456"
+                      required
                       className="h-11" 
                     />
                   </div>

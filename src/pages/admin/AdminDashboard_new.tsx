@@ -61,8 +61,7 @@ export default function AdminDashboard() {
     return Math.round(((revenueInRange - prevRevenue) / prevRevenue) * 100);
   }, [revenueInRange, prevRevenue]);
 
-  // Demo data generator
-  // Demo data generator using live products
+
   const genDemoOrders = () => {
     const statuses = ["pending", "confirmed", "preparing", "out_for_delivery", "delivered", "cancelled"] as const;
     const pay = ["mpesa", "card", "wallet"] as const;

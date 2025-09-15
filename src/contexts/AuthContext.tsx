@@ -24,7 +24,7 @@ type AuthContextType = {
   signUp: (name: string, phone: string, email: string, password: string) => Promise<void>;
   signOut: () => Promise<void>;
   changePassword: (newPassword: string) => Promise<{ ok: boolean; error?: string }>;
-  resetPassword: (email: string) => Promise<{ ok: boolean; error?: string }>;
+  signInWithOAuth: (provider: 'google' | 'facebook') => Promise<{ ok: boolean; error?: string }>;
   updateProfile: (updates: Partial<AuthUser>) => Promise<{ ok: boolean; error?: string }>;
   isAdmin: boolean;
 };
@@ -359,6 +359,21 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     }
   };
 
+  const signInWithOAuth = async (provider: 'google' | 'facebook') => {
+    try {
+      const { error } = await auth.signInWithOAuth(provider);
+
+      if (error) {
+        return { ok: false, error: error.message };
+      }
+
+      return { ok: true };
+    } catch (error) {
+      const errorMessage = error instanceof Error ? error.message : 'OAuth sign in failed';
+      return { ok: false, error: errorMessage };
+    }
+  };
+
   const updateProfile = async (updates: Partial<AuthUser>) => {
     try {
       if (!user?.id) {
@@ -427,6 +442,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     signOut,
     changePassword,
     resetPassword,
+    signInWithOAuth,
     updateProfile,
     isAdmin,
   };

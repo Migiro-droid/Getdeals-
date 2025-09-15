@@ -27,6 +27,8 @@ import AccountPage from "./pages/AccountPage";
 import FAQPage from "./pages/FAQPage";
 import NotFound from "./pages/NotFound";
 import AuthPage from "./pages/AuthPage";
+import ResetPasswordPage from "./pages/ResetPasswordPage";
+import AuthCallbackPage from "./pages/AuthCallbackPage";
 
 // Supabase Admin Pages
 import SupabaseAdminProducts from "./pages/admin/SupabaseAdminProducts";
@@ -95,6 +97,8 @@ const App = () => (
                       <Routes>
                         <Route path="/" element={<HomePage />} />
                         <Route path="/auth" element={<AuthPage />} />
+                        <Route path="/auth/callback" element={<AuthCallbackPage />} />
+                        <Route path="/reset-password" element={<ResetPasswordPage />} />
                         <Route path="/baskets" element={<BasketsPage />} />
                         <Route path="/cart" element={<CartPage />} />
                         <Route path="/checkout" element={<CheckoutPage />} />
