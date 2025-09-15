@@ -99,9 +99,12 @@ async function seedProducts() {
       const product = sampleProducts[i];
       console.log(`   Adding product ${i + 1}/${sampleProducts.length}: ${product.name}`);
       
+      const now = new Date().toISOString();
+      const withTimestamps = { ...product, createdAt: now, updatedAt: now };
+
       const { data, error } = await supabase
         .from('products')
-        .insert([product])
+        .insert([withTimestamps])
         .select()
         .single();
       

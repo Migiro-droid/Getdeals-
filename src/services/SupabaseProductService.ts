@@ -126,7 +126,8 @@ export class SupabaseProductService {
       }
 
       // Fallback: direct Supabase insert (may fail due to permissions)
-      const supabaseProduct = this.transformToSupabaseProduct(product);
+      const now = new Date().toISOString();
+      const supabaseProduct = { ...this.transformToSupabaseProduct(product), createdAt: now, updatedAt: now };
 
       const { data, error } = await supabase
         .from('products')
@@ -266,7 +267,7 @@ export class SupabaseProductService {
    * Transform Product to Supabase format
    */
   private static transformToSupabaseProduct(product: Partial<Product>): any {
-    const result: any = {};
+  const result: any = {};
 
     if (product.name !== undefined) result.name = product.name;
     if (product.price !== undefined) result.price = product.price;
@@ -278,6 +279,10 @@ export class SupabaseProductService {
     if (product.category !== undefined) result.category = product.category;
     if (product.description !== undefined) result.description = product.description;
   // featured/inStock intentionally not included in the insert/update payload
+
+    // Ensure createdAt/updatedAt are included when creating/updating from frontend
+    if (!result.createdAt) result.createdAt = new Date().toISOString();
+    if (!result.updatedAt) result.updatedAt = new Date().toISOString();
 
     return result;
   }
