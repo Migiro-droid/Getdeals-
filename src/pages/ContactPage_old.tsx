@@ -231,7 +231,7 @@ export default function ContactPage() {
               </CardHeader>
               <CardContent>
                 <p className="text-muted-foreground text-base">
-                  We accept M-Pesa, Visa/Mastercard, GetDeals Wallet, and cash payments.
+                  We accept M-Pesa, Visa/Mastercard, and GetDeals Wallet.
                 </p>
               </CardContent>
             </Card>

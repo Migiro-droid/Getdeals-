@@ -48,7 +48,7 @@ export default function HowItWorksPage() {
       number: "4",
       icon: CreditCard,
       title: "Make Payment",
-      description: "Pay securely using M-Pesa, Rukisha Wallet, Card, or Cash on delivery/pickup.",
+      description: "Pay securely using M-Pesa, Rukisha Wallet, or Card.",
       details: [
         "Multiple payment options",
         "Secure payment processing",
@@ -99,11 +99,6 @@ export default function HowItWorksPage() {
       name: "Rukisha Wallet",
       description: "Use your Rukisha balance for seamless payments",
       icon: Package
-    },
-    {
-      name: "Cash Payment",
-      description: "Pay with cash on delivery or at pickup point",
-      icon: CheckCircle
     }
   ];
 
@@ -434,7 +429,7 @@ export default function HowItWorksPage() {
             <div className="mt-6 flex items-center justify-center space-x-6 text-sm text-muted-foreground">
               <div className="flex items-center">
                 <CheckCircle className="h-4 w-4 text-green-500 mr-2" />
-                Free delivery on orders over KSh 2,000
+                Free delivery on orders over KSh 5,000
               </div>
               <div className="flex items-center">
                 <CheckCircle className="h-4 w-4 text-green-500 mr-2" />

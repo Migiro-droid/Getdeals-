@@ -137,9 +137,11 @@ export const productAPI = {
     const productWithId = {
       ...product,
       id: uuidv4(),
+      createdAt: now,
+      updatedAt: now,
     };
     // normalize to DB column names / allowed fields
-    const dbProduct = normalizeProductForDb(productWithId, { noTimestamps: true });
+    const dbProduct = normalizeProductForDb(productWithId, { noTimestamps: false });
 
     // @ts-ignore
     const { data, error } = await supabaseAdmin
@@ -191,7 +193,13 @@ function normalizeProductForDb(product: any, opts?: { partial?: boolean; noTimes
   // Use a minimal safe whitelist to avoid sending columns that might not exist
   // in the live Supabase schema. This keeps payloads minimal and lets the DB
   // apply defaults (timestamps, flags) server-side.
-  const allowed = ['id', 'name', 'price', 'originalPrice', 'image', 'category', 'description'];
+  let allowed = ['id', 'name', 'price', 'originalPrice', 'image', 'category', 'description'];
+
+  // Include timestamps if not explicitly disabled
+  if (!opts?.noTimestamps) {
+    allowed = [...allowed, 'createdAt', 'updatedAt'];
+  }
+
   const out: any = {};
 
   for (const k of Object.keys(product || {})) {

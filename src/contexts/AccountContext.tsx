@@ -1,4 +1,5 @@
 import React, { createContext, useContext, useEffect, useMemo, useState } from "react";
+import { useAuth } from "./AuthContext";
 
 export type Address = {
   id: string;
@@ -38,12 +39,14 @@ const KEY = "account_settings_v1";
 const AccountContext = createContext<AccountCtx | undefined>(undefined);
 
 export const AccountProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
+  const { user } = useAuth();
+  
   const [profile, setProfileState] = useState<Profile>({
-    firstName: "Eric",
-    lastName: "Ndivo",
-    email: "eric.ndivo@email.com",
-    phone: "+254 700 123 456",
-    memberSince: "Jan 2024",
+    firstName: user?.name?.split(' ')[0] || '',
+    lastName: user?.name?.split(' ').slice(1).join(' ') || '',
+    email: user?.email || '',
+    phone: user?.phone || '',
+    memberSince: user?.createdAt ? new Date(user.createdAt).toLocaleDateString('en-US', { month: 'short', year: 'numeric' }) : undefined,
   });
   const [notifications, setNotificationsState] = useState<Notifications>({
     orderUpdates: true,
@@ -74,6 +77,20 @@ export const AccountProvider: React.FC<{ children: React.ReactNode }> = ({ child
       localStorage.setItem(KEY, payload);
     } catch {}
   }, [profile, notifications, addresses]);
+
+  // Update profile when user data changes
+  useEffect(() => {
+    if (user) {
+      setProfileState(prev => ({
+        ...prev,
+        firstName: user.name?.split(' ')[0] || prev.firstName,
+        lastName: user.name?.split(' ').slice(1).join(' ') || prev.lastName,
+        email: user.email || prev.email,
+        phone: user.phone || prev.phone,
+        memberSince: user.createdAt ? new Date(user.createdAt).toLocaleDateString('en-US', { month: 'short', year: 'numeric' }) : prev.memberSince,
+      }));
+    }
+  }, [user]);
 
   const setProfile = (p: Profile) => setProfileState(p);
   const setNotifications = (n: Notifications) => setNotificationsState(n);

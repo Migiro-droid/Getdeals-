@@ -346,7 +346,7 @@ export default function ContactPage() {
               {
                 icon: "💳",
                 question: "What payment methods do you accept?",
-                answer: "We accept M-Pesa, Visa/Mastercard, GetDeals Wallet, and cash on delivery for your convenience."
+                answer: "We accept M-Pesa, Visa/Mastercard, and GetDeals Wallet for your convenience."
               },
               {
                 icon: "⏰",

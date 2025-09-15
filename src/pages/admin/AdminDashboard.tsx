@@ -123,7 +123,7 @@ export default function AdminDashboard() {
       { name: "Cooking Oil", price: 980 },
     ];
     const statuses: OrderStatus[] = ["pending", "confirmed", "preparing", "out_for_delivery", "delivered", "cancelled"];
-    const pay: Order["paymentMethod"][] = ["mpesa", "card", "wallet", "cash"];
+    const pay: Order["paymentMethod"][] = ["mpesa", "card", "wallet"];
     const del: Order["deliveryMethod"][] = ["pickup", "speedy"];
     const out: Order[] = [];
     const nowTs = Date.now();
@@ -247,7 +247,7 @@ export default function AdminDashboard() {
   // Payment & Delivery breakdowns
   const labelPayment = (m: string) => (m === "mpesa" ? "M-Pesa" : m.charAt(0).toUpperCase() + m.slice(1));
   const paymentBreakdown = useMemo(() => {
-    const map: Record<string, number> = { mpesa: 0, card: 0, wallet: 0, cash: 0 };
+    const map: Record<string, number> = { mpesa: 0, card: 0, wallet: 0 };
     for (const o of ordersInRange) map[o.paymentMethod] = (map[o.paymentMethod] || 0) + 1;
     return Object.entries(map).map(([k, v]) => ({ key: k, label: labelPayment(k), value: v }));
   }, [ordersInRange]);

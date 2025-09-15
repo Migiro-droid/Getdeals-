@@ -73,7 +73,7 @@ export default function FAQPage() {
       faqs: [
         {
           question: "What payment methods do you accept?",
-          answer: "We accept M-Pesa, Visa/Mastercard, Rukisha Wallet, and cash payments for both delivery and pickup orders."
+          answer: "We accept M-Pesa, Visa/Mastercard, and Rukisha Wallet for both delivery and pickup orders."
         },
         {
           question: "How much do I save with basket bundles?",

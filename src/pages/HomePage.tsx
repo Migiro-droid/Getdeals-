@@ -203,7 +203,7 @@ export default function HomePage() {
     {
       number: "4",
       title: "Make Payment",
-  description: "Pay securely using M-Pesa, Card, GetDeals Wallet, or Cash"
+  description: "Pay securely using M-Pesa, Card, or GetDeals Wallet"
     }
   ];
 

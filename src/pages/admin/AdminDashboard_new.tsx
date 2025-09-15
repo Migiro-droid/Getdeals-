@@ -65,7 +65,7 @@ export default function AdminDashboard() {
   // Demo data generator using live products
   const genDemoOrders = () => {
     const statuses = ["pending", "confirmed", "preparing", "out_for_delivery", "delivered", "cancelled"] as const;
-    const pay = ["mpesa", "card", "wallet", "cash"] as const;
+    const pay = ["mpesa", "card", "wallet"] as const;
     const del = ["pickup", "speedy"] as const;
     const rand = (min: number, max: number) => Math.floor(Math.random() * (max - min + 1)) + min;
     const pick = <T,>(arr: readonly T[]) => arr[rand(0, arr.length - 1)];
@@ -180,7 +180,7 @@ export default function AdminDashboard() {
   // Payment & Delivery breakdowns
   const labelPayment = (m: string) => (m === "mpesa" ? "M-Pesa" : m.charAt(0).toUpperCase() + m.slice(1));
   const paymentBreakdown = useMemo(() => {
-    const map: Record<string, number> = { mpesa: 0, card: 0, wallet: 0, cash: 0 };
+    const map: Record<string, number> = { mpesa: 0, card: 0, wallet: 0 };
     for (const o of ordersInRange) map[o.paymentMethod] = (map[o.paymentMethod] || 0) + 1;
     return Object.entries(map).map(([k, v]) => ({ key: k, label: labelPayment(k), value: v }));
   }, [ordersInRange]);
