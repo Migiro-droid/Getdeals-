@@ -116,12 +116,19 @@ export function AuthModals({ open, onOpenChange, defaultTab = "signin" }: AuthMo
     setError(null);
     setLoading(true);
     try {
+      console.log(`Attempting ${provider} OAuth login...`);
       const result = await signInWithOAuth(provider);
       if (!result.ok) {
+        console.error(`${provider} OAuth error:`, result.error);
         setError(result.error || `Failed to sign in with ${provider}`);
+        setLoading(false);
+      } else {
+        console.log(`${provider} OAuth initiated successfully`);
+        // OAuth will redirect, so loading state will be maintained
+        // The callback page will handle the completion
       }
-      // OAuth will redirect, so no need to close modal here
     } catch (err: any) {
+      console.error(`${provider} OAuth exception:`, err);
       setError(err?.message || `Failed to sign in with ${provider}`);
       setLoading(false);
     }

@@ -24,6 +24,7 @@ type AuthContextType = {
   signUp: (name: string, phone: string, email: string, password: string) => Promise<void>;
   signOut: () => Promise<void>;
   changePassword: (newPassword: string) => Promise<{ ok: boolean; error?: string }>;
+  resetPassword: (email: string) => Promise<{ ok: boolean; error?: string }>;
   signInWithOAuth: (provider: 'google' | 'facebook') => Promise<{ ok: boolean; error?: string }>;
   updateProfile: (updates: Partial<AuthUser>) => Promise<{ ok: boolean; error?: string }>;
   isAdmin: boolean;

@@ -94,10 +94,19 @@ export const auth = {
 
   // Sign in with OAuth provider
   signInWithOAuth: async (provider: 'google' | 'facebook') => {
+    // Determine the correct redirect URL based on environment
+    const redirectTo = window.location.hostname === 'localhost' 
+      ? `${window.location.origin}/auth/callback`
+      : `https://getdeals.co.ke/auth/callback`;
+      
     const { data, error } = await supabase.auth.signInWithOAuth({
       provider,
       options: {
-        redirectTo: `${window.location.origin}/auth/callback`
+        redirectTo,
+        queryParams: {
+          access_type: 'offline',
+          prompt: 'consent',
+        }
       }
     });
     return { data, error };
@@ -440,7 +449,7 @@ export const adminUtils = {
       .single();
     
     if (error) return false;
-    return data?.role === 'admin';
+    return data && data.role === 'admin';
   },
 
   // Promote user to admin

@@ -37,6 +37,7 @@ import TestProductsPage from "./pages/TestProductsPage";
 import WalletPage from "./pages/WalletPage";
 import CategoryPage from "./pages/CategoryPage";
 import AuthPage from "./pages/AuthPage";
+import AuthCallbackPage from "./pages/AuthCallbackPage";
 import { AuthTestPage } from "./components/AuthTestPage";
 import { QuickMartDashboard } from "./pages/quickmart/QuickMartDashboard";
 
@@ -185,6 +186,7 @@ const App = () => {
                   <Route path="/test-auth" element={<AuthTestPage />} />
                   <Route path="/wallet" element={<WalletPage />} />
                   <Route path="/auth" element={<AuthPage />} />
+                  <Route path="/auth/callback" element={<AuthCallbackPage />} />
                   <Route path="/admin" element={<AdminGuard><AdminDashboard /></AdminGuard>} />
                   <Route path="/admin/orders" element={<AdminGuard><AdminOrders /></AdminGuard>} />
                   <Route path="/admin/users" element={<AdminGuard><AdminUsers /></AdminGuard>} />
