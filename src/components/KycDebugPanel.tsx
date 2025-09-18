@@ -3,7 +3,6 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { useWalletKyc } from '../hooks/useWalletKyc';
 
-// Debug component to test KYC date formatting
 export function KycDebugPanel() {
   const { kycData, loading } = useWalletKyc();
 

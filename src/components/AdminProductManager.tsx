@@ -41,6 +41,7 @@ type ProductFormData = {
 export function AdminProductManager() {
   const [loading, setLoading] = useState(true);
   const [isModalOpen, setIsModalOpen] = useState(false);
+  const [isBulkUploadOpen, setIsBulkUploadOpen] = useState(false);
   const [editingProduct, setEditingProduct] = useState<Product | null>(null);
   const [formData, setFormData] = useState<ProductFormData>({
     name: '',
@@ -314,10 +315,16 @@ export function AdminProductManager() {
             Manage your GetDeals Kenya product catalog
           </p>
         </div>
-        <Button onClick={openAddModal} className="gap-2">
-          <Plus className="w-4 h-4" />
-          Add Product
-        </Button>
+        <div className="flex gap-2">
+          <Button onClick={() => setIsBulkUploadOpen(true)} variant="outline" className="gap-2">
+            <Upload className="w-4 h-4" />
+            Bulk Upload
+          </Button>
+          <Button onClick={openAddModal} className="gap-2">
+            <Plus className="w-4 h-4" />
+            Add Product
+          </Button>
+        </div>
       </div>
 
       {/* Search and Filters */}
@@ -714,6 +721,13 @@ export function AdminProductManager() {
               </Button>
             </DialogFooter>
           </form>
+        </DialogContent>
+      </Dialog>
+
+      {/* Bulk Upload Modal */}
+      <Dialog open={isBulkUploadOpen} onOpenChange={setIsBulkUploadOpen}>
+        <DialogContent className="max-w-5xl max-h-[90vh] overflow-y-auto">
+          <AdminBulkUpload onClose={() => setIsBulkUploadOpen(false)} />
         </DialogContent>
       </Dialog>
     </div>
