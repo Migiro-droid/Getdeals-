@@ -10,6 +10,9 @@ import { useWallet } from "@/contexts/WalletContext";
 import { useAuth } from "@/contexts/AuthContext";
 import { AuthModals } from "./AuthModals";
 import { WalletActivationModal } from "./WalletActivationModal";
+import { useWalletKyc } from "../hooks/useWalletKyc";
+import { KycStatusDisplay } from "./KycStatusDisplay";
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 
 export function Header() {
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
@@ -21,8 +24,33 @@ export function Header() {
   const { isAuthenticated } = useAuth();
   const [authOpen, setAuthOpen] = useState(false);
   const [walletModalOpen, setWalletModalOpen] = useState(false);
+  const [kycStatusModalOpen, setKycStatusModalOpen] = useState(false);
+  
+  // Get KYC status for authenticated users
+  const { kycData, loading: kycLoading, hasKycData, refetch: refetchKyc } = useWalletKyc();
 
   const cartItemsCount = items.reduce((sum, item) => sum + item.quantity, 0);
+
+  // Handle wallet button click - check KYC status first
+  const handleWalletClick = () => {
+    if (!isAuthenticated) {
+      setAuthOpen(true);
+      return;
+    }
+
+    // If user has already submitted KYC, show status instead of form
+    if (hasKycData) {
+      setKycStatusModalOpen(true);
+    } else {
+      // No KYC data, show the activation modal
+      setWalletModalOpen(true);
+    }
+  };
+
+  const handleContactSupport = () => {
+    // You can implement this to open a support modal or redirect to support page
+    window.open('mailto:support@getdeals.co.ke', '_blank');
+  };
 
   const navigation = [
     { name: "Home", href: "/" },
@@ -72,7 +100,7 @@ export function Header() {
           {/* Wallet Button */}
           {isAuthenticated && (
             <button
-              onClick={() => setWalletModalOpen(true)}
+              onClick={handleWalletClick}
               className="hidden md:inline-flex items-center justify-center gap-2 whitespace-nowrap rounded-md text-sm font-medium ring-offset-background transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 h-10 px-4 py-2 hover:bg-accent hover:text-accent-foreground cursor-pointer text-muted-foreground hover:text-primary"
             >
               Wallet
@@ -97,7 +125,7 @@ export function Header() {
             {/* Wallet quick pill */}
             {isAuthenticated && (
               <button 
-                onClick={() => setWalletModalOpen(true)}
+                onClick={handleWalletClick}
                 className="hidden md:flex px-3 py-1 rounded-full text-xs bg-primary/10 text-primary font-medium hover:bg-primary/20 transition-colors"
               >
                 Wallet: KES {balance.toLocaleString()}
@@ -190,7 +218,7 @@ export function Header() {
                 <button
                   onClick={(e) => {
                     e.preventDefault();
-                    setWalletModalOpen(true);
+                    handleWalletClick();
                     setIsMobileMenuOpen(false);
                   }}
                   className="block px-3 py-2 text-base font-medium transition-colors hover:text-primary cursor-pointer w-full text-left text-muted-foreground hover:text-primary"
@@ -224,8 +252,32 @@ export function Header() {
     {/* Authentication Modals */}
     <AuthModals open={authOpen} onOpenChange={setAuthOpen} defaultTab="signin" />
     
-    {/* Wallet Activation Modal */}
-    <WalletActivationModal open={walletModalOpen} onOpenChange={setWalletModalOpen} />
+    {/* Wallet Activation Modal - only for users without KYC data */}
+    <WalletActivationModal 
+      open={walletModalOpen} 
+      onOpenChange={(open) => {
+        setWalletModalOpen(open);
+        // Refetch KYC data when modal closes to update status
+        if (!open) {
+          refetchKyc();
+        }
+      }} 
+    />
+
+    {/* KYC Status Modal - for users who have already submitted KYC */}
+    <Dialog open={kycStatusModalOpen} onOpenChange={setKycStatusModalOpen}>
+      <DialogContent className="sm:max-w-[600px] max-h-[80vh] overflow-y-auto">
+        <DialogHeader>
+          <DialogTitle>Wallet KYC Status</DialogTitle>
+        </DialogHeader>
+        <KycStatusDisplay 
+          kycData={kycData} 
+          loading={kycLoading}
+          onRetry={refetchKyc}
+          onContactSupport={handleContactSupport}
+        />
+      </DialogContent>
+    </Dialog>
     </>
   );
 }

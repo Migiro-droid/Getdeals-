@@ -6,13 +6,24 @@ import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
 import { useToast } from "@/hooks/use-toast";
 import { useWallet } from "@/contexts/WalletContext";
-import { ArrowDownCircle, ArrowUpCircle, Wallet, RefreshCw } from "lucide-react";
+import { useWalletKyc } from "../hooks/useWalletKyc";
+import { KycStatusDisplay } from "../components/KycStatusDisplay";
+import { WalletActivationModal } from "../components/WalletActivationModal";
+import { ArrowDownCircle, ArrowUpCircle, Wallet, RefreshCw, Shield } from "lucide-react";
 
 export default function WalletPage() {
   const { balance, walletId, transactions, deposit, withdraw, reset } = useWallet();
   const { toast } = useToast();
   const [amount, setAmount] = useState<string>("");
   const amt = Number(amount) || 0;
+  
+  // Check KYC status
+  const { kycData, loading: kycLoading, isVerified, hasKycData, refetch: refetchKyc } = useWalletKyc();
+  const [kycModalOpen, setKycModalOpen] = useState(false);
+
+  const handleContactSupport = () => {
+    window.open('mailto:support@getdeals.co.ke', '_blank');
+  };
 
   const stats = useMemo(() => {
     const month = new Date().toISOString().slice(0, 7); // YYYY-MM
@@ -60,8 +71,43 @@ export default function WalletPage() {
           </div>
         </div>
 
-        {/* Summary Cards */}
-        <div className="grid gap-6 md:grid-cols-3">
+        {/* KYC Status Check - Show appropriate message if user has submitted KYC but not verified */}
+        {hasKycData && !isVerified && (
+          <div className="mb-8">
+            <KycStatusDisplay 
+              kycData={kycData} 
+              loading={kycLoading}
+              onRetry={refetchKyc}
+              onContactSupport={handleContactSupport}
+            />
+          </div>
+        )}
+
+        {/* Show KYC requirement if no KYC data submitted */}
+        {!hasKycData && (
+          <div className="mb-8">
+            <Card className="border-amber-200 bg-amber-50 dark:bg-amber-950/20">
+              <CardContent className="p-6 text-center">
+                <Shield className="h-12 w-12 mx-auto text-amber-600 mb-4" />
+                <h3 className="text-lg font-semibold mb-2">Wallet Activation Required</h3>
+                <p className="text-muted-foreground mb-4">
+                  To use wallet features, you need to complete KYC (Know Your Customer) verification.
+                  This helps us ensure the security of your account.
+                </p>
+                <Button onClick={() => setKycModalOpen(true)}>
+                  <Shield className="h-4 w-4 mr-2" />
+                  Start KYC Verification
+                </Button>
+              </CardContent>
+            </Card>
+          </div>
+        )}
+
+        {/* Wallet Features - Only show for verified users */}
+        {isVerified && (
+          <>
+            {/* Summary Cards */}
+            <div className="grid gap-6 md:grid-cols-3">
           <Card className="border-primary/20">
             <CardHeader>
               <CardTitle className="text-sm text-muted-foreground">Current Balance</CardTitle>
@@ -180,6 +226,9 @@ export default function WalletPage() {
           </Card>
         </div>
 
+        </>
+        )}
+
         {}
         <div className="mt-8 text-center">
           <p className="text-sm text-muted-foreground">
@@ -187,6 +236,18 @@ export default function WalletPage() {
           </p>
         </div>
       </div>
+
+      {/* KYC Activation Modal */}
+      <WalletActivationModal 
+        open={kycModalOpen} 
+        onOpenChange={(open) => {
+          setKycModalOpen(open);
+          // Refetch KYC data when modal closes
+          if (!open) {
+            refetchKyc();
+          }
+        }} 
+      />
     </div>
   );
 }

@@ -138,15 +138,15 @@ export function Footer() {
             </span>
           </div>
           <div className="flex justify-center md:justify-end space-x-6 text-sm">
-            <a href="#" className="text-muted-foreground hover:text-primary transition-colors">
+            <Link to="/privacy-policy" className="text-muted-foreground hover:text-primary transition-colors">
               Privacy Policy
-            </a>
-            <a href="#" className="text-muted-foreground hover:text-primary transition-colors">
+            </Link>
+            <Link to="/terms-of-service" className="text-muted-foreground hover:text-primary transition-colors">
               Terms of Service
-            </a>
-            <a href="#" className="text-muted-foreground hover:text-primary transition-colors">
+            </Link>
+            <Link to="/cookie-policy" className="text-muted-foreground hover:text-primary transition-colors">
               Cookie Policy
-            </a>
+            </Link>
           </div>
         </div>
       </div>

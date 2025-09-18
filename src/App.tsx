@@ -38,6 +38,9 @@ import WalletPage from "./pages/WalletPage";
 import CategoryPage from "./pages/CategoryPage";
 import AuthPage from "./pages/AuthPage";
 import AuthCallbackPage from "./pages/AuthCallbackPage";
+import TermsOfServicePage from "./pages/TermsOfServicePage";
+import PrivacyPolicyPage from "./pages/PrivacyPolicyPage";
+import CookiePolicyPage from "./pages/CookiePolicyPage";
 import { AuthTestPage } from "./components/AuthTestPage";
 import { QuickMartDashboard } from "./pages/quickmart/QuickMartDashboard";
 
@@ -187,6 +190,9 @@ const App = () => {
                   <Route path="/wallet" element={<WalletPage />} />
                   <Route path="/auth" element={<AuthPage />} />
                   <Route path="/auth/callback" element={<AuthCallbackPage />} />
+                  <Route path="/terms-of-service" element={<TermsOfServicePage />} />
+                  <Route path="/privacy-policy" element={<PrivacyPolicyPage />} />
+                  <Route path="/cookie-policy" element={<CookiePolicyPage />} />
                   <Route path="/admin" element={<AdminGuard><AdminDashboard /></AdminGuard>} />
                   <Route path="/admin/orders" element={<AdminGuard><AdminOrders /></AdminGuard>} />
                   <Route path="/admin/users" element={<AdminGuard><AdminUsers /></AdminGuard>} />

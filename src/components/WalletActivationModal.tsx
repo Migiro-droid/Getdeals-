@@ -6,6 +6,7 @@ import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useToast } from "@/hooks/use-toast";
 import { Shield, CheckCircle } from "lucide-react";
+import { WalletKycService } from "../services/wallet-kyc";
 
 interface WalletActivationModalProps {
   open: boolean;
@@ -61,8 +62,8 @@ export function WalletActivationModal({ open, onOpenChange }: WalletActivationMo
 
     if (!formData.kraPin.trim()) {
       newErrors.kraPin = 'KRA PIN is required';
-    } else if (!/^P\d{9}[A-Z]$/.test(formData.kraPin.toUpperCase())) {
-      newErrors.kraPin = 'Please enter a valid KRA PIN (format: PxxxxxxxxxX)';
+    } else if (!/^A\d{9}[A-Z]$/.test(formData.kraPin.toUpperCase())) {
+      newErrors.kraPin = 'Please enter a valid personal KRA PIN (format: AxxxxxxxxxX)';
     }
 
     setErrors(newErrors);
@@ -79,16 +80,24 @@ export function WalletActivationModal({ open, onOpenChange }: WalletActivationMo
     setIsSubmitting(true);
 
     try {
-      // Simulate API call for KYC verification
-      await new Promise(resolve => setTimeout(resolve, 2000));
+      // Submit KYC data using the service
+      const result = await WalletKycService.submitKyc({
+        fullName: formData.fullName,
+        idNumber: formData.idNumber,
+        phoneNumber: formData.phoneNumber,
+        email: formData.email,
+        kraPin: formData.kraPin,
+        idType: formData.idType
+      });
 
-      // Store KYC data in localStorage (in production, this would be sent to backend)
-      localStorage.setItem('wallet_kyc_verified', 'true');
-      localStorage.setItem('wallet_kyc_data', JSON.stringify({
-        ...formData,
-        verifiedAt: new Date().toISOString(),
-        status: 'pending_verification'
-      }));
+      if (!result.success) {
+        toast({
+          title: "Submission Failed",
+          description: result.error || "There was an error submitting your KYC details. Please try again.",
+          variant: "destructive",
+        });
+        return;
+      }
 
       toast({
         title: "KYC Submitted Successfully",
@@ -109,6 +118,7 @@ export function WalletActivationModal({ open, onOpenChange }: WalletActivationMo
       setErrors({});
 
     } catch (error) {
+      console.error('KYC submission error:', error);
       toast({
         title: "Submission Failed",
         description: "There was an error submitting your KYC details. Please try again.",
@@ -224,14 +234,14 @@ export function WalletActivationModal({ open, onOpenChange }: WalletActivationMo
               id="kraPin"
               value={formData.kraPin}
               onChange={(e) => handleInputChange('kraPin', e.target.value.toUpperCase())}
-              placeholder="P051234567A"
+              placeholder="A051234567B"
               className={errors.kraPin ? 'border-red-500' : ''}
             />
             {errors.kraPin && (
               <p className="text-sm text-red-500">{errors.kraPin}</p>
             )}
             <p className="text-xs text-muted-foreground">
-              Format: P followed by 9 digits and a letter (e.g., P051234567A)
+              Format: A followed by 9 digits and a letter (e.g., A051234567B)
             </p>
           </div>
 

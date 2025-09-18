@@ -224,7 +224,15 @@ export default function AuthPage() {
                   </Button>
                 </form>
                 <p className="text-sm text-muted-foreground text-center">
-                  By creating an account, you agree to our terms of service and privacy policy.
+                  By creating an account, you agree to our{' '}
+                  <Link to="/terms-of-service" className="text-primary hover:underline">
+                    terms of service
+                  </Link>{' '}
+                  and{' '}
+                  <Link to="/privacy-policy" className="text-primary hover:underline">
+                    privacy policy
+                  </Link>
+                  .
                 </p>
               </TabsContent>
             </Tabs>
