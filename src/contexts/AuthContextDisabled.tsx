@@ -8,6 +8,7 @@ export type AuthUser = {
   role?: string;
   createdAt?: string;
   twoFactorEnabled?: boolean;
+  organization?: string;
 };
 
 type AuthContextType = {
@@ -16,7 +17,7 @@ type AuthContextType = {
   isAuthenticated: boolean;
   loading: boolean;
   signIn: (email: string, password: string) => Promise<void>;
-  signUp: (name: string, phone: string, email: string, password: string) => Promise<void>;
+  signUp: (name: string, phone: string, email: string, password: string, organization?: string) => Promise<void>;
   signOut: () => void;
   changePassword: (currentPassword: string, newPassword: string) => Promise<{ ok: boolean; error?: string }>;
   startTwoFactor: () => Promise<{ ok: boolean; qrImage?: string; error?: string }>;
@@ -50,9 +51,9 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     return Promise.resolve();
   };
 
-  const signUp = async (name: string, phone: string, email: string, password: string) => {
+  const signUp = async (name: string, phone: string, email: string, password: string, organization?: string) => {
     // Authentication disabled - simulate successful signup
-    console.log('Authentication disabled - simulating signup for:', email);
+    console.log('Authentication disabled - simulating signup for:', email, 'organization:', organization);
     return Promise.resolve();
   };
 

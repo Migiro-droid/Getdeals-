@@ -190,7 +190,7 @@ export const authAPI = {
   async requestPasswordReset(email: string): Promise<{ success: boolean; message?: string; error?: string }> {
     try {
       const { error } = await supabase.auth.resetPasswordForEmail(email, {
-        redirectTo: (typeof window !== 'undefined' && window.location.origin) ? `${window.location.origin}/auth/reset` : undefined
+        redirectTo: (typeof window !== 'undefined' && window.location.origin) ? `${window.location.origin}/auth/reset-password` : undefined
       });
       if (error) return { success: false, error: error.message };
       return { success: true, message: 'Password reset email sent if account exists' };

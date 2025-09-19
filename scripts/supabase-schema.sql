@@ -37,6 +37,7 @@ CREATE TABLE IF NOT EXISTS public.users (
   name TEXT NOT NULL,
   email TEXT UNIQUE NOT NULL,
   phone TEXT UNIQUE,
+  organization TEXT,
   role TEXT DEFAULT 'customer',
   created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
   updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()

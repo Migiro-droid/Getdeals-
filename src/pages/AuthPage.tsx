@@ -17,6 +17,7 @@ export default function AuthPage() {
   const [signUpFirstName, setSignUpFirstName] = useState('');
   const [signUpLastName, setSignUpLastName] = useState('');
   const [signUpPhone, setSignUpPhone] = useState('');
+  const [signUpOrganization, setSignUpOrganization] = useState('');
   const [loading, setLoading] = useState(false);
   
     const { signIn, signUp, isAuthenticated } = useAuth();
@@ -78,7 +79,8 @@ export default function AuthPage() {
         `${signUpFirstName} ${signUpLastName}`,
         signUpPhone,
         signUpEmail,
-        signUpPassword
+        signUpPassword,
+        signUpOrganization
       );
       
       toast({
@@ -200,6 +202,16 @@ export default function AuthPage() {
                       placeholder="+254 700 123 456"
                       value={signUpPhone}
                       onChange={(e) => setSignUpPhone(e.target.value)}
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="signup-organization">Organization (Optional)</Label>
+                    <Input
+                      id="signup-organization"
+                      type="text"
+                      placeholder="Your company or organization"
+                      value={signUpOrganization}
+                      onChange={(e) => setSignUpOrganization(e.target.value)}
                     />
                   </div>
                   <div className="space-y-2">

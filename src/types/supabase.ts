@@ -59,6 +59,7 @@ export interface Database {
           name: string
           email: string
           phone: string | null
+          organization: string | null
           passwordHash: string | null
           role: string
           twoFactorEnabled: boolean
@@ -73,6 +74,7 @@ export interface Database {
           name: string
           email: string
           phone?: string | null
+          organization?: string | null
           passwordHash?: string | null
           role?: string
           twoFactorEnabled?: boolean
@@ -87,6 +89,7 @@ export interface Database {
           name?: string
           email?: string
           phone?: string | null
+          organization?: string | null
           passwordHash?: string | null
           role?: string
           twoFactorEnabled?: boolean

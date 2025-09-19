@@ -13,6 +13,7 @@ export type AuthUser = {
   twoFactorEnabled?: boolean;
   preferences?: string;
   onboardingCompleted?: boolean;
+  organization?: string;
 };
 
 type AuthContextType = {
@@ -21,7 +22,7 @@ type AuthContextType = {
   isAuthenticated: boolean;
   loading: boolean;
   signIn: (email: string, password: string) => Promise<void>;
-  signUp: (name: string, phone: string, email: string, password: string) => Promise<void>;
+  signUp: (name: string, phone: string, email: string, password: string, organization?: string) => Promise<void>;
   signOut: () => Promise<void>;
   changePassword: (newPassword: string) => Promise<{ ok: boolean; error?: string }>;
   resetPassword: (email: string) => Promise<{ ok: boolean; error?: string }>;
@@ -156,6 +157,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
             email: supabaseUser.email!,
             name: basicUser.name,
             phone: supabaseUser.user_metadata?.phone || null,
+            organization: supabaseUser.user_metadata?.organization || null,
             role: 'customer',
             emailVerified: !!supabaseUser.email_confirmed_at,
             phoneVerified: false,
@@ -183,6 +185,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
             phone: profile.phone || '',
             email: profile.email,
             role: profile.role,
+            organization: profile.organization || '',
             createdAt: profile.createdAt,
             twoFactorEnabled: profile.twoFactorEnabled || false,
             preferences: profile.preferences,
@@ -255,14 +258,26 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     }
   };
 
-  const signUp = async (name: string, phone: string, email: string, password: string) => {
+  const signUp = async (name: string, phone: string, email: string, password: string, organization?: string) => {
     setLoading(true);
     try {
-      console.log('Attempting sign up for:', email, 'with name:', name);
+      console.log('Attempting sign up for:', email, 'with name:', name, 'organization:', organization);
+      
+      // Determine the redirect URL based on environment
+      const baseUrl = import.meta.env.PROD 
+        ? 'https://getdeals.co.ke' 
+        : window.location.origin;
+      
       const { data, error } = await auth.signUp(email, password, {
-        name,
-        phone,
-        full_name: name
+        data: {
+          name,
+          phone,
+          full_name: name,
+          organization: organization || null
+        },
+        options: {
+          emailRedirectTo: `${baseUrl}/auth/callback`
+        }
       });
 
       if (error) {
@@ -342,7 +357,14 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
   const resetPassword = async (email: string) => {
     try {
-      const { error } = await auth.resetPassword(email);
+      // Determine the redirect URL based on environment
+      const baseUrl = import.meta.env.PROD 
+        ? 'https://getdeals.co.ke' 
+        : window.location.origin;
+      
+      const { error } = await supabase.auth.resetPasswordForEmail(email, {
+        redirectTo: `${baseUrl}/auth/reset-password`
+      });
 
       if (error) {
         return { ok: false, error: error.message };
@@ -362,7 +384,17 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
   const signInWithOAuth = async (provider: 'google' | 'facebook') => {
     try {
-      const { error } = await auth.signInWithOAuth(provider);
+      // Determine the redirect URL based on environment
+      const baseUrl = import.meta.env.PROD 
+        ? 'https://getdeals.co.ke' 
+        : window.location.origin;
+      
+      const { error } = await supabase.auth.signInWithOAuth({
+        provider,
+        options: {
+          redirectTo: `${baseUrl}/auth/callback`
+        }
+      });
 
       if (error) {
         return { ok: false, error: error.message };

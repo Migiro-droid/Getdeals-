@@ -11,6 +11,7 @@ CREATE TABLE IF NOT EXISTS public.profiles (
   first_name TEXT,
   last_name TEXT,
   phone TEXT UNIQUE,
+  organization TEXT,
   role TEXT DEFAULT 'customer',
   two_factor_enabled BOOLEAN DEFAULT false,
   two_factor_secret TEXT,
@@ -251,13 +252,14 @@ CREATE POLICY "Authenticated users can manage admin settings" ON public.admin_se
 CREATE OR REPLACE FUNCTION public.handle_new_user()
 RETURNS TRIGGER AS $$
 BEGIN
-  INSERT INTO public.profiles (id, user_id, first_name, last_name, phone, email_verified)
+  INSERT INTO public.profiles (id, user_id, first_name, last_name, phone, organization, email_verified)
   VALUES (
     NEW.id,
     NEW.id,
     NEW.raw_user_meta_data->>'first_name',
     NEW.raw_user_meta_data->>'last_name',
     NEW.raw_user_meta_data->>'phone',
+    NEW.raw_user_meta_data->>'organization',
     NEW.email_confirmed_at IS NOT NULL
   );
   
