@@ -1,0 +1,11 @@
+name,price,originalPrice,category,description,items,image
+Coca Cola 500ml,80,100,quickmart,"Refreshing Coca Cola drink","Cold Drink, Soda","/assets/products/coca-cola.jpg"
+Bread White,90,110,quickmart,"Fresh white bread loaf","Bakery, Fresh","/assets/products/bread-white.jpg"
+Milk 1L,120,140,quickmart,"Fresh whole milk","Dairy, Fresh","/assets/products/milk-1l.jpg"
+Eggs Tray,350,400,quickmart,"Farm fresh eggs - 30 pieces","Dairy, Fresh, Protein","/assets/products/eggs-tray.jpg"
+Cooking Oil 1L,280,320,quickmart,"Pure vegetable cooking oil","Cooking, Oil","/assets/products/cooking-oil-1l.jpg"
+Sugar 2kg,240,280,quickmart,"Refined white sugar","Pantry, Sugar","/assets/products/sugar-2kg.jpg"
+Rice 2kg,350,400,quickmart,"Long grain white rice","Pantry, Rice","/assets/products/rice-2kg.jpg"
+Flour 2kg,180,220,quickmart,"All purpose wheat flour","Pantry, Flour","/assets/products/flour-2kg.jpg"
+Tomatoes 1kg,80,,quickmart,"Fresh red tomatoes","Vegetables, Fresh","/assets/products/tomatoes.jpg"
+Onions 1kg,100,,quickmart,"Fresh white onions","Vegetables, Fresh","/assets/products/onions.jpg"

@@ -357,19 +357,31 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
   const resetPassword = async (email: string) => {
     try {
+      console.log('🔄 Starting password reset for:', email);
+      
       // Determine the redirect URL based on environment
       const baseUrl = import.meta.env.PROD 
         ? 'https://getdeals.co.ke' 
         : window.location.origin;
       
+      const redirectUrl = `${baseUrl}/auth/reset-password`;
+      console.log('📍 Using redirect URL:', redirectUrl);
+      console.log('🌍 Environment:', { 
+        isProd: import.meta.env.PROD, 
+        mode: import.meta.env.MODE,
+        origin: window.location.origin 
+      });
+      
       const { error } = await supabase.auth.resetPasswordForEmail(email, {
-        redirectTo: `${baseUrl}/auth/reset-password`
+        redirectTo: redirectUrl
       });
 
       if (error) {
+        console.error('❌ Password reset error:', error);
         return { ok: false, error: error.message };
       }
 
+      console.log('✅ Password reset request successful');
       toast({
         title: "Password Reset Email Sent",
         description: "Check your email for password reset instructions.",
@@ -378,6 +390,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       return { ok: true };
     } catch (error) {
       const errorMessage = error instanceof Error ? error.message : 'Password reset failed';
+      console.error('🚨 Password reset exception:', error);
       return { ok: false, error: errorMessage };
     }
   };

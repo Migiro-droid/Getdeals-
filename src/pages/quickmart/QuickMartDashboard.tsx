@@ -11,7 +11,8 @@ import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, Di
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../../components/ui/select';
 import { Textarea } from '../../components/ui/textarea';
 import { useToast } from '../../hooks/use-toast';
-import { Plus, Package, TrendingUp, Eye, AlertCircle } from 'lucide-react';
+import { Plus, Package, TrendingUp, Eye, AlertCircle, Upload } from 'lucide-react';
+import { AdminBulkUpload } from '../../components/AdminBulkUpload';
 
 interface NewProduct {
   name: string;
@@ -32,6 +33,7 @@ export const QuickMartDashboard: React.FC = () => {
   const { all: products, add: addProduct } = useProducts();
   const { toast } = useToast();
   const [isAddingProduct, setIsAddingProduct] = useState(false);
+  const [isBulkUploadOpen, setIsBulkUploadOpen] = useState(false);
   const [formErrors, setFormErrors] = useState<Record<string, string>>({});
   const [newProduct, setNewProduct] = useState<NewProduct>({
     name: '',
@@ -233,21 +235,29 @@ export const QuickMartDashboard: React.FC = () => {
                     <CardTitle>Product Management</CardTitle>
                     <CardDescription>Add and manage your QuickMart products</CardDescription>
                   </div>
-                  <Dialog>
-                    <DialogTrigger asChild>
-                      <Button>
-                        <Plus className="w-4 h-4 mr-2" />
-                        Add Product
-                      </Button>
-                    </DialogTrigger>
-                    <DialogContent className="max-w-md max-h-[85vh] overflow-y-auto mt-8">
-                      <DialogHeader>
-                        <DialogTitle>Add New Product</DialogTitle>
-                        <DialogDescription>
-                          Add a new product to the QuickMart catalog.
-                        </DialogDescription>
-                      </DialogHeader>
-                      <div className="space-y-3 py-2">
+                  <div className="flex gap-2">
+                    <Button 
+                      variant="outline" 
+                      onClick={() => setIsBulkUploadOpen(true)}
+                    >
+                      <Upload className="w-4 h-4 mr-2" />
+                      Bulk Upload
+                    </Button>
+                    <Dialog>
+                      <DialogTrigger asChild>
+                        <Button>
+                          <Plus className="w-4 h-4 mr-2" />
+                          Add Product
+                        </Button>
+                      </DialogTrigger>
+                      <DialogContent className="max-w-md max-h-[85vh] overflow-y-auto mt-8">
+                        <DialogHeader>
+                          <DialogTitle>Add New Product</DialogTitle>
+                          <DialogDescription>
+                            Add a new product to the QuickMart catalog.
+                          </DialogDescription>
+                        </DialogHeader>
+                        <div className="space-y-3 py-2">
                         <div>
                           <Label htmlFor="name">Product Name *</Label>
                           <Input
@@ -354,14 +364,13 @@ export const QuickMartDashboard: React.FC = () => {
                         >
                           {isAddingProduct ? 'Adding...' : 'Add Product'}
                         </Button>
-                      </div>
-                    </DialogContent>
-                  </Dialog>
+                        </div>
+                      </DialogContent>
+                    </Dialog>
+                  </div>
                 </div>
               </CardHeader>
-            </Card>
-
-            {/* Products Grid */}
+            </Card>            {/* Products Grid */}
             <div>
               <h3 className="text-lg font-semibold mb-4">Your Products ({quickMartProducts.length})</h3>
               {quickMartProducts.length === 0 ? (
@@ -417,6 +426,13 @@ export const QuickMartDashboard: React.FC = () => {
             </Card>
           </TabsContent>
         </Tabs>
+
+        {/* Bulk Upload Dialog */}
+        <Dialog open={isBulkUploadOpen} onOpenChange={setIsBulkUploadOpen}>
+          <DialogContent className="max-w-5xl max-h-[90vh] overflow-y-auto">
+            <AdminBulkUpload onClose={() => setIsBulkUploadOpen(false)} />
+          </DialogContent>
+        </Dialog>
       </div>
     </div>
   );

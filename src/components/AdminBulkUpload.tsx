@@ -38,7 +38,8 @@ const VALID_CATEGORIES = [
   'basket',
   'holiday',
   'school',
-  'blackfriday'
+  'blackfriday',
+  'quickmart'
 ];
 
 export function AdminBulkUpload({ onClose }: { onClose: () => void }) {
