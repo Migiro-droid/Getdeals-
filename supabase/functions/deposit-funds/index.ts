@@ -76,10 +76,11 @@ serve(async (req) => {
     }
 
     // Get user's customer_id from profiles (use maybeSingle to avoid throwing when no row)
+    // Use a more specific query to avoid schema cache issues
     const { data: profile, error: profileError } = await supabaseClient
       .from('profiles')
       .select('customer_id, first_name, last_name')
-      .eq('id', user.id)
+      .eq('user_id', user.id)  // Changed from 'id' to 'user_id' for clarity
       .maybeSingle()
 
     console.log('Profile query result:', { profile, profileError, userId: user.id })
