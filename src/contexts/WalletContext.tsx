@@ -1,118 +1,179 @@
-import React, { createContext, useContext, useMemo, useState, useEffect } from "react";
+import React, { createContext, useContext, useState, useEffect, useCallback } from "react";
+import { WalletService, WalletData, WalletTransaction } from "../services/wallet-backend";
+import { supabase } from "../../lib/supabase";
 
-type TxType = "deposit" | "withdraw" | "payment";
-export interface WalletTransaction {
-  id: string;
-  type: TxType;
-  amount: number; 
-  date: string;
-  note?: string;
-}
-
-interface WalletContextType {
+export interface WalletContextType {
+  // Data
   balance: number;
   walletId: string;
+  wallet: WalletData | null;
   transactions: WalletTransaction[];
-  deposit: (amount: number, note?: string) => { ok: boolean; error?: string };
-  withdraw: (
-    amount: number,
-    note?: string,
-    type?: Exclude<TxType, "deposit">
-  ) => { ok: boolean; error?: string };
-  reset: () => void;
+  
+  // Loading states
+  loading: boolean;
+  transactionsLoading: boolean;
+  
+  // Actions
+  withdraw: (amount: number, note?: string) => Promise<{ ok: boolean; error?: string }>;
+  deposit: (amount: number) => Promise<{ ok: boolean; error?: string }>;
+  refreshWallet: () => Promise<void>;
+  refreshTransactions: () => Promise<void>;
 }
 
 const WalletContext = createContext<WalletContextType | undefined>(undefined);
 
 export const WalletProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
-  const [balance, setBalance] = useState<number>(() => {
+  const [wallet, setWallet] = useState<WalletData | null>(null);
+  const [transactions, setTransactions] = useState<WalletTransaction[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [transactionsLoading, setTransactionsLoading] = useState(true);
+
+  // Fetch wallet data
+  const refreshWallet = useCallback(async () => {
     try {
-      const raw = localStorage.getItem("wallet.balance");
-      return raw ? Number(raw) || 0 : 0;
-    } catch {
-      return 0;
+      const result = await WalletService.getWallet();
+      if (result.success && result.data) {
+        setWallet(result.data);
+      } else {
+        console.error('Failed to load wallet:', result.error);
+        if (result.error?.includes('not found')) {
+          const createResult = await WalletService.createWallet();
+          if (createResult.success && createResult.data) {
+            setWallet(createResult.data);
+          }
+        }
+      }
+    } catch (error) {
+      console.error('Error refreshing wallet:', error);
+    } finally {
+      setLoading(false);
     }
-  });
-  const [transactions, setTransactions] = useState<WalletTransaction[]>(() => {
+  }, []);
+
+  const refreshTransactions = useCallback(async () => {
     try {
-      const raw = localStorage.getItem("wallet.transactions");
-      return raw ? (JSON.parse(raw) as WalletTransaction[]) : [];
-    } catch {
-      return [];
+      const result = await WalletService.getTransactions();
+      if (result.success && result.data) {
+        setTransactions(result.data);
+      } else {
+        console.error('Failed to load transactions:', result.error);
+        setTransactions([]);
+      }
+    } catch (error) {
+      console.error('Error refreshing transactions:', error);
+      setTransactions([]);
+    } finally {
+      setTransactionsLoading(false);
     }
-  });
-  const [walletId, setWalletId] = useState<string>(() => {
-    try {
-      const existing = localStorage.getItem("wallet.id");
-      if (existing) return existing;
-      const id = `WAL-${Math.random().toString(36).slice(2, 8).toUpperCase()}-${Date.now()
-        .toString()
-        .slice(-4)}`;
-      localStorage.setItem("wallet.id", id);
-      return id;
-    } catch {
-      return `WAL-${Date.now()}`;
-    }
-  });
+  }, []);
 
   useEffect(() => {
-    try {
-      localStorage.setItem("wallet.balance", String(balance));
-    } catch {}
-  }, [balance]);
-
-  useEffect(() => {
-    try {
-      localStorage.setItem("wallet.transactions", JSON.stringify(transactions));
-    } catch {}
-  }, [transactions]);
-
-  const addTx = (tx: Omit<WalletTransaction, "id" | "date"> & { date?: string }) => {
-    const full: WalletTransaction = {
-      id: `tx_${Date.now()}_${Math.random().toString(36).slice(2, 8)}`,
-      date: tx.date || new Date().toISOString(),
-      type: tx.type,
-      amount: tx.amount,
-      note: tx.note,
+    const initializeWallet = async () => {
+      const { data: { session } } = await supabase.auth.getSession();
+      if (session) {
+        await refreshWallet();
+        await refreshTransactions();
+      } else {
+        setWallet(null);
+        setTransactions([]);
+        setLoading(false);
+        setTransactionsLoading(false);
+      }
     };
-    setTransactions((prev) => [full, ...prev]);
-  };
 
-  const deposit = (amount: number, note?: string) => {
-    if (!Number.isFinite(amount) || amount <= 0)
-      
-      return { ok: false, error: "Amount must be positive" };
-    setBalance((b) => b + amount);
-    addTx({ type: "deposit", amount, note });
-    return { ok: true };
-  };
+    initializeWallet();
 
-  const withdraw = (
-    amount: number,
-    note?: string,
-    type: Exclude<TxType, "deposit"> = "withdraw"
-  ) => {
-    if (!Number.isFinite(amount) || amount <= 0)
-      return { ok: false, error: "Amount must be positive" };
-    if (amount > balance) return { ok: false, error: "Insufficient balance" };
-    setBalance((b) => b - amount);
-    addTx({ type, amount, note });
-    return { ok: true };
-  };
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
+      if (event === 'SIGNED_IN' && session) {
+        refreshWallet();
+        refreshTransactions();
+      } else if (event === 'SIGNED_OUT') {
+        setWallet(null);
+        setTransactions([]);
+        setLoading(false);
+        setTransactionsLoading(false);
+      }
+    });
 
-  const reset = () => {
-    setBalance(0);
-    setTransactions([]);
+    return () => subscription.unsubscribe();
+  }, [refreshWallet, refreshTransactions]);
+
+  useEffect(() => {
+    if (!wallet?.user_id) return;
+
+    const walletSubscription = WalletService.subscribeToWalletUpdates(
+      wallet.user_id,
+      (updatedWallet) => {
+        setWallet(updatedWallet);
+      }
+    );
+
+    const transactionSubscription = WalletService.subscribeToTransactionUpdates(
+      wallet.user_id,
+      (newTransaction) => {
+        setTransactions(prev => {
+          const exists = prev.some(t => t.id === newTransaction.id);
+          if (exists) {
+            return prev.map(t => t.id === newTransaction.id ? newTransaction : t);
+          } else {
+            return [newTransaction, ...prev];
+          }
+        });
+      }
+    );
+
+    return () => {
+      walletSubscription.unsubscribe();
+      transactionSubscription.unsubscribe();
+    };
+  }, [wallet?.user_id]);
+
+  const withdraw = async (amount: number, note?: string): Promise<{ ok: boolean; error?: string }> => {
     try {
-      localStorage.removeItem("wallet.balance");
-      localStorage.removeItem("wallet.transactions");
-    } catch {}
+      if (!Number.isFinite(amount) || amount <= 0) {
+        return { ok: false, error: "Amount must be positive" };
+      }
+
+      if (!wallet || wallet.balance < amount) {
+        return { ok: false, error: "Insufficient balance" };
+      }
+
+      const result = await WalletService.recordWithdrawal(amount, note || 'Withdrawal');
+      
+      if (result.success) {
+        await refreshWallet();
+        await refreshTransactions();
+        return { ok: true };
+      } else {
+        return { ok: false, error: result.error || 'Withdrawal failed' };
+      }
+    } catch (error) {
+      console.error('Withdrawal error:', error);
+      return { ok: false, error: 'Network error' };
+    }
   };
 
-  const value = useMemo(
-    () => ({ balance, walletId, transactions, deposit, withdraw, reset }),
-    [balance, walletId, transactions]
-  );
+  // Note: This deposit function is a placeholder for compatibility.
+  // The actual deposit logic is handled in WalletPage through WalletDepositService
+  const deposit = async (amount: number): Promise<{ ok: boolean; error?: string }> => {
+    return { ok: false, error: "Use the deposit button in the wallet interface instead" };
+  };
+
+  const value: WalletContextType = {
+    balance: wallet?.balance || 0,
+    walletId: wallet?.id || 'Loading...',
+    wallet,
+    transactions,
+    
+    loading,
+    transactionsLoading,
+    
+    withdraw,
+    deposit,
+    refreshWallet,
+    refreshTransactions,
+  };
+
   return <WalletContext.Provider value={value}>{children}</WalletContext.Provider>;
 };
 

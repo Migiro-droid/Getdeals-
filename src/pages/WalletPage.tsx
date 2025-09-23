@@ -17,7 +17,7 @@ export default function WalletPage() {
   const [amount, setAmount] = useState<string>("");
   const amt = Number(amount) || 0;
   
-  // Check KYC status
+  // KYC functionality
   const { kycData, loading: kycLoading, isVerified, hasKycData, refetch: refetchKyc } = useWalletKyc();
   const [kycModalOpen, setKycModalOpen] = useState(false);
 
@@ -30,28 +30,22 @@ export default function WalletPage() {
     let inflow = 0;
     let outflow = 0;
     let count = 0;
+
     for (const t of transactions) {
-      if (!t.date.startsWith(month)) continue;
-      count++;
-      if (t.type === "deposit") inflow += t.amount;
-      else outflow += t.amount;
+      if (t.date.startsWith(month)) {
+        count++;
+        if (t.type === "deposit") inflow += t.amount;
+        else outflow += t.amount;
+      }
     }
+
     return { inflow, outflow, count };
   }, [transactions]);
-
-  const presets = [500, 1000, 2000, 5000];
 
   const onDeposit = () => {
     const res = deposit(amt, "Top up");
     if (!res.ok) return toast({ title: "Deposit failed", description: res.error });
     toast({ title: "Deposit successful", description: `KES ${amt.toLocaleString()} added to wallet` });
-    setAmount("");
-  };
-
-  const onWithdraw = () => {
-    const res = withdraw(amt, "Withdrawal");
-    if (!res.ok) return toast({ title: "Withdraw failed", description: res.error });
-    toast({ title: "Withdraw successful", description: `KES ${amt.toLocaleString()} withdrawn` });
     setAmount("");
   };
 
@@ -71,7 +65,7 @@ export default function WalletPage() {
           </div>
         </div>
 
-        {/* KYC Status Check - Show appropriate message if user has submitted KYC but not verified */}
+        {/* KYC Status Check */}
         {hasKycData && !isVerified && (
           <div className="mb-8">
             <KycStatusDisplay 
@@ -83,7 +77,6 @@ export default function WalletPage() {
           </div>
         )}
 
-        {/* Show KYC requirement if no KYC data submitted */}
         {!hasKycData && (
           <div className="mb-8">
             <Card className="border-amber-200 bg-amber-50 dark:bg-amber-950/20">
@@ -92,7 +85,7 @@ export default function WalletPage() {
                 <h3 className="text-lg font-semibold mb-2">Wallet Activation Required</h3>
                 <p className="text-muted-foreground mb-4">
                   To use wallet features, you need to complete KYC (Know Your Customer) verification.
-                  This helps us ensure the security of your account.
+                  This helps us ensure the security of your account and activate your wallet instantly.
                 </p>
                 <Button onClick={() => setKycModalOpen(true)}>
                   <Shield className="h-4 w-4 mr-2" />
@@ -103,133 +96,123 @@ export default function WalletPage() {
           </div>
         )}
 
-        {/* Wallet Features - Only show for verified users */}
+        {/* Wallet Features - Only accessible to verified users */}
         {isVerified && (
           <>
             {/* Summary Cards */}
             <div className="grid gap-6 md:grid-cols-3">
-          <Card className="border-primary/20">
-            <CardHeader>
-              <CardTitle className="text-sm text-muted-foreground">Current Balance</CardTitle>
-            </CardHeader>
-            <CardContent className="flex items-end justify-between">
-              <div className="text-4xl font-extrabold text-primary">KES {balance.toLocaleString()}</div>
-              <Button variant="outline" size="sm" onClick={() => reset()}>
-                <RefreshCw className="h-4 w-4 mr-2" /> Reset
-              </Button>
-            </CardContent>
-          </Card>
-
-          <Card>
-            <CardHeader>
-              <CardTitle className="text-sm text-muted-foreground">Inflow (This Month)</CardTitle>
-            </CardHeader>
-            <CardContent className="flex items-center gap-2 text-emerald-600">
-              <ArrowDownCircle className="h-6 w-6" />
-              <div className="text-2xl font-bold">KES {stats.inflow.toLocaleString()}</div>
-            </CardContent>
-          </Card>
-
-          <Card>
-            <CardHeader>
-              <CardTitle className="text-sm text-muted-foreground">Outflow (This Month)</CardTitle>
-            </CardHeader>
-            <CardContent className="flex items-center gap-2 text-red-600">
-              <ArrowUpCircle className="h-6 w-6" />
-              <div className="text-2xl font-bold">KES {stats.outflow.toLocaleString()}</div>
-            </CardContent>
-          </Card>
-        </div>
-
-        {/* Actions */}
-        <div className="mt-8 grid md:grid-cols-3 gap-6">
-          <Card className="md:col-span-2">
-            <CardHeader>
-              <CardTitle>Manage Funds</CardTitle>
-            </CardHeader>
-            <CardContent className="space-y-5">
-              <div className="grid sm:grid-cols-[1fr_auto] gap-3">
-                <Input
-                  type="number"
-                  placeholder="Enter amount (KES)"
-                  value={amount}
-                  onChange={(e) => setAmount(e.target.value)}
-                />
-                <div className="flex gap-2">
-                  <Button onClick={onDeposit} disabled={amt <= 0}>
-                    <ArrowDownCircle className="h-4 w-4 mr-2" /> Deposit
+              <Card className="border-primary/20">
+                <CardHeader>
+                  <CardTitle className="text-sm text-muted-foreground">Current Balance</CardTitle>
+                </CardHeader>
+                <CardContent className="flex items-end justify-between">
+                  <div className="text-4xl font-extrabold text-primary">KES {balance.toLocaleString()}</div>
+                  <Button variant="outline" size="sm" onClick={() => reset()}>
+                    <RefreshCw className="h-4 w-4 mr-2" /> Reset
                   </Button>
-                  <Button variant="outline" onClick={onWithdraw} disabled={amt <= 0}>
-                    <ArrowUpCircle className="h-4 w-4 mr-2" /> Withdraw
-                  </Button>
-                </div>
-              </div>
-              <div className="flex flex-wrap gap-2">
-                {presets.map((p) => (
-                  <Button key={p} variant="secondary" size="sm" onClick={() => setAmount(String(p))}>
-                    + KES {p.toLocaleString()}
-                  </Button>
-                ))}
-                <Button variant="ghost" size="sm" onClick={() => setAmount("")}>Clear</Button>
-              </div>
-              <p className="text-sm text-muted-foreground">Funds are stored locally for demo purposes.</p>
-            </CardContent>
-          </Card>
+                </CardContent>
+              </Card>
 
-          <Card>
-            <CardHeader>
-              <CardTitle>Quick Actions</CardTitle>
-            </CardHeader>
-            <CardContent className="grid gap-2">
-              <Button variant="secondary" onClick={() => setAmount("1000")}>Quick Top-up: KES 1,000</Button>
-              <Button variant="secondary" onClick={() => setAmount("2000")}>Quick Top-up: KES 2,000</Button>
-              <Button variant="secondary" onClick={() => setAmount("5000")}>Quick Top-up: KES 5,000</Button>
-            </CardContent>
-          </Card>
-        </div>
+              <Card>
+                <CardHeader>
+                  <CardTitle className="text-sm text-muted-foreground">Inflow (This Month)</CardTitle>
+                </CardHeader>
+                <CardContent className="flex items-center gap-2 text-emerald-600">
+                  <ArrowDownCircle className="h-6 w-6" />
+                  <div className="text-2xl font-bold">KES {stats.inflow.toLocaleString()}</div>
+                </CardContent>
+              </Card>
 
-        {/* Transactions */}
-        <div className="mt-10">
-          <h2 className="text-xl font-bold mb-4">Recent Activity</h2>
-          <Card>
-            <CardContent className="p-0">
-              {transactions.length === 0 ? (
-                <div className="p-6 text-sm text-muted-foreground">No transactions yet.</div>
-              ) : (
-                <div className="divide-y">
-                  {transactions.map((t) => (
-                    <div key={t.id} className="flex items-center justify-between p-4">
-                      <div className="flex items-center gap-3">
-                        {t.type === "deposit" ? (
-                          <ArrowDownCircle className="h-5 w-5 text-emerald-600" />
-                        ) : (
-                          <ArrowUpCircle className="h-5 w-5 text-red-600" />
-                        )}
-                        <div>
-                          <div className="font-medium capitalize">{t.type}</div>
-                          <div className="text-xs text-muted-foreground">
-                            {new Date(t.date).toLocaleString()} {t.note ? `• ${t.note}` : ""}
+              <Card>
+                <CardHeader>
+                  <CardTitle className="text-sm text-muted-foreground">Outflow (This Month)</CardTitle>
+                </CardHeader>
+                <CardContent className="flex items-center gap-2 text-rose-600">
+                  <ArrowUpCircle className="h-6 w-6" />
+                  <div className="text-2xl font-bold">KES {stats.outflow.toLocaleString()}</div>
+                </CardContent>
+              </Card>
+            </div>
+
+            {/* Add/Withdraw Funds */}
+            <div className="grid gap-6 lg:grid-cols-2">
+              <Card>
+                <CardHeader>
+                  <CardTitle>Top Up Wallet</CardTitle>
+                </CardHeader>
+                <CardContent className="space-y-4">
+                  <div className="flex items-center gap-4">
+                    <Input
+                      type="number"
+                      placeholder="Amount (KES)"
+                      value={amount}
+                      onChange={(e) => setAmount(e.target.value)}
+                      min="1"
+                    />
+                    <Button onClick={onDeposit} disabled={amt <= 0}>
+                      <ArrowDownCircle className="h-4 w-4 mr-2" />
+                      Add Funds
+                    </Button>
+                  </div>
+                  <Separator />
+                  <p className="text-sm text-muted-foreground">
+                    Add money to your wallet for seamless checkout experience.
+                  </p>
+                </CardContent>
+              </Card>
+
+              <Card>
+                <CardHeader>
+                  <CardTitle>Quick Actions</CardTitle>
+                </CardHeader>
+                <CardContent className="grid gap-2">
+                  <Button variant="secondary" onClick={() => setAmount("1000")}>Quick Top-up: KES 1,000</Button>
+                  <Button variant="secondary" onClick={() => setAmount("2000")}>Quick Top-up: KES 2,000</Button>
+                  <Button variant="secondary" onClick={() => setAmount("5000")}>Quick Top-up: KES 5,000</Button>
+                </CardContent>
+              </Card>
+            </div>
+
+            {/* Transactions */}
+            <div className="mt-10">
+              <h2 className="text-xl font-bold mb-4">Recent Activity</h2>
+              <Card>
+                <CardContent className="p-0">
+                  {transactions.length === 0 ? (
+                    <div className="p-6 text-sm text-muted-foreground">No transactions yet.</div>
+                  ) : (
+                    <div className="divide-y">
+                      {transactions.map((t) => (
+                        <div key={t.id} className="flex items-center justify-between p-4">
+                          <div className="flex items-center gap-3">
+                            {t.type === "deposit" ? (
+                              <ArrowDownCircle className="h-5 w-5 text-emerald-600" />
+                            ) : (
+                              <ArrowUpCircle className="h-5 w-5 text-red-600" />
+                            )}
+                            <div>
+                              <div className="font-medium capitalize">{t.type}</div>
+                              <div className="text-xs text-muted-foreground">
+                                {new Date(t.date).toLocaleString()} {t.note ? `• ${t.note}` : ""}
+                              </div>
+                            </div>
+                          </div>
+                          <div className="text-right">
+                            <div className={t.type === "deposit" ? "text-emerald-700" : "text-red-700"}>
+                              {t.type === "deposit" ? "+" : "-"} KES {t.amount.toLocaleString()}
+                            </div>
+                            <Badge className="mt-1">KES</Badge>
                           </div>
                         </div>
-                      </div>
-                      <div className="text-right">
-                        <div className={t.type === "deposit" ? "text-emerald-700" : "text-red-700"}>
-                          {t.type === "deposit" ? "+" : "-"} KES {t.amount.toLocaleString()}
-                        </div>
-                        <Badge className="mt-1">KES</Badge>
-                      </div>
+                      ))}
                     </div>
-                  ))}
-                </div>
-              )}
-            </CardContent>
-          </Card>
-        </div>
-
-        </>
+                  )}
+                </CardContent>
+              </Card>
+            </div>
+          </>
         )}
 
-        {}
         <div className="mt-8 text-center">
           <p className="text-sm text-muted-foreground">
             Powered by <span className="font-semibold text-primary">CPF</span>
@@ -238,15 +221,15 @@ export default function WalletPage() {
       </div>
 
       {/* KYC Activation Modal */}
-      <WalletActivationModal 
-        open={kycModalOpen} 
+      <WalletActivationModal
+        open={kycModalOpen}
         onOpenChange={(open) => {
           setKycModalOpen(open);
           // Refetch KYC data when modal closes
           if (!open) {
             refetchKyc();
           }
-        }} 
+        }}
       />
     </div>
   );

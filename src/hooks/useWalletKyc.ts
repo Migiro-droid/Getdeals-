@@ -12,16 +12,20 @@ export function useWalletKyc() {
     setError(null);
     
     try {
+      console.log('🔍 Fetching KYC status...');
       const result = await WalletKycService.getKycStatus();
+      console.log('📊 KYC Status Result:', result);
       
       if (result.success) {
         setKycData(result.data || null);
+        console.log('✅ KYC Data Updated:', result.data);
       } else {
         setError(result.error || 'Failed to fetch KYC status');
+        console.error('❌ KYC Fetch Error:', result.error);
       }
     } catch (err) {
       setError('An error occurred while fetching KYC status');
-      console.error('KYC fetch error:', err);
+      console.error('💥 KYC fetch error:', err);
     } finally {
       setLoading(false);
     }
@@ -35,6 +39,15 @@ export function useWalletKyc() {
   const isPending = kycData?.status === 'pending_verification';
   const isRejected = kycData?.status === 'rejected';
   const hasKycData = Boolean(kycData);
+
+  console.log('🔄 KYC Hook State:', { 
+    hasKycData, 
+    isVerified, 
+    isPending, 
+    isRejected, 
+    status: kycData?.status,
+    loading 
+  });
 
   return {
     kycData,

@@ -34,7 +34,7 @@ export class WalletKycService {
         }
       }
 
-      // Prepare KYC data
+      // First, save KYC data to database
       const kycData = {
         user_id: user.id,
         full_name: data.fullName,
@@ -65,14 +65,138 @@ export class WalletKycService {
         return { success: false, error: 'Failed to save KYC data' };
       }
 
-      return {
-        success: true,
-        data: {
-          id: result.id,
-          status: result.status,
-          submittedAt: result.created_at
+      // DEVELOPMENT MODE: Simulate Rukisha integration for testing
+      // TODO: Remove this when Supabase edge function is deployed
+      if (import.meta.env.DEV || import.meta.env.VITE_TEST_MODE === 'true') {
+        console.log('🧪 Development Mode: Simulating Rukisha integration...');
+        
+        try {
+          // Simulate customer registration with Rukisha
+          const simulatedCustomerId = `test_customer_${Date.now()}`;
+          
+          // Update profile with simulated customer_id
+          const { error: profileError } = await supabase
+            .from('profiles')
+            .upsert({
+              user_id: user.id,
+              id: user.id,
+              customer_id: simulatedCustomerId,
+              first_name: data.fullName.split(' ')[0] || data.fullName,
+              last_name: data.fullName.split(' ').slice(1).join(' ') || '',
+              phone: data.phoneNumber,
+              email_verified: true,
+              updated_at: new Date().toISOString()
+            }, { onConflict: 'user_id' });
+
+          if (profileError) {
+            console.error('Error updating profile:', profileError);
+          }
+
+          // Activate wallet
+          const { error: walletError } = await supabase
+            .from('wallets')
+            .upsert({
+              user_id: user.id,
+              is_active: true,
+              updated_at: new Date().toISOString()
+            }, { onConflict: 'user_id' });
+
+          if (walletError) {
+            console.error('Error activating wallet:', walletError);
+          }
+
+          // Update KYC status to verified
+          const { error: kycUpdateError } = await supabase
+            .from('wallet_kyc')
+            .update({
+              status: 'verified',
+              verified_at: new Date().toISOString(),
+              updated_at: new Date().toISOString()
+            })
+            .eq('user_id', user.id);
+
+          if (kycUpdateError) {
+            console.error('Error updating KYC status:', kycUpdateError);
+          }
+
+          console.log('✅ Development Mode: Wallet activated successfully!');
+          
+          return {
+            success: true,
+            data: {
+              id: result?.id,
+              status: 'verified',
+              customer_id: simulatedCustomerId,
+              submittedAt: result?.created_at,
+              message: '🧪 Your wallet has been activated successfully! (Development Mode)'
+            }
+          };
+          
+        } catch (devError) {
+          console.error('Development mode simulation error:', devError);
+          // Fall through to production edge function call
         }
-      };
+      }
+
+      // Now call the Supabase Edge Function to register with Rukisha
+      const { data: { session } } = await supabase.auth.getSession();
+      
+      if (!session) {
+        return { success: false, error: 'No active session found' };
+      }
+
+      try {
+        const response = await supabase.functions.invoke('register-customer', {
+          body: {
+            first_name: data.fullName.split(' ')[0] || data.fullName,
+            last_name: data.fullName.split(' ').slice(1).join(' ') || '',
+            phone: data.phoneNumber,
+            id_number: data.idNumber,
+            email: data.email,
+            kra_pin: data.kraPin
+          },
+          headers: {
+            Authorization: `Bearer ${session.access_token}`,
+          },
+        });
+
+        if (response.error) {
+          console.error('Error calling register-customer function:', response.error);
+          return { 
+            success: false, 
+            error: response.error.message || 'Failed to register with Rukisha API'
+          };
+        }
+
+        const rukishaResult = response.data;
+        
+        if (!rukishaResult.success) {
+          console.error('Rukisha registration failed:', rukishaResult);
+          return { 
+            success: false, 
+            error: rukishaResult.error || 'Wallet activation failed'
+          };
+        }
+
+        // If successful, return success message
+        return {
+          success: true,
+          data: {
+            id: result.id,
+            status: 'verified', // Automatically verified through Rukisha
+            customer_id: rukishaResult.customer_id,
+            submittedAt: result.created_at,
+            message: 'Your wallet has been activated successfully!'
+          }
+        };
+
+      } catch (rukishaError) {
+        console.error('Error during Rukisha registration:', rukishaError);
+        return { 
+          success: false, 
+          error: 'Failed to activate wallet through Rukisha API. Please try again or contact support.'
+        };
+      }
 
     } catch (error) {
       console.error('Error in KYC submission:', error);

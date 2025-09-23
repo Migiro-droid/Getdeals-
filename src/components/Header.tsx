@@ -27,7 +27,7 @@ export function Header() {
   const [kycStatusModalOpen, setKycStatusModalOpen] = useState(false);
   
   // Get KYC status for authenticated users
-  const { kycData, loading: kycLoading, hasKycData, refetch: refetchKyc } = useWalletKyc();
+  const { kycData, loading: kycLoading, hasKycData, isVerified, refetch: refetchKyc } = useWalletKyc();
 
   const cartItemsCount = items.reduce((sum, item) => sum + item.quantity, 0);
 
@@ -38,7 +38,13 @@ export function Header() {
       return;
     }
 
-    // If user has already submitted KYC, show status instead of form
+    // If user is verified, navigate directly to wallet page
+    if (isVerified) {
+      navigate('/wallet');
+      return;
+    }
+
+    // If user has KYC data but not verified (pending/rejected), show status modal
     if (hasKycData) {
       setKycStatusModalOpen(true);
     } else {
@@ -261,7 +267,12 @@ export function Header() {
         if (!open) {
           refetchKyc();
         }
-      }} 
+      }}
+      onSuccess={() => {
+        // When KYC is successfully verified, navigate to wallet page
+        refetchKyc();
+        navigate('/wallet');
+      }}
     />
 
     {/* KYC Status Modal - for users who have already submitted KYC */}

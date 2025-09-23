@@ -7,10 +7,12 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { useToast } from "@/hooks/use-toast";
 import { Shield, CheckCircle } from "lucide-react";
 import { WalletKycService } from "../services/wallet-kyc";
+import { WalletVerificationModal, defaultVerificationSteps } from "./WalletVerificationModal";
 
 interface WalletActivationModalProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
+  onSuccess?: () => void; // Callback for successful verification
 }
 
 interface KYCFormData {
@@ -22,9 +24,13 @@ interface KYCFormData {
   idType: 'national_id' | 'passport';
 }
 
-export function WalletActivationModal({ open, onOpenChange }: WalletActivationModalProps) {
+export function WalletActivationModal({ open, onOpenChange, onSuccess }: WalletActivationModalProps) {
   const { toast } = useToast();
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [showVerification, setShowVerification] = useState(false);
+  const [verificationSteps, setVerificationSteps] = useState(defaultVerificationSteps);
+  const [currentStep, setCurrentStep] = useState('');
+  const [isVerificationComplete, setIsVerificationComplete] = useState(false);
   const [formData, setFormData] = useState<KYCFormData>({
     fullName: '',
     idNumber: '',
@@ -70,6 +76,12 @@ export function WalletActivationModal({ open, onOpenChange }: WalletActivationMo
     return Object.keys(newErrors).length === 0;
   };
 
+  const updateVerificationStep = (stepId: string, status: 'pending' | 'loading' | 'completed' | 'error') => {
+    setVerificationSteps(prev => prev.map(step => 
+      step.id === stepId ? { ...step, status } : step
+    ));
+  };
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
 
@@ -78,8 +90,25 @@ export function WalletActivationModal({ open, onOpenChange }: WalletActivationMo
     }
 
     setIsSubmitting(true);
+    setShowVerification(true);
+    setIsVerificationComplete(false);
+
+    // Close the KYC form modal
+    onOpenChange(false);
 
     try {
+      // Step 1: Identity Verification
+      setCurrentStep('identity');
+      updateVerificationStep('identity', 'loading');
+      
+      // Simulate a brief delay for identity verification
+      await new Promise(resolve => setTimeout(resolve, 1500));
+      updateVerificationStep('identity', 'completed');
+
+      // Step 2: Rukisha Registration
+      setCurrentStep('rukisha');
+      updateVerificationStep('rukisha', 'loading');
+
       // Submit KYC data using the service
       const result = await WalletKycService.submitKyc({
         fullName: formData.fullName,
@@ -91,20 +120,35 @@ export function WalletActivationModal({ open, onOpenChange }: WalletActivationMo
       });
 
       if (!result.success) {
+        updateVerificationStep('rukisha', 'error');
+        setShowVerification(false);
+        
         toast({
-          title: "Submission Failed",
-          description: result.error || "There was an error submitting your KYC details. Please try again.",
+          title: "Verification Failed",
+          description: result.error || "There was an error verifying your details. Please try again.",
           variant: "destructive",
         });
         return;
       }
 
-      toast({
-        title: "KYC Submitted Successfully",
-        description: "Your wallet activation request has been submitted. We'll verify your details within 24 hours.",
-      });
+      updateVerificationStep('rukisha', 'completed');
 
-      onOpenChange(false);
+      // Step 3: Wallet Activation
+      setCurrentStep('wallet');
+      updateVerificationStep('wallet', 'loading');
+      
+      // Brief delay for wallet activation
+      await new Promise(resolve => setTimeout(resolve, 1000));
+      updateVerificationStep('wallet', 'completed');
+
+      // Mark verification as complete
+      setIsVerificationComplete(true);
+
+      // Show success toast
+      toast({
+        title: "Wallet Activated Successfully!",
+        description: "Your wallet has been activated and is ready to use. You can now make deposits, withdrawals, and payments.",
+      });
 
       // Reset form
       setFormData({
@@ -119,13 +163,33 @@ export function WalletActivationModal({ open, onOpenChange }: WalletActivationMo
 
     } catch (error) {
       console.error('KYC submission error:', error);
+      
+      // Mark current step as failed
+      if (currentStep) {
+        updateVerificationStep(currentStep, 'error');
+      }
+      
+      setShowVerification(false);
+      
       toast({
-        title: "Submission Failed",
-        description: "There was an error submitting your KYC details. Please try again.",
+        title: "Verification Failed",
+        description: "There was an error during verification. Please try again.",
         variant: "destructive",
       });
     } finally {
       setIsSubmitting(false);
+    }
+  };
+
+  const handleVerificationComplete = () => {
+    setShowVerification(false);
+    setIsVerificationComplete(false);
+    setVerificationSteps(defaultVerificationSteps);
+    setCurrentStep('');
+    
+    // Trigger the success callback to refresh wallet state
+    if (onSuccess) {
+      onSuccess();
     }
   };
 
@@ -138,20 +202,21 @@ export function WalletActivationModal({ open, onOpenChange }: WalletActivationMo
   };
 
   return (
-    <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-[500px] max-h-[75vh] overflow-y-auto mt-8">
-        <DialogHeader>
-          <DialogTitle className="flex items-center gap-2">
-            <Shield className="h-5 w-5 text-primary" />
-            Required KYC for Wallet Setup & Activation
-          </DialogTitle>
-          <DialogDescription>
-            Personal / Individual Wallet - Complete your details below to activate your GetDeals wallet.
-            All information is encrypted and secure.
-          </DialogDescription>
-        </DialogHeader>
+    <>
+      <Dialog open={open} onOpenChange={onOpenChange}>
+        <DialogContent className="sm:max-w-[500px] max-h-[75vh] overflow-y-auto mt-8">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <Shield className="h-5 w-5 text-primary" />
+              Required KYC for Wallet Setup & Activation
+            </DialogTitle>
+            <DialogDescription>
+              Personal / Individual Wallet - Complete your details below to activate your GetDeals wallet.
+              All information is encrypted and secure.
+            </DialogDescription>
+          </DialogHeader>
 
-        <form onSubmit={handleSubmit} className="space-y-4">
+          <form onSubmit={handleSubmit} className="space-y-4">
           <div className="space-y-2">
             <Label htmlFor="fullName">Full Name (as per ID) *</Label>
             <Input
@@ -276,5 +341,15 @@ export function WalletActivationModal({ open, onOpenChange }: WalletActivationMo
         </form>
       </DialogContent>
     </Dialog>
+
+    <WalletVerificationModal
+      open={showVerification}
+      onOpenChange={setShowVerification}
+      steps={verificationSteps}
+      currentStep={currentStep}
+      isCompleted={isVerificationComplete}
+      onComplete={handleVerificationComplete}
+    />
+  </>
   );
 }
