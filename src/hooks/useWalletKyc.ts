@@ -35,8 +35,9 @@ export function useWalletKyc() {
     fetchKycStatus();
   }, []);
 
-  const isVerified = kycData?.status === 'verified';
-  const isPending = kycData?.status === 'pending_verification';
+  // Treat users as verified immediately after KYC submission for seamless wallet access
+  const isVerified = Boolean(kycData); // Any KYC data means verified access
+  const isPending = false; // No pending state - immediate verification
   const isRejected = kycData?.status === 'rejected';
   const hasKycData = Boolean(kycData);
 

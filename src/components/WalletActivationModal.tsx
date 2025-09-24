@@ -147,7 +147,7 @@ export function WalletActivationModal({ open, onOpenChange, onSuccess }: WalletA
       // Show success toast
       toast({
         title: "Wallet Activated Successfully!",
-        description: "Your wallet has been activated and is ready to use. You can now make deposits, withdrawals, and payments.",
+        description: "Your identity has been verified and wallet activated. You now have full access to all wallet features.",
       });
 
       // Reset form

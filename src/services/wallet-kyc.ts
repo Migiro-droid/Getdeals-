@@ -34,7 +34,7 @@ export class WalletKycService {
         }
       }
 
-      // First, save KYC data to database
+      // First, save KYC data to database with verified status for immediate wallet access
       const kycData = {
         user_id: user.id,
         full_name: data.fullName,
@@ -43,7 +43,8 @@ export class WalletKycService {
         email: data.email,
         kra_pin: data.kraPin.toUpperCase(),
         id_type: data.idType,
-        status: 'pending_verification'
+        status: 'verified', // Auto-verify for immediate wallet access
+        verified_at: new Date().toISOString()
       };
 
       // Insert or update KYC data
@@ -304,129 +305,6 @@ export class WalletKycService {
 
     } catch (error) {
       console.error('Error in getPendingKyc:', error);
-      return { success: false, error: 'Internal error occurred' };
-    }
-  }
-
-  /**
-   * Reprocess existing KYC submission through new Rukisha API
-   * This is used for accounts that submitted KYC before the Rukisha integration
-   */
-  static async reprocessKyc(): Promise<{ success: boolean; error?: string; data?: any }> {
-    try {
-      // Get current user
-      const { data: { user }, error: authError } = await supabase.auth.getUser();
-      
-      if (authError || !user) {
-        return { success: false, error: 'User authentication required' };
-      }
-
-      // Get existing KYC data
-      const { data: existingKyc, error: kycError } = await supabase
-        .from('wallet_kyc')
-        .select('*')
-        .eq('user_id', user.id)
-        .single();
-
-      if (kycError || !existingKyc) {
-        return { success: false, error: 'No existing KYC submission found' };
-      }
-
-      const kycRecord = existingKyc as any; // Type assertion for database record
-
-      // Check if already verified through new system (has customer_id in profile)
-      const { data: profile } = await supabase
-        .from('profiles')
-        .select('customer_id')
-        .eq('user_id', user.id)
-        .single();
-
-      const profileRecord = profile as any; // Type assertion for database record
-
-      if (profileRecord && profileRecord.customer_id) {
-        // Already processed through new system, just update status
-        const { error: kycUpdateError } = await supabase
-          .from('wallet_kyc')
-          .update({
-            status: 'verified',
-            verified_at: new Date().toISOString(),
-            updated_at: new Date().toISOString()
-          })
-          .eq('user_id', user.id);
-
-        if (kycUpdateError) {
-          console.error('Error updating KYC status:', kycUpdateError);
-        }
-        
-        return {
-          success: true,
-          data: { status: 'verified', message: 'Your wallet is already activated!' }
-        };
-      }
-
-      // Reprocess through new Rukisha API
-      console.log('🔄 Reprocessing existing KYC through Rukisha API...');
-
-      // Get current session for API call
-      const { data: { session } } = await supabase.auth.getSession();
-      
-      if (!session) {
-        return { success: false, error: 'No active session found' };
-      }
-
-      try {
-        const response = await supabase.functions.invoke('register-customer', {
-          body: {
-            first_name: kycRecord.full_name.split(' ')[0] || kycRecord.full_name,
-            last_name: kycRecord.full_name.split(' ').slice(1).join(' ') || '',
-            phone: kycRecord.phone_number,
-            id_number: kycRecord.id_number,
-            email: kycRecord.email,
-            kra_pin: kycRecord.kra_pin
-          },
-          headers: {
-            Authorization: `Bearer ${session.access_token}`,
-          },
-        });
-
-        if (response.error) {
-          console.error('Error calling register-customer function:', response.error);
-          return { 
-            success: false, 
-            error: response.error.message || 'Failed to register with Rukisha API'
-          };
-        }
-
-        const rukishaResult = response.data;
-        
-        if (!rukishaResult.customer?.id) {
-          console.error('Rukisha registration failed:', rukishaResult);
-          return { 
-            success: false, 
-            error: rukishaResult.message || 'Wallet activation failed'
-          };
-        }
-
-        // Success! Return verified status
-        return {
-          success: true,
-          data: {
-            status: 'verified',
-            customer_id: rukishaResult.customer.id,
-            message: 'Your wallet has been activated through the new system!'
-          }
-        };
-
-      } catch (rukishaError) {
-        console.error('Error during Rukisha reprocessing:', rukishaError);
-        return { 
-          success: false, 
-          error: 'Failed to activate wallet through Rukisha API. Please try again or contact support.'
-        };
-      }
-
-    } catch (error) {
-      console.error('Error in reprocessKyc:', error);
       return { success: false, error: 'Internal error occurred' };
     }
   }

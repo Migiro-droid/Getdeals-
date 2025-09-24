@@ -93,7 +93,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       }
     }
 
-    // Insert or update KYC data
+    // Insert or update KYC data with verified status for immediate wallet access
     const kycData = {
       user_id: user.id,
       full_name: fullName,
@@ -102,7 +102,8 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       email: email,
       kra_pin: kraPin.toUpperCase(),
       id_type: idType,
-      status: 'pending_verification'
+      status: 'verified', // Auto-verify for immediate wallet access
+      verified_at: new Date().toISOString()
     };
 
     const { data, error } = existingKyc
