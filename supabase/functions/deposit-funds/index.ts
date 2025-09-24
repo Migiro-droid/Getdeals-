@@ -182,8 +182,20 @@ serve(async (req) => {
     }
 
     const tokenData = await tokenResponse.json()
-    console.log('Rukisha token obtained successfully')
+    console.log('Rukisha token obtained successfully:', { hasToken: !!tokenData.token, tokenPreview: tokenData.token?.substring(0, 10) + '...' })
     const rukishaApiToken = tokenData.token
+    
+    // TEMPORARY DEBUG: Return token info to see what's happening
+    if (!rukishaApiToken) {
+      return new Response(
+        JSON.stringify({
+          error: 'Token request succeeded but no token received',
+          tokenResponse: tokenData,
+          tokenStatus: tokenResponse.status
+        }),
+        { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      )
+    }
 
     // Format phone number for Rukisha (ensure +254 format)
     const formattedPhone = phone.startsWith('+254') ? phone : `+254${phone.replace(/^0/, '')}`
