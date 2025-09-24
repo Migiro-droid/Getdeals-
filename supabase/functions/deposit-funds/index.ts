@@ -121,10 +121,22 @@ serve(async (req) => {
     const consumerKey = Deno.env.get('RUKISHA_CONSUMER_KEY')
     const consumerSecret = Deno.env.get('RUKISHA_CONSUMER_SECRET')
     
+    console.log('Rukisha credentials check:', {
+      hasConsumerKey: !!consumerKey,
+      hasConsumerSecret: !!consumerSecret,
+      consumerKeyPreview: consumerKey ? consumerKey.substring(0, 10) + '...' : 'MISSING',
+      consumerSecretPreview: consumerSecret ? consumerSecret.substring(0, 10) + '...' : 'MISSING'
+    })
+    
     if (!consumerKey || !consumerSecret) {
-      console.error('Rukisha credentials not configured')
+      console.error('Rukisha credentials not configured - consumerKey:', !!consumerKey, 'consumerSecret:', !!consumerSecret)
       return new Response(
-        JSON.stringify({ error: 'Payment service configuration error' }),
+        JSON.stringify({ 
+          error: 'Payment service configuration error',
+          details: 'Missing Rukisha consumer credentials',
+          hasConsumerKey: !!consumerKey,
+          hasConsumerSecret: !!consumerSecret
+        }),
         { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       )
     }
