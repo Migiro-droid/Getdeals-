@@ -68,7 +68,7 @@ serve(async (req) => {
       payment_method: "MPESA",
       amount: amount,
       reference: reference,
-      callbackUrl: "https://getdeals.co.ke/api/rukisha/callback",
+      callback_url: "https://getdeals.co.ke/api/rukisha/callback",
       phone: phone
     }
 
