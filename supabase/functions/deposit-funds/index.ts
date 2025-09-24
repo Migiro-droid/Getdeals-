@@ -117,47 +117,43 @@ serve(async (req) => {
       )
     }
 
-    // Get Rukisha configuration from environment
-    const rukishaApiUrl = Deno.env.get('RUKISHA_API_URL') || 'https://api.rukisha.com/api/tap-and-go'
-    const rukishaApiToken = Deno.env.get('RUKISHA_API_TOKEN')
-    const isDevMode = !rukishaApiToken || rukishaApiToken === '';
-
-    console.log('Rukisha config:', { rukishaApiUrl, hasToken: !!rukishaApiToken, isDevMode })
-
-    if (!rukishaApiToken && !isDevMode) {
-      console.error('RUKISHA_API_TOKEN not configured')
+    // Get Rukisha authentication credentials (same as rukisha-payment function)
+    const consumerKey = Deno.env.get('RUKISHA_CONSUMER_KEY')
+    const consumerSecret = Deno.env.get('RUKISHA_CONSUMER_SECRET')
+    
+    if (!consumerKey || !consumerSecret) {
+      console.error('Rukisha credentials not configured')
       return new Response(
-        JSON.stringify({ error: 'Payment service not configured' }),
-        { 
-          status: 500,
-          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-        }
+        JSON.stringify({ error: 'Payment service configuration error' }),
+        { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       )
     }
 
-    // In development mode, simulate a successful deposit
-    if (isDevMode) {
-      console.log('Development mode: simulating successful deposit')
-      
-      const mockTransactionId = `dev_txn_${Date.now()}`;
-      const mockResult = {
-        success: true,
-        transaction_id: mockTransactionId,
-        message: 'Development mode: Simulated successful deposit',
-        phone: phone
-      };
+    console.log('Getting Rukisha auth token...')
+    const tokenResponse = await fetch('https://rukisha-api.rukisha.com/api/payments/get-token', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Accept': 'application/json'
+      },
+      body: JSON.stringify({
+        consumer_key: consumerKey,
+        consumer_secret: consumerSecret
+      })
+    })
 
-      // TODO: In a real implementation, you would record this transaction
-      // For now, just return success to test the frontend flow
-      
+    if (!tokenResponse.ok) {
+      const errorText = await tokenResponse.text()
+      console.error('Failed to get Rukisha token:', errorText)
       return new Response(
-        JSON.stringify(mockResult),
-        { 
-          status: 200,
-          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-        }
+        JSON.stringify({ error: 'Failed to authenticate with payment service' }),
+        { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       )
     }
+
+    const tokenData = await tokenResponse.json()
+    console.log('Rukisha token obtained successfully')
+    const rukishaApiToken = tokenData.token
 
     // Format phone number for Rukisha (ensure +254 format)
     const formattedPhone = phone.startsWith('+254') ? phone : `+254${phone.replace(/^0/, '')}`
