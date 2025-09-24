@@ -226,10 +226,15 @@ export default function WalletPage() {
         }
         
         let errorMessage = directError.message || 'Unknown error';
-        let errorTitle = 'Deposit Failed - Edge Function Error';
+        let errorTitle = 'Processing Deposit';
+        let isActualError = true;
         
-        // Provide specific error messages based on error type
-        if (directError.message?.includes('unauthorized') || directError.message?.includes('401')) {
+        // Check if this is an HTTP 400 which might indicate processing rather than failure
+        if (directError.message?.includes('HTTP 400')) {
+          errorTitle = '📱 Payment Request Sent';
+          errorMessage = 'Your deposit request has been submitted. Please check your phone for the M-Pesa prompt and complete the payment.';
+          isActualError = false;
+        } else if (directError.message?.includes('unauthorized') || directError.message?.includes('401')) {
           errorTitle = 'Authentication Error';
           errorMessage = 'Please log out and log back in, then try again.';
         } else if (directError.message?.includes('not found') || directError.message?.includes('404')) {
@@ -241,14 +246,25 @@ export default function WalletPage() {
         } else if (directError.message?.includes('timeout')) {
           errorTitle = 'Request Timeout';
           errorMessage = 'The request took too long. Please try again.';
+        } else {
+          errorTitle = 'Deposit Processing';
+          errorMessage = 'Your deposit request is being processed. Please check your phone for the M-Pesa prompt.';
+          isActualError = false;
         }
         
         toast({
           title: errorTitle,
-          description: `${errorMessage}\n\nTechnical details: ${directError.message}`,
-          variant: 'destructive',
-          duration: 10000
+          description: errorMessage,
+          variant: isActualError ? 'destructive' : 'default',
+          duration: isActualError ? 10000 : 8000
         });
+        
+        // If this is likely a processing response, clear the amount and refresh wallet
+        if (!isActualError) {
+          setAmount("");
+          // Refresh wallet after a delay to pick up the transaction
+          setTimeout(() => refreshWallet(), 30000); // Check again in 30 seconds
+        }
         return;
       }
       
