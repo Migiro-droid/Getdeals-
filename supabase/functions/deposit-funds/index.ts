@@ -26,10 +26,20 @@ serve(async (req) => {
   }
 
   try {
-    // Initialize Supabase client
+    // Initialize Supabase client with fallback values
+    const supabaseUrl = Deno.env.get('SUPABASE_URL') ?? 'https://fxyifnckgllxqbggegtw.supabase.co';
+    const supabaseAnonKey = Deno.env.get('SUPABASE_ANON_KEY') ?? 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImZ4eWlmbmNrZ2xseHFiZ2dlZ3R3Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTYyNzM3NjUsImV4cCI6MjA3MTg0OTc2NX0.GzVS2exQP8pGnbJNnkLwBZ_w52ioE6j18ibqpoA4slE';
+    
+    console.log('🔧 Edge function environment:', {
+      hasSupabaseUrl: !!Deno.env.get('SUPABASE_URL'),
+      hasSupabaseAnonKey: !!Deno.env.get('SUPABASE_ANON_KEY'),
+      usingUrl: supabaseUrl,
+      hasAuthHeader: !!req.headers.get('Authorization')
+    });
+    
     const supabaseClient = createClient(
-      Deno.env.get('SUPABASE_URL') ?? '',
-      Deno.env.get('SUPABASE_ANON_KEY') ?? '',
+      supabaseUrl,
+      supabaseAnonKey,
       {
         global: {
           headers: { Authorization: req.headers.get('Authorization')! },
@@ -238,9 +248,22 @@ serve(async (req) => {
     )
 
   } catch (error) {
-    console.error('Error in deposit-funds function:', error)
+    console.error('❌ Error in deposit-funds function:', error)
+    console.error('❌ Error details:', {
+      message: (error as any)?.message,
+      stack: (error as any)?.stack,
+      name: (error as any)?.name,
+      cause: (error as any)?.cause
+    })
+    
+    // Ensure we always return JSON, never HTML
     return new Response(
-      JSON.stringify({ error: 'Internal server error', details: error.message }),
+      JSON.stringify({ 
+        success: false,
+        error: 'Internal server error', 
+        details: (error as any)?.message || 'Unknown error',
+        timestamp: new Date().toISOString()
+      }),
       { 
         status: 500,
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },

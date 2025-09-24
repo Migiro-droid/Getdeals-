@@ -203,7 +203,29 @@ export default function WalletPage() {
       
       const directResponseText = await directResponse.text();
       console.log('📡 Direct fetch response status:', directResponse.status);
+      console.log('📡 Direct fetch response headers:', Object.fromEntries(directResponse.headers.entries()));
       console.log('📡 Direct fetch response text:', directResponseText);
+      
+      // If it's HTML (500 error page), extract useful info
+      if (directResponseText.includes('<!DOCTYPE') || directResponseText.includes('<html')) {
+        console.log('❌ Edge function returned HTML error page instead of JSON');
+        console.log('🔍 Checking for error details in HTML...');
+        
+        // Try to extract error information from HTML
+        const titleMatch = directResponseText.match(/<title>(.*?)<\/title>/i);
+        const errorMatch = directResponseText.match(/error|exception|failed/gi);
+        
+        if (titleMatch) {
+          console.log('📄 HTML page title:', titleMatch[1]);
+        }
+        
+        // Look for any error messages in the HTML
+        const bodyMatch = directResponseText.match(/<body[^>]*>(.*?)<\/body>/is);
+        if (bodyMatch) {
+          const bodyText = bodyMatch[1].replace(/<[^>]*>/g, '').trim().substring(0, 500);
+          console.log('📄 HTML body text (first 500 chars):', bodyText);
+        }
+      }
       
       let directResult, directError;
       
