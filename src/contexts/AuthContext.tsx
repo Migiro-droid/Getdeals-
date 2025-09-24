@@ -154,15 +154,16 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
           console.log('No profile found, creating new profile...');
           const newProfile = {
             id: supabaseUser.id,
+            user_id: supabaseUser.id, // Use user_id as the reference
             email: supabaseUser.email!,
-            name: basicUser.name,
+            first_name: basicUser.name?.split(' ')[0] || supabaseUser.email!.split('@')[0],
+            last_name: basicUser.name?.split(' ').slice(1).join(' ') || '',
             phone: supabaseUser.user_metadata?.phone || null,
             organization: supabaseUser.user_metadata?.organization || null,
-            role: 'customer',
-            emailVerified: !!supabaseUser.email_confirmed_at,
-            phoneVerified: false,
-            preferences: null,
-            onboardingCompleted: false
+            email_verified: !!supabaseUser.email_confirmed_at,
+            customer_id: `customer_${supabaseUser.id}`, // Generate customer_id
+            created_at: new Date().toISOString(),
+            updated_at: new Date().toISOString()
           };
 
           const { data: createdProfile, error: createError } = await userAPI.create(newProfile);

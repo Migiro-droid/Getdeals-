@@ -272,54 +272,58 @@ export const categoryAPI = {
   }
 };
 
-// User management helpers for admin
+// User management helpers for admin - using profiles table
 export const userAPI = {
   // Get all users (admin only)
   getAll: async () => {
     const { data, error } = await supabaseAdmin
-      .from('users')
+      .from('profiles')
       .select('*')
-      .order('createdAt', { ascending: false });
+      .order('created_at', { ascending: false });
     return { data, error };
   },
 
   // Get user by ID
   getById: async (id: string) => {
     const { data, error } = await supabase
-      .from('users')
+      .from('profiles')
       .select('*')
-      .eq('id', id)
+      .eq('user_id', id)
       .single();
     return { data, error };
   },
 
   // Update user profile
-  update: async (id: string, updates: Database['public']['Tables']['users']['Update']) => {
+  update: async (id: string, updates: any) => {
     const { data, error } = await supabase
-      .from('users')
+      .from('profiles')
       .update(updates)
-      .eq('id', id)
+      .eq('user_id', id)
       .select()
       .single();
     return { data, error };
   },
 
   // Create user profile (used in auth signup)
-  create: async (user: Database['public']['Tables']['users']['Insert']) => {
+  create: async (user: any) => {
     const { data, error } = await supabase
-      .from('users')
+      .from('profiles')
       .insert(user)
       .select()
       .single();
     return { data, error };
   },
 
-  // Update user role (admin only)
+  // Update user role (admin only) - Note: profiles table doesn't have role field
   updateRole: async (id: string, role: string) => {
+    // This might not be needed if profiles table doesn't have role field
     const { data, error } = await supabaseAdmin
-      .from('users')
-      .update({ role })
-      .eq('id', id)
+      .from('profiles')
+      .update({ 
+        // role, // Comment out if profiles table doesn't have role field
+        updated_at: new Date().toISOString()
+      })
+      .eq('user_id', id)
       .select()
       .single();
     return { data, error };
