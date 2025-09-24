@@ -184,20 +184,62 @@ serve(async (req) => {
       body: JSON.stringify(rukishaPayload),
     })
 
-    const rukishaData: RukishaDepositResponse = await rukishaResponse.json()
+    console.log('Rukisha API HTTP response:', {
+      status: rukishaResponse.status,
+      statusText: rukishaResponse.statusText,
+      headers: Object.fromEntries(rukishaResponse.headers.entries())
+    })
+
+    // Get response text first to check if it's JSON or HTML
+    const rukishaResponseText = await rukishaResponse.text()
+    console.log('Rukisha API response text (first 200 chars):', rukishaResponseText.substring(0, 200))
+
+    let rukishaData: RukishaDepositResponse
     
-    console.log('Rukisha Deposit API response:', { 
+    try {
+      rukishaData = JSON.parse(rukishaResponseText)
+    } catch (parseError) {
+      console.error('❌ Failed to parse Rukisha API response as JSON:', parseError)
+      console.error('❌ Response was:', rukishaResponseText.substring(0, 500))
+      
+      // If Rukisha API returned HTML or non-JSON, treat it as an error
+      return new Response(
+        JSON.stringify({ 
+          success: false,
+          error: 'Payment service returned invalid response',
+          details: `Expected JSON but got: ${rukishaResponseText.substring(0, 100)}...`,
+          rukishaStatus: rukishaResponse.status
+        }),
+        { 
+          status: 500,
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+        }
+      )
+    }
+    
+    console.log('Rukisha Deposit API parsed response:', { 
       status: rukishaResponse.status,
       success: rukishaData.success,
-      hasTransactionId: !!rukishaData.transaction_id
+      hasTransactionId: !!rukishaData.transaction_id,
+      error: rukishaData.error
     })
 
     if (!rukishaResponse.ok || !rukishaData.success) {
-      console.error('Rukisha Deposit API error:', rukishaData)
+      console.error('❌ Rukisha Deposit API error:', {
+        status: rukishaResponse.status,
+        statusText: rukishaResponse.statusText,
+        responseData: rukishaData,
+        responseText: rukishaResponseText.substring(0, 300)
+      })
+      
       return new Response(
         JSON.stringify({ 
+          success: false,
           error: rukishaData.error || rukishaData.message || 'Failed to initiate deposit with payment service',
-          details: rukishaData
+          details: `Rukisha API status: ${rukishaResponse.status}, Success: ${rukishaData.success}`,
+          rukishaError: rukishaData.error,
+          rukishaMessage: rukishaData.message,
+          statusCode: rukishaResponse.status
         }),
         { 
           status: 400,
