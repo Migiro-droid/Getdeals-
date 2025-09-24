@@ -48,7 +48,7 @@ const defaultSettings: SiteSettings = {
   blackFridayEnabled: true,
   blackFridayCountdownDate: new Date('2025-11-27T18:00:00').toISOString(), // Nov 27, 2025 6:00 PM
   maintenanceMode: false,
-  supportPhone: "+254 700 123 456",
+  supportPhone: "+254 728 322 355",
   supportEmail: "info@getdeals.co.ke",
   location: "Karen Green, Nairobi, Kenya",
 };

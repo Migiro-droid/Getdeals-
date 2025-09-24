@@ -198,7 +198,7 @@ export default function FAQPage() {
                   Contact Support
                 </Button>
                 <Button variant="outline" size="lg">
-                  Call +254 700 123 456
+                  Call +254 728 322 355
                 </Button>
               </div>
             </CardContent>

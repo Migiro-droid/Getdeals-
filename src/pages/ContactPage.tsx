@@ -223,7 +223,7 @@ export default function ContactPage() {
                       id="phone" 
                       name="phone"
                       type="tel" 
-                      placeholder="+254 700 123 456"
+                      placeholder="+254 728 322 355"
                       required
                       className="h-11" 
                     />

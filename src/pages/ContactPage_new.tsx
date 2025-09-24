@@ -82,7 +82,7 @@ export default function ContactPage() {
                   <div className="flex-1">
                     <h3 className="font-semibold text-lg">Call Us Now</h3>
                     <a href="tel:+254728322355" className="text-muted-foreground hover:text-primary transition-colors text-lg">
-                      +254 700 123 456
+                      +254 728 322 355
                     </a>
                     <p className="text-sm text-muted-foreground">Available 8AM - 8PM</p>
                   </div>
@@ -229,7 +229,7 @@ export default function ContactPage() {
                         id="phone" 
                         type="tel" 
                         className="h-12 border-2 focus:border-primary/50 transition-all rounded-xl" 
-                        placeholder="+254 700 123 456"
+                        placeholder="+254 728 322 355"
                       />
                     </div>
                   </div>

@@ -300,7 +300,7 @@ export function AuthModals({ open, onOpenChange, defaultTab = "signin" }: AuthMo
                       <Input
                         id="signup-phone"
                         type="tel"
-                        placeholder="+254 700 123 456"
+                        placeholder="+254 728 322 355"
                         className="pl-7 h-9 text-sm border-2 focus:border-primary/50 transition-colors"
                         required
                       />
