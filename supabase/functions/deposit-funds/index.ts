@@ -171,7 +171,9 @@ serve(async (req) => {
 
     console.log('Sending deposit request to Rukisha API:', { 
       url: `https://api.rukisha.com/api/tap-and-go/deposit-funds`,
-      payload: { ...rukishaPayload, phone: '[REDACTED]' }
+      payload: { ...rukishaPayload, phone: '[REDACTED]' },
+      hasToken: !!rukishaApiToken,
+      tokenPreview: rukishaApiToken ? rukishaApiToken.substring(0, 10) + '...' : 'NO_TOKEN'
     })
 
     // Call Rukisha Deposit Funds API (using the correct deposit endpoint)
@@ -179,6 +181,7 @@ serve(async (req) => {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
+        'Accept': 'application/json',
         'Authorization': `Bearer ${rukishaApiToken}`,
       },
       body: JSON.stringify(rukishaPayload),
