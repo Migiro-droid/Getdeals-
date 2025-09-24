@@ -340,17 +340,37 @@ export default function CheckoutPage() {
       } else {
         // Handle wallet and other payment methods
         if (paymentMethod === "wallet") {
-          // Set processing status for wallet payment
+          // Handle GetDeals Wallet payment using Rukisha API
           setPaymentStatus("processing");
 
-          // Simulate wallet integration processing
-          await new Promise(resolve => setTimeout(resolve, 2000));
+          const orderReference = `GD${Date.now()}${Math.random().toString(36).substr(2, 4).toUpperCase()}`;
+          const phoneToUse = phone || mpesaPhone;
 
+          if (!phoneToUse) {
+            throw new Error("Phone number is required for wallet payment");
+          }
+
+          // Dynamic import to avoid stale binding issues
+          const { WalletPaymentService } = await import('../services/WalletPaymentService');
+
+          const walletResult = await WalletPaymentService.testDirectCall({
+            amount: finalTotal,
+            reference: orderReference,
+            phone: formatPhoneNumber(phoneToUse)
+          });
+
+          if (!walletResult.success) {
+            throw new Error(walletResult.error || "Failed to initiate wallet payment");
+          }
+
+          // Create order with wallet payment details
           const orderData = {
             items,
             deliveryMethod,
             deliveryAddress: deliveryMethod === "speedy" ? address : undefined,
             paymentMethod,
+            paymentReference: orderReference,
+            phone: phoneToUse,
           };
 
           const orderResult = await createOrder(orderData);
@@ -361,14 +381,15 @@ export default function CheckoutPage() {
 
           setPaymentStatus("success");
           toast({
-            title: "Wallet Payment Successful! ✅",
-            description: "Your order has been confirmed using wallet balance.",
+            title: "📱 Wallet Payment Initiated!",
+            description: `Payment request sent. Please check your phone (${phoneToUse?.slice(-4).padStart(10, '*')}) and complete the M-Pesa prompt to finalize your order.`,
+            duration: 8000,
           });
 
           clearCart();
           setTimeout(() => {
             navigate(`/account?tab=orders&orderId=${orderResult.order.id}`);
-          }, 1500);
+          }, 2000);
         } else {
           // Handle other payment methods (cash, card, etc.)
           const orderData = {
@@ -690,7 +711,7 @@ export default function CheckoutPage() {
                   ) : paymentStatus === "processing" && paymentMethod === "wallet" ? (
                     <>
                       <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></div>
-                      Wallet Integration Underway...
+                      Processing Wallet Payment...
                     </>
                   ) : isLoading ? (
                     <>
@@ -736,7 +757,7 @@ export default function CheckoutPage() {
                     <Clock className="h-4 w-4" />
                     <AlertDescription>
                       {paymentMethod === "wallet" 
-                        ? "Wallet integration underway..." 
+                        ? "Processing wallet payment..." 
                         : "Processing your payment..."
                       }
                     </AlertDescription>
