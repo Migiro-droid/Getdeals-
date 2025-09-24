@@ -193,7 +193,7 @@ export default function PrivacyPolicyPage() {
                 <p>If you have questions about this Privacy Policy or want to exercise your rights, contact us:</p>
                 <div className="bg-green-50 p-4 rounded-lg mt-4">
                   <p><strong>Email:</strong> privacy@getdeals.co.ke</p>
-                  <p><strong>Phone:</strong> +254 700 000 000</p>
+                  <p><strong>Phone:</strong> +254 728 322 355</p>
                   <p><strong>Address:</strong> Nairobi, Kenya</p>
                   <p><strong>Data Protection Officer:</strong> dpo@getdeals.co.ke</p>
                 </div>

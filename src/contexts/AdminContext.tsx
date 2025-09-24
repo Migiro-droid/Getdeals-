@@ -1,6 +1,7 @@
 import React, { createContext, useContext, useEffect, useMemo, useRef, useState } from "react";
 
 interface SiteSettings {
+  blackFridayCountdownDate?: string; // ISO date string
   blackFridayEnabled: boolean;
   maintenanceMode: boolean;
   supportPhone: string;
@@ -28,11 +29,9 @@ interface AdminSession {
 }
 
 interface AdminContextValue {
-  // Site config
   settings: SiteSettings;
   updateSettings: (partial: Partial<SiteSettings>) => void;
 
-  // Auth/session (new)
   role: AdminRole;
   user: AdminUserInfo | null;
   session: Pick<AdminSession, "expiresAt">;
@@ -41,13 +40,13 @@ interface AdminContextValue {
   hasPermission: (perm: AdminPermission) => boolean;
   setAdminUser: (info: AdminUserInfo | null) => void;
 
-  // Back-compat flags
   isAdmin: boolean;
-  setIsAdmin: (v: boolean) => void; // sets role to admin/guest
+  setIsAdmin: (v: boolean) => void; 
 }
 
 const defaultSettings: SiteSettings = {
   blackFridayEnabled: true,
+  blackFridayCountdownDate: new Date('2025-11-27T18:00:00').toISOString(), // Nov 27, 2025 6:00 PM
   maintenanceMode: false,
   supportPhone: "+254 700 123 456",
   supportEmail: "info@getdeals.co.ke",
@@ -56,11 +55,11 @@ const defaultSettings: SiteSettings = {
 
 const AdminContext = createContext<AdminContextValue | undefined>(undefined);
 
-const LS_SETTINGS = "getdeals_admin_settings_v1";
-const LS_IS_ADMIN = "getdeals_admin_flag_v1"; // kept for back-compat
+const LS_SETTINGS = "getdeals_admin_settings_v4";
+const LS_IS_ADMIN = "getdeals_admin_flag_v1"; 
 const LS_SESSION = "getdeals_admin_session_v1";
 
-const SESSION_TTL_MS = 12 * 60 * 60 * 1000; // 12 hours
+const SESSION_TTL_MS = 12 * 60 * 60 * 1000; 
 
 const ROLE_PERMS: Record<AdminRole, AdminPermission[]> = {
   guest: ["viewDashboard"],
@@ -69,17 +68,28 @@ const ROLE_PERMS: Record<AdminRole, AdminPermission[]> = {
 };
 
 export const AdminProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
-  // Settings with localStorage persistence
+  // Clear old cache versions
+  const clearOldCache = () => {
+    try {
+      ['getdeals_admin_settings_v1', 'getdeals_admin_settings_v2', 'getdeals_admin_settings_v3'].forEach(key => {
+        localStorage.removeItem(key);
+      });
+    } catch {}
+  };
+
   const [settings, setSettings] = useState<SiteSettings>(() => {
+    clearOldCache(); // Clear old versions
     try {
       const raw = localStorage.getItem(LS_SETTINGS);
-      return raw ? { ...defaultSettings, ...(JSON.parse(raw) as SiteSettings) } : defaultSettings;
+      const result = raw ? { ...defaultSettings, ...(JSON.parse(raw) as SiteSettings) } : defaultSettings;
+      console.log('🔧 Debug - AdminContext settings loaded:', result);
+      return result;
     } catch {
+      console.log('🔧 Debug - AdminContext using default settings');
       return defaultSettings;
     }
   });
 
-  // Session state
   const [role, setRole] = useState<AdminRole>(() => {
     try {
       const raw = localStorage.getItem(LS_SESSION);
@@ -88,7 +98,6 @@ export const AdminProvider: React.FC<{ children: React.ReactNode }> = ({ childre
         if (s.expiresAt && Date.now() < s.expiresAt) return s.role;
       }
     } catch {}
-    // Back-compat: honor legacy flag if present
     try {
       return localStorage.getItem(LS_IS_ADMIN) === "1" ? "admin" : "guest";
     } catch {}
@@ -117,12 +126,10 @@ export const AdminProvider: React.FC<{ children: React.ReactNode }> = ({ childre
 
   const sessionRef = useRef<{ timer?: number | null }>({ timer: null });
 
-  // Persist settings
   useEffect(() => {
     try { localStorage.setItem(LS_SETTINGS, JSON.stringify(settings)); } catch {}
   }, [settings]);
 
-  // Save session to localStorage and legacy flags
   const persistSession = (s: AdminSession | null) => {
     try {
       if (s) {
@@ -135,17 +142,16 @@ export const AdminProvider: React.FC<{ children: React.ReactNode }> = ({ childre
     } catch {}
   };
 
-  // Set/refresh expiry timer
   const setExpiryTimer = (ts: number | null) => {
     if (sessionRef.current.timer) {
-      // window.clearTimeout expects number in browsers
+      
       window.clearTimeout(sessionRef.current.timer as number);
     }
     sessionRef.current.timer = null;
     if (ts && ts > Date.now()) {
       const delay = Math.max(0, ts - Date.now());
       sessionRef.current.timer = window.setTimeout(() => {
-        // auto logout on expiry
+        
         doLogout();
       }, delay);
     }
@@ -153,17 +159,17 @@ export const AdminProvider: React.FC<{ children: React.ReactNode }> = ({ childre
 
   useEffect(() => {
     setExpiryTimer(expiresAt);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
+    
   }, [expiresAt]);
 
-  // Cross-tab sync
+  
   useEffect(() => {
     const onStorage = (e: StorageEvent) => {
       if (e.key === LS_SESSION) {
         try {
           const raw = e.newValue;
           if (!raw) {
-            // cleared
+            
             setRole("guest");
             setUser(null);
             setExpiresAt(null);

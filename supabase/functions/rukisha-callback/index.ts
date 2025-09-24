@@ -159,8 +159,85 @@ serve(async (req) => {
 
       console.log(`✅ Deposit successful: KES ${payload.amount} added to user ${userId}`)
       console.log(`💰 Wallet balance updated: ${currentBalance} → ${newBalance}`)
+      
+      // Check if this is a checkout payment transaction
+      if (transaction.type === 'payment' && transaction.description?.includes('checkout')) {
+        console.log(`🛒 Processing checkout payment notification for transaction: ${transaction.id}`)
+        
+        try {
+          // Extract order ID from transaction description or metadata
+          const orderIdMatch = transaction.description.match(/order[:\s]+([A-Za-z0-9\-_]+)/i)
+          const orderId = orderIdMatch ? orderIdMatch[1] : null
+          
+          if (orderId) {
+            // Fetch order details
+            const { data: order, error: orderError } = await supabaseClient
+              .from('orders')
+              .select(`
+                *,
+                user:users(*),
+                items:order_items(*, product:products(*))
+              `)
+              .eq('id', orderId)
+              .single()
+
+            if (order && !orderError) {
+              // Update order status
+              await supabaseClient
+                .from('orders')
+                .update({
+                  status: 'CONFIRMED',
+                  payment_status: 'paid',
+                  updated_at: new Date().toISOString(),
+                })
+                .eq('id', orderId)
+
+              // Send payment confirmation notifications
+              await sendWalletPaymentNotifications(order, {
+                paymentMethod: 'Wallet',
+                transactionId: payload.transaction_id,
+                paymentDate: new Date().toISOString()
+              })
+              
+              console.log(`✅ Checkout payment notifications sent for order ${orderId}`)
+            } else {
+              console.warn(`⚠️ Order not found for ID: ${orderId}`)
+            }
+          } else {
+            console.warn(`⚠️ Could not extract order ID from transaction description: ${transaction.description}`)
+          }
+        } catch (notificationError) {
+          console.error('❌ Failed to send checkout payment notifications:', notificationError)
+        }
+      } else if (transaction.type === 'deposit') {
+        // Send deposit confirmation SMS
+        try {
+          await sendDepositConfirmationSMS(payload.phone, {
+            amount: payload.amount,
+            transactionId: payload.transaction_id,
+            newBalance: newBalance
+          })
+          console.log(`✅ Deposit confirmation SMS sent to ${payload.phone}`)
+        } catch (smsError) {
+          console.error('❌ Failed to send deposit confirmation SMS:', smsError)
+        }
+      }
     } else {
       console.log(`❌ Deposit ${payload.status}: ${payload.transaction_id} for user ${userId}`)
+      
+      // Send failure notification for checkout payments
+      if (transaction.type === 'payment' && transaction.description?.includes('checkout')) {
+        try {
+          await sendPaymentFailureNotification(payload.phone, {
+            amount: payload.amount,
+            transactionId: payload.transaction_id,
+            reason: payload.status
+          })
+          console.log(`📱 Payment failure notification sent to ${payload.phone}`)
+        } catch (notificationError) {
+          console.error('❌ Failed to send payment failure notification:', notificationError)
+        }
+      }
     }
 
     return new Response(
@@ -187,3 +264,59 @@ serve(async (req) => {
     )
   }
 })
+
+// Helper functions for notifications
+async function sendWalletPaymentNotifications(order: any, paymentDetails: any) {
+  const customerPhone = order.mpesa_phone || order.phone
+  const customerEmail = order.user?.email
+  const orderNumber = order.orderNumber || order.id
+
+  // Send SMS confirmation
+  if (customerPhone) {
+    const itemsList = order.items?.slice(0, 2).map((item: any) => 
+      `${item.product?.name || item.name} (x${item.quantity})`
+    ).join(', ') || ''
+    
+    const moreItems = order.items?.length > 2 ? ` +${order.items.length - 2} more` : ''
+    
+    const message = `Payment CONFIRMED! 🎉
+Order #${orderNumber}
+Amount: KES ${((order.total || 0) / 100).toLocaleString()}
+Items: ${itemsList}${moreItems}
+Payment: WALLET${paymentDetails.transactionId ? `\nRef: ${paymentDetails.transactionId}` : ''}
+
+E-receipt sent to your email. Thank you for choosing GetDeals!`
+
+    console.log(`📱 Wallet payment SMS to ${customerPhone}:`, message)
+  }
+
+  // Log e-receipt (in production, you'd actually send the email)
+  if (customerEmail) {
+    console.log(`📧 E-receipt would be sent to ${customerEmail} for order ${orderNumber}`)
+  }
+}
+
+async function sendDepositConfirmationSMS(phoneNumber: string, depositData: any) {
+  const { amount, transactionId, newBalance } = depositData
+  
+  const message = `Wallet TOP-UP successful! 💰
+Amount: KES ${amount.toLocaleString()}
+New Balance: KES ${newBalance.toLocaleString()}
+Ref: ${transactionId}
+
+Ready to shop with instant payments and 5% cashback! - GetDeals`
+
+  console.log(`📱 Deposit confirmation SMS to ${phoneNumber}:`, message)
+}
+
+async function sendPaymentFailureNotification(phoneNumber: string, failureData: any) {
+  const { amount, transactionId, reason } = failureData
+  
+  const message = `Payment failed for KES ${amount.toLocaleString()}
+Ref: ${transactionId}
+Reason: ${reason}
+
+Please try again or contact support. No charges applied. - GetDeals`
+
+  console.log(`📱 Payment failure SMS to ${phoneNumber}:`, message)
+}

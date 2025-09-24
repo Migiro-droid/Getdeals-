@@ -103,9 +103,15 @@ export default function HomePage() {
 
   useEffect(() => {
     // Use admin settings for countdown target date
-    const target = settings.blackFridayCountdownEnabled
-      ? new Date(settings.blackFridayCountdownDate)
+    console.log('🔍 Debug - settings.blackFridayCountdownDate:', settings.blackFridayCountdownDate);
+    const target = settings.blackFridayCountdownDate
+      ? new Date(settings.blackFridayCountdownDate as string)
       : new Date(Date.now() + 45 * 24 * 60 * 60 * 1000); // fallback to 45 days
+    
+    console.log('🎯 Debug - countdown target date:', target);
+    const now = new Date();
+    const diffInDays = Math.floor((target.getTime() - now.getTime()) / (1000 * 60 * 60 * 24));
+    console.log('📅 Debug - days until target:', diffInDays);
 
     const tick = () => {
       const now = new Date();
@@ -123,7 +129,7 @@ export default function HomePage() {
     tick();
     const id = setInterval(tick, 1000);
     return () => clearInterval(id);
-  }, [settings.blackFridayCountdownDate, settings.blackFridayCountdownEnabled]);
+  }, [settings.blackFridayCountdownDate, settings.blackFridayEnabled]);
 
   // Hero slideshow effect
   useEffect(() => {
@@ -373,7 +379,7 @@ export default function HomePage() {
         </div>
 
         {/* Black Friday Countdown Badge */}
-        {settings.blackFridayCountdownEnabled && !countdown.ended && (
+        {settings.blackFridayCountdownDate && !countdown.ended && (
           <div className="absolute right-4 top-4 md:right-8 md:top-8 z-20">
             <div className="px-3 py-1 rounded-full bg-gradient-to-r from-red-500/90 to-orange-500/90 backdrop-blur text-white text-sm font-medium flex items-center gap-2 shadow-lg animate-pulse">
               <div className="w-2 h-2 bg-white rounded-full"></div>
@@ -384,7 +390,7 @@ export default function HomePage() {
       </section>
 
       {}
-      {settings.blackFridayCountdownEnabled && showSticky && !dismissed && (
+      {settings.blackFridayCountdownDate && showSticky && !dismissed && (
         <div className="fixed left-0 right-0 top-16 z-50">
           <div className="mx-auto max-w-6xl px-4">
             <div className="rounded-lg border bg-background shadow flex items-center justify-between gap-3 px-4 py-2">
@@ -538,14 +544,14 @@ export default function HomePage() {
                   Black Friday 2025
                 </div>
                 <h3 className="mt-3 text-3xl lg:text-4xl font-extrabold tracking-tight bg-clip-text text-transparent bg-gradient-to-r from-primary to-primary/60">
-                  {settings.blackFridayCountdownEnabled ? `${countdown.days} Days — Early Access is coming` : 'Black Friday Deals'}
+                  {settings.blackFridayCountdownDate ? `${countdown.days} Days — Early Access is coming` : 'Black Friday Deals'}
                 </h3>
-                {!settings.blackFridayCountdownEnabled || countdown.ended ? (
+                {!settings.blackFridayCountdownDate || countdown.ended ? (
                   <p className="text-muted-foreground">It’s live now — check out the deals below.</p>
                 ) : (
                   <p className="text-muted-foreground">Get notified and don’t miss the biggest savings of the year.</p>
                 )}
-                {settings.blackFridayCountdownEnabled && !countdown.ended && (
+                {settings.blackFridayCountdownDate && !countdown.ended && (
                   <div className="mt-4 flex items-center gap-3 justify-center lg:justify-start">
                     <TimePill label="Days" value={countdown.days} />
                     <TimePill label="Hours" value={countdown.hours} />

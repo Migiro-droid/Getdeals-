@@ -11,6 +11,8 @@ import { supabase } from "./lib/db.js";
 import MpesaService from './lib/mpesa.js';
 import SMSService from './lib/sms.js';
 import EmailService from './lib/email.js';
+import ReceiptService from './lib/receipt.js';
+import NotificationService from './lib/notification.js';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -33,6 +35,8 @@ if (!JWT_SECRET) {
 const mpesaService = new MpesaService();
 const smsService = new SMSService();
 const emailService = new EmailService();
+const receiptService = new ReceiptService();
+const notificationService = new NotificationService();
 
 app.use(cors());
 app.use(express.json());
@@ -610,17 +614,38 @@ app.post('/api/payments/mpesa/callback', async (req, res) => {
           .single();
 
         if (order) {
-          // Send SMS confirmation
-          if (order.mpesa_phone) {
-            await smsService.sendOrderConfirmationSMS(order.mpesa_phone, {
-              orderNumber: order.id,
-              total: order.total,
-            });
-          }
+          // Send comprehensive payment confirmation (SMS + E-receipt)
+          try {
+            const paymentDetails = {
+              paymentMethod: 'M-Pesa',
+              transactionId: callbackResult.mpesaReceiptNumber,
+              paymentDate: new Date().toISOString()
+            };
 
-          // Send email confirmation
-          if (order.user?.email) {
-            await emailService.sendOrderConfirmation(order, order.user.email);
+            const notificationResult = await notificationService.sendPaymentConfirmation(order, paymentDetails);
+            
+            if (notificationResult.success) {
+              console.log(`✅ Payment confirmation notifications sent for order ${order.id}`);
+            } else {
+              console.error(`❌ Some payment confirmation notifications failed for order ${order.id}:`, notificationResult.error);
+            }
+
+            // Log detailed notification results
+            console.log('📊 Notification Results:', JSON.stringify(notificationResult.notifications, null, 2));
+
+          } catch (notificationError) {
+            console.error('❌ Failed to send payment confirmation notifications:', notificationError);
+            
+            // Fallback to basic SMS if notification service fails
+            if (order.mpesa_phone) {
+              try {
+                const basicMessage = `Payment confirmed! Order #${order.id} for KES ${(order.total / 100).toLocaleString()}. Thank you for shopping with GetDeals!`;
+                await smsService.sendSMS(order.mpesa_phone, basicMessage);
+                console.log(`✅ Fallback SMS sent to ${order.mpesa_phone}`);
+              } catch (fallbackError) {
+                console.error('❌ Even fallback SMS failed:', fallbackError);
+              }
+            }
           }
         }
       }

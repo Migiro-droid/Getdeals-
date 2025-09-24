@@ -19,6 +19,35 @@ class SMSService {
     return this.sendSMS(phoneNumber, message);
   }
 
+  async sendPaymentConfirmationSMS(phoneNumber, paymentData) {
+    const { orderNumber, amount, items, paymentMethod, transactionId } = paymentData;
+    
+    // Format items list (max 2-3 items to keep SMS short)
+    const itemsList = items.slice(0, 2).map(item => 
+      `${item.name} (x${item.quantity})`
+    ).join(', ');
+    
+    const moreItems = items.length > 2 ? ` +${items.length - 2} more` : '';
+    
+    const message = `Payment CONFIRMED! 
+Order #${orderNumber}
+Amount: KES ${amount.toLocaleString()}
+Items: ${itemsList}${moreItems}
+Payment: ${paymentMethod.toUpperCase()}${transactionId ? `\nRef: ${transactionId}` : ''}
+
+E-receipt sent to your email. Thank you for choosing GetDeals!`;
+    
+    return this.sendSMS(phoneNumber, message);
+  }
+
+  async sendEReceiptSMS(phoneNumber, orderNumber, emailSent = true) {
+    const message = emailSent 
+      ? `Your e-receipt for order #${orderNumber} has been sent to your email. Keep it for your records. - GetDeals`
+      : `Your order #${orderNumber} payment is confirmed. E-receipt processing... - GetDeals`;
+    
+    return this.sendSMS(phoneNumber, message);
+  }
+
   async sendOrderStatusSMS(phoneNumber, orderNumber, status) {
     let message;
     

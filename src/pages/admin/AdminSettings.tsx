@@ -24,6 +24,15 @@ export default function AdminSettings() {
                 </div>
                 <Switch checked={settings.blackFridayEnabled} onCheckedChange={(v) => updateSettings({ blackFridayEnabled: v })} />
               </div>
+              <div>
+                <Label>Black Friday Countdown Date</Label>
+                <div className="text-sm text-muted-foreground mb-2">Set the target date for Black Friday countdown</div>
+                <Input 
+                  type="datetime-local" 
+                  value={settings.blackFridayCountdownDate ? new Date(settings.blackFridayCountdownDate).toISOString().slice(0, 16) : ''} 
+                  onChange={(e) => updateSettings({ blackFridayCountdownDate: e.target.value ? new Date(e.target.value).toISOString() : undefined })} 
+                />
+              </div>
               <div className="flex items-center justify-between">
                 <div>
                   <Label>Maintenance Mode</Label>

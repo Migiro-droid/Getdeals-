@@ -136,7 +136,7 @@ export default function CookiePolicyPage() {
                 <p>If you have questions about our use of cookies, please contact us:</p>
                 <div className="bg-green-50 p-4 rounded-lg mt-4">
                   <p><strong>Email:</strong> privacy@getdeals.co.ke</p>
-                  <p><strong>Phone:</strong> +254 700 000 000</p>
+                  <p><strong>Phone:</strong> +254 728 322 355</p>
                   <p><strong>Address:</strong> Nairobi, Kenya</p>
                 </div>
               </div>
