@@ -173,13 +173,58 @@ export default function WalletPage() {
         console.error('❌ Raw fetch error:', rawError);
       }
       
-      console.log('🔌 Supabase client loaded, making direct deposit-funds call...');
-      const { data: directResult, error: directError } = await supabase.functions.invoke('deposit-funds', {
-        body: {
+      console.log('🔌 Using raw fetch with authentication instead of Supabase client...');
+      
+      // Get the session for authentication
+      const { data: { session } } = await supabase.auth.getSession();
+      
+      if (!session) {
+        toast({
+          title: 'Authentication Required',
+          description: 'Please log in again to make a deposit.',
+          variant: 'destructive'
+        });
+        return;
+      }
+      
+      // Use raw fetch with proper authentication headers
+      const directResponse = await fetch('https://fxyifnckgllxqbggegtw.supabase.co/functions/v1/deposit-funds', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${session.access_token}`,
+          'apikey': 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImZ4eWlmbmNrZ2xseHFiZ2dlZ3R3Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTYyNzM3NjUsImV4cCI6MjA3MTg0OTc2NX0.GzVS2exQP8pGnbJNnkLwBZ_w52ioE6j18ibqpoA4slE'
+        },
+        body: JSON.stringify({
           amount: amt,
           phone: phoneNumber
-        }
+        })
       });
+      
+      const directResponseText = await directResponse.text();
+      console.log('📡 Direct fetch response status:', directResponse.status);
+      console.log('📡 Direct fetch response text:', directResponseText);
+      
+      let directResult, directError;
+      
+      if (directResponse.ok) {
+        try {
+          directResult = JSON.parse(directResponseText);
+          directError = null;
+        } catch (parseError) {
+          directError = { message: `Failed to parse response: ${parseError.message}`, context: directResponseText };
+          directResult = null;
+        }
+      } else {
+        try {
+          const errorData = JSON.parse(directResponseText);
+          directError = { message: errorData.message || `HTTP ${directResponse.status}`, context: errorData };
+          directResult = null;
+        } catch (parseError) {
+          directError = { message: `HTTP ${directResponse.status}: ${directResponseText}`, context: directResponseText };
+          directResult = null;
+        }
+      }
       
       console.log('📡 Direct edge function response:', { directResult, directError });
       
