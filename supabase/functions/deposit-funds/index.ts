@@ -146,29 +146,22 @@ serve(async (req) => {
       customer_id: profile.customer_id
     }
 
-    // Try GET request with query parameters since POST is not supported
-    const queryParams = new URLSearchParams({
-      amount: rukishaPayload.amount.toString(),
-      phone: rukishaPayload.phone,
-      customer_id: rukishaPayload.customer_id
-    })
-    
-    const depositUrl = `https://api.rukisha.com/api/tap-and-go/deposit-funds?${queryParams}`
-    
-    console.log('Sending deposit request to Rukisha API (GET with query params):', { 
-      url: depositUrl,
-      params: { ...rukishaPayload, phone: '[REDACTED]' },
+    console.log('Sending deposit request to Rukisha API (using correct endpoint):', { 
+      url: `https://api.rukisha.com/api/tap-and-go/deposit-to-wallet`,
+      payload: { ...rukishaPayload, phone: '[REDACTED]' },
       hasToken: !!rukishaApiToken,
       tokenPreview: rukishaApiToken ? rukishaApiToken.substring(0, 10) + '...' : 'NO_TOKEN'
     })
 
-    // Call Rukisha Deposit Funds API using GET method (since POST is not supported)
-    const rukishaResponse = await fetch(depositUrl, {
-      method: 'GET',
+    // Call Rukisha Deposit API using the CORRECT endpoint from Postman
+    const rukishaResponse = await fetch(`https://api.rukisha.com/api/tap-and-go/deposit-to-wallet`, {
+      method: 'POST',
       headers: {
+        'Content-Type': 'application/json',
         'Accept': 'application/json',
         'Authorization': `Bearer ${rukishaApiToken}`,
-      }
+      },
+      body: JSON.stringify(rukishaPayload),
     })
 
     console.log('Rukisha API HTTP response:', {
