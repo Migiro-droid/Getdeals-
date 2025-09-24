@@ -136,6 +136,43 @@ export default function WalletPage() {
       console.log('🧪 TESTING: Direct edge function call...');
       const { supabase } = await import("../../lib/supabase");
       
+      // First, let's test the raw URL to see what's being returned
+      console.log('🔗 Testing raw edge function URL...');
+      try {
+        const rawResponse = await fetch('https://fxyifnckgllxqbggegtw.supabase.co/functions/v1/deposit-funds', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({
+            amount: amt,
+            phone: phoneNumber
+          })
+        });
+        
+        const rawText = await rawResponse.text();
+        console.log('🔍 Raw response status:', rawResponse.status);
+        console.log('🔍 Raw response headers:', Object.fromEntries(rawResponse.headers.entries()));
+        console.log('🔍 Raw response text:', rawText);
+        
+        // If it's HTML, show just the first part
+        if (rawText.startsWith('<!DOCTYPE') || rawText.startsWith('<html')) {
+          console.log('❌ Edge function returned HTML instead of JSON!');
+          console.log('🔍 HTML content (first 500 chars):', rawText.substring(0, 500));
+          
+          toast({
+            title: 'Edge Function Error',
+            description: `Edge function returned HTML instead of JSON. Status: ${rawResponse.status}. This suggests the function is not deployed properly.`,
+            variant: 'destructive',
+            duration: 10000
+          });
+          return;
+        }
+        
+      } catch (rawError) {
+        console.error('❌ Raw fetch error:', rawError);
+      }
+      
       console.log('🔌 Supabase client loaded, making direct deposit-funds call...');
       const { data: directResult, error: directError } = await supabase.functions.invoke('deposit-funds', {
         body: {
@@ -154,6 +191,16 @@ export default function WalletPage() {
           context: directError.context,
           fullError: directError
         });
+        
+        // Try to get the actual response content to see what HTML is being returned
+        if (directError.context && typeof directError.context.text === 'function') {
+          try {
+            const responseText = await directError.context.text();
+            console.error('🔍 Actual response content:', responseText);
+          } catch (e) {
+            console.error('Could not read response text:', e);
+          }
+        }
         
         let errorMessage = directError.message || 'Unknown error';
         let errorTitle = 'Deposit Failed - Edge Function Error';
