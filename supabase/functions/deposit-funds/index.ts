@@ -117,81 +117,20 @@ serve(async (req) => {
       )
     }
 
-    // Get Rukisha authentication credentials (same as rukisha-payment function)
-    const consumerKey = Deno.env.get('RUKISHA_CONSUMER_KEY')
-    const consumerSecret = Deno.env.get('RUKISHA_CONSUMER_SECRET')
+    // Get Rukisha API token directly (deposit API might use different auth than payment API)
+    const rukishaApiToken = Deno.env.get('RUKISHA_API_TOKEN')
     
-    console.log('Rukisha credentials check:', {
-      hasConsumerKey: !!consumerKey,
-      hasConsumerSecret: !!consumerSecret,
-      consumerKeyPreview: consumerKey ? consumerKey.substring(0, 10) + '...' : 'MISSING',
-      consumerSecretPreview: consumerSecret ? consumerSecret.substring(0, 10) + '...' : 'MISSING'
+    console.log('Rukisha token check:', {
+      hasToken: !!rukishaApiToken,
+      tokenPreview: rukishaApiToken ? rukishaApiToken.substring(0, 10) + '...' : 'MISSING'
     })
     
-    if (!consumerKey || !consumerSecret) {
-      console.error('Rukisha credentials not configured - consumerKey:', !!consumerKey, 'consumerSecret:', !!consumerSecret)
+    if (!rukishaApiToken) {
+      console.error('RUKISHA_API_TOKEN not configured')
       return new Response(
         JSON.stringify({ 
           error: 'Payment service configuration error',
-          details: 'Missing Rukisha consumer credentials',
-          hasConsumerKey: !!consumerKey,
-          hasConsumerSecret: !!consumerSecret
-        }),
-        { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-      )
-    }
-
-    console.log('Getting Rukisha auth token...')
-    const tokenRequestPayload = {
-      consumer_key: consumerKey,
-      consumer_secret: consumerSecret
-    }
-    
-    console.log('Token request details:', {
-      url: 'https://rukisha-api.rukisha.com/api/payments/get-token',
-      payload: { consumer_key: consumerKey.substring(0, 10) + '...', consumer_secret: '[REDACTED]' }
-    })
-    
-    const tokenResponse = await fetch('https://rukisha-api.rukisha.com/api/payments/get-token', {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'Accept': 'application/json'
-      },
-      body: JSON.stringify(tokenRequestPayload)
-    })
-
-    console.log('Token response status:', tokenResponse.status, tokenResponse.statusText)
-    
-    if (!tokenResponse.ok) {
-      const errorText = await tokenResponse.text()
-      console.error('Failed to get Rukisha token:', {
-        status: tokenResponse.status,
-        statusText: tokenResponse.statusText,
-        error: errorText.substring(0, 500)
-      })
-      
-      return new Response(
-        JSON.stringify({ 
-          error: 'Failed to authenticate with payment service',
-          details: `Token request failed: ${tokenResponse.status} ${tokenResponse.statusText}`,
-          rukishaError: errorText.substring(0, 300)
-        }),
-        { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-      )
-    }
-
-    const tokenData = await tokenResponse.json()
-    console.log('Rukisha token obtained successfully:', { hasToken: !!tokenData.token, tokenPreview: tokenData.token?.substring(0, 10) + '...' })
-    const rukishaApiToken = tokenData.token
-    
-    // TEMPORARY DEBUG: Return token info to see what's happening
-    if (!rukishaApiToken) {
-      return new Response(
-        JSON.stringify({
-          error: 'Token request succeeded but no token received',
-          tokenResponse: tokenData,
-          tokenStatus: tokenResponse.status
+          details: 'Missing RUKISHA_API_TOKEN'
         }),
         { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       )
@@ -208,14 +147,14 @@ serve(async (req) => {
     }
 
     console.log('Sending deposit request to Rukisha API:', { 
-      url: `https://rukisha-api.rukisha.com/api/deposit-funds`,
+      url: `https://api.rukisha.com/api/tap-and-go/deposit-funds`,
       payload: { ...rukishaPayload, phone: '[REDACTED]' },
       hasToken: !!rukishaApiToken,
       tokenPreview: rukishaApiToken ? rukishaApiToken.substring(0, 10) + '...' : 'NO_TOKEN'
     })
 
-    // Call Rukisha Deposit Funds API (try the rukisha-api domain instead)
-    const rukishaResponse = await fetch(`https://rukisha-api.rukisha.com/api/deposit-funds`, {
+    // Call Rukisha Deposit Funds API (back to original endpoint you specified)
+    const rukishaResponse = await fetch(`https://api.rukisha.com/api/tap-and-go/deposit-funds`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
