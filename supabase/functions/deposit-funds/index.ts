@@ -165,17 +165,17 @@ serve(async (req) => {
     // Prepare payload for Rukisha Deposit API
     const rukishaPayload: RukishaDepositPayload = {
       amount: Number(amount),
-      phone: formattedPhone.replace('+254', '0'), // Rukisha might expect 07xx format
+      phone: formattedPhone.replace('+254', '0'), // Convert +254XXXXXXXXX to 07XXXXXXXX format
       customer_id: profile.customer_id
     }
 
     console.log('Sending deposit request to Rukisha API:', { 
-      url: `${rukishaApiUrl}/deposit-funds`,
+      url: `https://api.rukisha.com/api/tap-and-go/deposit-funds`,
       payload: { ...rukishaPayload, phone: '[REDACTED]' }
     })
 
-    // Call Rukisha Deposit Funds API
-    const rukishaResponse = await fetch(`${rukishaApiUrl}/deposit-funds`, {
+    // Call Rukisha Deposit Funds API (using the correct deposit endpoint)
+    const rukishaResponse = await fetch(`https://api.rukisha.com/api/tap-and-go/deposit-funds`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
