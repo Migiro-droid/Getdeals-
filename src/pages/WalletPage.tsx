@@ -60,18 +60,9 @@ export default function WalletPage() {
   const presets = [500, 1000, 2000, 5000];
 
   const onDeposit = async () => {
-    // Simple test to verify function is being called
-    console.log('🚨 DEPOSIT BUTTON CLICKED! Function is being called!');
-    alert('DEPOSIT BUTTON CLICKED! Check console for details.');
+    setIsDepositing(true);
     
-    console.log('🚀 ============ DEPOSIT FUNCTION START ============');
-    console.log('💰 Amount:', amt);
-    console.log('📋 Full KYC Data:', kycData);
-    console.log('📞 kycData.phoneNumber:', kycData?.phoneNumber);
-    console.log('📞 kycData.phone_number:', (kycData as any)?.phone_number);
-    console.log('🔐 Wallet ID:', walletId);
-    console.log('💳 Current Balance:', balance);
-    console.log('✅ Is Depositing State:', isDepositing);
+
     
     
     if (amt < 100) {
@@ -264,9 +255,12 @@ export default function WalletPage() {
       if (directResult?.success) {
         console.log('✅ Direct edge function call succeeded!');
         toast({
-          title: '✅ Direct Test Success!',
-          description: `Direct edge function call worked! Transaction: ${directResult.transaction_id}`,
+          title: '📱 STK Push Sent!',
+          description: `Check your phone ${phoneNumber?.slice(-4).padStart(10, '*')} for M-Pesa prompt. Complete the payment to add KES ${amt.toLocaleString()} to your wallet.`,
+          duration: 8000,
         });
+        setAmount("");
+        await refreshWallet();
         return;
       }
       
