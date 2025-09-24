@@ -43,8 +43,15 @@ export class WalletDepositService {
         return { success: false, error: 'Please log in to make a deposit' };
       }
 
-      console.log('🚀 Initiating deposit:', { amount: data.amount, phone: data.phone.slice(0, -4) + '****' });
+      console.log('🚀 Initiating deposit with full details:', { 
+        amount: data.amount, 
+        phone: data.phone.slice(0, -4) + '****',
+        sessionExists: !!session,
+        accessToken: session.access_token ? 'Present' : 'Missing'
+      });
 
+      console.log('📤 About to call deposit-funds edge function...');
+      
       // Call the deposit-funds edge function
       const { data: result, error } = await supabase.functions.invoke('deposit-funds', {
         body: {
@@ -56,23 +63,58 @@ export class WalletDepositService {
         },
       });
 
-      console.log('📡 Edge function response:', { result, error });
+      console.log('📡 Edge function complete response:', { 
+        result, 
+        error,
+        resultType: typeof result,
+        errorType: typeof error,
+        hasResult: !!result,
+        hasError: !!error
+      });
 
       if (error) {
-        console.error('Error calling deposit-funds function:', error);
+        console.error('❌ Error calling deposit-funds function - DETAILED:', {
+          error,
+          errorMessage: error.message,
+          errorCode: error.code,
+          errorDetails: error.details,
+          errorContext: error.context,
+          errorName: error.name,
+          fullErrorObject: JSON.stringify(error, null, 2)
+        });
         
-        // Handle specific error types
-        if (error.message?.includes('not found')) {
-          return { success: false, error: 'Wallet service unavailable. Please try again later.' };
+        // Handle specific error types with detailed messages
+        if (error.message?.includes('not found') || error.message?.includes('404')) {
+          return { 
+            success: false, 
+            error: `Deposit service not found. The payment service may not be deployed. Technical: ${error.message}` 
+          };
         }
         
-        if (error.message?.includes('unauthorized')) {
-          return { success: false, error: 'Session expired. Please log in again.' };
+        if (error.message?.includes('unauthorized') || error.message?.includes('401')) {
+          return { 
+            success: false, 
+            error: `Authentication failed. Please log out and log back in. Technical: ${error.message}` 
+          };
+        }
+        
+        if (error.message?.includes('fetch failed') || error.message?.includes('network')) {
+          return { 
+            success: false, 
+            error: `Network connection failed. Please check your internet connection. Technical: ${error.message}` 
+          };
+        }
+        
+        if (error.message?.includes('timeout')) {
+          return { 
+            success: false, 
+            error: `Request timed out. Please try again. Technical: ${error.message}` 
+          };
         }
 
         return { 
           success: false, 
-          error: `Network error: ${error.message || error}. Please check your connection and try again.`
+          error: `Deposit service error: ${error.message || JSON.stringify(error)}. Please contact support if this persists.`
         };
       }
 
