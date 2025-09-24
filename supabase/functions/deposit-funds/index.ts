@@ -142,23 +142,41 @@ serve(async (req) => {
     }
 
     console.log('Getting Rukisha auth token...')
+    const tokenRequestPayload = {
+      consumer_key: consumerKey,
+      consumer_secret: consumerSecret
+    }
+    
+    console.log('Token request details:', {
+      url: 'https://rukisha-api.rukisha.com/api/payments/get-token',
+      payload: { consumer_key: consumerKey.substring(0, 10) + '...', consumer_secret: '[REDACTED]' }
+    })
+    
     const tokenResponse = await fetch('https://rukisha-api.rukisha.com/api/payments/get-token', {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
         'Accept': 'application/json'
       },
-      body: JSON.stringify({
-        consumer_key: consumerKey,
-        consumer_secret: consumerSecret
-      })
+      body: JSON.stringify(tokenRequestPayload)
     })
 
+    console.log('Token response status:', tokenResponse.status, tokenResponse.statusText)
+    
     if (!tokenResponse.ok) {
       const errorText = await tokenResponse.text()
-      console.error('Failed to get Rukisha token:', errorText)
+      console.error('Failed to get Rukisha token:', {
+        status: tokenResponse.status,
+        statusText: tokenResponse.statusText,
+        error: errorText.substring(0, 500)
+      })
+      
       return new Response(
-        JSON.stringify({ error: 'Failed to authenticate with payment service' }),
+        JSON.stringify({ 
+          error: 'Failed to authenticate with payment service',
+          details: `Token request failed: ${tokenResponse.status} ${tokenResponse.statusText}`,
+          rukishaError: errorText.substring(0, 300)
+        }),
         { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       )
     }
