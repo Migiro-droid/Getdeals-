@@ -17,7 +17,7 @@ import { useToast } from "@/hooks/use-toast";
 
 export default function AccountPage() {
   const [isEditing, setIsEditing] = useState(false);
-  const { orders, deleteOrder } = useOrders();
+  const { orders, deleteOrder, metrics } = useOrders();
   const [active, setActive] = useState<Order | null>(null);
   const location = useLocation();
   const { toast } = useToast();
@@ -33,6 +33,9 @@ export default function AccountPage() {
   const [busy, setBusy] = useState(false);
   const urlParams = new URLSearchParams(location.search);
   const defaultTab = urlParams.get("tab") || (location.state as any)?.tab || "profile";
+  
+  // Calculate total savings (assuming 20% average savings from basket deals)
+  const totalSavings = Math.round(metrics.totalRevenue * 0.2);
   const statusPill = (s: OrderStatus) => {
     const map: Record<OrderStatus, string> = {
       delivered: "bg-emerald-100 text-emerald-800",
@@ -58,7 +61,7 @@ export default function AccountPage() {
     <div className="min-h-screen py-8">
       <div className="container mx-auto px-4">
         <div className="grid lg:grid-cols-4 gap-8">
-          {/* Sidebar */}
+          {}
           <div className="lg:col-span-1">
             <Card>
               <CardContent className="p-6">
@@ -77,18 +80,18 @@ export default function AccountPage() {
                   </div>
                   <div className="flex items-center justify-between text-sm">
                     <span>Total orders</span>
-                    <span>12</span>
+                    <span>{metrics.orderCount}</span>
                   </div>
                   <div className="flex items-center justify-between text-sm">
                     <span>Total saved</span>
-                    <span className="text-green-600 font-medium">KES 15,000</span>
+                    <span className="text-green-600 font-medium">KES {totalSavings.toLocaleString()}</span>
                   </div>
                 </div>
               </CardContent>
             </Card>
           </div>
 
-          {/* Main Content */}
+          {}
           <div className="lg:col-span-3">
             <Tabs defaultValue={defaultTab} className="space-y-6">
               <TabsList className="grid w-full grid-cols-4">

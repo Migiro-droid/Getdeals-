@@ -27,7 +27,7 @@ interface PaymentResponse {
 }
 
 serve(async (req) => {
-  // Handle CORS preflight requests
+
   if (req.method === 'OPTIONS') {
     return new Response('ok', { headers: corsHeaders })
   }
@@ -35,7 +35,7 @@ serve(async (req) => {
   try {
     const { amount, phone, reference, paymentType = 'deposit' } = await req.json()
 
-    // Validate required fields
+
     if (!amount || !phone) {
       return new Response(
         JSON.stringify({ error: 'Amount and phone number are required' }),
@@ -43,12 +43,12 @@ serve(async (req) => {
       )
     }
 
-    // Initialize Supabase client
+
     const supabaseUrl = Deno.env.get('SUPABASE_URL')!
     const supabaseServiceRoleKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!
     const supabase = createClient(supabaseUrl, supabaseServiceRoleKey)
 
-    // Get user from auth header
+
     const authHeader = req.headers.get('Authorization')
     if (!authHeader) {
       return new Response(
@@ -69,7 +69,6 @@ serve(async (req) => {
 
     console.log(`Processing ${paymentType} payment for user: ${user.id}, amount: ${amount}`)
 
-    // Step 1: Get Rukisha authentication token
     const consumerKey = Deno.env.get('RUKISHA_CONSUMER_KEY')
     const consumerSecret = Deno.env.get('RUKISHA_CONSUMER_SECRET')
     
@@ -106,7 +105,6 @@ serve(async (req) => {
     const tokenData: RukishaTokenResponse = await tokenResponse.json()
     console.log('Rukisha token obtained successfully')
 
-    // Step 2: Prepare payment request
     const callbackUrl = `${supabaseUrl}/functions/v1/rukisha-payment-callback`
     const paymentReference = reference || `${paymentType}_${user.id}_${Date.now()}`
     
@@ -121,7 +119,6 @@ serve(async (req) => {
 
     console.log('Initiating STK push with payload:', paymentPayload)
 
-    // Step 3: Initiate STK Push payment
     const paymentResponse = await fetch('https://rukisha-api.rukisha.com/api/third-party-merchant-payment', {
       method: 'POST',
       headers: {
@@ -146,7 +143,6 @@ serve(async (req) => {
       )
     }
 
-    // Step 4: Record pending transaction in database
     const transactionData = {
       user_id: user.id,
       amount: parseFloat(amount),
@@ -176,9 +172,7 @@ serve(async (req) => {
 
     console.log('Transaction recorded successfully:', transaction.id)
 
-    // For checkout payments, also record the pending order
     if (paymentType === 'checkout') {
-      // You can extend this to record order details if needed
       console.log('Checkout payment initiated - order can be processed on callback')
     }
 
