@@ -12,6 +12,7 @@ import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useToast } from "@/hooks/use-toast";
 import { getApiBase } from '@/lib/api';
+import GetDealsNumberService, { GetDealsUser } from "@/services/getdeals-number";
 import { 
   Users, 
   UserPlus, 
@@ -34,7 +35,10 @@ import {
   Edit,
   Trash2,
   Download,
-  RefreshCw
+  RefreshCw,
+  Hash,
+  Copy,
+  Wallet
 } from "lucide-react";
 
 interface Customer {
@@ -50,6 +54,9 @@ interface Customer {
   status: 'active' | 'inactive' | 'blocked';
   preferredLocation?: string;
   notes?: string;
+  getdealsNumber?: string;
+  walletBalance?: number;
+  walletActive?: boolean;
 }
 
 interface AdminUser {
@@ -71,6 +78,8 @@ export default function AdminUsers() {
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState("");
   const [statusFilter, setStatusFilter] = useState("all");
+  const [getdealsUsers, setGetdealsUsers] = useState<GetDealsUser[]>([]);
+  const [getdealsStats, setGetdealsStats] = useState<any>(null);
   
   // Modal states
   const [selectedCustomer, setSelectedCustomer] = useState<Customer | null>(null);
@@ -93,11 +102,16 @@ export default function AdminUsers() {
     role: "staff" as AdminUser['role'],
     permissions: [] as string[]
   });
+  
+  // Lookup states
+  const [lookupValue, setLookupValue] = useState("");
+  const [lookupLoading, setLookupLoading] = useState(false);
 
   // Load data
   useEffect(() => {
     loadCustomers();
     loadAdminUsers();
+    loadGetDealsData();
   }, []);
 
   const loadCustomers = async () => {
@@ -141,6 +155,20 @@ export default function AdminUsers() {
     }
   };
 
+  const loadGetDealsData = async () => {
+    try {
+      // Load GetDeals number statistics
+      const stats = await GetDealsNumberService.getNumberStatistics();
+      setGetdealsStats(stats);
+      
+      // This would load actual user data with GetDeals numbers in a real implementation
+      // For now, we'll enhance the mock data with GetDeals numbers
+      console.log('GetDeals system stats:', stats);
+    } catch (error) {
+      console.error('Error loading GetDeals data:', error);
+    }
+  };
+
   const generateMockCustomers = (): Customer[] => {
     const names = [
       { first: "James", last: "Mwangi" },
@@ -155,20 +183,26 @@ export default function AdminUsers() {
     
     const locations = ["Karen Branch", "Westlands Branch", "CBD Branch", "Kilimani Branch"];
     
-    return names.map((name, index) => ({
-      id: `cust_${Date.now()}_${index}`,
-      name: `${name.first} ${name.last}`,
-      email: `${name.first.toLowerCase()}.${name.last.toLowerCase()}@gmail.com`,
-      phone: `+254 7${String(Math.floor(Math.random() * 90000000) + 10000000)}`,
-      address: index % 3 === 0 ? `${Math.floor(Math.random() * 100) + 1} ${name.last} Street, Nairobi` : undefined,
-      joinDate: new Date(Date.now() - Math.random() * 365 * 24 * 60 * 60 * 1000).toISOString(),
-      lastOrderDate: Math.random() > 0.2 ? new Date(Date.now() - Math.random() * 30 * 24 * 60 * 60 * 1000).toISOString() : undefined,
-      totalOrders: Math.floor(Math.random() * 20) + 1,
-      totalSpent: Math.floor(Math.random() * 50000) + 1000,
-      status: Math.random() > 0.1 ? 'active' : Math.random() > 0.5 ? 'inactive' : 'blocked',
-      preferredLocation: locations[index % locations.length],
-      notes: index % 4 === 0 ? "VIP customer - prefers early delivery" : undefined
-    }));
+    return names.map((name, index) => {
+      const getdealsNumber = `GD-${String(100001 + index).padStart(6, '0')}`;
+      return {
+        id: `cust_${Date.now()}_${index}`,
+        name: `${name.first} ${name.last}`,
+        email: `${name.first.toLowerCase()}.${name.last.toLowerCase()}@gmail.com`,
+        phone: `+254 7${String(Math.floor(Math.random() * 90000000) + 10000000)}`,
+        address: index % 3 === 0 ? `${Math.floor(Math.random() * 100) + 1} ${name.last} Street, Nairobi` : undefined,
+        joinDate: new Date(Date.now() - Math.random() * 365 * 24 * 60 * 60 * 1000).toISOString(),
+        lastOrderDate: Math.random() > 0.2 ? new Date(Date.now() - Math.random() * 30 * 24 * 60 * 60 * 1000).toISOString() : undefined,
+        totalOrders: Math.floor(Math.random() * 20) + 1,
+        totalSpent: Math.floor(Math.random() * 50000) + 1000,
+        status: Math.random() > 0.1 ? 'active' : Math.random() > 0.5 ? 'inactive' : 'blocked',
+        preferredLocation: locations[index % locations.length],
+        notes: index % 4 === 0 ? "VIP customer - prefers early delivery" : undefined,
+        getdealsNumber,
+        walletBalance: Math.floor(Math.random() * 5000) + 500,
+        walletActive: Math.random() > 0.1
+      };
+    });
   };
 
   const generateMockAdminUsers = (): AdminUser[] => {
@@ -210,7 +244,8 @@ export default function AdminUsers() {
   const filteredCustomers = customers.filter(customer => {
     const matchesSearch = customer.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
                          customer.email.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                         customer.phone.includes(searchTerm);
+                         customer.phone.includes(searchTerm) ||
+                         (customer.getdealsNumber && customer.getdealsNumber.toLowerCase().includes(searchTerm.toLowerCase()));
     const matchesStatus = statusFilter === "all" || customer.status === statusFilter;
     return matchesSearch && matchesStatus;
   });
@@ -357,12 +392,103 @@ export default function AdminUsers() {
     }
   };
 
+  const handleCopyGetDealsNumber = (getdealsNumber: string) => {
+    navigator.clipboard.writeText(getdealsNumber);
+    toast({
+      title: "Copied!",
+      description: "GetDeals number copied to clipboard",
+    });
+  };
+
+  const handleLookupByGetDealsNumber = async (getdealsNumber: string) => {
+    if (!getdealsNumber.trim()) {
+      toast({
+        title: "GetDeals Number Required",
+        description: "Please enter a GetDeals number to lookup",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    // Validate format
+    if (!GetDealsNumberService.validateFormat(getdealsNumber.trim())) {
+      toast({
+        title: "Invalid Format",
+        description: "GetDeals number must be in format GD-XXXXXX (e.g., GD-100001)",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    setLookupLoading(true);
+    
+    try {
+      // First try to find in our local customers data for quick lookup
+      const localCustomer = customers.find(c => c.getdealsNumber === getdealsNumber.trim());
+      
+      if (localCustomer) {
+        // Found locally - show customer details
+        setSelectedCustomer(localCustomer);
+        setCustomerModalOpen(true);
+        toast({
+          title: "User Found (Local)",
+          description: `${localCustomer.name} - ${localCustomer.email}`,
+        });
+        return;
+      }
+
+      // If not found locally, try the service
+      const user = await GetDealsNumberService.getUserByNumber(getdealsNumber.trim());
+      if (user) {
+        // Create a customer object from the service response
+        const serviceCustomer: Customer = {
+          id: user.user_id,
+          name: user.full_name || 'Unknown User',
+          email: user.email,
+          phone: user.phone || 'Not provided',
+          getdealsNumber: user.getdeals_number,
+          walletBalance: user.wallet_balance || 0,
+          walletActive: user.wallet_active || false,
+          totalOrders: 0, // Not available from service
+          totalSpent: 0, // Not available from service
+          status: 'active' as const,
+          joinDate: new Date().toISOString(), // Default
+          preferredLocation: user.organization || undefined
+        };
+
+        setSelectedCustomer(serviceCustomer);
+        setCustomerModalOpen(true);
+        toast({
+          title: "User Found (Database)",
+          description: `${user.full_name || 'Unknown'} - ${user.email}`,
+        });
+      } else {
+        toast({
+          title: "User Not Found",
+          description: "No user found with that GetDeals number",
+          variant: "destructive",
+        });
+      }
+    } catch (error) {
+      console.error('Error looking up user:', error);
+      toast({
+        title: "Lookup Error",
+        description: "Failed to lookup user by GetDeals number. Please try again.",
+        variant: "destructive",
+      });
+    } finally {
+      setLookupLoading(false);
+    }
+  };
+
   const exportCustomerData = () => {
-    const headers = ["Name", "Email", "Phone", "Total Orders", "Total Spent", "Status", "Join Date", "Last Order"];
+    const headers = ["Name", "Email", "Phone", "GetDeals Number", "Wallet Balance", "Total Orders", "Total Spent", "Status", "Join Date", "Last Order"];
     const rows = filteredCustomers.map(customer => [
       customer.name,
       customer.email,
       customer.phone,
+      customer.getdealsNumber || "Not assigned",
+      customer.walletBalance ? `KES ${customer.walletBalance}` : "KES 0",
       customer.totalOrders,
       customer.totalSpent,
       customer.status,
@@ -453,7 +579,7 @@ export default function AdminUsers() {
                 <div className="relative">
                   <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
                   <Input
-                    placeholder="Search by name, email, or phone..."
+                    placeholder="Search by name, email, phone, or GetDeals number..."
                     value={searchTerm}
                     onChange={(e) => setSearchTerm(e.target.value)}
                     className="pl-10"
@@ -478,10 +604,14 @@ export default function AdminUsers() {
 
         {/* Tabs */}
         <Tabs value={activeTab} onValueChange={setActiveTab}>
-          <TabsList className="grid w-full grid-cols-2">
+          <TabsList className="grid w-full grid-cols-3">
             <TabsTrigger value="customers" className="gap-2">
               <Users className="h-4 w-4" />
               Customers ({filteredCustomers.length})
+            </TabsTrigger>
+            <TabsTrigger value="getdeals" className="gap-2">
+              <Hash className="h-4 w-4" />
+              GetDeals Numbers
             </TabsTrigger>
             <TabsTrigger value="admin" className="gap-2">
               <Shield className="h-4 w-4" />
@@ -492,7 +622,7 @@ export default function AdminUsers() {
           {/* Customers Tab */}
           <TabsContent value="customers" className="space-y-6">
             {/* Customer Stats */}
-            <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+            <div className="grid grid-cols-1 md:grid-cols-5 gap-4">
               <Card>
                 <CardContent className="pt-6">
                   <div className="flex items-center justify-between">
@@ -521,12 +651,25 @@ export default function AdminUsers() {
                 <CardContent className="pt-6">
                   <div className="flex items-center justify-between">
                     <div>
-                      <p className="text-sm font-medium text-muted-foreground">Total Revenue</p>
-                      <p className="text-2xl font-bold text-emerald-600">
-                        KES {customers.reduce((sum, c) => sum + c.totalSpent, 0).toLocaleString()}
+                      <p className="text-sm font-medium text-muted-foreground">GetDeals Numbers</p>
+                      <p className="text-2xl font-bold text-indigo-600">
+                        {customers.filter(c => c.getdealsNumber).length}
                       </p>
                     </div>
-                    <DollarSign className="h-8 w-8 text-emerald-600" />
+                    <Hash className="h-8 w-8 text-indigo-600" />
+                  </div>
+                </CardContent>
+              </Card>
+              <Card>
+                <CardContent className="pt-6">
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <p className="text-sm font-medium text-muted-foreground">Total Wallet Balance</p>
+                      <p className="text-2xl font-bold text-emerald-600">
+                        KES {customers.reduce((sum, c) => sum + (c.walletBalance || 0), 0).toLocaleString()}
+                      </p>
+                    </div>
+                    <Wallet className="h-8 w-8 text-emerald-600" />
                   </div>
                 </CardContent>
               </Card>
@@ -551,22 +694,24 @@ export default function AdminUsers() {
                 <CardTitle>Customer Database</CardTitle>
               </CardHeader>
               <CardContent>
-                <Table>
-                  <TableHeader>
-                    <TableRow>
-                      <TableHead>Customer</TableHead>
-                      <TableHead>Contact</TableHead>
-                      <TableHead>Orders</TableHead>
-                      <TableHead>Total Spent</TableHead>
-                      <TableHead>Status</TableHead>
-                      <TableHead>Last Order</TableHead>
-                      <TableHead>Actions</TableHead>
-                    </TableRow>
-                  </TableHeader>
+                <div className="overflow-x-auto">
+                  <Table className="min-w-full">
+                    <TableHeader>
+                      <TableRow>
+                        <TableHead className="whitespace-nowrap">Customer</TableHead>
+                        <TableHead className="whitespace-nowrap">GetDeals Number</TableHead>
+                        <TableHead className="whitespace-nowrap">Contact</TableHead>
+                        <TableHead className="whitespace-nowrap">Wallet</TableHead>
+                        <TableHead className="whitespace-nowrap">Orders</TableHead>
+                        <TableHead className="whitespace-nowrap">Total Spent</TableHead>
+                        <TableHead className="whitespace-nowrap">Status</TableHead>
+                        <TableHead className="whitespace-nowrap">Actions</TableHead>
+                      </TableRow>
+                    </TableHeader>
                   <TableBody>
                     {filteredCustomers.map((customer) => (
                       <TableRow key={customer.id}>
-                        <TableCell>
+                        <TableCell className="whitespace-nowrap">
                           <div>
                             <div className="font-medium">{customer.name}</div>
                             <div className="text-sm text-muted-foreground flex items-center gap-1">
@@ -575,7 +720,25 @@ export default function AdminUsers() {
                             </div>
                           </div>
                         </TableCell>
-                        <TableCell>
+                        <TableCell className="whitespace-nowrap">
+                          {customer.getdealsNumber ? (
+                            <div className="flex items-center gap-2">
+                              <div className="font-mono text-sm bg-blue-50 px-2 py-1 rounded">
+                                {customer.getdealsNumber}
+                              </div>
+                              <Button
+                                size="sm"
+                                variant="outline"
+                                onClick={() => handleCopyGetDealsNumber(customer.getdealsNumber!)}
+                              >
+                                <Copy className="h-3 w-3" />
+                              </Button>
+                            </div>
+                          ) : (
+                            <Badge variant="secondary">Not assigned</Badge>
+                          )}
+                        </TableCell>
+                        <TableCell className="whitespace-nowrap">
                           <div className="space-y-1">
                             <div className="flex items-center gap-1 text-sm">
                               <Mail className="h-3 w-3" />
@@ -593,26 +756,28 @@ export default function AdminUsers() {
                             )}
                           </div>
                         </TableCell>
-                        <TableCell>
+                        <TableCell className="whitespace-nowrap">
+                          <div className="flex items-center gap-2">
+                            <div className="text-sm font-medium">
+                              KES {(customer.walletBalance || 0).toLocaleString()}
+                            </div>
+                            <Badge variant={customer.walletActive ? "default" : "secondary"} className="text-xs">
+                              {customer.walletActive ? "Active" : "Inactive"}
+                            </Badge>
+                          </div>
+                        </TableCell>
+                        <TableCell className="whitespace-nowrap">
                           <div className="font-medium">{customer.totalOrders}</div>
                         </TableCell>
-                        <TableCell>
+                        <TableCell className="whitespace-nowrap">
                           <div className="font-medium">KES {customer.totalSpent.toLocaleString()}</div>
                         </TableCell>
-                        <TableCell>
+                        <TableCell className="whitespace-nowrap">
                           <Badge className={getStatusBadge(customer.status)}>
                             {customer.status}
                           </Badge>
                         </TableCell>
-                        <TableCell>
-                          <div className="text-sm">
-                            {customer.lastOrderDate 
-                              ? new Date(customer.lastOrderDate).toLocaleDateString()
-                              : "Never"
-                            }
-                          </div>
-                        </TableCell>
-                        <TableCell>
+                        <TableCell className="whitespace-nowrap">
                           <div className="flex items-center gap-2">
                             <Button 
                               size="sm" 
@@ -644,7 +809,295 @@ export default function AdminUsers() {
                       </TableRow>
                     ))}
                   </TableBody>
+                  </Table>
+                </div>
+              </CardContent>
+            </Card>
+          </TabsContent>
+
+          {/* GetDeals Numbers Tab */}
+          <TabsContent value="getdeals" className="space-y-6">
+            {/* GetDeals Number System Overview */}
+            <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+              <Card>
+                <CardContent className="pt-6">
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <p className="text-sm font-medium text-muted-foreground">Total Numbers Assigned</p>
+                      <p className="text-2xl font-bold text-blue-600">
+                        {customers.filter(c => c.getdealsNumber).length}
+                      </p>
+                    </div>
+                    <Hash className="h-8 w-8 text-blue-600" />
+                  </div>
+                </CardContent>
+              </Card>
+              <Card>
+                <CardContent className="pt-6">
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <p className="text-sm font-medium text-muted-foreground">Pending Assignment</p>
+                      <p className="text-2xl font-bold text-orange-600">
+                        {customers.filter(c => !c.getdealsNumber).length}
+                      </p>
+                    </div>
+                    <UserX className="h-8 w-8 text-orange-600" />
+                  </div>
+                </CardContent>
+              </Card>
+              <Card>
+                <CardContent className="pt-6">
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <p className="text-sm font-medium text-muted-foreground">Active Wallets</p>
+                      <p className="text-2xl font-bold text-green-600">
+                        {customers.filter(c => c.walletActive).length}
+                      </p>
+                    </div>
+                    <Wallet className="h-8 w-8 text-green-600" />
+                  </div>
+                </CardContent>
+              </Card>
+              <Card>
+                <CardContent className="pt-6">
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <p className="text-sm font-medium text-muted-foreground">Coverage Rate</p>
+                      <p className="text-2xl font-bold text-purple-600">
+                        {customers.length > 0 ? Math.round((customers.filter(c => c.getdealsNumber).length / customers.length) * 100) : 0}%
+                      </p>
+                    </div>
+                    <ShoppingBag className="h-8 w-8 text-purple-600" />
+                  </div>
+                </CardContent>
+              </Card>
+            </div>
+
+            {/* GetDeals Number Lookup Tool */}
+            <Card>
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2">
+                  <Search className="h-5 w-5" />
+                  GetDeals Number Lookup
+                </CardTitle>
+              </CardHeader>
+              <CardContent>
+                <div className="flex gap-4">
+                  <div className="flex-1">
+                    <Label htmlFor="getdeals-lookup">Enter GetDeals Number</Label>
+                    <Input
+                      id="getdeals-lookup"
+                      placeholder="GD-123456"
+                      value={lookupValue}
+                      onChange={(e) => setLookupValue(e.target.value)}
+                      onKeyPress={(e) => {
+                        if (e.key === 'Enter' && lookupValue.trim() && !lookupLoading) {
+                          handleLookupByGetDealsNumber(lookupValue.trim());
+                        }
+                      }}
+                      disabled={lookupLoading}
+                    />
+                  </div>
+                  <div className="flex items-end">
+                    <Button 
+                      onClick={() => {
+                        if (lookupValue.trim()) {
+                          handleLookupByGetDealsNumber(lookupValue.trim());
+                        }
+                      }}
+                      className="gap-2"
+                      disabled={!lookupValue.trim() || lookupLoading}
+                    >
+                      {lookupLoading ? (
+                        <RefreshCw className="h-4 w-4 animate-spin" />
+                      ) : (
+                        <Search className="h-4 w-4" />
+                      )}
+                      {lookupLoading ? 'Searching...' : 'Lookup'}
+                    </Button>
+                  </div>
+                </div>
+                <div className="mt-4 space-y-3">
+                  <div className="text-sm text-muted-foreground">
+                    <p><strong>Format:</strong> GD-XXXXXX (e.g., GD-100001)</p>
+                    <p>Use this tool to quickly find users by their GetDeals number for customer support.</p>
+                    <p className="text-blue-600 mt-2">💡 Results will open in the customer details modal automatically</p>
+                  </div>
+                  
+                  {/* Quick lookup buttons for testing */}
+                  {customers.filter(c => c.getdealsNumber).length > 0 && (
+                    <div>
+                      <p className="text-sm font-medium text-gray-700 mb-2">Quick Test Lookups:</p>
+                      <div className="flex flex-wrap gap-2">
+                        {customers.filter(c => c.getdealsNumber).slice(0, 3).map((customer) => (
+                          <Button
+                            key={customer.id}
+                            size="sm"
+                            variant="outline"
+                            onClick={() => {
+                              setLookupValue(customer.getdealsNumber!);
+                              handleLookupByGetDealsNumber(customer.getdealsNumber!);
+                            }}
+                            disabled={lookupLoading}
+                            className="text-xs"
+                          >
+                            {customer.getdealsNumber}
+                          </Button>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+                </div>
+              </CardContent>
+            </Card>
+
+            {/* GetDeals Numbers Management */}
+            <Card>
+              <CardHeader>
+                <CardTitle>GetDeals Number Management</CardTitle>
+              </CardHeader>
+              <CardContent>
+                <Table>
+                  <TableHeader>
+                    <TableRow>
+                      <TableHead>GetDeals Number</TableHead>
+                      <TableHead>Customer</TableHead>
+                      <TableHead>Contact</TableHead>
+                      <TableHead>Wallet Status</TableHead>
+                      <TableHead>Balance</TableHead>
+                      <TableHead>Actions</TableHead>
+                    </TableRow>
+                  </TableHeader>
+                  <TableBody>
+                    {customers.filter(c => c.getdealsNumber).map((customer) => (
+                      <TableRow key={customer.id}>
+                        <TableCell>
+                          <div className="flex items-center gap-2">
+                            <div className="font-mono text-sm bg-blue-50 px-2 py-1 rounded font-medium">
+                              {customer.getdealsNumber}
+                            </div>
+                            <Button
+                              size="sm"
+                              variant="outline"
+                              onClick={() => handleCopyGetDealsNumber(customer.getdealsNumber!)}
+                            >
+                              <Copy className="h-3 w-3" />
+                            </Button>
+                          </div>
+                        </TableCell>
+                        <TableCell>
+                          <div>
+                            <div className="font-medium">{customer.name}</div>
+                            <div className="text-sm text-muted-foreground">
+                              Member since {new Date(customer.joinDate).toLocaleDateString()}
+                            </div>
+                          </div>
+                        </TableCell>
+                        <TableCell>
+                          <div className="space-y-1">
+                            <div className="text-sm flex items-center gap-1">
+                              <Mail className="h-3 w-3" />
+                              {customer.email}
+                            </div>
+                            <div className="text-sm flex items-center gap-1">
+                              <Phone className="h-3 w-3" />
+                              {customer.phone}
+                            </div>
+                          </div>
+                        </TableCell>
+                        <TableCell>
+                          <Badge variant={customer.walletActive ? "default" : "secondary"}>
+                            {customer.walletActive ? "Active" : "Inactive"}
+                          </Badge>
+                        </TableCell>
+                        <TableCell>
+                          <div className="font-medium">
+                            KES {(customer.walletBalance || 0).toLocaleString()}
+                          </div>
+                        </TableCell>
+                        <TableCell>
+                          <div className="flex items-center gap-2">
+                            <Button 
+                              size="sm" 
+                              variant="outline"
+                              onClick={() => {
+                                setSelectedCustomer(customer);
+                                setCustomerModalOpen(true);
+                              }}
+                            >
+                              <Eye className="h-3 w-3" />
+                            </Button>
+                            <Button 
+                              size="sm" 
+                              variant="outline"
+                              onClick={() => handleLookupByGetDealsNumber(customer.getdealsNumber!)}
+                            >
+                              <Search className="h-3 w-3" />
+                            </Button>
+                          </div>
+                        </TableCell>
+                      </TableRow>
+                    ))}
+                  </TableBody>
                 </Table>
+                
+                {customers.filter(c => c.getdealsNumber).length === 0 && (
+                  <div className="text-center py-12 text-muted-foreground">
+                    <Hash className="h-12 w-12 mx-auto mb-4 opacity-50" />
+                    <div>No GetDeals numbers assigned yet.</div>
+                    <div className="text-sm">Numbers will be automatically assigned when users register.</div>
+                  </div>
+                )}
+              </CardContent>
+            </Card>
+
+            {/* System Information */}
+            <Card>
+              <CardHeader>
+                <CardTitle>GetDeals Number System Information</CardTitle>
+              </CardHeader>
+              <CardContent>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                  <div>
+                    <h3 className="font-medium text-gray-900 mb-3">Number Format</h3>
+                    <div className="space-y-2">
+                      <div className="flex justify-between">
+                        <span className="text-sm text-gray-600">Format:</span>
+                        <span className="text-sm font-mono">GD-XXXXXX</span>
+                      </div>
+                      <div className="flex justify-between">
+                        <span className="text-sm text-gray-600">Length:</span>
+                        <span className="text-sm font-mono">9 characters</span>
+                      </div>
+                      <div className="flex justify-between">
+                        <span className="text-sm text-gray-600">Starting Number:</span>
+                        <span className="text-sm font-mono">100001</span>
+                      </div>
+                      <div className="flex justify-between">
+                        <span className="text-sm text-gray-600">Type:</span>
+                        <span className="text-sm text-green-600">Sequential</span>
+                      </div>
+                    </div>
+                  </div>
+                  
+                  <div>
+                    <h3 className="font-medium text-gray-900 mb-3">Usage</h3>
+                    <div className="space-y-2">
+                      <div className="text-sm text-gray-600">
+                        • Unique user identification
+                      </div>
+                      <div className="text-sm text-gray-600">
+                        • Wallet transaction mapping
+                      </div>
+                      <div className="text-sm text-gray-600">
+                        • Customer support lookup
+                      </div>
+                      <div className="text-sm text-gray-600">
+                        • Payment processing reference
+                      </div>
+                    </div>
+                  </div>
+                </div>
               </CardContent>
             </Card>
           </TabsContent>
@@ -747,6 +1200,27 @@ export default function AdminUsers() {
             </DialogHeader>
             {selectedCustomer && (
               <div className="space-y-6">
+                {/* GetDeals Number Section */}
+                {selectedCustomer.getdealsNumber && (
+                  <div className="bg-blue-50 p-4 rounded-lg">
+                    <div className="flex items-center justify-between">
+                      <div>
+                        <Label className="text-sm font-medium text-blue-800">GetDeals Number</Label>
+                        <p className="text-lg font-mono font-bold text-blue-600">{selectedCustomer.getdealsNumber}</p>
+                      </div>
+                      <Button
+                        size="sm"
+                        variant="outline"
+                        onClick={() => handleCopyGetDealsNumber(selectedCustomer.getdealsNumber!)}
+                        className="gap-2"
+                      >
+                        <Copy className="h-3 w-3" />
+                        Copy
+                      </Button>
+                    </div>
+                  </div>
+                )}
+
                 <div className="grid grid-cols-2 gap-4">
                   <div>
                     <Label className="text-sm font-medium">Name</Label>
@@ -765,6 +1239,18 @@ export default function AdminUsers() {
                   <div>
                     <Label className="text-sm font-medium">Phone</Label>
                     <p className="text-sm">{selectedCustomer.phone}</p>
+                  </div>
+                  <div>
+                    <Label className="text-sm font-medium">Wallet Balance</Label>
+                    <p className="text-sm font-bold text-green-600">
+                      KES {(selectedCustomer.walletBalance || 0).toLocaleString()}
+                    </p>
+                  </div>
+                  <div>
+                    <Label className="text-sm font-medium">Wallet Status</Label>
+                    <Badge variant={selectedCustomer.walletActive ? "default" : "secondary"}>
+                      {selectedCustomer.walletActive ? "Active" : "Inactive"}
+                    </Badge>
                   </div>
                   <div>
                     <Label className="text-sm font-medium">Total Orders</Label>
