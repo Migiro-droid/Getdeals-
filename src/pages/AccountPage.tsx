@@ -160,6 +160,30 @@ export default function AccountPage() {
                       />
                     </div>
                     
+                    <div>
+                      <Label htmlFor="organization">Organization</Label>
+                      <Input
+                        id="organization"
+                        type="text"
+                        value={profile.organization || ''}
+                        onChange={(e) => setProfile({ ...profile, organization: e.target.value })}
+                        disabled={!isEditing}
+                        placeholder="Your company or organization"
+                      />
+                    </div>
+                    
+                    <div>
+                      <Label htmlFor="organizationNumber">Organization Number</Label>
+                      <Input
+                        id="organizationNumber"
+                        type="text"
+                        value={profile.organizationNumber || ''}
+                        onChange={(e) => setProfile({ ...profile, organizationNumber: e.target.value })}
+                        disabled={!isEditing}
+                        placeholder="e.g. REG123456789"
+                      />
+                    </div>
+                    
                     {isEditing && (
                       <div className="flex space-x-4">
                         <Button onClick={() => { toast({ title: 'Profile updated' }); setIsEditing(false); }}>

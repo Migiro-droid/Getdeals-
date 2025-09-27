@@ -19,6 +19,8 @@ export type Profile = {
   lastName: string;
   email: string;
   phone: string;
+  organization?: string;
+  organizationNumber?: string;
   memberSince?: string;
 };
 
@@ -46,6 +48,8 @@ export const AccountProvider: React.FC<{ children: React.ReactNode }> = ({ child
     lastName: user?.name?.split(' ').slice(1).join(' ') || '',
     email: user?.email || '',
     phone: user?.phone || '',
+    organization: user?.organization || '',
+    organizationNumber: user?.organizationNumber || '',
     memberSince: user?.createdAt ? new Date(user.createdAt).toLocaleDateString('en-US', { month: 'short', year: 'numeric' }) : undefined,
   });
   const [notifications, setNotificationsState] = useState<Notifications>({
@@ -87,6 +91,8 @@ export const AccountProvider: React.FC<{ children: React.ReactNode }> = ({ child
         lastName: user.name?.split(' ').slice(1).join(' ') || prev.lastName,
         email: user.email || prev.email,
         phone: user.phone || prev.phone,
+        organization: user.organization || prev.organization,
+        organizationNumber: user.organizationNumber || prev.organizationNumber,
         memberSince: user.createdAt ? new Date(user.createdAt).toLocaleDateString('en-US', { month: 'short', year: 'numeric' }) : prev.memberSince,
       }));
     }

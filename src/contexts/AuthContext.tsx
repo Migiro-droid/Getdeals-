@@ -14,6 +14,7 @@ export type AuthUser = {
   preferences?: string;
   onboardingCompleted?: boolean;
   organization?: string;
+  organizationNumber?: string;
 };
 
 type AuthContextType = {
@@ -22,7 +23,7 @@ type AuthContextType = {
   isAuthenticated: boolean;
   loading: boolean;
   signIn: (email: string, password: string) => Promise<void>;
-  signUp: (name: string, phone: string, email: string, password: string, organization?: string) => Promise<void>;
+  signUp: (name: string, phone: string, email: string, password: string, organization?: string, organizationNumber?: string) => Promise<void>;
   signOut: () => Promise<void>;
   changePassword: (newPassword: string) => Promise<{ ok: boolean; error?: string }>;
   resetPassword: (email: string) => Promise<{ ok: boolean; error?: string }>;
@@ -160,6 +161,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
             last_name: basicUser.name?.split(' ').slice(1).join(' ') || '',
             phone: supabaseUser.user_metadata?.phone || null,
             organization: supabaseUser.user_metadata?.organization || null,
+            organization_number: supabaseUser.user_metadata?.organization_number || null,
             email_verified: !!supabaseUser.email_confirmed_at,
             customer_id: `customer_${supabaseUser.id}`, // Generate customer_id
             created_at: new Date().toISOString(),
@@ -187,6 +189,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
             email: profile.email,
             role: profile.role,
             organization: profile.organization || '',
+            organizationNumber: profile.organization_number || '',
             createdAt: profile.createdAt,
             twoFactorEnabled: profile.twoFactorEnabled || false,
             preferences: profile.preferences,
@@ -259,10 +262,10 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     }
   };
 
-  const signUp = async (name: string, phone: string, email: string, password: string, organization?: string) => {
+  const signUp = async (name: string, phone: string, email: string, password: string, organization?: string, organizationNumber?: string) => {
     setLoading(true);
     try {
-      console.log('Attempting sign up for:', email, 'with name:', name, 'organization:', organization);
+      console.log('Attempting sign up for:', email, 'with name:', name, 'organization:', organization, 'organizationNumber:', organizationNumber);
       
       // Determine the redirect URL based on environment
       const baseUrl = import.meta.env.PROD 
@@ -274,7 +277,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
           name,
           phone,
           full_name: name,
-          organization: organization || null
+          organization: organization || null,
+          organization_number: organizationNumber || null
         },
         options: {
           emailRedirectTo: `${baseUrl}/auth/callback`
