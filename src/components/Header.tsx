@@ -14,9 +14,16 @@ import { useWalletKyc } from "../hooks/useWalletKyc";
 import { KycStatusDisplay } from "./KycStatusDisplay";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 
+interface NavigationItem {
+  name: string;
+  href: string;
+  comingSoon?: boolean;
+}
+
 export function Header() {
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
+  const [isSearchExpanded, setIsSearchExpanded] = useState(false);
   const location = useLocation();
   const navigate = useNavigate();
   const { items } = useCart();
@@ -58,13 +65,14 @@ export function Header() {
     window.open('mailto:support@getdeals.co.ke', '_blank');
   };
 
-  const navigation = [
+  const navigation: NavigationItem[] = [
     { name: "Home", href: "/" },
     { name: "Baskets", href: "/baskets" },
     { name: "How It Works", href: "/how-it-works" },
     { name: "About", href: "/about" },
     { name: "Contact", href: "/contact" },
     { name: "FAQ", href: "/faq" },
+    { name: "Membership", href: "/membership", comingSoon: true },
   ];
 
   const isActive = (href: string) => {
@@ -86,19 +94,36 @@ export function Header() {
           <nav className="hidden md:flex items-center space-x-4">
             {navigation.map((item) => {
               const active = isActive(item.href);
+              const isComingSoon = item.comingSoon;
               return (
-                <button
-                  key={item.name}
-                  onClick={(e) => {
-                    e.preventDefault();
-                    navigate(item.href);
-                  }}
-                  className={`inline-flex items-center justify-center gap-2 whitespace-nowrap rounded-md text-sm font-medium ring-offset-background transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 h-10 px-4 py-2 hover:bg-accent hover:text-accent-foreground cursor-pointer ${
-                    active ? 'text-primary border-b-2 border-primary' : 'text-muted-foreground'
-                  }`}
-                >
-                  {item.name}
-                </button>
+                <div className="flex flex-col items-center">
+                  <button
+                    key={item.name}
+                    onClick={(e) => {
+                      e.preventDefault();
+                      if (!isComingSoon) {
+                        navigate(item.href);
+                      }
+                    }}
+                    className={`inline-flex items-center justify-center gap-2 whitespace-nowrap rounded-md text-sm font-medium ring-offset-background transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 h-10 px-4 py-2 ${
+                      isComingSoon
+                        ? 'text-muted-foreground/60 cursor-not-allowed'
+                        : `cursor-pointer hover:bg-accent hover:text-accent-foreground ${
+                            active ? 'text-primary border-b-2 border-primary' : 'text-muted-foreground'
+                          }`
+                    }`}
+                    disabled={isComingSoon}
+                  >
+                    {item.name}
+                  </button>
+                  {isComingSoon && (
+                    <div className="flex items-center justify-center">
+                      <span className="text-xs font-medium text-slate-600 bg-slate-100 px-2 py-1 rounded-md shadow-sm">
+                        Coming Soon
+                      </span>
+                    </div>
+                  )}
+                </div>
               );
             })}
           </nav>
@@ -113,16 +138,42 @@ export function Header() {
             </button>
           )}
 
-          {/* Search Bar */}
+          {/* Intelligent Search Bar */}
           <div className="hidden lg:flex flex-1 max-w-sm mx-8">
             <div className="relative w-full">
-              <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
-              <Input
-                placeholder="Search products..."
-                value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
-                className="pl-10"
-              />
+              {!isSearchExpanded ? (
+                <button
+                  onClick={() => setIsSearchExpanded(true)}
+                  className="flex items-center justify-center w-10 h-10 rounded-full bg-gray-100 hover:bg-gray-200 transition-colors"
+                >
+                  <Search className="h-4 w-4 text-muted-foreground" />
+                </button>
+              ) : (
+                <div className="relative w-full animate-in slide-in-from-left-5 duration-300">
+                  <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+                  <Input
+                    placeholder="Search products..."
+                    value={searchQuery}
+                    onChange={(e) => setSearchQuery(e.target.value)}
+                    onBlur={() => {
+                      if (!searchQuery) {
+                        setIsSearchExpanded(false);
+                      }
+                    }}
+                    autoFocus
+                    className="pl-10 pr-10"
+                  />
+                  <button
+                    onClick={() => {
+                      setIsSearchExpanded(false);
+                      setSearchQuery("");
+                    }}
+                    className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
+                  >
+                    <X className="h-4 w-4" />
+                  </button>
+                </div>
+              )}
             </div>
           </div>
 
@@ -139,7 +190,12 @@ export function Header() {
             )}
             
             {/* Mobile Search Button */}
-            <Button variant="ghost" size="icon" className="md:hidden">
+            <Button 
+              variant="ghost" 
+              size="icon" 
+              className="md:hidden lg:hidden"
+              onClick={() => setIsMobileMenuOpen(true)}
+            >
               <Search className="h-5 w-5" />
             </Button>
 
@@ -203,21 +259,40 @@ export function Header() {
                   />
                 </div>
               </div>
-              {navigation.map((item) => (
-                <button
-                  key={item.name}
-                  onClick={(e) => {
-                    e.preventDefault();
-                    navigate(item.href);
-                    setIsMobileMenuOpen(false);
-                  }}
-                  className={`block px-3 py-2 text-base font-medium transition-colors hover:text-primary cursor-pointer w-full text-left ${
-                    isActive(item.href) ? "text-primary bg-primary/5" : "text-muted-foreground"
-                  }`}
-                >
-                  {item.name}
-                </button>
-              ))}
+              {navigation.map((item) => {
+                const isComingSoon = item.comingSoon;
+                return (
+                  <div className="flex flex-col items-start w-full">
+                    <button
+                      key={item.name}
+                      onClick={(e) => {
+                        e.preventDefault();
+                        if (!isComingSoon) {
+                          navigate(item.href);
+                          setIsMobileMenuOpen(false);
+                        }
+                      }}
+                      className={`flex items-center justify-between px-3 py-2 text-base font-medium transition-colors w-full text-left ${
+                        isComingSoon
+                          ? "text-muted-foreground/60 cursor-not-allowed"
+                          : `cursor-pointer hover:text-primary ${
+                              isActive(item.href) ? "text-primary bg-primary/5" : "text-muted-foreground"
+                            }`
+                      }`}
+                      disabled={isComingSoon}
+                    >
+                      <span>{item.name}</span>
+                    </button>
+                    {isComingSoon && (
+                      <div className="flex items-center ml-3 -mt-1">
+                        <span className="text-xs font-medium text-slate-600 bg-slate-100 px-2 py-1 rounded-md shadow-sm">
+                          Coming Soon
+                        </span>
+                      </div>
+                    )}
+                  </div>
+                );
+              })}
               
               {/* Mobile Wallet Button */}
               {isAuthenticated && (
