@@ -49,7 +49,7 @@ export default function WalletPage() {
     let count=0;
 
     for (const t of transactions) {
-      if (!t.date.startsWith(month)) continue;
+      if (!t.created_at.startsWith(month)) continue;
       count++;
       if (t.type === "deposit") inflow += t.amount;
       else outflow += t.amount;
@@ -503,18 +503,6 @@ export default function WalletPage() {
                         <ArrowDownCircle className="h-4 w-4 mr-2" /> Deposit
                       </>
                     )}
-                  </Button>
-                  
-                  {/* TEST BUTTON - Remove after testing */}
-                  <Button 
-                    variant="destructive" 
-                    onClick={() => {
-                      console.log('🧪 TEST BUTTON CLICKED!');
-                      alert('TEST BUTTON WORKS!');
-                      onDeposit();
-                    }}
-                  >
-                    TEST DEPOSIT
                   </Button>
                   
                   <Button variant="outline" onClick={onWithdraw} disabled={amt <= 0}>
