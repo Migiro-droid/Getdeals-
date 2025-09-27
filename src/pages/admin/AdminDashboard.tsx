@@ -1093,7 +1093,7 @@ export default function AdminDashboard() {
                 <CardContent className="space-y-3">
                   <Button asChild className="w-full"><a href="/admin/products">Add or Edit Products</a></Button>
                   <Button asChild variant="outline" className="w-full"><a href="/admin/orders">Manage Orders</a></Button>
-                  <Button asChild variant="outline" className="w-full"><a href="/admin/users">Manage Users</a></Button>
+                  <Button asChild variant="outline" className="w-full"><a href="/admin/users">User Management</a></Button>
                   <Button asChild variant="outline" className="w-full"><a href="/admin/inventory">View Inventory</a></Button>
                   <Button asChild variant="outline" className="w-full"><a href="/admin/inventory/out-of-stock">Out of Stock Items</a></Button>
                   <Button asChild variant="outline" className="w-full"><a href="/admin/settings">Site Settings</a></Button>

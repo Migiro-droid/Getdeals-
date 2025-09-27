@@ -1,6 +1,6 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
-import { CreditCard, MapPin, Phone, User, Smartphone, DollarSign, Clock } from "lucide-react";
+import { CreditCard, MapPin, Phone, User, Smartphone, DollarSign, Clock, Store, Navigation } from "lucide-react";
 import { Button } from "../components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "../components/ui/card";
 import { Input } from "../components/ui/input";
@@ -9,11 +9,13 @@ import { RadioGroup, RadioGroupItem } from "../components/ui/radio-group";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "../components/ui/select";
 import { Separator } from "../components/ui/separator";
 import { Alert, AlertDescription } from "../components/ui/alert";
+import { Badge } from "../components/ui/badge";
 import { useCart } from "../contexts/CartContext";
 import { useToast } from '../hooks/use-toast';
 import { useAuth } from '../contexts/AuthContext';
 import { useOrders } from '../contexts/OrdersContext';
 import { getApiBase } from '@/lib/api';
+import { PickupLocationService, type PickupLocation } from '../services/pickup-location';
 
 export default function CheckoutPage() {
   const { items, total, clearCart } = useCart();
@@ -33,8 +35,164 @@ export default function CheckoutPage() {
   const [email, setEmail] = useState("");
   const [address, setAddress] = useState("");
   const [pickupLocation, setPickupLocation] = useState("");
+  const [selectedPickupLocationData, setSelectedPickupLocationData] = useState<PickupLocation | null>(null);
   
   const [mpesaPhone, setMpesaPhone] = useState("");
+  const [pickupLocations, setPickupLocations] = useState<PickupLocation[]>([]);
+  const [loadingLocations, setLoadingLocations] = useState(false);
+
+  // Load pickup locations on component mount
+  useEffect(() => {
+    loadPickupLocations();
+  }, []);
+
+  const loadPickupLocations = async () => {
+    try {
+      setLoadingLocations(true);
+      
+      // First try to load from service
+      const { data, error } = await PickupLocationService.getActiveLocations();
+      
+      if (data && data.length > 0) {
+        setPickupLocations(data);
+      } else {
+        // Fallback to legacy Quickmart locations if service fails
+        const fallbackLocations: PickupLocation[] = [
+          {
+            id: 'lavington',
+            name: 'Quickmart Lavington',
+            address: 'Lavington Green Shopping Centre, Hatheru Road, Nairobi',
+            latitude: -1.2774,
+            longitude: 36.7664,
+            phone: '+254 20 2386000',
+            status: 'active',
+            capacity: 100,
+            features: ['Parking Available', 'Air Conditioned', 'Security'],
+            operating_hours: {
+              monday: '8:00 AM - 9:00 PM',
+              tuesday: '8:00 AM - 9:00 PM',
+              wednesday: '8:00 AM - 9:00 PM',
+              thursday: '8:00 AM - 9:00 PM',
+              friday: '8:00 AM - 9:00 PM',
+              saturday: '8:00 AM - 9:00 PM',
+              sunday: '9:00 AM - 8:00 PM'
+            },
+            created_at: new Date().toISOString(),
+            updated_at: new Date().toISOString()
+          },
+          {
+            id: 'roysambu',
+            name: 'Quickmart Roysambu',
+            address: 'Roysambu Roundabout, Thika Road, Nairobi',
+            latitude: -1.2097,
+            longitude: 36.8833,
+            phone: '+254 20 2386001',
+            status: 'active',
+            capacity: 80,
+            features: ['Parking Available', 'Public Transport Access'],
+            operating_hours: {
+              monday: '8:00 AM - 9:00 PM',
+              tuesday: '8:00 AM - 9:00 PM',
+              wednesday: '8:00 AM - 9:00 PM',
+              thursday: '8:00 AM - 9:00 PM',
+              friday: '8:00 AM - 9:00 PM',
+              saturday: '8:00 AM - 9:00 PM',
+              sunday: '9:00 AM - 8:00 PM'
+            },
+            created_at: new Date().toISOString(),
+            updated_at: new Date().toISOString()
+          },
+          {
+            id: 'westlands',
+            name: 'Quickmart Westlands',
+            address: 'Westlands Square, Waiyaki Way, Nairobi',
+            latitude: -1.2634,
+            longitude: 36.8078,
+            phone: '+254 20 2386002',
+            status: 'active',
+            capacity: 120,
+            features: ['Parking Available', 'Food Court', '24/7 Security'],
+            operating_hours: {
+              monday: '8:00 AM - 10:00 PM',
+              tuesday: '8:00 AM - 10:00 PM',
+              wednesday: '8:00 AM - 10:00 PM',
+              thursday: '8:00 AM - 10:00 PM',
+              friday: '8:00 AM - 10:00 PM',
+              saturday: '8:00 AM - 10:00 PM',
+              sunday: '9:00 AM - 9:00 PM'
+            },
+            created_at: new Date().toISOString(),
+            updated_at: new Date().toISOString()
+          },
+          {
+            id: 'thindiuga',
+            name: 'Quickmart Thindiuga',
+            address: 'Thindiuga Shopping Centre, Kiambu Road, Nairobi',
+            latitude: -1.2303,
+            longitude: 36.8647,
+            phone: '+254 20 2386003',
+            status: 'active',
+            capacity: 60,
+            features: ['Parking Available', 'Pharmacy Nearby'],
+            operating_hours: {
+              monday: '8:00 AM - 9:00 PM',
+              tuesday: '8:00 AM - 9:00 PM',
+              wednesday: '8:00 AM - 9:00 PM',
+              thursday: '8:00 AM - 9:00 PM',
+              friday: '8:00 AM - 9:00 PM',
+              saturday: '8:00 AM - 9:00 PM',
+              sunday: '9:00 AM - 8:00 PM'
+            },
+            created_at: new Date().toISOString(),
+            updated_at: new Date().toISOString()
+          },
+          {
+            id: 'mombasa-road',
+            name: 'Quickmart Mombasa Road',
+            address: 'Mombasa Road, Industrial Area, Nairobi',
+            latitude: -1.3201,
+            longitude: 36.8585,
+            phone: '+254 20 2386004',
+            status: 'active',
+            capacity: 90,
+            features: ['Ample Parking', 'Industrial Area Access'],
+            operating_hours: {
+              monday: '8:00 AM - 9:00 PM',
+              tuesday: '8:00 AM - 9:00 PM',
+              wednesday: '8:00 AM - 9:00 PM',
+              thursday: '8:00 AM - 9:00 PM',
+              friday: '8:00 AM - 9:00 PM',
+              saturday: '8:00 AM - 9:00 PM',
+              sunday: '9:00 AM - 8:00 PM'
+            },
+            created_at: new Date().toISOString(),
+            updated_at: new Date().toISOString()
+          }
+        ];
+        setPickupLocations(fallbackLocations);
+      }
+    } catch (error) {
+      console.error('Error loading pickup locations:', error);
+      // Still set fallback locations on error
+      toast({
+        title: "Info",
+        description: "Using default pickup locations.",
+        variant: "default",
+      });
+    } finally {
+      setLoadingLocations(false);
+    }
+  };
+
+  const handlePickupLocationChange = (locationId: string) => {
+    setPickupLocation(locationId);
+    const selectedLocation = pickupLocations.find(loc => loc.id === locationId);
+    setSelectedPickupLocationData(selectedLocation || null);
+  };
+
+  const isLocationOpen = (location: PickupLocation) => {
+    return PickupLocationService.isLocationOpen(location.operating_hours);
+  };
 
   const formatPhoneNumber = (phone: string) => {
     const digits = phone.replace(/\D/g, '');
@@ -182,7 +340,8 @@ export default function CheckoutPage() {
           phone,
           email,
           address: orderData.deliveryAddress,
-          pickupLocation: orderData.deliveryMethod === 'pickup' ? pickupLocation : undefined,
+          pickupLocation: orderData.deliveryMethod === 'pickup' ? selectedPickupLocationData?.name || pickupLocation : undefined,
+          pickupLocationDetails: orderData.deliveryMethod === 'pickup' ? selectedPickupLocationData : undefined,
         },
         status: 'pending' as const,
       };
@@ -540,20 +699,96 @@ export default function CheckoutPage() {
                 </RadioGroup>
 
                 {deliveryMethod === "pickup" && (
-                  <div className="mt-4">
+                  <div className="mt-4 space-y-4">
                     <Label htmlFor="pickupLocation">Pickup Location</Label>
-                    <Select value={pickupLocation} onValueChange={setPickupLocation}>
+                    <Select 
+                      value={pickupLocation} 
+                      onValueChange={handlePickupLocationChange}
+                      disabled={loadingLocations}
+                    >
                       <SelectTrigger>
-                        <SelectValue placeholder="Select pickup location" />
+                        <SelectValue placeholder={loadingLocations ? "Loading locations..." : "Select pickup location"} />
                       </SelectTrigger>
                       <SelectContent>
-                        <SelectItem value="lavington">Quickmart Lavington</SelectItem>
-                        <SelectItem value="roysambu">Quickmart Roysambu</SelectItem>
-                        <SelectItem value="westlands">Quickmart Westlands</SelectItem>
-                        <SelectItem value="thindiuga">Quickmart Thindiuga</SelectItem>
-                        <SelectItem value="mombasa-road">Quickmart Mombasa Road</SelectItem>
+                        {pickupLocations.map((location) => (
+                          <SelectItem key={location.id} value={location.id}>
+                            <div className="flex items-center justify-between w-full">
+                              <div className="flex items-center gap-2">
+                                <Store className="h-4 w-4" />
+                                <span>{location.name}</span>
+                              </div>
+                              <div className="flex items-center gap-2 ml-4">
+                                {isLocationOpen(location) ? (
+                                  <Badge className="bg-green-100 text-green-800 text-xs">Open</Badge>
+                                ) : (
+                                  <Badge variant="secondary" className="text-xs">Closed</Badge>
+                                )}
+                              </div>
+                            </div>
+                          </SelectItem>
+                        ))}
                       </SelectContent>
                     </Select>
+
+                    {/* Selected location details */}
+                    {selectedPickupLocationData && (
+                      <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
+                        <div className="space-y-2">
+                          <div className="flex items-center justify-between">
+                            <h4 className="font-medium text-blue-900">{selectedPickupLocationData.name}</h4>
+                            {isLocationOpen(selectedPickupLocationData) ? (
+                              <Badge className="bg-green-100 text-green-800">Open Now</Badge>
+                            ) : (
+                              <Badge variant="secondary">Closed</Badge>
+                            )}
+                          </div>
+                          
+                          <div className="flex items-start gap-2 text-sm text-blue-800">
+                            <MapPin className="h-4 w-4 mt-0.5 flex-shrink-0" />
+                            <span>{selectedPickupLocationData.address}</span>
+                          </div>
+                          
+                          {selectedPickupLocationData.phone && (
+                            <div className="flex items-center gap-2 text-sm text-blue-800">
+                              <Phone className="h-4 w-4" />
+                              <span>{selectedPickupLocationData.phone}</span>
+                            </div>
+                          )}
+
+                          {selectedPickupLocationData.features && selectedPickupLocationData.features.length > 0 && (
+                            <div className="flex flex-wrap gap-1 mt-2">
+                              {selectedPickupLocationData.features.map((feature, index) => (
+                                <Badge key={index} variant="outline" className="text-xs">
+                                  {feature}
+                                </Badge>
+                              ))}
+                            </div>
+                          )}
+
+                          {selectedPickupLocationData.instructions && (
+                            <div className="mt-3 p-3 bg-yellow-50 border border-yellow-200 rounded-md">
+                              <div className="flex items-start gap-2">
+                                <Navigation className="h-4 w-4 text-yellow-600 mt-0.5 flex-shrink-0" />
+                                <div>
+                                  <div className="text-sm font-medium text-yellow-800">Pickup Instructions:</div>
+                                  <div className="text-sm text-yellow-700 mt-1">
+                                    {selectedPickupLocationData.instructions}
+                                  </div>
+                                </div>
+                              </div>
+                            </div>
+                          )}
+
+                          <div className="text-xs text-blue-600 mt-2">
+                            ⏰ Operating Hours: {(() => {
+                              const today = new Date().toLocaleDateString('en-US', { weekday: 'long' }).toLowerCase();
+                              const todayHours = selectedPickupLocationData.operating_hours[today as keyof typeof selectedPickupLocationData.operating_hours];
+                              return `Today: ${todayHours}`;
+                            })()}
+                          </div>
+                        </div>
+                      </div>
+                    )}
                   </div>
                 )}
 

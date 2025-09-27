@@ -713,7 +713,15 @@ export default function AdminUsers() {
                       <TableRow key={customer.id}>
                         <TableCell className="whitespace-nowrap">
                           <div>
-                            <div className="font-medium">{customer.name}</div>
+                            <div 
+                              className="font-medium text-blue-600 hover:text-blue-800 cursor-pointer hover:underline"
+                              onClick={() => {
+                                setSelectedCustomer(customer);
+                                setCustomerModalOpen(true);
+                              }}
+                            >
+                              {customer.name}
+                            </div>
                             <div className="text-sm text-muted-foreground flex items-center gap-1">
                               <Calendar className="h-3 w-3" />
                               Joined {new Date(customer.joinDate).toLocaleDateString()}
@@ -987,7 +995,15 @@ export default function AdminUsers() {
                         </TableCell>
                         <TableCell>
                           <div>
-                            <div className="font-medium">{customer.name}</div>
+                            <div 
+                              className="font-medium text-blue-600 hover:text-blue-800 cursor-pointer hover:underline"
+                              onClick={() => {
+                                setSelectedCustomer(customer);
+                                setCustomerModalOpen(true);
+                              }}
+                            >
+                              {customer.name}
+                            </div>
                             <div className="text-sm text-muted-foreground">
                               Member since {new Date(customer.joinDate).toLocaleDateString()}
                             </div>
@@ -1017,16 +1033,6 @@ export default function AdminUsers() {
                         </TableCell>
                         <TableCell>
                           <div className="flex items-center gap-2">
-                            <Button 
-                              size="sm" 
-                              variant="outline"
-                              onClick={() => {
-                                setSelectedCustomer(customer);
-                                setCustomerModalOpen(true);
-                              }}
-                            >
-                              <Eye className="h-3 w-3" />
-                            </Button>
                             <Button 
                               size="sm" 
                               variant="outline"
