@@ -14,6 +14,7 @@ import { InventoryProvider } from "@/contexts/InventoryContext";
 import { Header } from "@/components/Header";
 import { AuthProvider, useAuth } from "./contexts/AuthContext";
 import { AccountProvider } from "./contexts/AccountContext";
+import { UserProfileProvider } from "./contexts/UserProfileContext";
 import { Footer } from "@/components/Footer";
 import HomePage from "./pages/HomePage";
 import BasketsPage from "./pages/BasketsPage";
@@ -167,7 +168,8 @@ const App = () => {
                 <ProductsProvider>
                   <InventoryProvider>
             <AuthProvider>
-            <AccountProvider>
+              <UserProfileProvider>
+                <AccountProvider>
           <Toaster />
           <Sonner />
           <BrowserRouter>
@@ -211,7 +213,8 @@ const App = () => {
         <Footer />
             </div>
           </BrowserRouter>
-            </AccountProvider>
+                </AccountProvider>
+              </UserProfileProvider>
             </AuthProvider>
                   </InventoryProvider>
                 </ProductsProvider>
