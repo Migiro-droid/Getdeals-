@@ -15,8 +15,8 @@ interface PaymentRequest {
   payment_method: string;
   amount: number;
   reference: string;
-  callbackUrl: string;
-  idNumber?: string | null;
+  callback_url: string;
+  id_number?: string | null;
   phone: string;
 }
 
@@ -108,16 +108,17 @@ serve(async (req) => {
     const callbackUrl = `${supabaseUrl}/functions/v1/rukisha-payment-callback`
     const paymentReference = reference || `${paymentType}_${user.id}_${Date.now()}`
     
-    const paymentPayload: PaymentRequest = {
+    const paymentPayload = {
       payment_method: "MPESA",
       amount: parseFloat(amount),
       reference: paymentReference,
-      callbackUrl: callbackUrl,
-      idNumber: null,
+      callback_url: callbackUrl, // Changed from callbackUrl to callback_url (snake_case)
+      id_number: null,
       phone: phone.startsWith('254') ? phone : `254${phone.replace(/^0/, '')}`
     }
 
-    console.log('Initiating STK push with payload:', paymentPayload)
+    console.log('Initiating STK push with payload:', JSON.stringify(paymentPayload, null, 2))
+    console.log('Callback URL being sent:', callbackUrl)
 
     const paymentResponse = await fetch('https://rukisha-api.rukisha.com/api/third-party-merchant-payment', {
       method: 'POST',
@@ -129,15 +130,33 @@ serve(async (req) => {
       body: JSON.stringify(paymentPayload)
     })
 
-    const paymentResult: PaymentResponse = await paymentResponse.json()
+    const paymentResult = await paymentResponse.json()
     console.log('Payment response:', paymentResult)
+    console.log('Payment response status:', paymentResponse.status)
 
-    if (!paymentResponse.ok || !paymentResult.success) {
-      console.error('Payment initiation failed:', paymentResult)
+    if (!paymentResponse.ok) {
+      console.error('Payment initiation failed with status:', paymentResponse.status)
+      console.error('Payment failure details:', paymentResult)
+      
       return new Response(
         JSON.stringify({ 
-          error: 'Failed to initiate payment', 
-          details: paymentResult.message || 'Unknown error'
+          success: false,
+          error: paymentResult.message || 'Failed to initiate payment',
+          details: `Rukisha API status: ${paymentResponse.status}, Success: ${paymentResult.success}`,
+          rukishaMessage: paymentResult.message,
+          statusCode: paymentResponse.status
+        }),
+        { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      )
+    }
+
+    if (!paymentResult.success) {
+      console.error('Payment not successful:', paymentResult)
+      return new Response(
+        JSON.stringify({ 
+          success: false,
+          error: paymentResult.message || 'Payment was not successful',
+          details: paymentResult
         }),
         { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       )
@@ -191,7 +210,10 @@ serve(async (req) => {
   } catch (error) {
     console.error('Rukisha payment error:', error)
     return new Response(
-      JSON.stringify({ error: 'Internal server error', details: error.message }),
+      JSON.stringify({ 
+        error: 'Internal server error', 
+        details: error instanceof Error ? error.message : 'Unknown error'
+      }),
       { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
     )
   }
