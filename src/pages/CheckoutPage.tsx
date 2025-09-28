@@ -14,6 +14,7 @@ import { useCart } from "../contexts/CartContext";
 import { useToast } from '../hooks/use-toast';
 import { useAuth } from '../contexts/AuthContext';
 import { useOrders } from '../contexts/OrdersContext';
+import { useWallet } from '../contexts/WalletContext';
 import { getApiBase } from '@/lib/api';
 import { PickupLocationService, type PickupLocation } from '../services/pickup-location';
 
@@ -22,6 +23,7 @@ export default function CheckoutPage() {
   const auth = useAuth();
   const { toast } = useToast();
   const { createOrder: createOrderContext } = useOrders();
+  const { balance, refreshWallet } = useWallet();
   const navigate = useNavigate();
   
   const [isLoading, setIsLoading] = useState(false);
@@ -499,28 +501,30 @@ export default function CheckoutPage() {
       } else {
         // Handle wallet and other payment methods
         if (paymentMethod === "wallet") {
-          // Handle GetDeals Wallet payment using Rukisha API
+          // Check wallet balance first
+          if (balance < finalTotal) {
+            throw new Error(`Insufficient wallet balance. You have KES ${balance.toLocaleString()} but need KES ${finalTotal.toLocaleString()}. Please add funds to your wallet.`);
+          }
+
+          // Handle GetDeals Wallet payment by deducting from balance
           setPaymentStatus("processing");
 
           const orderReference = `GD${Date.now()}${Math.random().toString(36).substr(2, 4).toUpperCase()}`;
-          const phoneToUse = phone || mpesaPhone;
 
-          if (!phoneToUse) {
-            throw new Error("Phone number is required for wallet payment");
-          }
+          // Use the wallet service to deduct money from existing balance
+          const { WalletService } = await import('../services/wallet-backend');
 
-          // Dynamic import to avoid stale binding issues
-          const { WalletPaymentService } = await import('../services/WalletPaymentService');
-
-          const walletResult = await WalletPaymentService.testDirectCall({
-            amount: finalTotal,
-            reference: orderReference,
-            phone: formatPhoneNumber(phoneToUse)
-          });
+          const walletResult = await WalletService.recordWithdrawal(
+            finalTotal, 
+            `Checkout payment for order ${orderReference}`
+          );
 
           if (!walletResult.success) {
-            throw new Error(walletResult.error || "Failed to initiate wallet payment");
+            throw new Error(walletResult.error || "Failed to process wallet payment");
           }
+
+          // Refresh wallet balance after successful payment
+          await refreshWallet();
 
           // Create order with wallet payment details
           const orderData = {
@@ -529,7 +533,7 @@ export default function CheckoutPage() {
             deliveryAddress: deliveryMethod === "speedy" ? address : undefined,
             paymentMethod,
             paymentReference: orderReference,
-            phone: phoneToUse,
+            phone: phone, // Keep customer's phone for order notifications
           };
 
           const orderResult = await createOrder(orderData);
@@ -539,9 +543,13 @@ export default function CheckoutPage() {
           }
 
           setPaymentStatus("success");
+          
+          // Calculate cashback (5% of total)
+          const cashback = Math.round(finalTotal * 0.05);
+          
           toast({
-            title: "📱 Wallet Payment Initiated!",
-            description: `Payment request sent. Please check your phone (${phoneToUse?.slice(-4).padStart(10, '*')}) and complete the M-Pesa prompt to finalize your order.`,
+            title: "✅ Wallet Payment Successful!",
+            description: `Payment of KES ${finalTotal.toLocaleString()} deducted from your wallet. You've earned KES ${cashback} cashback!`,
             duration: 8000,
           });
 
@@ -841,8 +849,13 @@ export default function CheckoutPage() {
                             </span>
                           </div>
                           <div className="text-sm text-green-700 mt-1">
-                            ⚡ Instant payment • 💰 Earn rewards • 🔒 Secure & fast
+                            Balance: KES {balance.toLocaleString()} • ⚡ Instant payment • 💰 Earn rewards
                           </div>
+                          {balance < finalTotal && (
+                            <div className="text-xs text-red-600 mt-1 font-medium">
+                              ⚠️ Insufficient balance - Need KES {(finalTotal - balance).toLocaleString()} more
+                            </div>
+                          )}
                         </div>
                         <div className="text-right">
                           <div className="text-xs text-green-600">Save KES 50</div>
@@ -935,7 +948,8 @@ export default function CheckoutPage() {
                   className="w-full relative" 
                   disabled={
                     isLoading ||
-                    items.length === 0
+                    items.length === 0 ||
+                    (paymentMethod === "wallet" && balance < finalTotal)
                   }
                 >
                   {paymentStatus === "processing" && paymentMethod === "mpesa" ? (
@@ -976,7 +990,7 @@ export default function CheckoutPage() {
                   </div>
                 )}
 
-                {paymentMethod === "wallet" && (
+                {paymentMethod === "wallet" && balance >= finalTotal && (
                   <div className="text-xs text-center text-green-700 space-y-1 bg-green-50 p-3 rounded-lg border border-green-200">
                     <p className="font-medium text-green-800">🎁 Wallet Benefits:</p>
                     <p>• ⚡ <strong>Instant payment</strong> - No waiting for confirmation</p>
@@ -984,6 +998,21 @@ export default function CheckoutPage() {
                     <p>• 🔒 <strong>Secure & encrypted</strong> transactions</p>
                     <p>• 🚀 <strong>Lightning fast</strong> checkout process</p>
                     <p>• 💳 <strong>No transaction fees</strong> - Save money!</p>
+                  </div>
+                )}
+
+                {paymentMethod === "wallet" && balance < finalTotal && (
+                  <div className="text-xs text-center text-orange-700 space-y-1 bg-orange-50 p-3 rounded-lg border border-orange-200">
+                    <p className="font-medium text-orange-800">💳 Insufficient Wallet Balance</p>
+                    <p>You need <strong>KES {(finalTotal - balance).toLocaleString()}</strong> more to complete this order.</p>
+                    <Button 
+                      variant="outline" 
+                      size="sm" 
+                      className="mt-2 text-xs"
+                      onClick={() => navigate('/wallet')}
+                    >
+                      Add Funds to Wallet
+                    </Button>
                   </div>
                 )}
 
