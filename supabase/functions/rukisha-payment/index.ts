@@ -6,16 +6,10 @@ const corsHeaders = {
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
 }
 
-interface RukishaTokenResponse {
-  message: string;
-  token: string;
-}
-
 interface PaymentRequest {
   payment_method: string;
   amount: number;
   phone: string;
-  customer_id: string;
   callback_url: string;
   reference: string;
 }
@@ -69,99 +63,92 @@ serve(async (req) => {
 
     console.log(`Processing ${paymentType} payment for user: ${user.id}, amount: ${amount}`)
 
-    const consumerKey = Deno.env.get('RUKISHA_CONSUMER_KEY')
-    const consumerSecret = Deno.env.get('RUKISHA_CONSUMER_SECRET')
+    // Get environment variables - use pre-existing token like wallet-payment
+    const rukishaApiToken = Deno.env.get('RUKISHA_API_TOKEN')
     
-    if (!consumerKey || !consumerSecret) {
-      console.error('Rukisha credentials not configured')
+    if (!rukishaApiToken) {
+      console.error('❌ Missing RUKISHA_API_TOKEN environment variable')
       return new Response(
-        JSON.stringify({ error: 'Payment service configuration error' }),
-        { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+        JSON.stringify({ 
+          success: false, 
+          error: 'Payment service configuration error' 
+        }),
+        { 
+          status: 500, 
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' } 
+        }
       )
     }
 
-    console.log('Getting Rukisha auth token...')
-    const tokenResponse = await fetch('https://rukisha-api.rukisha.com/api/payments/get-token', {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'Accept': 'application/json'
-      },
-      body: JSON.stringify({
-        consumer_key: consumerKey,
-        consumer_secret: consumerSecret
-      })
-    })
-
-    if (!tokenResponse.ok) {
-      const errorText = await tokenResponse.text()
-      console.error('Failed to get Rukisha token:', errorText)
-      return new Response(
-        JSON.stringify({ error: 'Failed to authenticate with payment service' }),
-        { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-      )
-    }
-
-    const tokenData: RukishaTokenResponse = await tokenResponse.json()
-    console.log('Rukisha token obtained successfully')
-
-    const callbackUrl = "https://getdeals.co.ke/api/rukisha/callback"
     const paymentReference = reference || `${paymentType}_${user.id}_${Date.now()}`
     
+    // Prepare payload aligned with working wallet-payment function
     const paymentPayload = {
       payment_method: "MPESA",
       amount: parseFloat(amount),
-      phone: phone.startsWith('254') ? phone : `254${phone.replace(/^0/, '')}`,
-      customer_id: user.id,
-      callback_url: callbackUrl,
-      reference: paymentReference
+      reference: paymentReference,
+      callback_url: "https://getdeals.co.ke/api/rukisha/callback",
+      phone: phone.startsWith('254') ? phone : `254${phone.replace(/^0/, '')}`
     }
 
-    console.log('Initiating STK push with payload:', JSON.stringify(paymentPayload, null, 2))
-    console.log('Callback URL being sent:', callbackUrl)
+    console.log('🔄 Calling Rukisha third-party merchant payment API...')
+    console.log('📋 Payload:', paymentPayload)
 
     const paymentResponse = await fetch('https://rukisha-api.rukisha.com/api/third-party-merchant-payment', {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
-        'Accept': 'application/json',
-        'Authorization': `Bearer ${tokenData.token}`
+        'Authorization': `Bearer ${rukishaApiToken}`
       },
       body: JSON.stringify(paymentPayload)
     })
 
-    const paymentResult = await paymentResponse.json()
-    console.log('Payment response:', paymentResult)
-    console.log('Payment response status:', paymentResponse.status)
+    const rukishaResponseText = await paymentResponse.text()
+    console.log('📡 Rukisha API response status:', paymentResponse.status)
+    console.log('📡 Rukisha API response:', rukishaResponseText)
+
+    let paymentResult
+    try {
+      paymentResult = JSON.parse(rukishaResponseText)
+    } catch (parseError) {
+      console.error('❌ Failed to parse Rukisha response:', parseError)
+      return new Response(
+        JSON.stringify({ 
+          success: false, 
+          error: `Invalid response from payment service: ${rukishaResponseText.substring(0, 100)}` 
+        }),
+        { 
+          status: 500, 
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' } 
+        }
+      )
+    }
 
     if (!paymentResponse.ok) {
-      console.error('Payment initiation failed with status:', paymentResponse.status)
-      console.error('Payment failure details:', paymentResult)
+      console.error('❌ Rukisha payment request failed:', paymentResult)
       
-      return new Response(
-        JSON.stringify({ 
-          success: false,
-          error: paymentResult.message || 'Failed to initiate payment',
-          details: `Rukisha API status: ${paymentResponse.status}, Success: ${paymentResult.success}`,
-          rukishaMessage: paymentResult.message,
-          statusCode: paymentResponse.status
-        }),
-        { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-      )
-    }
+      // Extract error message from Rukisha response
+      let errorMessage = 'Payment request failed'
+      if (paymentResult && typeof paymentResult === 'object') {
+        errorMessage = paymentResult.message || paymentResult.error || errorMessage
+      }
 
-    if (!paymentResult.success) {
-      console.error('Payment not successful:', paymentResult)
       return new Response(
         JSON.stringify({ 
-          success: false,
-          error: paymentResult.message || 'Payment was not successful',
+          success: false, 
+          error: errorMessage,
           details: paymentResult
         }),
-        { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+        { 
+          status: paymentResponse.status, 
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' } 
+        }
       )
     }
 
+    console.log('✅ Rukisha payment request successful')
+    
+    // Record transaction in database
     const transactionData = {
       user_id: user.id,
       amount: parseFloat(amount),
@@ -196,15 +183,19 @@ serve(async (req) => {
     }
 
     return new Response(
-      JSON.stringify({
-        success: true,
-        message: 'STK push initiated successfully',
+      JSON.stringify({ 
+        success: true, 
         reference: paymentReference,
-        transactionId: transaction.id,
+        phone: paymentPayload.phone,
         amount: parseFloat(amount),
-        phone: paymentPayload.phone
+        message: 'Payment request submitted successfully. Please complete the M-Pesa prompt on your phone.',
+        transactionId: transaction.id,
+        rukishaResponse: paymentResult
       }),
-      { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      { 
+        status: 200, 
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' } 
+      }
     )
 
   } catch (error) {
