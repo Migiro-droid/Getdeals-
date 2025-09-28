@@ -10,6 +10,8 @@ interface RukishaDepositPayload {
   amount: number;
   phone: string;
   customer_id: string;
+  callback_url: string;
+  reference: string;
 }
 
 interface RukishaDepositResponse {
@@ -139,11 +141,50 @@ serve(async (req) => {
     // Format phone number for Rukisha (ensure +254 format)
     const formattedPhone = phone.startsWith('+254') ? phone : `+254${phone.replace(/^0/, '')}`
 
+    // Generate reference UUID for this transaction
+    const reference = crypto.randomUUID()
+
+    // First, create pending transaction record with reference
+    const transactionData = {
+      user_id: user.id,
+      type: 'deposit',
+      amount: Number(amount),
+      status: 'pending',
+      phone_number: formattedPhone,
+      reference: reference,
+      created_at: new Date().toISOString(),
+      updated_at: new Date().toISOString()
+    }
+
+    const { data: transaction, error: transactionError } = await supabaseClient
+      .from('wallet_transactions')
+      .insert(transactionData)
+      .select()
+      .single()
+
+    if (transactionError) {
+      console.error('Error creating transaction record:', transactionError)
+      return new Response(
+        JSON.stringify({ error: 'Failed to create transaction record' }),
+        { 
+          status: 500,
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+        }
+      )
+    }
+
+    console.log('Transaction record created:', { id: transaction.id, reference: reference })
+
+    // Construct callback URL
+    const callbackUrl = `${supabaseUrl}/functions/v1/rukisha-callback`
+
     // Prepare payload for Rukisha Deposit API
     const rukishaPayload: RukishaDepositPayload = {
       amount: Number(amount),
       phone: formattedPhone.replace('+254', '0'), // Convert +254XXXXXXXXX to 07XXXXXXXX format
-      customer_id: profile.customer_id
+      customer_id: profile.customer_id,
+      callback_url: callbackUrl,
+      reference: reference
     }
 
     console.log('Sending deposit request to Rukisha API (using correct endpoint):', { 
@@ -228,28 +269,21 @@ serve(async (req) => {
       )
     }
 
-    // Create pending transaction record
-    const transactionData = {
-      user_id: user.id,
-      type: 'deposit',
-      amount: Number(amount),
-      status: 'pending',
-      transaction_id: rukishaData.transaction_id || `temp_${Date.now()}`,
-      phone_number: formattedPhone,
-      created_at: new Date().toISOString(),
-      updated_at: new Date().toISOString()
-    }
 
-    // Insert transaction record (this will be updated when payment is confirmed)
-    const { data: transaction, error: transactionError } = await supabaseClient
-      .from('wallet_transactions')
-      .insert(transactionData)
-      .select()
-      .single()
 
-    if (transactionError) {
-      console.error('Error creating transaction record:', transactionError)
-      // Don't fail the request since STK push was initiated
+    // Update transaction record with Rukisha transaction ID
+    if (rukishaData.transaction_id) {
+      const { error: updateError } = await supabaseClient
+        .from('wallet_transactions')
+        .update({
+          transaction_id: rukishaData.transaction_id,
+          updated_at: new Date().toISOString()
+        })
+        .eq('id', transaction.id)
+
+      if (updateError) {
+        console.error('Error updating transaction with Rukisha ID:', updateError)
+      }
     }
 
     console.log('STK Push initiated successfully')
@@ -258,10 +292,11 @@ serve(async (req) => {
       JSON.stringify({ 
         success: true, 
         transaction_id: rukishaData.transaction_id,
+        reference: reference,
         amount: amount,
         phone: formattedPhone,
         message: 'STK Push sent to your phone. Please complete the payment to add funds to your wallet.',
-        transaction_record_id: transaction?.id
+        transaction_record_id: transaction.id
       }),
       { 
         status: 200,

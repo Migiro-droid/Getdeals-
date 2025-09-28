@@ -70,14 +70,37 @@ serve(async (req) => {
 
     const userId = profile.user_id
 
-    // Find the pending transaction
-    const { data: transaction, error: transactionError } = await supabaseClient
-      .from('wallet_transactions')
-      .select('*')
-      .eq('transaction_id', payload.transaction_id)
-      .eq('user_id', userId)
-      .eq('status', 'pending')
-      .single()
+    // Find the pending transaction by reference (preferred) or transaction_id
+    let transaction;
+    let transactionError;
+
+    if (payload.reference) {
+      // First try to find by reference
+      const { data: txByRef, error: refError } = await supabaseClient
+        .from('wallet_transactions')
+        .select('*')
+        .eq('reference', payload.reference)
+        .eq('user_id', userId)
+        .eq('status', 'pending')
+        .single()
+      
+      transaction = txByRef;
+      transactionError = refError;
+    }
+
+    // Fallback to transaction_id if reference lookup failed
+    if (!transaction && payload.transaction_id) {
+      const { data: txById, error: idError } = await supabaseClient
+        .from('wallet_transactions')
+        .select('*')
+        .eq('transaction_id', payload.transaction_id)
+        .eq('user_id', userId)
+        .eq('status', 'pending')
+        .single()
+      
+      transaction = txById;
+      transactionError = idError;
+    }
 
     if (transactionError || !transaction) {
       console.error('Transaction not found:', payload.transaction_id, transactionError)
@@ -256,7 +279,10 @@ serve(async (req) => {
   } catch (error) {
     console.error('Error in rukisha-callback function:', error)
     return new Response(
-      JSON.stringify({ error: 'Internal server error', details: error.message }),
+      JSON.stringify({ 
+        error: 'Internal server error', 
+        details: error instanceof Error ? error.message : 'Unknown error'
+      }),
       { 
         status: 500,
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
