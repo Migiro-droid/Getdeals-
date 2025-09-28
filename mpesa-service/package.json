@@ -5,9 +5,11 @@
   "main": "index.js",
   "type": "module",
   "scripts": {
-    "start": "node index.js",
+    "start": "NODE_ENV=production node index.js",
     "dev": "nodemon index.js",
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "production": "npm run start",
+    "test": "node ../test-production-mpesa.js",
+    "health": "curl http://localhost:3001/health"
   },
   "keywords": ["mpesa", "payments", "microservice", "safaricom"],
   "author": "GetDeals Kenya",

@@ -39,18 +39,29 @@ class MpesaService {
 
   async initiateSTKPush(phoneNumber, amount, orderId, description = 'GetDeals Payment') {
     try {
+      console.log('🔄 Initiating STK Push...');
+      console.log('📱 Phone:', phoneNumber);
+      console.log('💰 Amount:', amount);
+      console.log('🆔 Order ID:', orderId);
+      console.log('🌍 Environment:', this.environment);
+      console.log('🏢 Shortcode:', this.shortcode);
+      console.log('🔗 Callback URL:', this.callbackUrl);
+
       const accessToken = await this.getAccessToken();
+      console.log('✅ Access token obtained');
+
       const { password, timestamp } = this.generatePassword();
 
       // Format phone number (remove + and ensure it starts with 254)
       const formattedPhone = phoneNumber.replace(/^\+?/, '').replace(/^0/, '254');
+      console.log('📞 Formatted phone:', formattedPhone);
 
       const stkPushData = {
         BusinessShortCode: this.shortcode,
         Password: password,
         Timestamp: timestamp,
         TransactionType: 'CustomerPayBillOnline',
-        Amount: Math.round(amount), // Ensure integer
+        Amount: Math.round(amount), 
         PartyA: formattedPhone,
         PartyB: this.shortcode,
         PhoneNumber: formattedPhone,
@@ -58,6 +69,8 @@ class MpesaService {
         AccountReference: orderId,
         TransactionDesc: description,
       };
+
+      console.log('📤 STK Push payload:', JSON.stringify(stkPushData, null, 2));
 
       const response = await axios.post(
         `${this.baseUrl}/mpesa/stkpush/v1/processrequest`,
@@ -79,11 +92,30 @@ class MpesaService {
         customerMessage: response.data.CustomerMessage,
       };
     } catch (error) {
-      console.error('STK Push error:', error.response?.data || error.message);
+      console.error('🚨 STK Push error:', error.response?.data || error.message);
+      
+      const errorData = error.response?.data;
+      let errorMessage = 'Failed to initiate payment';
+      
+      if (errorData) {
+        console.error('📋 Full error response:', JSON.stringify(errorData, null, 2));
+        
+        // Handle specific error codes
+        if (errorData.errorCode === '500.001.1001') {
+          errorMessage = 'Invalid credentials. Please check your Consumer Key, Consumer Secret, and ensure they match your shortcode.';
+        } else if (errorData.errorCode === '400.002.02') {
+          errorMessage = 'Invalid callback URL. Must be HTTPS and publicly accessible.';
+        } else if (errorData.errorMessage) {
+          errorMessage = errorData.errorMessage;
+        }
+      }
+      
       return {
         success: false,
-        error: error.response?.data?.errorMessage || 'Failed to initiate payment',
-        responseCode: error.response?.data?.ResponseCode,
+        error: errorMessage,
+        errorCode: errorData?.errorCode,
+        responseCode: errorData?.ResponseCode,
+        fullError: errorData // Include full error for debugging
       };
     }
   }
