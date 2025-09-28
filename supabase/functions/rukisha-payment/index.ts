@@ -12,12 +12,11 @@ interface RukishaTokenResponse {
 }
 
 interface PaymentRequest {
-  payment_method: string;
   amount: number;
-  reference: string;
-  callback_url: string;
-  id_number?: string | null;
   phone: string;
+  customer_id: string;
+  callback_url: string;
+  reference: string;
 }
 
 interface PaymentResponse {
@@ -105,16 +104,15 @@ serve(async (req) => {
     const tokenData: RukishaTokenResponse = await tokenResponse.json()
     console.log('Rukisha token obtained successfully')
 
-    const callbackUrl = `${supabaseUrl}/functions/v1/rukisha-payment-callback`
+    const callbackUrl = `${supabaseUrl}/functions/v1/rukisha-callback`
     const paymentReference = reference || `${paymentType}_${user.id}_${Date.now()}`
     
     const paymentPayload = {
-      payment_method: "MPESA",
       amount: parseFloat(amount),
-      reference: paymentReference,
-      callback_url: callbackUrl, // Changed from callbackUrl to callback_url (snake_case)
-      id_number: null,
-      phone: phone.startsWith('254') ? phone : `254${phone.replace(/^0/, '')}`
+      phone: phone.startsWith('254') ? phone : `254${phone.replace(/^0/, '')}`,
+      customer_id: user.id,
+      callback_url: callbackUrl,
+      reference: paymentReference
     }
 
     console.log('Initiating STK push with payload:', JSON.stringify(paymentPayload, null, 2))
