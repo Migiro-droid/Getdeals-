@@ -104,7 +104,7 @@ serve(async (req) => {
     const tokenData: RukishaTokenResponse = await tokenResponse.json()
     console.log('Rukisha token obtained successfully')
 
-    const callbackUrl = `${supabaseUrl}/functions/v1/rukisha-callback`
+    const callbackUrl = "https://getdeals.co.ke/api/rukisha/callback"
     const paymentReference = reference || `${paymentType}_${user.id}_${Date.now()}`
     
     const paymentPayload = {
