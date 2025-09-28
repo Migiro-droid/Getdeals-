@@ -1,3 +1,5 @@
+<<<<<<< HEAD
+=======
 import React, { createContext, useContext, useEffect, useState, useCallback } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
@@ -25,7 +27,7 @@ export function SupabaseAdminProvider({ children }: { children: React.ReactNode 
     black_friday_enabled: true,
     black_friday_date: '2025-11-28T00:00:00Z',
     maintenance_mode: false,
-    support_phone: '+254 728 322 355',
+    support_phone: '+254 700 123 456',
     support_email: 'support@getdeals.co.ke',
     location: 'Karen Green, Nairobi, Kenya',
   });
@@ -97,3 +99,4 @@ export function useSupabaseAdmin() {
   }
   return context;
 }
+>>>>>>> supabase-integration

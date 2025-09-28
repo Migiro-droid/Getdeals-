@@ -46,16 +46,16 @@ interface AdminContextValue {
 
 const defaultSettings: SiteSettings = {
   blackFridayEnabled: true,
-  blackFridayCountdownDate: new Date('2025-11-27T18:00:00').toISOString(), // Nov 27, 2025 6:00 PM
+  blackFridayCountdownDate: new Date(Date.now() + 34 * 24 * 60 * 60 * 1000).toISOString(), 
   maintenanceMode: false,
-  supportPhone: "+254 728 322 355",
+  supportPhone: "+254 700 123 456",
   supportEmail: "info@getdeals.co.ke",
   location: "Karen Green, Nairobi, Kenya",
 };
 
 const AdminContext = createContext<AdminContextValue | undefined>(undefined);
 
-const LS_SETTINGS = "getdeals_admin_settings_v4";
+const LS_SETTINGS = "getdeals_admin_settings_v1";
 const LS_IS_ADMIN = "getdeals_admin_flag_v1"; 
 const LS_SESSION = "getdeals_admin_session_v1";
 
@@ -68,24 +68,11 @@ const ROLE_PERMS: Record<AdminRole, AdminPermission[]> = {
 };
 
 export const AdminProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
-  // Clear old cache versions
-  const clearOldCache = () => {
-    try {
-      ['getdeals_admin_settings_v1', 'getdeals_admin_settings_v2', 'getdeals_admin_settings_v3'].forEach(key => {
-        localStorage.removeItem(key);
-      });
-    } catch {}
-  };
-
   const [settings, setSettings] = useState<SiteSettings>(() => {
-    clearOldCache(); // Clear old versions
     try {
       const raw = localStorage.getItem(LS_SETTINGS);
-      const result = raw ? { ...defaultSettings, ...(JSON.parse(raw) as SiteSettings) } : defaultSettings;
-      console.log('🔧 Debug - AdminContext settings loaded:', result);
-      return result;
+      return raw ? { ...defaultSettings, ...(JSON.parse(raw) as SiteSettings) } : defaultSettings;
     } catch {
-      console.log('🔧 Debug - AdminContext using default settings');
       return defaultSettings;
     }
   });

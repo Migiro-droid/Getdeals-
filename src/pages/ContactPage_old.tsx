@@ -39,7 +39,7 @@ export default function ContactPage() {
                   </div>
                   <div>
                     <h3 className="font-semibold">Phone</h3>
-                    <a href="tel:+254728322355" className="text-muted-foreground hover:text-primary transition-colors">+254 728 322 355</a>
+                    <a href="tel:+254728322355" className="text-muted-foreground hover:text-primary transition-colors">+254 700 123 456</a>
                   </div>
                 </div>
               </CardContent>

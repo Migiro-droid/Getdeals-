@@ -17,6 +17,25 @@ export interface UserProfile {
   updated_at: string;
 }
 
+// Enhanced Address interface with geolocation support
+export interface UserAddress {
+  id: string;
+  user_id: string;
+  label: string;
+  street_address: string;
+  city: string;
+  county?: string;
+  postal_code?: string;
+  phone_number?: string;
+  latitude?: number;
+  longitude?: number;
+  formatted_address?: string;
+  is_default: boolean;
+  address_type: 'home' | 'work' | 'other';
+  created_at: string;
+  updated_at: string;
+}
+
 // Database schema update for Supabase types
 export interface Database {
   public: {
@@ -61,6 +80,15 @@ export interface Database {
         };
         Insert: any;
         Update: any;
+      };
+      addresses: {
+        Row: UserAddress;
+        Insert: Omit<UserAddress, 'id' | 'created_at' | 'updated_at'> & {
+          id?: string;
+          created_at?: string;
+          updated_at?: string;
+        };
+        Update: Partial<Omit<UserAddress, 'id' | 'user_id' | 'created_at'>>;
       };
     };
     Views: {

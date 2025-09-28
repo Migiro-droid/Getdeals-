@@ -4,7 +4,18 @@ import { useAuth } from "./AuthContext";
 export type Address = {
   id: string;
   label: string; 
-  details: string; 
+  street_address: string;
+  city: string;
+  county?: string;
+  postal_code?: string;
+  phone_number?: string;
+  latitude?: number;
+  longitude?: number;
+  formatted_address?: string;
+  is_default: boolean;
+  address_type: 'home' | 'work' | 'other';
+  // Legacy support
+  details?: string;
   isDefault?: boolean;
 };
 
@@ -22,6 +33,7 @@ export type Profile = {
   organization?: string;
   organizationNumber?: string;
   memberSince?: string;
+  avatarUrl?: string;
 };
 
 type AccountCtx = {
@@ -58,8 +70,31 @@ export const AccountProvider: React.FC<{ children: React.ReactNode }> = ({ child
     newProducts: false,
   });
   const [addresses, setAddresses] = useState<Address[]>([
-    { id: "addr-home", label: "Home", details: "123 Moi Avenue, Nairobi, Kenya", isDefault: true },
-    { id: "addr-office", label: "Office", details: "456 Kenyatta Avenue, Nairobi, Kenya" },
+    { 
+      id: "addr-home", 
+      label: "Home", 
+      street_address: "123 Moi Avenue", 
+      city: "Nairobi", 
+      county: "Nairobi",
+      formatted_address: "123 Moi Avenue, Nairobi, Kenya",
+      is_default: true,
+      address_type: 'home' as const,
+      // Legacy support
+      details: "123 Moi Avenue, Nairobi, Kenya", 
+      isDefault: true 
+    },
+    { 
+      id: "addr-office", 
+      label: "Office", 
+      street_address: "456 Kenyatta Avenue", 
+      city: "Nairobi", 
+      county: "Nairobi",
+      formatted_address: "456 Kenyatta Avenue, Nairobi, Kenya",
+      is_default: false,
+      address_type: 'work' as const,
+      // Legacy support
+      details: "456 Kenyatta Avenue, Nairobi, Kenya"
+    },
   ]);
 
   useEffect(() => {
@@ -103,28 +138,54 @@ export const AccountProvider: React.FC<{ children: React.ReactNode }> = ({ child
   const addAddress: AccountCtx["addAddress"] = (a) => {
     setAddresses((prev) => {
       const id = `addr_${Date.now()}`;
-      const entry: Address = { id, ...a } as Address;
+      const entry: Address = { 
+        id, 
+        ...a,
+        // Ensure new structure fields are set
+        is_default: a.isDefault || a.is_default || prev.length === 0,
+        // Legacy support
+        isDefault: a.isDefault || a.is_default || prev.length === 0,
+        details: a.details || a.formatted_address || `${a.street_address || ''}, ${a.city || ''}`
+      } as Address;
+      
       // If first address or marked default, make it default and unset others
-      if (entry.isDefault || prev.length === 0) {
-        const next = prev.map((x) => ({ ...x, isDefault: false }));
-        return [{ ...entry, isDefault: true }, ...next];
+      if (entry.is_default || prev.length === 0) {
+        const next = prev.map((x) => ({ ...x, isDefault: false, is_default: false }));
+        return [{ ...entry, isDefault: true, is_default: true }, ...next];
       }
       return [entry, ...prev];
     });
   };
+  
   const updateAddress: AccountCtx["updateAddress"] = (id, patch) => {
-    setAddresses((prev) => prev.map((x) => (x.id === id ? { ...x, ...patch } : x)));
+    setAddresses((prev) => prev.map((x) => (x.id === id ? { 
+      ...x, 
+      ...patch,
+      // Keep legacy and new structure in sync
+      isDefault: patch.isDefault ?? patch.is_default ?? x.isDefault,
+      is_default: patch.is_default ?? patch.isDefault ?? x.is_default,
+      details: patch.details || patch.formatted_address || x.details
+    } : x)));
   };
+  
   const removeAddress: AccountCtx["removeAddress"] = (id) => {
     setAddresses((prev) => {
       const next = prev.filter((x) => x.id !== id);
       // ensure at least one default remains
-      if (next.length && !next.some((x) => x.isDefault)) next[0].isDefault = true;
+      if (next.length && !next.some((x) => x.isDefault || x.is_default)) {
+        next[0].isDefault = true;
+        next[0].is_default = true;
+      }
       return [...next];
     });
   };
+  
   const setDefaultAddress: AccountCtx["setDefaultAddress"] = (id) => {
-    setAddresses((prev) => prev.map((x) => ({ ...x, isDefault: x.id === id })));
+    setAddresses((prev) => prev.map((x) => ({ 
+      ...x, 
+      isDefault: x.id === id,
+      is_default: x.id === id 
+    })));
   };
 
   const value = useMemo<AccountCtx>(() => ({

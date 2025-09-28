@@ -457,9 +457,7 @@ export const LocationPicker: React.FC<LocationPickerProps> = ({
             </div>
           </div>
           
-          <div className="mt-3 text-xs text-muted-foreground">
-            💡 <strong>Production Note:</strong> This would integrate with Google Maps, Mapbox, or OpenStreetMap for real map functionality.
-          </div>
+
         </CardContent>
       </Card>
     </div>

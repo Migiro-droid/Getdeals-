@@ -103,15 +103,9 @@ export default function HomePage() {
 
   useEffect(() => {
     // Use admin settings for countdown target date
-    console.log('🔍 Debug - settings.blackFridayCountdownDate:', settings.blackFridayCountdownDate);
     const target = settings.blackFridayCountdownDate
       ? new Date(settings.blackFridayCountdownDate as string)
       : new Date(Date.now() + 45 * 24 * 60 * 60 * 1000); // fallback to 45 days
-    
-    console.log('🎯 Debug - countdown target date:', target);
-    const now = new Date();
-    const diffInDays = Math.floor((target.getTime() - now.getTime()) / (1000 * 60 * 60 * 24));
-    console.log('📅 Debug - days until target:', diffInDays);
 
     const tick = () => {
       const now = new Date();
