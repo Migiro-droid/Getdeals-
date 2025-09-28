@@ -12,6 +12,7 @@ interface RukishaTokenResponse {
 }
 
 interface PaymentRequest {
+  payment_method: string;
   amount: number;
   phone: string;
   customer_id: string;
@@ -108,6 +109,7 @@ serve(async (req) => {
     const paymentReference = reference || `${paymentType}_${user.id}_${Date.now()}`
     
     const paymentPayload = {
+      payment_method: "MPESA",
       amount: parseFloat(amount),
       phone: phone.startsWith('254') ? phone : `254${phone.replace(/^0/, '')}`,
       customer_id: user.id,
