@@ -80,13 +80,53 @@ class WalletService {
         .select('balance, user_id, updated_at, getdeals_number')
         .eq('user_id', user.id)
         .single();
+      // If wallet row missing entirely, attempt creation (lazy bootstrap)
+      if (error || !data) {
+        console.warn('Wallet row missing or error fetching wallet. Attempting lazy creation...', error?.message);
+        // Fetch getdeals_number from user_profile
+        const { data: profile, error: profileError } = await supabase
+          .from('user_profile')
+          .select('getdeals_number')
+          .eq('user_id', user.id)
+          .single<any>();
 
-      if (error) {
-        console.error('Error fetching wallet balance:', error);
-        return null;
+        if (profileError) {
+          console.error('Failed to fetch user_profile for wallet bootstrap:', profileError);
+          return null;
+        }
+
+        // Create wallet row if profile exists
+        const { data: newWallet, error: insertError } = await supabase
+          .from('wallets')
+          .insert([{ user_id: user.id, balance: 0, getdeals_number: profile?.getdeals_number || null }] as any)
+          .select('balance, user_id, updated_at, getdeals_number')
+          .single<any>();
+
+        if (insertError) {
+          console.error('Failed to lazily create wallet row:', insertError);
+          return null;
+        }
+        return newWallet as WalletBalance;
       }
 
-      return data;
+      // Backfill getdeals_number if missing on wallet but present on profile
+      if ((data as any)?.getdeals_number == null) {
+        const { data: profile, error: profileError } = await supabase
+          .from('user_profile')
+          .select('getdeals_number')
+          .eq('user_id', user.id)
+          .single<any>();
+        if (!profileError && profile && profile.getdeals_number) {
+          const { data: updated, error: updateError } = await (supabase.from('wallets') as any)
+            .update({ getdeals_number: profile.getdeals_number })
+            .eq('user_id', user.id)
+            .select('balance, user_id, updated_at, getdeals_number')
+            .single();
+          if (!updateError && updated) return updated as WalletBalance;
+        }
+      }
+
+      return data as WalletBalance;
     } catch (error) {
       console.error('Failed to get wallet balance:', error);
       return null;
