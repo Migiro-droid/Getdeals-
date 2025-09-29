@@ -105,20 +105,26 @@ export default function ContactPage() {
                   </div>
 
                   <div className="flex items-start gap-4">
-                    <div className="rounded-lg bg-primary/10 p-3">
-                      <MessageCircle className="h-5 w-5 text-primary" />
-                    </div>
+                    <a
+                      href="https://wa.me/254728322355"
+                      target="_blank"
+                      rel="noreferrer"
+                      aria-label="Chat with us on WhatsApp"
+                      className="rounded-lg bg-green-500/10 hover:bg-green-500/20 p-3 transition group"
+                    >
+                      <MessageCircle className="h-6 w-6 text-green-600 group-hover:scale-110 transition" />
+                    </a>
                     <div>
-                      <div className="font-medium text-lg">WhatsApp</div>
-                      <a 
-                        href="https://wa.me/254728322355" 
-                        target="_blank" 
-                        rel="noreferrer" 
-                        className="text-muted-foreground hover:text-primary transition-colors"
-                      >
-                        Chat with us instantly
-                      </a>
-                      <p className="text-sm text-muted-foreground mt-1">Quick responses guaranteed</p>
+                      <div className="font-medium text-lg flex items-center gap-2">
+                        WhatsApp
+                        <span className="inline-flex items-center gap-1 text-xs px-2 py-0.5 rounded-full bg-green-500/10 text-green-700 border border-green-500/30">Live</span>
+                      </div>
+                      <p className="text-sm text-muted-foreground mt-1 leading-snug">
+                        Need help? <a href="https://wa.me/254728322355" target="_blank" rel="noreferrer" className="text-primary hover:underline font-medium">Chat with us instantly on WhatsApp</a>
+                      </p>
+                      <p className="text-xs text-green-600 mt-1 flex items-center gap-1">
+                        <span className="inline-block w-2 h-2 rounded-full bg-green-500 animate-pulse" /> Typically replies in under 5 minutes
+                      </p>
                     </div>
                   </div>
 
