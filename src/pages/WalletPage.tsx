@@ -148,19 +148,18 @@ export default function WalletPage() {
     <div className="min-h-screen py-10 bg-gradient-to-b from-primary/5 via-background to-background">
       <div className="container mx-auto px-4">
         {}
-        <div className="mb-8 flex flex-col md:flex-row md:items-center md:justify-between gap-4">
+        <div className="mb-8 flex flex-col md:flex-row md:items-start md:justify-between gap-4">
           <div>
             <h1 className="text-3xl md:text-4xl font-extrabold tracking-tight flex items-center gap-2">
               <Wallet className="h-8 w-8 text-primary" /> Wallet
             </h1>
-            <div className="mt-1 flex flex-wrap items-center gap-3">
-              <p className="text-muted-foreground">Manage your funds and transactions securely.</p>
-              <span className="inline-flex items-center rounded-md bg-primary/10 text-primary border border-primary/20 px-2 py-1 text-xs font-mono tracking-wide">
-                ID: {walletId || (walletData?.user_id ? 'TEMP-' + walletData.user_id.slice(0,8) : '...')}
-              </span>
-            </div>
+            <p className="mt-1 text-muted-foreground">Manage your funds and transactions securely.</p>
           </div>
-
+          <div className="flex items-center">
+            <span className="inline-flex items-center rounded-md bg-primary/10 text-primary border border-primary/20 px-3 py-1 text-xs md:text-sm font-mono tracking-wide">
+              Wallet ID: {walletId || (walletData?.user_id ? 'TEMP-' + walletData.user_id.slice(0,8) : '...')}
+            </span>
+          </div>
         </div>
 
         {/* KYC Status Display removed - users are redirected directly to wallet after KYC submission */}
