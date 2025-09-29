@@ -23,7 +23,8 @@ type Product = {
   originalPrice?: number | null;
   category: string;
   imageUrl: string | null;
-  tags: string[] | null;
+  tags: string[] | null; // legacy comma separated input mapping to items
+  itemsDetail?: { name: string; image: string }[]; // per-item images
   createdAt?: string;
   updatedAt?: string;
 };
@@ -35,7 +36,8 @@ type ProductFormData = {
   originalPrice: number | null;
   category: string;
   imageUrl: string;
-  tags: string;
+  tags: string; // raw comma separated names entry (optional convenience)
+  itemsDetail: { name: string; image: string }[]; // authoritative items representation
 };
 
 export function AdminProductManager() {
@@ -51,6 +53,7 @@ export function AdminProductManager() {
     category: '',
     imageUrl: '',
     tags: '',
+    itemsDetail: [],
   });
   const [formErrors, setFormErrors] = useState<Record<string, string>>({});
   const [submitting, setSubmitting] = useState(false);
@@ -60,8 +63,9 @@ export function AdminProductManager() {
   // Use context products instead of local state
   const products = contextProducts.map(product => ({
     ...product,
-    imageUrl: product.image || null,
-    tags: product.items || null
+    imageUrl: (product as any).image || null,
+    tags: (product as any).items || null,
+    itemsDetail: (product as any).itemsDetail || [],
   }));
 
   // Filter states
@@ -131,6 +135,7 @@ export function AdminProductManager() {
       category: '',
       imageUrl: '',
       tags: '',
+      itemsDetail: [],
     });
     setFormErrors({});
     setEditingProduct(null);
@@ -143,6 +148,9 @@ export function AdminProductManager() {
 
   const openEditModal = (product: Product) => {
     setEditingProduct(product);
+    const baseItemsDetail = (product.itemsDetail && product.itemsDetail.length > 0)
+      ? product.itemsDetail
+      : (product.tags || []).map(n => ({ name: n, image: '' }));
     setFormData({
       name: product.name,
       description: product.description || '',
@@ -151,6 +159,7 @@ export function AdminProductManager() {
       category: product.category,
       imageUrl: product.imageUrl || '',
       tags: product.tags ? product.tags.join(', ') : '',
+      itemsDetail: baseItemsDetail,
     });
     setFormErrors({});
     setIsModalOpen(true);
@@ -202,6 +211,15 @@ export function AdminProductManager() {
     setSubmitting(true);
     
     try {
+      // Normalize itemsDetail: remove blank names; if user only typed in tags but didn't edit itemsDetail we seed from tags
+      let itemsDetail = formData.itemsDetail;
+      if (itemsDetail.length === 0 && formData.tags.trim()) {
+        itemsDetail = formData.tags.split(',').map(n => ({ name: n.trim(), image: '' })).filter(r => r.name);
+      }
+      itemsDetail = itemsDetail
+        .map(r => ({ name: r.name.trim(), image: r.image.trim() }))
+        .filter(r => r.name);
+
       const productData = {
         name: formData.name.trim(),
         description: formData.description.trim() || null,
@@ -209,23 +227,22 @@ export function AdminProductManager() {
         originalPrice: formData.originalPrice && formData.originalPrice > 0 ? formData.originalPrice : null,
         category: formData.category,
         image: formData.imageUrl.trim() || null,
-        items: formData.tags.trim() ? formData.tags.split(',').map(tag => tag.trim()).filter(Boolean) : [],
-        itemsDetail: [],
+        items: itemsDetail.map(i => i.name),
+        itemsDetail,
         discount: 0,
-        // inStock and featured removed - not persisted in DB
       };
 
       if (editingProduct) {
         // Update existing product using context
         await updateInContext(editingProduct.id, {
-          name: formData.name.trim(),
-          description: formData.description.trim() || undefined,
-          price: formData.price,
-          originalPrice: formData.originalPrice && formData.originalPrice > 0 ? formData.originalPrice : undefined,
-          category: formData.category,
-          image: formData.imageUrl.trim() || undefined,
-          items: formData.tags.trim() ? formData.tags.split(',').map(tag => tag.trim()).filter(Boolean) : [],
-          itemsDetail: []
+          name: productData.name,
+          description: productData.description || undefined,
+          price: productData.price,
+          originalPrice: productData.originalPrice || undefined,
+          category: productData.category,
+          image: productData.image || undefined,
+          items: productData.items,
+          itemsDetail: productData.itemsDetail,
         });
         
         toast({
@@ -235,16 +252,16 @@ export function AdminProductManager() {
       } else {
         // Create new product using context
         const newProduct = {
-          name: formData.name.trim(),
-          description: formData.description.trim() || undefined,
-          price: formData.price,
-          originalPrice: formData.originalPrice && formData.originalPrice > 0 ? formData.originalPrice : undefined,
-          category: formData.category,
-          image: formData.imageUrl.trim() || undefined,
-          items: formData.tags.trim() ? formData.tags.split(',').map(tag => tag.trim()).filter(Boolean) : [],
-          itemsDetail: []
-        };
-        
+          name: productData.name,
+          description: productData.description || undefined,
+            price: productData.price,
+          originalPrice: productData.originalPrice || undefined,
+          category: productData.category,
+          image: productData.image || undefined,
+          items: productData.items,
+          itemsDetail: productData.itemsDetail,
+        } as any;
+
         await addToContext(newProduct);
         
         toast({
@@ -689,14 +706,90 @@ export function AdminProductManager() {
                 )}
               </div>
 
-              <div className="md:col-span-2">
-                <Label htmlFor="tags">Tags (comma-separated)</Label>
+              <div className="md:col-span-2 space-y-2">
+                <Label htmlFor="tags">Basket Items (comma-separated to quick add)</Label>
                 <Input
                   id="tags"
                   value={formData.tags}
-                  onChange={(e) => setFormData(prev => ({ ...prev, tags: e.target.value }))}
-                  placeholder="smartphone, android, mobile"
+                  onChange={(e) => {
+                    const value = e.target.value;
+                    setFormData(prev => ({ ...prev, tags: value }));
+                    // If user types comma list and hasn't manually added rows yet, auto-sync names
+                    const names = value.split(',').map(n => n.trim()).filter(Boolean);
+                    setFormData(prev => ({
+                      ...prev,
+                      itemsDetail: prev.itemsDetail.length === 0 ? names.map(n => ({ name: n, image: '' })) : prev.itemsDetail
+                    }));
+                  }}
+                  placeholder="e.g. Rice 2kg, Cooking Oil 1L, Sugar 1kg"
                 />
+                <p className="text-xs text-muted-foreground">After initial entry, edit each item below and add an image.</p>
+              </div>
+
+              {/* Per-item image manager */}
+              <div className="md:col-span-2 space-y-3">
+                <div className="flex items-center justify-between">
+                  <Label className="font-semibold">Items & Images</Label>
+                  <Button
+                    type="button"
+                    size="sm"
+                    variant="outline"
+                    onClick={() => setFormData(prev => ({ ...prev, itemsDetail: [...prev.itemsDetail, { name: '', image: '' }] }))}
+                  >Add Item</Button>
+                </div>
+                {formData.itemsDetail.length === 0 && (
+                  <div className="text-xs text-muted-foreground border rounded p-3">No items yet. Enter comma list above or click Add Item.</div>
+                )}
+                <div className="space-y-2 max-h-64 overflow-y-auto pr-1">
+                  {formData.itemsDetail.map((row, idx) => (
+                    <div key={idx} className="border rounded-md p-3 space-y-2 bg-muted/20">
+                      <div className="grid grid-cols-1 md:grid-cols-5 gap-3 items-end">
+                        <div className="md:col-span-2">
+                          <Label className="text-xs">Name *</Label>
+                          <Input
+                            value={row.name}
+                            onChange={(e) => setFormData(prev => ({
+                              ...prev,
+                              itemsDetail: prev.itemsDetail.map((r,i) => i===idx? { ...r, name: e.target.value }: r)
+                            }))}
+                            placeholder="Item name"
+                          />
+                        </div>
+                        <div className="md:col-span-3">
+                          <Label className="text-xs">Image URL</Label>
+                          <Input
+                            value={row.image}
+                            onChange={(e) => setFormData(prev => ({
+                              ...prev,
+                              itemsDetail: prev.itemsDetail.map((r,i) => i===idx? { ...r, image: e.target.value }: r)
+                            }))}
+                            placeholder="/images/items/rice.jpg or https://..."
+                          />
+                        </div>
+                      </div>
+                      <div className="flex items-center justify-between">
+                        <div className="flex items-center gap-3">
+                          {row.image && (
+                            <img
+                              src={row.image.startsWith('http') || row.image.startsWith('/') ? row.image : '/' + row.image.replace(/^\\+/,'')}
+                              alt={row.name || 'preview'}
+                              className="h-12 w-12 object-contain rounded border bg-white"
+                              onError={(e) => { (e.currentTarget as HTMLImageElement).src = '/placeholder.svg'; }}
+                            />
+                          )}
+                          <span className="text-xs text-muted-foreground">Item #{idx+1}</span>
+                        </div>
+                        <Button
+                          type="button"
+                          size="sm"
+                          variant="ghost"
+                          className="text-red-600"
+                          onClick={() => setFormData(prev => ({ ...prev, itemsDetail: prev.itemsDetail.filter((_,i)=>i!==idx) }))}
+                        >Remove</Button>
+                      </div>
+                    </div>
+                  ))}
+                </div>
               </div>
 
               {/* inStock and featured controls removed - not persisted in DB */}

@@ -37,14 +37,6 @@ export function RukishaTransactionHistory({
     } finally {
       setLoading(false);
     }
-
-    try {
-      setLoading(True);
-      setError(null);
-      const userTransactions = await RukishaService.getUserTransactions(user.id, limit);
-      setTransactions(userTransactions);
-    }
-
   };
 
   useEffect(() => {

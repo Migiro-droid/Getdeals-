@@ -107,39 +107,3 @@ if (require.main === module) {
     .then(testSupabaseAPI)
     .catch(console.error);
 }
-
-      console.log('📋 Table schema:');
-      columns.forEach((col: any) => {
-        console.log(`  - ${col.column_name}: ${col.data_type} (nullable: ${col.is_nullable})`);
-      });
-    // Test inserting a sample product via supabase client
-    console.log('🧪 Testing product insert...');
-    const testId = `test-${Date.now()}`;
-    const { data: testProduct, error: insertErr } = await supabase.from('products').insert([
-      {
-        id: testId,
-        name: 'Test Product',
-        price: 100,
-        category: 'test',
-        description: 'This is a test product',
-        image: '/placeholder.svg',
-        createdAt: new Date().toISOString(),
-        updatedAt: new Date().toISOString(),
-      }
-    ]).select().single();
-
-    if (insertErr) throw insertErr;
-    console.log('✅ Test product inserted:', testProduct);
-
-    // Clean up test product
-    await supabase.from('products').delete().eq('id', testId);
-    console.log('🧹 Test product cleaned up');
-
-    console.log('🎉 Database is ready for production!');
-
-  } catch (error) {
-    console.error('❌ Database test failed:', error);
-  }
-}
-
-testDatabaseConnection();

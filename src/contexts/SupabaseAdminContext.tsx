@@ -1,5 +1,3 @@
-<<<<<<< HEAD
-=======
 import React, { createContext, useContext, useEffect, useState, useCallback } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
@@ -99,4 +97,3 @@ export function useSupabaseAdmin() {
   }
   return context;
 }
->>>>>>> supabase-integration

@@ -21,7 +21,8 @@ if (fs.existsSync(envPath)) {
 import { supabase, executeSQL } from '../lib/db';
 
 try {
-  const check = async (column: string) => {
+  // Simple helper to check if a column exists (cannot use TypeScript types in .mjs)
+  const check = async (column) => {
     const res = await executeSQL(`
       SELECT column_name
       FROM information_schema.columns

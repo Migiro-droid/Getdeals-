@@ -1,11 +1,13 @@
-import { useMemo, useState, useCallback } from "react";
+import { useMemo, useState, useCallback, useRef } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { ChartContainer, ChartTooltip, ChartTooltipContent } from "@/components/ui/chart";
-import { Line, LineChart, XAxis, YAxis, CartesianGrid, PieChart, Pie, Cell } from "recharts";
+import { Line, LineChart, XAxis, YAxis, CartesianGrid, PieChart, Pie, Cell } from "recharts"; // remaining charts
+import RevenueTrendChart from '@/components/admin/RevenueTrendChart';
+import AdvancedRevenueTrend from '@/components/admin/AdvancedRevenueTrend';
 import { useOrders, OrderStatus, Order } from "@/contexts/OrdersContext";
 import { useInventory } from "@/contexts/InventoryContext";
 import { useAdmin } from "@/contexts/AdminContext";
@@ -64,15 +66,18 @@ export default function AdminDashboard() {
 
   const fmtCurrency = (n: number) => `KES ${n.toLocaleString()}`;
 
-  // Date helpers
-  const now = new Date();
+  // Date helpers (stabilize base day to prevent chart flicker)
+  const todayBase = useMemo(() => {
+    const d = new Date();
+    d.setHours(0, 0, 0, 0);
+    return d; // stable for lifetime of component
+  }, []);
   const rangeDays = range === "7d" ? 7 : range === "30d" ? 30 : 30; // cap chart to 30 days for "all"
   const startDate = useMemo(() => {
-    const d = new Date(now);
+    const d = new Date(todayBase);
     d.setDate(d.getDate() - (range === "all" ? 29 : rangeDays - 1));
-    d.setHours(0, 0, 0, 0);
     return d;
-  }, [range, rangeDays]);
+  }, [range, rangeDays, todayBase]);
 
   const ordersInRange = useMemo(() => {
     if (range === "all") return safeOrders;
@@ -166,27 +171,42 @@ export default function AdminDashboard() {
   }, []);
 
   // Chart data: daily revenue for last N days
+  // Stable daily series to prevent flicker: reuse point object references if label & value unchanged
+  const dailyDataPrevRef = useRef<{ label: string; value: number }[] | null>(null);
   const dailyData = useMemo(() => {
-    const days: { label: string; value: number }[] = [];
     const map: Record<string, number> = {};
     for (let i = rangeDays - 1; i >= 0; i--) {
-      const d = new Date(now);
+      const d = new Date(todayBase);
       d.setDate(d.getDate() - i);
-      d.setHours(0, 0, 0, 0);
-      const key = d.toISOString().slice(0, 10);
-      map[key] = 0;
+      map[d.toISOString().slice(0, 10)] = 0;
     }
-  for (const o of safeOrders) {
+    for (const o of safeOrders) {
       const key = o.date.slice(0, 10);
       if (key in map) map[key] += o.total;
     }
-    Object.keys(map).forEach((k) => {
+    const next: { label: string; value: number }[] = [];
+    const prev = dailyDataPrevRef.current || [];
+    const keys = Object.keys(map); // already chronological based on construction order
+    for (let i = 0; i < keys.length; i++) {
+      const k = keys[i];
       const d = new Date(k);
       const label = d.toLocaleDateString(undefined, { month: "short", day: "numeric" });
-      days.push({ label, value: map[k] });
-    });
-    return days;
-  }, [safeOrders, rangeDays]);
+      const value = map[k];
+      const prevPoint = prev[i];
+      if (prevPoint && prevPoint.label === label && prevPoint.value === value) {
+        next.push(prevPoint); // reuse reference
+      } else {
+        next.push({ label, value });
+      }
+    }
+    dailyDataPrevRef.current = next;
+    return next;
+  }, [safeOrders, rangeDays, todayBase]);
+
+  // Memoized chart config object so child components don't re-render needlessly
+  const revenueChartConfig = useMemo(() => ({
+    revenue: { label: "Revenue", color: "hsl(var(--primary))" },
+  }), []);
 
   const statusKeys: OrderStatus[] = [
     "pending",
@@ -498,22 +518,9 @@ export default function AdminDashboard() {
           <h2 className="text-xl font-semibold mb-4">Performance Analytics</h2>
           <div className="grid lg:grid-cols-3 gap-6">
             {/* Revenue Trend - Takes 2 columns */}
-            <Card className="lg:col-span-2">
-              <CardHeader>
-                <CardTitle>Revenue Trend</CardTitle>
-              </CardHeader>
-              <CardContent>
-                <ChartContainer config={{ revenue: { label: "Revenue", color: "hsl(var(--primary))" } }} className="w-full">
-                  <LineChart data={dailyData} margin={{ left: 12, right: 12 }}>
-                    <CartesianGrid strokeDasharray="3 3" />
-                    <XAxis dataKey="label" tickLine={false} axisLine={false} />
-                    <YAxis tickLine={false} axisLine={false} tickFormatter={(v) => (v >= 1000 ? `${Math.round(v/1000)}k` : String(v))} />
-                    <ChartTooltip content={<ChartTooltipContent nameKey="revenue" />} />
-                    <Line type="monotone" dataKey="value" stroke="hsl(var(--primary))" strokeWidth={2} dot={false} />
-                  </LineChart>
-                </ChartContainer>
-              </CardContent>
-            </Card>
+            <div className="lg:col-span-2">
+              <AdvancedRevenueTrend initialRange={range} orders={safeOrders.map(o => ({ date: o.date, total: o.total }))} />
+            </div>
 
             {/* Order Pipeline - Takes 1 column */}
             <Card>
