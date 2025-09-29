@@ -1,4 +1,6 @@
-import { Phone, Mail, MapPin, Clock, Send, MessageCircle } from "lucide-react";
+import { Phone, Mail, MapPin, Clock, Send, MessageCircle, Sparkles } from "lucide-react";
+import { WHATSAPP_URL } from '@/config/support';
+import ChatSupportButton from '@/components/ChatSupportButton';
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -104,29 +106,11 @@ export default function ContactPage() {
                     </div>
                   </div>
 
-                  <div className="flex items-start gap-4">
-                    <a
-                      href="https://wa.me/254728322355"
-                      target="_blank"
-                      rel="noreferrer"
-                      aria-label="Chat with us on WhatsApp"
-                      className="rounded-lg bg-green-500/10 hover:bg-green-500/20 p-3 transition group"
-                    >
-                      <MessageCircle className="h-6 w-6 text-green-600 group-hover:scale-110 transition" />
-                    </a>
-                    <div>
-                      <div className="font-medium text-lg flex items-center gap-2">
-                        WhatsApp
-                        <span className="inline-flex items-center gap-1 text-xs px-2 py-0.5 rounded-full bg-green-500/10 text-green-700 border border-green-500/30">Live</span>
-                      </div>
-                      <p className="text-sm text-muted-foreground mt-1 leading-snug">
-                        Need help? <a href="https://wa.me/254728322355" target="_blank" rel="noreferrer" className="text-primary hover:underline font-medium">Chat with us instantly on WhatsApp</a>
-                      </p>
-                      <p className="text-xs text-green-600 mt-1 flex items-center gap-1">
-                        <span className="inline-block w-2 h-2 rounded-full bg-green-500 animate-pulse" /> Typically replies in under 5 minutes
-                      </p>
-                    </div>
-                  </div>
+                  <ChatSupportButton
+                    variant="inline"
+                    labelPrimary="Chat with us instantly on WhatsApp"
+                    labelSecondary="Typical reply time < 5 mins"
+                  />
 
                   <div className="flex items-start gap-4">
                     <div className="rounded-lg bg-primary/10 p-3">

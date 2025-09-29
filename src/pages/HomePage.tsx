@@ -1,6 +1,7 @@
 import { useEffect, useState, useMemo } from "react";
 import { Link } from "react-router-dom";
-import { ArrowRight, CheckCircle, Clock, Shield, Truck, LogIn, UserPlus, Megaphone, X, Star, ShieldCheck, Search, Package, Users, CreditCard, Wallet, Zap, MessageCircle } from "lucide-react";
+import { ArrowRight, CheckCircle, Clock, Shield, Truck, LogIn, UserPlus, Megaphone, X, Star, ShieldCheck, Search, Package, Users, CreditCard, Wallet, Zap, MessageCircle, Sparkles } from "lucide-react";
+import ChatSupportButton from '@/components/ChatSupportButton';
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { ProductCard } from "@/components/ProductCard";
@@ -210,25 +211,7 @@ export default function HomePage() {
   return (
     <div className="min-h-screen">
       {/* Floating WhatsApp Chat Icon */}
-      <a
-        href="https://wa.me/254728322355"
-        target="_blank"
-        rel="noreferrer"
-        aria-label="Chat with us on WhatsApp"
-        className="fixed z-40 bottom-6 right-6 group"
-      >
-        <div className="relative flex items-center">
-          <div className="absolute -inset-2 rounded-full bg-green-500/20 blur-md opacity-70 group-hover:opacity-100 transition" />
-          <div className="h-16 w-16 rounded-full bg-green-500 shadow-lg flex items-center justify-center text-white ring-4 ring-white/30 hover:scale-105 active:scale-95 transition transform">
-            <MessageCircle className="h-8 w-8" />
-          </div>
-          <div className="mr-4 hidden md:block">
-            <div className="bg-background/95 backdrop-blur px-4 py-2 rounded-l-full border shadow-sm text-sm font-medium text-green-700 border-green-300 group-hover:bg-green-50 transition">
-              Chat with us
-            </div>
-          </div>
-        </div>
-      </a>
+      <ChatSupportButton variant="floating" labelPrimary="Chat with us on WhatsApp" />
       {/* Enhanced Hero Section with Slideshow */}
       <section className="relative py-20 lg:py-32 min-h-[700px] overflow-hidden">
         {/* Background Slideshow */}
