@@ -211,7 +211,8 @@ export default function CheckoutPage() {
   const initiateSTKPush = async (amount: number, phoneNumber: string, orderReference: string) => {
     try {
       // Use M-Pesa microservice - production ready
-      const mpesaServiceUrl = import.meta.env.VITE_MPESA_SERVICE_URL || 'http://localhost:3001';
+      const mpesaServiceUrl = import.meta.env.VITE_MPESA_SERVICE_URL || 
+        (import.meta.env.PROD ? 'https://getdeals-kenya-showcase.vercel.app' : 'http://localhost:3001');
       console.log('Initiating STK Push with M-Pesa microservice:', mpesaServiceUrl);
       
       const response = await fetch(`${mpesaServiceUrl}/api/payments/mpesa/stk-push`, {
@@ -265,7 +266,8 @@ export default function CheckoutPage() {
 
   const checkPaymentStatus = async (checkoutRequestId: string) => {
     try {
-      const mpesaServiceUrl = import.meta.env.VITE_MPESA_SERVICE_URL || 'http://localhost:3001';
+      const mpesaServiceUrl = import.meta.env.VITE_MPESA_SERVICE_URL || 
+        (import.meta.env.PROD ? 'https://getdeals-kenya-showcase.vercel.app' : 'http://localhost:3001');
       const response = await fetch(`${mpesaServiceUrl}/api/payments/mpesa/query/${checkoutRequestId}`);
 
       const responseText = await response.text();

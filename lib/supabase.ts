@@ -8,9 +8,22 @@ const _env: any = ((typeof (globalThis as any).process === 'object' && (globalTh
   ? (globalThis as any).process.env
   : ((import.meta as any)?.env ?? {}));
 
+// Ensure we have valid URLs with fallbacks
 const supabaseUrl = _env.VITE_SUPABASE_URL || 'https://fxyifnckgllxqbggegtw.supabase.co';
 const supabaseAnonKey = _env.VITE_SUPABASE_ANON_KEY || 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImZ4eWlmbmNrZ2xseHFiZ2dlZ3R3Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTYyNzM3NjUsImV4cCI6MjA3MTg0OTc2NX0.GzVS2exQP8pGnbJNnkLwBZ_w52ioE6j18ibqpoA4slE';
 const supabaseServiceKey = _env.VITE_SUPABASE_SERVICE_ROLE_KEY || 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImZ4eWlmbmNrZ2xseHFiZ2dlZ3R3Iiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTc1NjI3Mzc2NSwiZXhwIjoyMDcxODQ5NzY1fQ.O37uiOPHKQoFOCUY4aor3wxYsYEUn10m0fH9h0uHoAU';
+
+// Validate URLs before using them
+if (!supabaseUrl || !supabaseUrl.startsWith('http')) {
+  throw new Error('Invalid Supabase URL. Please check VITE_SUPABASE_URL environment variable.');
+}
+
+console.log('🗃️ Supabase config:', {
+  url: supabaseUrl?.substring(0, 30) + '...',
+  hasAnonKey: !!supabaseAnonKey,
+  hasServiceKey: !!supabaseServiceKey,
+  env: _env.NODE_ENV || 'unknown'
+});
 
 // Client-side Supabase client for general use
 export const supabase = createClient<Database>(supabaseUrl, supabaseAnonKey, {

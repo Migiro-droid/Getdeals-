@@ -1,7 +1,8 @@
 // Production M-Pesa Service Configuration
 export const MPESA_CONFIG = {
-  // Use environment variable or fallback to local development URL
-  SERVICE_URL: import.meta.env.VITE_MPESA_SERVICE_URL || 'http://localhost:3001',
+  // Use environment variable or fallback based on environment
+  SERVICE_URL: import.meta.env.VITE_MPESA_SERVICE_URL || 
+    (import.meta.env.PROD ? 'https://getdeals-kenya-showcase.vercel.app' : 'http://localhost:3001'),
   
   // API endpoints
   ENDPOINTS: {

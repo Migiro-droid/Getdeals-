@@ -82,6 +82,9 @@ export const QuickMartDashboard: React.FC = () => {
   };
 
   const isValidUrl = (string: string): boolean => {
+    if (!string || typeof string !== 'string' || string.trim().length === 0) {
+      return false;
+    }
     try {
       new URL(string);
       return true;
