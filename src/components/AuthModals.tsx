@@ -5,11 +5,10 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Separator } from "@/components/ui/separator";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Mail, Lock, User, Phone, Eye, EyeOff, Building2, Hash } from "lucide-react";
+import { Mail, Lock, User, Phone, Eye, EyeOff, Building2 } from "lucide-react";
 import { useAuth } from "@/contexts/AuthContext";
 import { useToast } from "@/components/ui/use-toast";
 import { PostSignupChecklist } from "./PostSignupChecklist";
-import { validateOrganizationFields } from "@/utils/organizationValidation";
 
 interface AuthModalsProps {
   open: boolean;
@@ -70,7 +69,6 @@ export function AuthModals({ open, onOpenChange, defaultTab = "signin" }: AuthMo
     const email = (form.querySelector('#signup-email') as HTMLInputElement)?.value;
     const password = (form.querySelector('#signup-password') as HTMLInputElement)?.value;
     const organization = (form.querySelector('#signup-organization') as HTMLInputElement)?.value;
-    const organizationNumber = (form.querySelector('#signup-organization-number') as HTMLInputElement)?.value;
     
     // Validate phone number is provided
     if (!phone || phone.trim() === '') {
@@ -78,17 +76,9 @@ export function AuthModals({ open, onOpenChange, defaultTab = "signin" }: AuthMo
       setLoading(false);
       return;
     }
-
-    // Validate organization fields
-    const organizationValidation = validateOrganizationFields(organization, organizationNumber);
-    if (!organizationValidation.isValid) {
-      setError(organizationValidation.error || 'Invalid organization details');
-      setLoading(false);
-      return;
-    }
     
     try {
-      await signUp(name, phone, email, password, organization, organizationNumber);
+      await signUp(name, phone, email, password, organization);
       toast({ title: "Account created", description: "Welcome to GetDeals! A welcome SMS has been sent to your phone." });
       // Show checklist for new users (onboardingCompleted will be false by default)
       setShowChecklist(true);
@@ -148,8 +138,8 @@ export function AuthModals({ open, onOpenChange, defaultTab = "signin" }: AuthMo
   return (
     <>
       <Dialog open={open} onOpenChange={onOpenChange}>
-        <DialogContent className="max-w-md bg-white dark:bg-white border shadow-lg max-h-[90vh] overflow-y-auto mx-4 sm:mx-0">
-          <DialogHeader className="text-center pb-3">
+        <DialogContent className="max-w-md bg-white dark:bg-white border shadow-lg">
+          <DialogHeader className="text-center pb-4">
             <DialogTitle className="text-xl font-bold bg-gradient-to-r from-primary to-primary/70 bg-clip-text text-transparent">
               {showForgotPassword ? "Reset Password" : "Welcome to GetDeals"}
             </DialogTitle>
@@ -207,8 +197,8 @@ export function AuthModals({ open, onOpenChange, defaultTab = "signin" }: AuthMo
               <TabsTrigger value="signup" className="text-sm">Sign Up</TabsTrigger>
             </TabsList>
 
-            <TabsContent value="signin" className="space-y-3 mt-3">
-              <form onSubmit={handleSignIn} className="space-y-3">
+            <TabsContent value="signin" className="space-y-4 mt-4">
+              <form onSubmit={handleSignIn} className="space-y-4">
                 <div className="space-y-1">
                   <Label htmlFor="signin-email" className="text-xs font-medium">Email Address</Label>
                   <div className="relative">
@@ -286,8 +276,8 @@ export function AuthModals({ open, onOpenChange, defaultTab = "signin" }: AuthMo
               </form>
             </TabsContent>
 
-            <TabsContent value="signup" className="space-y-1 mt-2">
-              <form onSubmit={handleSignUp} className="space-y-1.5">
+            <TabsContent value="signup" className="space-y-2 mt-3">
+              <form onSubmit={handleSignUp} className="space-y-2">
                 <div className="grid grid-cols-2 gap-2">
                   <div className="space-y-1">
                     <Label htmlFor="signup-name" className="text-xs font-medium">Full Name</Label>
@@ -297,7 +287,7 @@ export function AuthModals({ open, onOpenChange, defaultTab = "signin" }: AuthMo
                         id="signup-name"
                         type="text"
                         placeholder="Your name"
-                        className="pl-7 h-8 text-sm border-2 focus:border-primary/50 transition-colors"
+                        className="pl-7 h-9 text-sm border-2 focus:border-primary/50 transition-colors"
                         required
                       />
                     </div>
@@ -310,8 +300,8 @@ export function AuthModals({ open, onOpenChange, defaultTab = "signin" }: AuthMo
                       <Input
                         id="signup-phone"
                         type="tel"
-                        placeholder="+254 728 322 355"
-                        className="pl-7 h-8 text-sm border-2 focus:border-primary/50 transition-colors"
+                        placeholder="+254 700 123 456"
+                        className="pl-7 h-9 text-sm border-2 focus:border-primary/50 transition-colors"
                         required
                       />
                     </div>
@@ -326,37 +316,22 @@ export function AuthModals({ open, onOpenChange, defaultTab = "signin" }: AuthMo
                       id="signup-email"
                       type="email"
                       placeholder="Enter your email"
-                      className="pl-10 h-8 text-sm border-2 focus:border-primary/50 transition-colors"
+                      className="pl-10 h-9 border-2 focus:border-primary/50 transition-colors"
                       required
                     />
                   </div>
                 </div>
                 
-                <div className="grid grid-cols-1 gap-1.5">
-                  <div className="space-y-1">
-                    <Label htmlFor="signup-organization" className="text-xs font-medium">Organization (Optional)</Label>
-                    <div className="relative">
-                      <Building2 className="absolute left-3 top-2.5 h-4 w-4 text-muted-foreground" />
-                      <Input
-                        id="signup-organization"
-                        type="text"
-                        placeholder="Your company"
-                        className="pl-10 h-8 text-sm border-2 focus:border-primary/50 transition-colors"
-                      />
-                    </div>
-                  </div>
-
-                  <div className="space-y-1">
-                    <Label htmlFor="signup-organization-number" className="text-xs font-medium">Org Number (Optional)</Label>
-                    <div className="relative">
-                      <Hash className="absolute left-3 top-2.5 h-4 w-4 text-muted-foreground" />
-                      <Input
-                        id="signup-organization-number"
-                        type="text"
-                        placeholder="REG123456789"
-                        className="pl-10 h-8 text-sm border-2 focus:border-primary/50 transition-colors"
-                      />
-                    </div>
+                <div className="space-y-1">
+                  <Label htmlFor="signup-organization" className="text-xs font-medium">Organization (Optional)</Label>
+                  <div className="relative">
+                    <Building2 className="absolute left-3 top-2.5 h-4 w-4 text-muted-foreground" />
+                    <Input
+                      id="signup-organization"
+                      type="text"
+                      placeholder="Your company or organization"
+                      className="pl-10 h-9 border-2 focus:border-primary/50 transition-colors"
+                    />
                   </div>
                 </div>
                 
@@ -368,7 +343,7 @@ export function AuthModals({ open, onOpenChange, defaultTab = "signin" }: AuthMo
                       id="signup-password"
                       type={showSignUpPassword ? "text" : "password"}
                       placeholder="Create a password"
-                      className="pl-10 pr-10 h-8 text-sm border-2 focus:border-primary/50 transition-colors"
+                      className="pl-10 pr-10 h-9 border-2 focus:border-primary/50 transition-colors"
                       required
                     />
                     <button
@@ -381,27 +356,27 @@ export function AuthModals({ open, onOpenChange, defaultTab = "signin" }: AuthMo
                   </div>
                 </div>
 
-                {error && <p className="text-xs text-red-600 py-1">{error}</p>}
-                <Button disabled={loading} type="submit" className="w-full h-8 text-sm bg-gradient-to-r from-primary to-primary/80 hover:from-primary/90 hover:to-primary/70 transition-all">
+                {error && <p className="text-xs text-red-600">{error}</p>}
+                <Button disabled={loading} type="submit" className="w-full h-9 bg-gradient-to-r from-primary to-primary/80 hover:from-primary/90 hover:to-primary/70 transition-all">
                   Create Account
                 </Button>
                 
-                <div className="flex items-center gap-2">
+                <div className="flex items-center gap-2 pt-1">
                   <div className="h-px bg-border flex-1" />
                   <span className="text-xs text-muted-foreground">or</span>
                   <div className="h-px bg-border flex-1" />
                 </div>
                 
                 <div className="grid grid-cols-2 gap-2">
-                  <Button type="button" variant="outline" size="sm" onClick={() => handleSocialLogin('google')} disabled={loading} className="h-7 text-xs">
+                  <Button type="button" variant="outline" size="sm" onClick={() => handleSocialLogin('google')} disabled={loading}>
                     Google
                   </Button>
-                  <Button type="button" variant="outline" size="sm" disabled className="opacity-50 cursor-not-allowed h-7 text-xs">
+                  <Button type="button" variant="outline" size="sm" disabled className="opacity-50 cursor-not-allowed">
                     Facebook
                   </Button>
                 </div>
                 
-                <p className="text-center text-xs text-muted-foreground">
+                <p className="text-center text-xs text-muted-foreground pt-1">
                   Already have an account?{" "}
                   <button
                     type="button"

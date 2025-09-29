@@ -8,7 +8,6 @@ import { Label } from '@/components/ui/label';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { useToast } from '@/hooks/use-toast';
 import { LogIn, UserPlus, ArrowLeft } from 'lucide-react';
-import { validateOrganizationFields } from '@/utils/organizationValidation';
 
 export default function AuthPage() {
   const [signInEmail, setSignInEmail] = useState('');
@@ -19,7 +18,6 @@ export default function AuthPage() {
   const [signUpLastName, setSignUpLastName] = useState('');
   const [signUpPhone, setSignUpPhone] = useState('');
   const [signUpOrganization, setSignUpOrganization] = useState('');
-  const [signUpOrganizationNumber, setSignUpOrganizationNumber] = useState('');
   const [loading, setLoading] = useState(false);
   
     const { signIn, signUp, isAuthenticated } = useAuth();
@@ -75,17 +73,6 @@ export default function AuthPage() {
       return;
     }
 
-    // Validate organization fields
-    const organizationValidation = validateOrganizationFields(signUpOrganization, signUpOrganizationNumber);
-    if (!organizationValidation.isValid) {
-      toast({
-        title: "Validation Error",
-        description: organizationValidation.error,
-        variant: "destructive",
-      });
-      return;
-    }
-
     setLoading(true);
     try {
       await signUp(
@@ -93,8 +80,7 @@ export default function AuthPage() {
         signUpPhone,
         signUpEmail,
         signUpPassword,
-        signUpOrganization,
-        signUpOrganizationNumber
+        signUpOrganization
       );
       
       toast({
@@ -213,7 +199,7 @@ export default function AuthPage() {
                     <Input
                       id="signup-phone"
                       type="tel"
-                      placeholder="+254 728 322 355"
+                      placeholder="+254 700 123 456"
                       value={signUpPhone}
                       onChange={(e) => setSignUpPhone(e.target.value)}
                     />
@@ -226,16 +212,6 @@ export default function AuthPage() {
                       placeholder="Your company or organization"
                       value={signUpOrganization}
                       onChange={(e) => setSignUpOrganization(e.target.value)}
-                    />
-                  </div>
-                  <div className="space-y-2">
-                    <Label htmlFor="signup-organization-number">Organization Number (Optional)</Label>
-                    <Input
-                      id="signup-organization-number"
-                      type="text"
-                      placeholder="e.g. REG123456789"
-                      value={signUpOrganizationNumber}
-                      onChange={(e) => setSignUpOrganizationNumber(e.target.value)}
                     />
                   </div>
                   <div className="space-y-2">

@@ -67,14 +67,7 @@ function MaintenanceBanner() {
   
   return (
     <>
-      {/* Authentication Status */}
-      {!isAuthenticated && (
-        <div className="bg-green-100 text-green-800 text-sm py-2">
-          <div className="container mx-auto px-4 text-center">
-            🔐 Authentication is now enabled! Please sign in to access all features.
-          </div>
-        </div>
-      )}
+      {/* Authentication Status Banner Removed */}
     </>
   );
 }
