@@ -1,4 +1,4 @@
-import { supabase } from './supabase';
+import { supabase } from '../../lib/supabase';
 
 export interface WalletTransaction {
   id: string;
@@ -104,6 +104,7 @@ class WalletService {
         .from('wallet_transactions')
         .select('*')
         .eq('user_id', user.id)
+        .eq('status', 'completed')
         .order('created_at', { ascending: false })
         .limit(limit);
 
@@ -223,6 +224,84 @@ class WalletService {
   async refreshWalletBalance(): Promise<WalletBalance | null> {
     // Simply fetch the latest balance
     return this.getWalletBalance();
+  }
+
+  /**
+   * Delete all pending transactions for the current user
+   */
+  async deletePendingTransactions(): Promise<boolean> {
+    try {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) return false;
+
+      const { error } = await supabase
+        .from('wallet_transactions')
+        .delete()
+        .eq('user_id', user.id)
+        .eq('status', 'pending');
+
+      if (error) {
+        console.error('Error deleting pending transactions:', error);
+        return false;
+      }
+
+      return true;
+    } catch (error) {
+      console.error('Failed to delete pending transactions:', error);
+      return false;
+    }
+  }
+
+  /**
+   * Delete all failed transactions for the current user
+   */
+  async deleteFailedTransactions(): Promise<boolean> {
+    try {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) return false;
+
+      const { error } = await supabase
+        .from('wallet_transactions')
+        .delete()
+        .eq('user_id', user.id)
+        .eq('status', 'failed');
+
+      if (error) {
+        console.error('Error deleting failed transactions:', error);
+        return false;
+      }
+
+      return true;
+    } catch (error) {
+      console.error('Failed to delete failed transactions:', error);
+      return false;
+    }
+  }
+
+  /**
+   * Clear all non-completed transactions (pending, failed, cancelled)
+   */
+  async clearIncompleteTransactions(): Promise<boolean> {
+    try {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) return false;
+
+      const { error } = await supabase
+        .from('wallet_transactions')
+        .delete()
+        .eq('user_id', user.id)
+        .in('status', ['pending', 'failed', 'cancelled']);
+
+      if (error) {
+        console.error('Error clearing incomplete transactions:', error);
+        return false;
+      }
+
+      return true;
+    } catch (error) {
+      console.error('Failed to clear incomplete transactions:', error);
+      return false;
+    }
   }
 }
 

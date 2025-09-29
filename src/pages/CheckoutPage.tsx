@@ -14,7 +14,7 @@ import { useCart } from "../contexts/CartContext";
 import { useToast } from '../hooks/use-toast';
 import { useAuth } from '../contexts/AuthContext';
 import { useOrders } from '../contexts/OrdersContext';
-import { useWallet } from '../contexts/WalletContext';
+import { useWallet } from '../contexts/NewWalletContext';
 import { getApiBase } from '@/lib/api';
 import { PickupLocationService, type PickupLocation } from '../services/pickup-location';
 
@@ -1079,7 +1079,7 @@ export default function CheckoutPage() {
 
                 {paymentStatus === "failed" && (
                   <div className="text-center py-4 bg-red-50 rounded-lg border border-red-200">
-                    <div className="text-red-600 font-medium">❌ Payment Failed</div>
+                    <div className="text-red-600 font-medium">Payment Failed</div>
                     <p className="text-xs text-red-500 mt-1">Please try again or contact support</p>
                   </div>
                 )}

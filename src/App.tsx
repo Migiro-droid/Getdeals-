@@ -6,7 +6,7 @@ import { BrowserRouter, Routes, Route } from "react-router-dom";
 import { useEffect } from "react";
 import { SpeedInsights } from "@vercel/speed-insights/react";
 import { CartProvider } from "@/contexts/CartContext";
-import { WalletProvider } from "@/contexts/WalletContext";
+import { WalletProvider } from "./contexts/NewWalletContext";
 import { OrdersProvider } from "@/contexts/OrdersContext";
 import { AdminProvider } from "@/contexts/AdminContext";
 import { ProductsProvider } from "@/contexts/ProductsContext";

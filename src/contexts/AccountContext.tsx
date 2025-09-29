@@ -69,33 +69,7 @@ export const AccountProvider: React.FC<{ children: React.ReactNode }> = ({ child
     promos: true,
     newProducts: false,
   });
-  const [addresses, setAddresses] = useState<Address[]>([
-    { 
-      id: "addr-home", 
-      label: "Home", 
-      street_address: "123 Moi Avenue", 
-      city: "Nairobi", 
-      county: "Nairobi",
-      formatted_address: "123 Moi Avenue, Nairobi, Kenya",
-      is_default: true,
-      address_type: 'home' as const,
-      // Legacy support
-      details: "123 Moi Avenue, Nairobi, Kenya", 
-      isDefault: true 
-    },
-    { 
-      id: "addr-office", 
-      label: "Office", 
-      street_address: "456 Kenyatta Avenue", 
-      city: "Nairobi", 
-      county: "Nairobi",
-      formatted_address: "456 Kenyatta Avenue, Nairobi, Kenya",
-      is_default: false,
-      address_type: 'work' as const,
-      // Legacy support
-      details: "456 Kenyatta Avenue, Nairobi, Kenya"
-    },
-  ]);
+  const [addresses, setAddresses] = useState<Address[]>([]);
 
   useEffect(() => {
     try {

@@ -6,11 +6,16 @@ const corsHeaders = {
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
 }
 
+const getEnv = (key: string) => {
+  const env = (globalThis as any)?.Deno?.env
+  return typeof env?.get === 'function' ? env.get(key) ?? undefined : undefined
+}
+
 interface RukishaDepositPayload {
-  payment_method: string;
   amount: number;
   phone: string;
   callback_url: string;
+  customer_id: string;
   reference: string;
 }
 
@@ -21,7 +26,7 @@ interface RukishaDepositResponse {
   error?: string;
 }
 
-serve(async (req) => {
+serve(async (req: Request) => {
   // Handle CORS preflight requests
   if (req.method === 'OPTIONS') {
     return new Response('ok', { headers: corsHeaders })
@@ -29,12 +34,12 @@ serve(async (req) => {
 
   try {
     // Initialize Supabase client with fallback values
-    const supabaseUrl = Deno.env.get('SUPABASE_URL') ?? 'https://fxyifnckgllxqbggegtw.supabase.co';
-    const supabaseAnonKey = Deno.env.get('SUPABASE_ANON_KEY') ?? 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImZ4eWlmbmNrZ2xseHFiZ2dlZ3R3Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTYyNzM3NjUsImV4cCI6MjA3MTg0OTc2NX0.GzVS2exQP8pGnbJNnkLwBZ_w52ioE6j18ibqpoA4slE';
+    const supabaseUrl = getEnv('SUPABASE_URL') ?? 'https://fxyifnckgllxqbggegtw.supabase.co';
+    const supabaseAnonKey = getEnv('SUPABASE_ANON_KEY') ?? 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImZ4eWlmbmNrZ2xseHFiZ2dlZ3R3Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTYyNzM3NjUsImV4cCI6MjA3MTg0OTc2NX0.GzVS2exQP8pGnbJNnkLwBZ_w52ioE6j18ibqpoA4slE';
     
     console.log('🔧 Edge function environment:', {
-      hasSupabaseUrl: !!Deno.env.get('SUPABASE_URL'),
-      hasSupabaseAnonKey: !!Deno.env.get('SUPABASE_ANON_KEY'),
+      hasSupabaseUrl: !!getEnv('SUPABASE_URL'),
+      hasSupabaseAnonKey: !!getEnv('SUPABASE_ANON_KEY'),
       usingUrl: supabaseUrl,
       hasAuthHeader: !!req.headers.get('Authorization')
     });
@@ -120,7 +125,7 @@ serve(async (req) => {
     }
 
     // Get Rukisha API token directly (deposit API might use different auth than payment API)
-    const rukishaApiToken = Deno.env.get('RUKISHA_API_TOKEN')
+    const rukishaApiToken = getEnv('RUKISHA_API_TOKEN')
     
     console.log('Rukisha token check:', {
       hasToken: !!rukishaApiToken,
@@ -138,8 +143,15 @@ serve(async (req) => {
       )
     }
 
-    // Format phone number for Rukisha (ensure +254 format)
-    const formattedPhone = phone.startsWith('+254') ? phone : `+254${phone.replace(/^0/, '')}`
+    // Format phone number for Rukisha (254XXXXXXXXX format as specified)
+    let formattedPhone = phone;
+    if (phone.startsWith('+254')) {
+      formattedPhone = phone.substring(1); // Remove the '+' to get 254XXXXXXXXX
+    } else if (phone.startsWith('0')) {
+      formattedPhone = '254' + phone.substring(1); // Convert 07XX to 254XXX
+    } else if (!phone.startsWith('254')) {
+      formattedPhone = '254' + phone; // Add 254 prefix if missing
+    }
 
     // Generate reference UUID for this transaction
     const reference = crypto.randomUUID()
@@ -175,72 +187,113 @@ serve(async (req) => {
 
     console.log('Transaction record created:', { id: transaction.id, reference: reference })
 
-    // Prepare payload aligned with working wallet-payment function
-    const rukishaPayload = {
-      payment_method: "MPESA",
-      amount: Number(amount),
-      reference: reference,
-      callback_url: "https://getdeals.co.ke/api/rukisha/callback",
-      phone: formattedPhone
+    const markTransactionFailed = async (reason: string) => {
+      const truncatedReason = reason.substring(0, 200)
+      const { error: updateError } = await supabaseClient
+        .from('wallet_transactions')
+        .update({
+          status: 'failed',
+          description: truncatedReason,
+          updated_at: new Date().toISOString()
+        })
+        .eq('id', transaction.id)
+
+      if (updateError) {
+        console.error('Error marking transaction as failed:', updateError)
+      }
     }
 
-    console.log('🔄 Calling Rukisha third-party merchant payment API...')
-    console.log('📋 Payload:', rukishaPayload)
+    // Prepare payload for Rukisha deposit-to-wallet API (TOP UP WALLET)
+    const rukishaPayload = {
+      amount: Number(amount),
+      phone: formattedPhone,
+      customer_id: profile.customer_id,
+      callback_url: "https://getdeals.co.ke/api/rukisha/callback",
+      reference: reference
+    }
 
-    // Call Rukisha third-party merchant payment API (same as working wallet-payment)
-    const rukishaResponse = await fetch('https://rukisha-api.rukisha.com/api/third-party-merchant-payment', {
+    // Use the correct Rukisha deposit-to-wallet endpoint for TOP UP WALLET
+    const depositEndpoint = 'https://api.rukisha.com/api/tap-and-go/deposit-to-wallet'
+
+    console.log('Rukisha deposit endpoint:', depositEndpoint)
+    console.log('Payload:', rukishaPayload)
+
+    // Make the API call to Rukisha
+    console.log(`Calling Rukisha deposit-to-wallet endpoint: ${depositEndpoint}`)
+    const response = await fetch(depositEndpoint, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
-        'Authorization': `Bearer ${rukishaApiToken}`
+        'Accept': 'application/json',
+        'Authorization': `Bearer ${rukishaApiToken}`,
+        'User-Agent': 'GetDealsWallet/1.0 (+https://getdeals.co.ke)'
       },
       body: JSON.stringify(rukishaPayload)
     })
 
-    const rukishaResponseText = await rukishaResponse.text()
-    console.log('📡 Rukisha API response status:', rukishaResponse.status)
-    console.log('📡 Rukisha API response:', rukishaResponseText)
+    const responseText = await response.text()
+    const contentType = response.headers.get('content-type')
+    
+    console.log('Rukisha response meta:', { 
+      endpoint: depositEndpoint, 
+      status: response.status, 
+      contentType, 
+      snippet: responseText.substring(0, 200) 
+    })
 
-    let rukishaData
-    try {
-      rukishaData = JSON.parse(rukishaResponseText)
-    } catch (parseError) {
-      console.error('❌ Failed to parse Rukisha response:', parseError)
+    if (!contentType || !contentType.toLowerCase().includes('application/json')) {
+      const errorMessage = `Invalid response from payment service: ${responseText.substring(0, 100)}`
+      await markTransactionFailed(errorMessage)
+      
       return new Response(
-        JSON.stringify({ 
-          success: false, 
-          error: `Invalid response from payment service: ${rukishaResponseText.substring(0, 100)}` 
+        JSON.stringify({
+          success: false,
+          error: errorMessage
         }),
-        { 
-          status: 500, 
-          headers: { ...corsHeaders, 'Content-Type': 'application/json' } 
+        {
+          status: 502,
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' }
         }
       )
     }
 
-    if (!rukishaResponse.ok) {
-      console.error('❌ Rukisha payment request failed:', rukishaData)
+    let rukishaData: RukishaDepositResponse
+    try {
+      rukishaData = JSON.parse(responseText)
+    } catch (parseError) {
+      const errorMessage = `Failed to parse payment service response: ${parseError}`
+      await markTransactionFailed(errorMessage)
       
-      // Extract error message from Rukisha response
-      let errorMessage = 'Payment request failed'
-      if (rukishaData && typeof rukishaData === 'object') {
-        errorMessage = rukishaData.message || rukishaData.error || errorMessage
-      }
+      return new Response(
+        JSON.stringify({
+          success: false,
+          error: errorMessage
+        }),
+        {
+          status: 502,
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+        }
+      )
+    }
+
+    if (!response.ok || rukishaData.success === false) {
+      const errorMessage = rukishaData.error || rukishaData.message || `Payment request failed with status ${response.status}`
+      await markTransactionFailed(errorMessage)
 
       return new Response(
-        JSON.stringify({ 
-          success: false, 
+        JSON.stringify({
+          success: false,
           error: errorMessage,
           details: rukishaData
         }),
-        { 
-          status: rukishaResponse.status, 
-          headers: { ...corsHeaders, 'Content-Type': 'application/json' } 
+        {
+          status: response.status,
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' }
         }
       )
     }
 
-    console.log('✅ Rukisha payment request successful')
+    console.log('Rukisha payment request successful')
 
 
 
@@ -278,8 +331,8 @@ serve(async (req) => {
     )
 
   } catch (error) {
-    console.error('❌ Error in deposit-funds function:', error)
-    console.error('❌ Error details:', {
+    console.error(' Error in deposit-funds function:', error)
+    console.error(' Error details:', {
       message: (error as any)?.message,
       stack: (error as any)?.stack,
       name: (error as any)?.name,

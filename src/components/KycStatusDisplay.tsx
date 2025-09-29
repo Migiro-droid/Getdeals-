@@ -89,7 +89,7 @@ export function KycStatusDisplay({ kycData, loading, onRetry, onContactSupport }
           badgeColor: 'bg-green-100 text-green-800 border-green-200',
           title: 'KYC Verified ✅',
           message: 'Your identity has been successfully verified. Your wallet is now fully activated!',
-          description: 'You can now enjoy all wallet features including deposits, withdrawals, and premium benefits.',
+          description: 'You can now enjoy all wallet features including deposits and premium benefits.',
           actionButton: null
         };
       

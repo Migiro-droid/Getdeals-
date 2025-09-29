@@ -23,17 +23,65 @@ app.use(helmet({
   },
 }));
 
-// CORS configuration for production
+// CORS configuration with dynamic origin + headers to avoid blocked STK requests from frontend
+const defaultOrigins = ['http://localhost:3000', 'http://localhost:4000', 'http://localhost:5173', 'http://localhost:8080'];
+const configuredOrigins = process.env.ALLOWED_ORIGINS?.split(',').map(o => o.trim()).filter(Boolean);
+
+const allowedOrigins = process.env.NODE_ENV === 'production'
+  ? (configuredOrigins && configuredOrigins.length ? configuredOrigins : [
+      'https://getdeals.co.ke', 
+      'https://getdeals.co.ke:3001',
+      'https://www.getdeals.co.ke',
+      'https://www.getdeals.co.ke:3001'
+    ])
+  : defaultOrigins;
+
 const corsOptions = {
-  origin: process.env.NODE_ENV === 'production' 
-    ? process.env.ALLOWED_ORIGINS?.split(',') || ['http://localhost:8080', 'https://getdeals.co.ke']
-    : ['http://localhost:3000', 'http://localhost:4000', 'http://localhost:5173', 'http://localhost:8080'],
+  origin: (origin, callback) => {
+    console.log(`CORS request from origin: ${origin}`);
+    console.log(`NODE_ENV: ${process.env.NODE_ENV}`);
+    
+    if (!origin) {
+      console.log('CORS: No origin, allowing request');
+      return callback(null, true);
+    }
+    
+    // In development, allow all localhost origins
+    if (process.env.NODE_ENV !== 'production') {
+      console.log(`CORS: Development mode, allowing origin: ${origin}`);
+      return callback(null, true);
+    }
+    
+    // In production, allow all getdeals.co.ke variations
+    if (origin && (origin.includes('getdeals.co.ke') || origin.includes('localhost'))) {
+      console.log(`CORS: Production mode, allowing getdeals.co.ke origin: ${origin}`);
+      return callback(null, true);
+    }
+    
+    // Check against explicitly allowed origins
+    if (allowedOrigins.includes(origin) || allowedOrigins.includes('*')) {
+      console.log(`CORS: Origin ${origin} found in allowed list`);
+      return callback(null, true);
+    }
+    
+    console.warn(`CORS: blocked origin ${origin}`);
+    return callback(new Error('Not allowed by CORS'));
+  },
   credentials: true,
-  methods: ['GET', 'POST'],
-  allowedHeaders: ['Content-Type', 'Authorization']
+  methods: ['GET', 'POST', 'OPTIONS'],
+  allowedHeaders: [
+    'Content-Type', 
+    'Authorization', 
+    'X-Requested-With',
+    'Accept',
+    'Origin',
+    'Access-Control-Request-Method',
+    'Access-Control-Request-Headers'
+  ]
 };
 
 app.use(cors(corsOptions));
+app.options('*', cors(corsOptions));
 app.use(morgan(process.env.NODE_ENV === 'production' ? 'combined' : 'dev'));
 app.use(express.json({ limit: '10mb' }));
 app.use(express.urlencoded({ extended: true, limit: '10mb' }));

@@ -131,7 +131,7 @@ export function WalletVerificationModal({
                   Verification Complete!
                 </h4>
                 <p className="text-sm text-green-700 mt-1">
-                  Your wallet is now active and ready for deposits, withdrawals, and payments.
+                  Your wallet is now active and ready for deposits and payments.
                 </p>
               </div>
             </div>

@@ -19,6 +19,7 @@ export interface WalletContextType {
   refreshWallet: () => Promise<void>;
   refreshTransactions: () => Promise<void>;
   refreshPendingTransactions: () => Promise<void>;
+  resetWalletData: () => Promise<void>;
 }
 
 const WalletContext = createContext<WalletContextType | undefined>(undefined);
@@ -121,12 +122,23 @@ export const WalletProvider: React.FC<{ children: React.ReactNode }> = ({ childr
       (newTransaction) => {
         // Update transactions list
         setTransactions(prev => {
-          const exists = prev.some(t => t.id === newTransaction.id);
-          if (exists) {
-            return prev.map(t => t.id === newTransaction.id ? newTransaction : t);
-          } else {
-            return [newTransaction, ...prev.slice(0, 49)]; // Keep only latest 50
+          const isCompleted = newTransaction.status === 'completed';
+          const existingIndex = prev.findIndex(t => t.id === newTransaction.id);
+
+          if (!isCompleted) {
+            if (existingIndex === -1) return prev;
+            const updated = [...prev];
+            updated.splice(existingIndex, 1);
+            return updated;
           }
+
+          if (existingIndex !== -1) {
+            const updated = [...prev];
+            updated[existingIndex] = newTransaction;
+            return updated;
+          }
+
+          return [newTransaction, ...prev].slice(0, 50);
         });
 
         // Update pending transactions list
@@ -176,6 +188,27 @@ export const WalletProvider: React.FC<{ children: React.ReactNode }> = ({ childr
     }
   };
 
+  // Reset wallet data - permanently deletes incomplete transactions and clears local state
+  const resetWalletData = useCallback(async () => {
+    try {
+      // Delete incomplete transactions from database
+      const success = await walletService.clearIncompleteTransactions();
+      
+      if (success) {
+        console.log('Successfully cleared incomplete transactions from database');
+      } else {
+        console.warn('Failed to clear transactions from database, clearing local state only');
+      }
+    } catch (error) {
+      console.error('Error clearing transactions from database:', error);
+    }
+    
+    // Clear local state regardless of database operation result
+    setTransactions([]);
+    setPendingTransactions([]);
+    setWalletData(prevData => prevData ? { ...prevData, balance: 0 } : null);
+  }, []);
+
   const value: WalletContextType = {
     balance: walletData?.balance || 0,
     walletData,
@@ -190,6 +223,7 @@ export const WalletProvider: React.FC<{ children: React.ReactNode }> = ({ childr
     refreshWallet,
     refreshTransactions,
     refreshPendingTransactions,
+    resetWalletData,
   };
 
   return <WalletContext.Provider value={value}>{children}</WalletContext.Provider>;
