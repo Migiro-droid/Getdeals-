@@ -1,7 +1,30 @@
-// M-Pesa Callback Handler for GetDeals Kenya
-// This endpoint receives callbacks from Safaricom M-Pesa API
+import { VercelRequest, VercelResponse } from '@vercel/node';
+import { createClient } from '@supabase/supabase-js';
 
-export default async function handler(req, res) {
+// Initialize Supabase client
+const supabase = createClient(
+  process.env.SUPABASE_URL!,
+  process.env.SUPABASE_SERVICE_ROLE_KEY!
+);
+
+interface MpesaCallbackData {
+  Body: {
+    stkCallback: {
+      MerchantRequestID: string;
+      CheckoutRequestID: string;
+      ResultCode: number;
+      ResultDesc: string;
+      CallbackMetadata?: {
+        Item: Array<{
+          Name: string;
+          Value: any;
+        }>;
+      };
+    };
+  };
+}
+
+export default async function handler(req: VercelRequest, res: VercelResponse) {
   // Only allow POST requests
   if (req.method !== 'POST') {
     return res.status(405).json({ 
@@ -13,18 +36,31 @@ export default async function handler(req, res) {
   try {
     console.log('📞 M-Pesa Callback received:', JSON.stringify(req.body, null, 2));
 
-    const callbackData = req.body;
+    const callbackData: MpesaCallbackData = req.body;
+    
+    // Basic validation - ensure callback structure is correct
+    if (!callbackData?.Body?.stkCallback) {
+      console.error('❌ Invalid callback structure');
+      return res.status(400).json({ 
+        success: false, 
+        error: 'Invalid callback structure' 
+      });
+    }
+
     const { stkCallback } = callbackData.Body;
+    const checkoutRequestId = stkCallback.CheckoutRequestID;
+    const merchantRequestId = stkCallback.MerchantRequestID;
+    const resultCode = stkCallback.ResultCode;
+    const resultDesc = stkCallback.ResultDesc;
 
-    const paymentResult = {
-      merchantRequestId: stkCallback.MerchantRequestID,
-      checkoutRequestId: stkCallback.CheckoutRequestID,
-      resultCode: stkCallback.ResultCode,
-      resultDesc: stkCallback.ResultDesc,
-      timestamp: new Date().toISOString(),
-    };
+    console.log('📋 Processing callback:', {
+      checkoutRequestId,
+      merchantRequestId,
+      resultCode,
+      resultDesc
+    });
 
-    if (stkCallback.ResultCode === 0) {
+    if (resultCode === 0) {
       // Payment successful
       const callbackMetadata = stkCallback.CallbackMetadata?.Item || [];
       
@@ -38,37 +74,104 @@ export default async function handler(req, res) {
         mpesaReceiptNumber,
         transactionDate,
         phoneNumber,
-        checkoutRequestId: stkCallback.CheckoutRequestID
+        checkoutRequestId
       });
 
-      // TODO: Update your database with successful payment
-      // Example:
-      // await updateOrderPaymentStatus(stkCallback.CheckoutRequestID, 'completed', {
-      //   amount,
-      //   mpesaReceiptNumber,
-      //   transactionDate,
-      //   phoneNumber
-      // });
+      // Update payment record in Supabase
+      const { error: updatePaymentError } = await supabase
+        .from('payments')
+        .update({
+          status: 'success',
+          mpesa_receipt_number: mpesaReceiptNumber,
+          transaction_date: transactionDate,
+          processed_at: new Date().toISOString(),
+          updated_at: new Date().toISOString()
+        })
+        .eq('transaction_id', checkoutRequestId);
 
-      // TODO: Send confirmation email/SMS to customer
-      // TODO: Update order status
-      // TODO: Trigger any post-payment workflows
+      if (updatePaymentError) {
+        console.error('❌ Error updating payment record:', updatePaymentError);
+      } else {
+        console.log('✅ Payment record updated successfully');
+      }
+
+      // Get the payment record to find the associated order
+      const { data: payment, error: getPaymentError } = await supabase
+        .from('payments')
+        .select('order_id, amount')
+        .eq('transaction_id', checkoutRequestId)
+        .single();
+
+      if (getPaymentError) {
+        console.error('❌ Error fetching payment record:', getPaymentError);
+      } else if (payment?.order_id) {
+        // Update order status to confirmed
+        const { error: updateOrderError } = await supabase
+          .from('orders')
+          .update({
+            status: 'CONFIRMED',
+            payment_status: 'paid',
+            updated_at: new Date().toISOString()
+          })
+          .eq('id', payment.order_id);
+
+        if (updateOrderError) {
+          console.error('❌ Error updating order status:', updateOrderError);
+        } else {
+          console.log('✅ Order status updated to CONFIRMED');
+        }
+
+        // TODO: Send confirmation notifications (SMS/Email)
+        // TODO: Update inventory if needed
+        // TODO: Trigger any post-payment workflows
+      }
 
     } else {
       // Payment failed
       console.log('❌ Payment failed:', {
-        resultCode: stkCallback.ResultCode,
-        resultDesc: stkCallback.ResultDesc,
-        checkoutRequestId: stkCallback.CheckoutRequestID
+        resultCode,
+        resultDesc,
+        checkoutRequestId
       });
 
-      // TODO: Update your database with failed payment
-      // await updateOrderPaymentStatus(stkCallback.CheckoutRequestID, 'failed', {
-      //   error: stkCallback.ResultDesc
-      // });
+      // Update payment record as failed
+      const { error: updatePaymentError } = await supabase
+        .from('payments')
+        .update({
+          status: 'failed',
+          failure_reason: resultDesc,
+          processed_at: new Date().toISOString(),
+          updated_at: new Date().toISOString()
+        })
+        .eq('transaction_id', checkoutRequestId);
+
+      if (updatePaymentError) {
+        console.error('❌ Error updating failed payment record:', updatePaymentError);
+      }
+
+      // Get the payment record to find the associated order
+      const { data: payment } = await supabase
+        .from('payments')
+        .select('order_id')
+        .eq('transaction_id', checkoutRequestId)
+        .single();
+
+      if (payment?.order_id) {
+        // Update order status to payment failed
+        await supabase
+          .from('orders')
+          .update({
+            status: 'PAYMENT_FAILED',
+            payment_status: 'failed',
+            updated_at: new Date().toISOString()
+          })
+          .eq('id', payment.order_id);
+
+        console.log('✅ Order status updated to PAYMENT_FAILED');
+      }
     }
 
-    // Always respond with success to M-Pesa
+    // Always respond with success to M-Pesa to prevent retries
     res.status(200).json({ 
       success: true,
       message: 'Callback processed successfully' 
