@@ -175,7 +175,7 @@ export default function HomePage() {
     {
       icon: Shield,
       title: "Secure Payments",
-      description: "Multiple payment options including M-Pesa and cards"
+      description: "Multiple payment options including Mobile Money and cards"
     },
     {
       icon: Clock,
@@ -203,7 +203,7 @@ export default function HomePage() {
     {
       number: "4",
       title: "Make Payment",
-  description: "Pay securely using M-Pesa, Card, or GetDeals Wallet"
+  description: "Pay securely using Mobile Money, Card, or GetDeals Wallet"
     }
   ];
 

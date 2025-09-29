@@ -977,6 +977,45 @@ app.post('/api/admin/notifications/sms', authMiddleware, async (req, res) => {
   }
 });
 
+// --- Admin User Creation Email Endpoint ---
+app.post('/api/admin/send-credentials', authMiddleware, async (req, res) => {
+  try {
+    const { name, email, password, role, permissions } = req.body;
+
+    if (!name || !email || !password || !role || !permissions) {
+      return res.status(400).json({ message: 'All fields are required' });
+    }
+
+    const result = await emailService.sendAdminCredentials({
+      name,
+      email,
+      password,
+      role,
+      permissions
+    });
+
+    if (result.success) {
+      res.json({ 
+        success: true, 
+        message: 'Admin credentials email sent successfully',
+        messageId: result.messageId 
+      });
+    } else {
+      res.status(500).json({ 
+        success: false, 
+        message: 'Failed to send admin credentials email',
+        error: result.error 
+      });
+    }
+  } catch (error) {
+    console.error('Send admin credentials error:', error);
+    res.status(500).json({ 
+      success: false, 
+      message: 'Failed to send admin credentials email' 
+    });
+  }
+});
+
 app.get('/api/admin/orders', authMiddleware, async (req, res) => {
   try {
     const { data: orders, error } = await supabase

@@ -26,8 +26,8 @@ app.use(helmet({
 // CORS configuration for production
 const corsOptions = {
   origin: process.env.NODE_ENV === 'production' 
-    ? process.env.ALLOWED_ORIGINS?.split(',') || []
-    : ['http://localhost:3000', 'http://localhost:4000', 'http://localhost:5173'],
+    ? process.env.ALLOWED_ORIGINS?.split(',') || ['http://localhost:8080', 'https://getdeals.co.ke']
+    : ['http://localhost:3000', 'http://localhost:4000', 'http://localhost:5173', 'http://localhost:8080'],
   credentials: true,
   methods: ['GET', 'POST'],
   allowedHeaders: ['Content-Type', 'Authorization']
@@ -73,7 +73,6 @@ const rateLimit = (req, res, next) => {
   next();
 };
 
-// Request validation middleware
 const validateSTKPushRequest = (req, res, next) => {
   const { phoneNumber, amount, orderReference } = req.body;
 

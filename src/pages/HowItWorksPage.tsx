@@ -48,7 +48,7 @@ export default function HowItWorksPage() {
       number: "4",
       icon: CreditCard,
       title: "Make Payment",
-      description: "Pay securely using M-Pesa, Rukisha Wallet, or Card.",
+      description: "Pay securely using Mobile Money, Rukisha Wallet, or Card.",
       details: [
         "Multiple payment options",
         "Secure payment processing",
@@ -86,8 +86,8 @@ export default function HowItWorksPage() {
 
   const paymentMethods = [
     {
-      name: "M-Pesa",
-      description: "Pay instantly with M-Pesa - Kenya's most trusted mobile money service",
+      name: "Mobile Money",
+      description: "Pay instantly with M-Pesa or Airtel Money - Kenya's trusted mobile money services",
       icon: Phone
     },
     {

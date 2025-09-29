@@ -30,6 +30,7 @@ export default function CheckoutPage() {
   const [deliveryMethod, setDeliveryMethod] = useState("pickup");
   const [paymentMethod, setPaymentMethod] = useState("wallet");
   const [paymentStatus, setPaymentStatus] = useState<"idle" | "processing" | "success" | "failed">("idle");
+
   
   const [firstName, setFirstName] = useState("");
   const [lastName, setLastName] = useState("");
@@ -40,10 +41,10 @@ export default function CheckoutPage() {
   const [selectedPickupLocationData, setSelectedPickupLocationData] = useState<PickupLocation | null>(null);
   
   const [mpesaPhone, setMpesaPhone] = useState("");
+  const [mobileMoneyProvider, setMobileMoneyProvider] = useState("mpesa");
   const [pickupLocations, setPickupLocations] = useState<PickupLocation[]>([]);
   const [loadingLocations, setLoadingLocations] = useState(false);
 
-  // Load pickup locations on component mount
   useEffect(() => {
     loadPickupLocations();
   }, []);
@@ -52,13 +53,11 @@ export default function CheckoutPage() {
     try {
       setLoadingLocations(true);
       
-      // First try to load from service
       const { data, error } = await PickupLocationService.getActiveLocations();
       
       if (data && data.length > 0) {
         setPickupLocations(data);
       } else {
-        // Fallback to legacy Quickmart locations if service fails
         const fallbackLocations: PickupLocation[] = [
           {
             id: 'lavington',
@@ -175,7 +174,6 @@ export default function CheckoutPage() {
       }
     } catch (error) {
       console.error('Error loading pickup locations:', error);
-      // Still set fallback locations on error
       toast({
         title: "Info",
         description: "Using default pickup locations.",
@@ -212,10 +210,11 @@ export default function CheckoutPage() {
 
   const initiateSTKPush = async (amount: number, phoneNumber: string, orderReference: string) => {
     try {
-      const baseUrl = getApiBase();
-      console.log('Initiating STK Push with base URL:', baseUrl);
+      // Use M-Pesa microservice - production ready
+      const mpesaServiceUrl = import.meta.env.VITE_MPESA_SERVICE_URL || 'http://localhost:3001';
+      console.log('Initiating STK Push with M-Pesa microservice:', mpesaServiceUrl);
       
-      const response = await fetch(`${baseUrl}/api/payments/mpesa/stk-push`, {
+      const response = await fetch(`${mpesaServiceUrl}/api/payments/mpesa/stk-push`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -257,20 +256,6 @@ export default function CheckoutPage() {
     } catch (error) {
       console.error('STK Push error:', error);
       
-      // Fallback for development: simulate successful STK Push if API is not available
-      if (error instanceof TypeError && error.message.includes('fetch')) {
-        console.log('Payment API server not available, using mock STK Push');
-        const mockResult = {
-          success: true,
-          checkoutRequestId: `ws_CO_${Date.now()}`,
-          merchantRequestId: `mr_${Date.now()}`,
-          responseCode: '0',
-          responseDescription: 'Success. Request accepted for processing',
-          customerMessage: 'Mock: Please enter your M-Pesa PIN to complete the transaction'
-        };
-        return mockResult;
-      }
-      
       return { 
         success: false, 
         error: error instanceof Error ? error.message : 'Payment failed' 
@@ -280,8 +265,8 @@ export default function CheckoutPage() {
 
   const checkPaymentStatus = async (checkoutRequestId: string) => {
     try {
-      const baseUrl = getApiBase();
-      const response = await fetch(`${baseUrl}/api/payments/mpesa/query/${checkoutRequestId}`);
+      const mpesaServiceUrl = import.meta.env.VITE_MPESA_SERVICE_URL || 'http://localhost:3001';
+      const response = await fetch(`${mpesaServiceUrl}/api/payments/mpesa/query/${checkoutRequestId}`);
 
       const responseText = await response.text();
       console.log('Payment status response text:', responseText);
@@ -305,17 +290,6 @@ export default function CheckoutPage() {
       }
     } catch (error) {
       console.error('Payment status check error:', error);
-      
-      if (error instanceof TypeError && error.message.includes('fetch')) {
-        console.log('Payment status API not available, simulating payment completion');
-        return { 
-          success: true, 
-          status: 'completed',
-          resultCode: '0',
-          resultDesc: 'Mock: The service request is processed successfully.'
-        };
-      }
-      
       return { success: false, error: error instanceof Error ? error.message : 'Status check failed' };
     }
   };
@@ -408,11 +382,11 @@ export default function CheckoutPage() {
       return;
     }
 
-    if (paymentMethod === 'mpesa' && !mpesaPhone.trim()) {
+    if (paymentMethod === 'mobile-money' && !mpesaPhone.trim()) {
       toast({
         variant: 'destructive',
-        title: 'M-Pesa Phone Required',
-        description: 'Please provide your M-Pesa phone number.',
+        title: `${mobileMoneyProvider === 'mpesa' ? 'M-Pesa' : 'Airtel Money'} Phone Required`,
+        description: `Please provide your ${mobileMoneyProvider === 'mpesa' ? 'M-Pesa' : 'Airtel Money'} phone number.`,
       });
       return;
     }
@@ -421,83 +395,160 @@ export default function CheckoutPage() {
     setPaymentStatus("processing");
 
     try {
-      if (paymentMethod === "mpesa") {
-        // Handle M-Pesa payment
+      if (paymentMethod === "mobile-money") {
+        // Handle Mobile Money payment (M-Pesa or Airtel Money) - PAYMENT FIRST APPROACH
         const phoneToUse = mpesaPhone || phone;
         if (!phoneToUse) {
-          throw new Error("Phone number is required for M-Pesa payment");
+          throw new Error(`Phone number is required for ${mobileMoneyProvider === 'mpesa' ? 'M-Pesa' : 'Airtel Money'} payment`);
         }
 
         const orderReference = `GD${Date.now()}${Math.random().toString(36).substr(2, 4).toUpperCase()}`;
 
+        console.log('Initiating STK Push for:', { amount: finalTotal, phone: phoneToUse, orderReference });
+        
         const stkResult = await initiateSTKPush(finalTotal, phoneToUse, orderReference);
 
         if (!stkResult.success) {
-          throw new Error(stkResult.error || "Failed to initiate M-Pesa payment");
+          setPaymentStatus("failed");
+          toast({
+            title: "Payment Initiation Failed",
+            description: stkResult.error || "Failed to initiate M-Pesa payment. Please try again.",
+            variant: "destructive",
+          });
+          setIsLoading(false);
+          return; 
         }
 
-        const orderData = {
-          items,
-          deliveryMethod,
-          deliveryAddress: deliveryMethod === "speedy" ? address : undefined,
-          paymentMethod,
-          mpesaPhone: formatPhoneNumber(phoneToUse),
-          checkoutRequestId: stkResult.checkoutRequestId,
-          merchantRequestId: stkResult.merchantRequestId,
-        };
 
-        // Create order with M-Pesa details
-        const orderResult = await createOrder(orderData);
 
-        if (!orderResult.success) {
-          throw new Error(orderResult.error || "Failed to create order");
-        }
+        const providerName = mobileMoneyProvider === 'mpesa' ? 'M-Pesa' : 'Airtel Money';
         toast({
-          title: "M-Pesa Payment Initiated! 📱",
-          description: `Please check your phone (${phoneToUse}) and enter your M-Pesa PIN to complete the payment.`,
+          title: `${providerName} Payment Initiated! 📱`,
+          description: `Please check your phone (${phoneToUse}) and enter your ${providerName} PIN to complete the payment. DO NOT REFRESH THE PAGE.`,
         });
 
-        // Poll for payment status
-        const maxAttempts = 20;
+ 
+        let paymentConfirmed = false;
+        let orderCreated = false;
+        const maxAttempts = 30; 
         let attempts = 0;
 
         const checkStatus = async () => {
-          if (attempts >= maxAttempts) {
-            setPaymentStatus("failed");
-            toast({
-              title: "Payment Timeout",
-              description: "Payment verification timed out. Please contact support if money was deducted.",
-              variant: "destructive",
-            });
-            return;
-          }
+            if (attempts >= maxAttempts) {
+              setPaymentStatus("failed");
+              setIsLoading(false);
+              toast({
+                title: "Payment Timeout ⏰",
+                description: "Payment verification timed out. If money was deducted, please contact support with order reference: " + orderReference,
+                variant: "destructive",
+              });
+              return;
+            }          attempts++;
+          console.log(`🔍 Checking payment status... Attempt ${attempts}/${maxAttempts}`);
+          
+          try {
+            const statusResult = await checkPaymentStatus(stkResult.checkoutRequestId);
+            console.log('💳 Payment status result:', statusResult);
 
-          attempts++;
-          const statusResult = await checkPaymentStatus(stkResult.checkoutRequestId);
+            // Payment successful - NOW create the order
+            if (statusResult.success && (statusResult.resultCode === '0' || statusResult.resultCode === 0)) {
+              if (!paymentConfirmed) {
+                paymentConfirmed = true;
+                console.log(' Payment confirmed! Creating order...');
+                
+                // Step 3: Create order ONLY after payment is confirmed
+                const orderData = {
+                  items,
+                  deliveryMethod,
+                  deliveryAddress: deliveryMethod === "speedy" ? address : undefined,
+                  paymentMethod,
+                  mobileMoneyProvider,
+                  mpesaPhone: formatPhoneNumber(phoneToUse),
+                  checkoutRequestId: stkResult.checkoutRequestId,
+                  merchantRequestId: stkResult.merchantRequestId,
+                  paymentReference: orderReference,
+                  paymentConfirmed: true,
+                  mpesaReceiptNumber: statusResult.mpesaReceiptNumber || 'N/A',
+                  paymentAmount: finalTotal,
+                };
 
-          if (statusResult.success && statusResult.status === "completed") {
-            setPaymentStatus("success");
-            toast({
-              title: "Payment Successful! ✅",
-              description: "Your order has been confirmed and you'll receive an SMS shortly.",
-            });
-            clearCart();
-            setTimeout(() => {
-              navigate(`/account?tab=orders&orderId=${orderResult.order.id}`);
-            }, 2000);
-          } else if (statusResult.success && statusResult.status === "failed") {
-            setPaymentStatus("failed");
-            toast({
-              title: "Payment Failed",
-              description: statusResult.error || "M-Pesa payment was not completed.",
-              variant: "destructive",
-            });
-          } else {
-            setTimeout(checkStatus, 6000);
+                const orderResult = await createOrder(orderData);
+
+                if (orderResult.success) {
+                  orderCreated = true;
+                  setPaymentStatus("success");
+                  toast({
+                    title: "Payment Successful! ✅",
+                    description: `Your order has been confirmed! Receipt: ${statusResult.mpesaReceiptNumber || 'N/A'}`,
+                  });
+                  clearCart();
+                  setTimeout(() => {
+                    navigate(`/account?tab=orders&orderId=${orderResult.order.id}`);
+                  }, 2000);
+                } else {
+                  setPaymentStatus("failed");
+                  toast({
+                    title: "Order Creation Failed",
+                    description: "Payment was successful but order creation failed. Please contact support with receipt: " + (statusResult.mpesaReceiptNumber || orderReference),
+                    variant: "destructive",
+                  });
+                  setIsLoading(false);
+                }
+              }
+              return; // Stop polling
+            }
+            
+            // Payment explicitly failed
+            else if (statusResult.success && (
+              statusResult.resultCode === '1032' || // User cancelled
+              statusResult.resultCode === '1037' || // Payment timeout
+              statusResult.resultCode === '1' ||    // Insufficient funds
+              statusResult.resultCode === '1001' || // Unable to complete
+              statusResult.resultCode === '2029'    // STK push not delivered/timeout
+            )) {
+              setPaymentStatus("failed");
+              setIsLoading(false);
+              
+              let errorMessage = "Payment was not completed.";
+              if (statusResult.resultCode === '1032') errorMessage = "Payment was cancelled by user.";
+              else if (statusResult.resultCode === '1037') errorMessage = "Payment timed out.";
+              else if (statusResult.resultCode === '1') errorMessage = "Insufficient funds in M-Pesa account.";
+              else if (statusResult.resultCode === '2029') {
+                errorMessage = "Payment request didn't reach your phone. Please ensure you have good network coverage and try again.";
+              }
+              
+              toast({
+                title: "Payment Failed",
+                description: errorMessage + " Please try again.",
+                variant: "destructive",
+              });
+              return; // Stop polling
+            }
+            
+            // Payment still pending - continue polling
+            else {
+              console.log(`⏳ Payment still pending... (${attempts}/${maxAttempts})`);
+              setTimeout(checkStatus, 6000); // Check again in 6 seconds
+            }
+            
+          } catch (error) {
+            console.error('Error checking payment status:', error);
+            if (attempts >= maxAttempts) {
+              setPaymentStatus("failed");
+              setIsLoading(false);
+              toast({
+                title: "Payment Verification Error",
+                description: "Unable to verify payment status. Please check your M-Pesa messages or contact support.",
+                variant: "destructive",
+              });
+            } else {
+              setTimeout(checkStatus, 6000); // Try again
+            }
           }
         };
 
-        setTimeout(checkStatus, 3000);
+        // Start checking payment status after 5 seconds
+        setTimeout(checkStatus, 5000);
       } else {
         // Handle wallet and other payment methods
         if (paymentMethod === "wallet") {
@@ -548,7 +599,7 @@ export default function CheckoutPage() {
           const cashback = Math.round(finalTotal * 0.05);
           
           toast({
-            title: "✅ Wallet Payment Successful!",
+            title: " Wallet Payment Successful!",
             description: `Payment of KES ${finalTotal.toLocaleString()} deducted from your wallet. You've earned KES ${cashback} cashback!`,
             duration: 8000,
           });
@@ -857,36 +908,68 @@ export default function CheckoutPage() {
                             </div>
                           )}
                         </div>
-                        <div className="text-right">
-                          <div className="text-xs text-green-600">Save KES 50</div>
-                          <div className="text-xs text-gray-500 line-through">KES 50 fee</div>
-                        </div>
+
                       </div>
                     </Label>
                   </div>
 
                   <div className="flex items-center space-x-2 p-3 border border-gray-200 rounded-lg hover:bg-gray-50 transition-colors mt-2">
-                    <RadioGroupItem value="mpesa" id="mpesa" />
-                    <Label htmlFor="mpesa" className="flex-1 cursor-pointer">
-                      <div className="font-medium">M-Pesa</div>
+                    <RadioGroupItem value="mobile-money" id="mobile-money" />
+                    <Label htmlFor="mobile-money" className="flex-1 cursor-pointer">
+                      <div className="font-medium">Mobile Money</div>
                       <div className="text-sm text-muted-foreground">
-                        Pay with M-Pesa mobile money (+KES 50 fee)
+                        Pay with M-Pesa or Airtel Money
                       </div>
                     </Label>
                   </div>
                 </RadioGroup>
 
-                {paymentMethod === "mpesa" && (
-                  <div className="mt-4">
-                    <Label htmlFor="mpesaPhone">M-Pesa Phone Number</Label>
-                    <Input
-                      id="mpesaPhone"
-                      type="tel"
-                      value={mpesaPhone}
-                      onChange={(e) => setMpesaPhone(e.target.value)}
-                      placeholder="254712345678"
-                      required
-                    />
+                {paymentMethod === "mobile-money" && (
+                  <div className="mt-4 space-y-4">
+                    <div>
+                      <Label className="text-sm font-medium">Choose Mobile Money Provider</Label>
+                      <RadioGroup value={mobileMoneyProvider} onValueChange={setMobileMoneyProvider} className="mt-2">
+                        <div className="flex items-center space-x-2 p-3 border border-gray-200 rounded-lg hover:bg-gray-50 transition-colors">
+                          <RadioGroupItem value="mpesa" id="mpesa-provider" />
+                          <Label htmlFor="mpesa-provider" className="flex-1 cursor-pointer">
+                            <div className="flex items-center justify-between">
+                              <div>
+                                <div className="font-medium text-green-600">M-Pesa</div>
+                                <div className="text-sm text-muted-foreground">Safaricom M-Pesa</div>
+                              </div>
+                            </div>
+                          </Label>
+                        </div>
+                        <div className="flex items-center space-x-2 p-3 border border-gray-200 rounded-lg hover:bg-gray-50 transition-colors">
+                          <RadioGroupItem value="airtel" id="airtel-provider" />
+                          <Label htmlFor="airtel-provider" className="flex-1 cursor-pointer">
+                            <div className="flex items-center justify-between">
+                              <div>
+                                <div className="font-medium text-red-600">Airtel Money</div>
+                                <div className="text-sm text-muted-foreground">Airtel Kenya</div>
+                              </div>
+                            </div>
+                          </Label>
+                        </div>
+                      </RadioGroup>
+                    </div>
+                    
+                    <div>
+                      <Label htmlFor="mobileMoneyPhone">
+                        {mobileMoneyProvider === "mpesa" ? "M-Pesa" : "Airtel Money"} Phone Number
+                      </Label>
+                      <Input
+                        id="mobileMoneyPhone"
+                        type="tel"
+                        value={mpesaPhone}
+                        onChange={(e) => setMpesaPhone(e.target.value)}
+                        placeholder={mobileMoneyProvider === "mpesa" ? "254712345678 (M-Pesa)" : "254712345678 (Airtel)"}
+                        required
+                      />
+                      <p className="text-xs text-muted-foreground mt-1">
+                        Enter your {mobileMoneyProvider === "mpesa" ? "M-Pesa registered" : "Airtel Money registered"} phone number
+                      </p>
+                    </div>
                   </div>
                 )}
               </CardContent>
@@ -952,10 +1035,10 @@ export default function CheckoutPage() {
                     (paymentMethod === "wallet" && balance < finalTotal)
                   }
                 >
-                  {paymentStatus === "processing" && paymentMethod === "mpesa" ? (
+                  {paymentStatus === "processing" && paymentMethod === "mobile-money" ? (
                     <>
                       <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></div>
-                      Waiting for M-Pesa...
+                      Waiting for {mobileMoneyProvider === 'mpesa' ? 'M-Pesa' : 'Airtel Money'}...
                     </>
                   ) : paymentStatus === "processing" && paymentMethod === "wallet" ? (
                     <>
@@ -967,10 +1050,10 @@ export default function CheckoutPage() {
                       <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></div>
                       Processing...
                     </>
-                  ) : paymentMethod === "mpesa" ? (
+                  ) : paymentMethod === "mobile-money" ? (
                     <>
                       <Smartphone className="h-4 w-4 mr-2" />
-                      Pay with M-Pesa
+                      Pay with {mobileMoneyProvider === 'mpesa' ? 'M-Pesa' : 'Airtel Money'}
                     </>
                   ) : paymentMethod === "wallet" ? (
                     <>
@@ -981,12 +1064,29 @@ export default function CheckoutPage() {
                     "Place Order"
                   )}
                 </Button>
+
+
+
+                {/* Payment Status Messages */}
+                {paymentStatus === "success" && (
+                  <div className="text-center py-4 bg-green-50 rounded-lg border border-green-200">
+                    <div className="text-green-600 font-medium">✅ Payment Successful!</div>
+                    <p className="text-xs text-green-500 mt-1">Redirecting to your orders...</p>
+                  </div>
+                )}
+
+                {paymentStatus === "failed" && (
+                  <div className="text-center py-4 bg-red-50 rounded-lg border border-red-200">
+                    <div className="text-red-600 font-medium">❌ Payment Failed</div>
+                    <p className="text-xs text-red-500 mt-1">Please try again or contact support</p>
+                  </div>
+                )}
                 
-                {paymentMethod === "mpesa" && (
+                {paymentMethod === "mobile-money" && (
                   <div className="text-xs text-center text-muted-foreground space-y-1">
-                    <p>• You'll receive an STK Push on your phone</p>
-                    <p>• Enter your M-Pesa PIN to complete payment</p>
-                    <p>• Payment confirmation is instant</p>
+                    <p>• You'll receive a payment prompt on your phone</p>
+                    <p>• Enter your {mobileMoneyProvider === 'mpesa' ? 'M-Pesa' : 'Airtel Money'} PIN to complete payment</p>
+                    <p>• Your order will be created only after successful payment</p>
                   </div>
                 )}
 

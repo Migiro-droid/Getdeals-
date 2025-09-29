@@ -55,6 +55,13 @@ class MpesaService {
       // Format phone number (remove + and ensure it starts with 254)
       const formattedPhone = phoneNumber.replace(/^\+?/, '').replace(/^0/, '254');
       console.log('📞 Formatted phone:', formattedPhone);
+      
+      // Validate phone number format
+      if (!formattedPhone.startsWith('254') || formattedPhone.length !== 12) {
+        console.error('❌ Invalid phone number format:', formattedPhone);
+        console.error('Expected format: 254XXXXXXXXX (12 digits)');
+        throw new Error(`Invalid phone number format: ${formattedPhone}. Expected format: 254XXXXXXXXX`);
+      }
 
       const stkPushData = {
         BusinessShortCode: this.shortcode,
@@ -71,6 +78,13 @@ class MpesaService {
       };
 
       console.log('📤 STK Push payload:', JSON.stringify(stkPushData, null, 2));
+      console.log('🔔 STK Push should appear on phone:', formattedPhone);
+      console.log('💰 Amount:', amount, 'KES');
+      console.log('📱 If STK push doesn\'t appear, check:');
+      console.log('   - Phone has 3G/4G network');
+      console.log('   - M-Pesa account is active');
+      console.log('   - Phone number is correct');
+      console.log('   - No ongoing USSD session');
 
       const response = await axios.post(
         `${this.baseUrl}/mpesa/stkpush/v1/processrequest`,

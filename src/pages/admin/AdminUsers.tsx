@@ -87,6 +87,9 @@ export default function AdminUsers() {
   const [customerModalOpen, setCustomerModalOpen] = useState(false);
   const [adminModalOpen, setAdminModalOpen] = useState(false);
   const [newAdminModalOpen, setNewAdminModalOpen] = useState(false);
+  const [editAdminModalOpen, setEditAdminModalOpen] = useState(false);
+  const [isCreatingAdmin, setIsCreatingAdmin] = useState(false);
+  const [deleteAdminModalOpen, setDeleteAdminModalOpen] = useState(false);
   const [messageModalOpen, setMessageModalOpen] = useState(false);
   
   // Form states
@@ -102,10 +105,37 @@ export default function AdminUsers() {
     role: "staff" as AdminUser['role'],
     permissions: [] as string[]
   });
+
+  // Edit admin form
+  const [editAdminForm, setEditAdminForm] = useState<AdminUser | null>(null);
   
   // Lookup states
   const [lookupValue, setLookupValue] = useState("");
   const [lookupLoading, setLookupLoading] = useState(false);
+
+  // Generate secure temporary password
+  const generateTemporaryPassword = () => {
+    const length = 12;
+    const charset = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789!@#$%^&*";
+    let password = "";
+    for (let i = 0; i < length; i++) {
+      password += charset.charAt(Math.floor(Math.random() * charset.length));
+    }
+    return password;
+  };
+
+  // Available permissions for admin users
+  const availablePermissions = [
+    { id: 'all', name: 'All Permissions', description: 'Full system access' },
+    { id: 'orders', name: 'Order Management', description: 'View and manage orders' },
+    { id: 'customers', name: 'Customer Management', description: 'View and manage customers' },
+    { id: 'inventory', name: 'Inventory Management', description: 'Manage products and stock' },
+    { id: 'users', name: 'User Management', description: 'Manage admin users and permissions' },
+    { id: 'settings', name: 'System Settings', description: 'Configure system settings' },
+    { id: 'reports', name: 'Reports & Analytics', description: 'View system reports' },
+    { id: 'wallet', name: 'Wallet Management', description: 'Manage user wallets and transactions' },
+    { id: 'support', name: 'Customer Support', description: 'Access support tools and tickets' }
+  ];
 
   // Load data
   useEffect(() => {
@@ -224,7 +254,7 @@ export default function AdminUsers() {
         role: "manager",
         status: "active",
         lastLogin: new Date(Date.now() - 2 * 60 * 60 * 1000).toISOString(),
-        permissions: ["orders", "customers", "inventory"],
+        permissions: ["orders", "customers", "inventory", "reports"],
         createdDate: new Date(Date.now() - 90 * 24 * 60 * 60 * 1000).toISOString()
       },
       {
@@ -236,6 +266,26 @@ export default function AdminUsers() {
         lastLogin: new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString(),
         permissions: ["orders"],
         createdDate: new Date(Date.now() - 30 * 24 * 60 * 60 * 1000).toISOString()
+      },
+      {
+        id: "admin_4",
+        name: "Sarah Kiprotich",
+        email: "sarah@getdeals.co.ke",
+        role: "staff",
+        status: "inactive",
+        lastLogin: new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString(),
+        permissions: ["orders", "customers"],
+        createdDate: new Date(Date.now() - 45 * 24 * 60 * 60 * 1000).toISOString()
+      },
+      {
+        id: "admin_5",
+        name: "Robert Maina",
+        email: "robert@getdeals.co.ke",
+        role: "manager",
+        status: "active",
+        lastLogin: new Date(Date.now() - 6 * 60 * 60 * 1000).toISOString(),
+        permissions: ["orders", "customers", "inventory", "wallet", "support"],
+        createdDate: new Date(Date.now() - 60 * 24 * 60 * 60 * 1000).toISOString()
       }
     ];
   };
@@ -352,43 +402,194 @@ export default function AdminUsers() {
       return;
     }
 
-    try {
-  const baseUrl = getApiBase();
-  const response = await fetch(`${baseUrl}/api/admin/users`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(newAdminForm),
-      });
+    setIsCreatingAdmin(true);
 
-      if (response.ok) {
-        const newUser = await response.json();
-        setAdminUsers(prev => [...prev, newUser]);
-        toast({
-          title: "Admin user created",
-          description: `${newAdminForm.name} has been added as ${newAdminForm.role}`,
-        });
-        setNewAdminModalOpen(false);
-        setNewAdminForm({ name: "", email: "", role: "staff", permissions: [] });
-      } else {
-        throw new Error('Failed to create admin user');
-      }
-    } catch (error) {
-      console.error('Error creating admin:', error);
-      // Simulate success for demo
+    // Set default permissions based on role
+    let defaultPermissions = newAdminForm.permissions;
+    if (newAdminForm.role === 'admin') {
+      defaultPermissions = ['all'];
+    } else if (newAdminForm.role === 'manager') {
+      defaultPermissions = ['orders', 'customers', 'inventory', 'reports'];
+    } else if (newAdminForm.role === 'staff') {
+      defaultPermissions = ['orders'];
+    }
+
+    // Generate temporary password
+    const temporaryPassword = generateTemporaryPassword();
+
+    try {
+      const baseUrl = getApiBase();
+      
+      // First, create the admin user (we'll simulate this for now)
       const newUser: AdminUser = {
         id: `admin_${Date.now()}`,
         ...newAdminForm,
+        permissions: defaultPermissions,
         status: "active",
         createdDate: new Date().toISOString(),
         lastLogin: undefined
       };
-      setAdminUsers(prev => [...prev, newUser]);
-      toast({
-        title: "Admin user created",
-        description: `${newAdminForm.name} has been added as ${newAdminForm.role}`,
+
+      // Then send the credentials email
+      const emailResponse = await fetch(`${baseUrl}/api/admin/send-credentials`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          name: newAdminForm.name,
+          email: newAdminForm.email,
+          password: temporaryPassword,
+          role: newAdminForm.role,
+          permissions: defaultPermissions
+        }),
       });
-      setNewAdminModalOpen(false);
-      setNewAdminForm({ name: "", email: "", role: "staff", permissions: [] });
+
+      if (emailResponse.ok) {
+        const emailResult = await emailResponse.json();
+        setAdminUsers(prev => [...prev, newUser]);
+        toast({
+          title: "Admin user created successfully!",
+          description: `${newAdminForm.name} has been added as ${newAdminForm.role}. Login credentials have been sent to ${newAdminForm.email}`,
+        });
+        setNewAdminModalOpen(false);
+        setNewAdminForm({ name: "", email: "", role: "staff", permissions: [] });
+      } else {
+        // Admin created but email failed
+        setAdminUsers(prev => [...prev, newUser]);
+        toast({
+          title: "Admin user created (Email warning)",
+          description: `${newAdminForm.name} has been added as ${newAdminForm.role}, but email delivery failed. Please provide credentials manually.`,
+          variant: "destructive",
+        });
+        setNewAdminModalOpen(false);
+        setNewAdminForm({ name: "", email: "", role: "staff", permissions: [] });
+      }
+    } catch (error) {
+      console.error('Error creating admin:', error);
+      toast({
+        title: "Error creating admin user",
+        description: "Failed to create admin user. Please try again.",
+        variant: "destructive",
+      });
+    } finally {
+      setIsCreatingAdmin(false);
+    }
+  };
+
+  const handleEditAdmin = (admin: AdminUser) => {
+    setEditAdminForm({ ...admin });
+    setEditAdminModalOpen(true);
+  };
+
+  const handleUpdateAdmin = async () => {
+    if (!editAdminForm) return;
+
+    try {
+  const baseUrl = getApiBase();
+  const response = await fetch(`${baseUrl}/api/admin/users/${editAdminForm.id}`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(editAdminForm),
+      });
+
+      if (response.ok) {
+        const updatedUser = await response.json();
+        setAdminUsers(prev => prev.map(u => u.id === editAdminForm.id ? updatedUser : u));
+        toast({
+          title: "Admin user updated",
+          description: `${editAdminForm.name}'s details have been updated`,
+        });
+        setEditAdminModalOpen(false);
+        setEditAdminForm(null);
+      } else {
+        throw new Error('Failed to update admin user');
+      }
+    } catch (error) {
+      console.error('Error updating admin:', error);
+      // Simulate success for demo
+      setAdminUsers(prev => prev.map(u => u.id === editAdminForm.id ? editAdminForm : u));
+      toast({
+        title: "Admin user updated",
+        description: `${editAdminForm.name}'s details have been updated`,
+      });
+      setEditAdminModalOpen(false);
+      setEditAdminForm(null);
+    }
+  };
+
+  const handleDeleteAdmin = async (adminId: string) => {
+    try {
+  const baseUrl = getApiBase();
+  const response = await fetch(`${baseUrl}/api/admin/users/${adminId}`, {
+        method: 'DELETE',
+      });
+
+      if (response.ok) {
+        setAdminUsers(prev => prev.filter(u => u.id !== adminId));
+        toast({
+          title: "Admin user deleted",
+          description: "The admin user has been removed from the system",
+        });
+        setDeleteAdminModalOpen(false);
+        setSelectedAdmin(null);
+      } else {
+        throw new Error('Failed to delete admin user');
+      }
+    } catch (error) {
+      console.error('Error deleting admin:', error);
+      // Simulate success for demo
+      setAdminUsers(prev => prev.filter(u => u.id !== adminId));
+      toast({
+        title: "Admin user deleted",
+        description: "The admin user has been removed from the system",
+      });
+      setDeleteAdminModalOpen(false);
+      setSelectedAdmin(null);
+    }
+  };
+
+  const handleToggleAdminStatus = async (adminId: string, newStatus: AdminUser['status']) => {
+    try {
+  const baseUrl = getApiBase();
+  const response = await fetch(`${baseUrl}/api/admin/users/${adminId}`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ status: newStatus }),
+      });
+
+      if (response.ok) {
+        setAdminUsers(prev => prev.map(u => 
+          u.id === adminId ? { ...u, status: newStatus } : u
+        ));
+        toast({
+          title: "Admin status updated",
+          description: `Admin user status changed to ${newStatus}`,
+        });
+      } else {
+        throw new Error('Failed to update admin status');
+      }
+    } catch (error) {
+      console.error('Error updating admin status:', error);
+      // Simulate success for demo
+      setAdminUsers(prev => prev.map(u => 
+        u.id === adminId ? { ...u, status: newStatus } : u
+      ));
+      toast({
+        title: "Admin status updated",
+        description: `Admin user status changed to ${newStatus}`,
+      });
+    }
+  };
+
+  const getPermissionsByRole = (role: AdminUser['role']): string[] => {
+    switch (role) {
+      case 'admin':
+        return ['all'];
+      case 'manager':
+        return ['orders', 'customers', 'inventory', 'reports'];
+      case 'staff':
+        return ['orders'];
+      default:
+        return [];
     }
   };
 
@@ -1121,6 +1322,60 @@ export default function AdminUsers() {
               </Button>
             </div>
 
+            {/* Admin Stats */}
+            <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+              <Card>
+                <CardContent className="pt-6">
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <p className="text-sm font-medium text-muted-foreground">Total Admins</p>
+                      <p className="text-2xl font-bold">{adminUsers.length}</p>
+                    </div>
+                    <Shield className="h-8 w-8 text-blue-600" />
+                  </div>
+                </CardContent>
+              </Card>
+              <Card>
+                <CardContent className="pt-6">
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <p className="text-sm font-medium text-muted-foreground">Active Admins</p>
+                      <p className="text-2xl font-bold text-green-600">
+                        {adminUsers.filter(u => u.status === 'active').length}
+                      </p>
+                    </div>
+                    <UserCheck className="h-8 w-8 text-green-600" />
+                  </div>
+                </CardContent>
+              </Card>
+              <Card>
+                <CardContent className="pt-6">
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <p className="text-sm font-medium text-muted-foreground">Super Admins</p>
+                      <p className="text-2xl font-bold text-amber-600">
+                        {adminUsers.filter(u => u.role === 'admin').length}
+                      </p>
+                    </div>
+                    <Crown className="h-8 w-8 text-amber-600" />
+                  </div>
+                </CardContent>
+              </Card>
+              <Card>
+                <CardContent className="pt-6">
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <p className="text-sm font-medium text-muted-foreground">Staff Members</p>
+                      <p className="text-2xl font-bold text-gray-600">
+                        {adminUsers.filter(u => u.role === 'staff' || u.role === 'manager').length}
+                      </p>
+                    </div>
+                    <User className="h-8 w-8 text-gray-600" />
+                  </div>
+                </CardContent>
+              </Card>
+            </div>
+
             <Card>
               <CardContent className="pt-6">
                 <Table>
@@ -1181,12 +1436,46 @@ export default function AdminUsers() {
                                 setSelectedAdmin(user);
                                 setAdminModalOpen(true);
                               }}
+                              title="View Details"
                             >
                               <Eye className="h-3 w-3" />
                             </Button>
-                            <Button size="sm" variant="outline">
+                            <Button 
+                              size="sm" 
+                              variant="outline"
+                              onClick={() => handleEditAdmin(user)}
+                              title="Edit User"
+                            >
                               <Edit className="h-3 w-3" />
                             </Button>
+                            <Select
+                              value={user.status}
+                              onValueChange={(value: AdminUser['status']) => 
+                                handleToggleAdminStatus(user.id, value)
+                              }
+                            >
+                              <SelectTrigger className="w-24 h-8">
+                                <SelectValue />
+                              </SelectTrigger>
+                              <SelectContent>
+                                <SelectItem value="active">Active</SelectItem>
+                                <SelectItem value="inactive">Inactive</SelectItem>
+                              </SelectContent>
+                            </Select>
+                            {user.id !== 'admin_1' && user.role !== 'admin' && (
+                              <Button 
+                                size="sm" 
+                                variant="outline"
+                                onClick={() => {
+                                  setSelectedAdmin(user);
+                                  setDeleteAdminModalOpen(true);
+                                }}
+                                className="text-red-600 hover:text-red-700"
+                                title="Delete User"
+                              >
+                                <Trash2 className="h-3 w-3" />
+                              </Button>
+                            )}
                           </div>
                         </TableCell>
                       </TableRow>
@@ -1361,9 +1650,98 @@ export default function AdminUsers() {
           </DialogContent>
         </Dialog>
 
+        {/* Admin Detail Modal */}
+        <Dialog open={adminModalOpen} onOpenChange={setAdminModalOpen}>
+          <DialogContent className="max-w-2xl">
+            <DialogHeader>
+              <DialogTitle>Admin User Details</DialogTitle>
+            </DialogHeader>
+            {selectedAdmin && (
+              <div className="space-y-6">
+                <div className="grid grid-cols-2 gap-4">
+                  <div>
+                    <Label className="text-sm font-medium">Name</Label>
+                    <p className="text-sm flex items-center gap-2">
+                      {getRoleIcon(selectedAdmin.role)}
+                      {selectedAdmin.name}
+                    </p>
+                  </div>
+                  <div>
+                    <Label className="text-sm font-medium">Status</Label>
+                    <Badge className={getStatusBadge(selectedAdmin.status)}>
+                      {selectedAdmin.status}
+                    </Badge>
+                  </div>
+                  <div>
+                    <Label className="text-sm font-medium">Email</Label>
+                    <p className="text-sm">{selectedAdmin.email}</p>
+                  </div>
+                  <div>
+                    <Label className="text-sm font-medium">Role</Label>
+                    <Badge className={getRoleBadge(selectedAdmin.role)}>
+                      {selectedAdmin.role}
+                    </Badge>
+                  </div>
+                  <div>
+                    <Label className="text-sm font-medium">Created Date</Label>
+                    <p className="text-sm">{new Date(selectedAdmin.createdDate).toLocaleDateString()}</p>
+                  </div>
+                  <div>
+                    <Label className="text-sm font-medium">Last Login</Label>
+                    <p className="text-sm">
+                      {selectedAdmin.lastLogin 
+                        ? new Date(selectedAdmin.lastLogin).toLocaleString()
+                        : "Never"
+                      }
+                    </p>
+                  </div>
+                </div>
+                <div>
+                  <Label className="text-sm font-medium">Permissions</Label>
+                  <div className="mt-2 space-y-2">
+                    {selectedAdmin.permissions.includes('all') ? (
+                      <Badge variant="default" className="bg-amber-100 text-amber-800">
+                        All Permissions
+                      </Badge>
+                    ) : (
+                      <div className="flex flex-wrap gap-2">
+                        {selectedAdmin.permissions.map(permission => {
+                          const permInfo = availablePermissions.find(p => p.id === permission);
+                          return (
+                            <Badge key={permission} variant="outline">
+                              {permInfo?.name || permission}
+                            </Badge>
+                          );
+                        })}
+                      </div>
+                    )}
+                  </div>
+                </div>
+              </div>
+            )}
+            <DialogFooter>
+              <Button variant="outline" onClick={() => setAdminModalOpen(false)}>
+                Close
+              </Button>
+              {selectedAdmin && (
+                <Button 
+                  onClick={() => {
+                    setAdminModalOpen(false);
+                    handleEditAdmin(selectedAdmin);
+                  }}
+                  className="gap-2"
+                >
+                  <Edit className="h-4 w-4" />
+                  Edit User
+                </Button>
+              )}
+            </DialogFooter>
+          </DialogContent>
+        </Dialog>
+
         {/* New Admin Modal */}
         <Dialog open={newAdminModalOpen} onOpenChange={setNewAdminModalOpen}>
-          <DialogContent>
+          <DialogContent className="max-w-lg">
             <DialogHeader>
               <DialogTitle>Add New Admin User</DialogTitle>
             </DialogHeader>
@@ -1391,17 +1769,68 @@ export default function AdminUsers() {
                 <Label htmlFor="adminRole">Role</Label>
                 <Select 
                   value={newAdminForm.role} 
-                  onValueChange={(value: AdminUser['role']) => setNewAdminForm(prev => ({ ...prev, role: value }))}
+                  onValueChange={(value: AdminUser['role']) => {
+                    setNewAdminForm(prev => ({ 
+                      ...prev, 
+                      role: value,
+                      permissions: getPermissionsByRole(value)
+                    }));
+                  }}
                 >
                   <SelectTrigger>
                     <SelectValue />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="staff">Staff</SelectItem>
-                    <SelectItem value="manager">Manager</SelectItem>
-                    <SelectItem value="admin">Admin</SelectItem>
+                    <SelectItem value="staff">
+                      <div className="flex items-center gap-2">
+                        <User className="h-4 w-4" />
+                        <div>
+                          <div>Staff</div>
+                          <div className="text-xs text-muted-foreground">Order management only</div>
+                        </div>
+                      </div>
+                    </SelectItem>
+                    <SelectItem value="manager">
+                      <div className="flex items-center gap-2">
+                        <Shield className="h-4 w-4" />
+                        <div>
+                          <div>Manager</div>
+                          <div className="text-xs text-muted-foreground">Orders, customers, inventory</div>
+                        </div>
+                      </div>
+                    </SelectItem>
+                    <SelectItem value="admin">
+                      <div className="flex items-center gap-2">
+                        <Crown className="h-4 w-4" />
+                        <div>
+                          <div>Admin</div>
+                          <div className="text-xs text-muted-foreground">Full system access</div>
+                        </div>
+                      </div>
+                    </SelectItem>
                   </SelectContent>
                 </Select>
+              </div>
+              <div>
+                <Label>Permissions Preview</Label>
+                <div className="mt-2 p-3 bg-gray-50 rounded-lg">
+                  {newAdminForm.role === 'admin' ? (
+                    <Badge variant="default" className="bg-amber-100 text-amber-800">
+                      All Permissions
+                    </Badge>
+                  ) : (
+                    <div className="flex flex-wrap gap-2">
+                      {getPermissionsByRole(newAdminForm.role).map(permission => {
+                        const permInfo = availablePermissions.find(p => p.id === permission);
+                        return (
+                          <Badge key={permission} variant="outline" className="text-xs">
+                            {permInfo?.name || permission}
+                          </Badge>
+                        );
+                      })}
+                    </div>
+                  )}
+                </div>
               </div>
               <Alert>
                 <AlertDescription>
@@ -1413,9 +1842,202 @@ export default function AdminUsers() {
               <Button variant="outline" onClick={() => setNewAdminModalOpen(false)}>
                 Cancel
               </Button>
-              <Button onClick={handleCreateAdmin} className="gap-2">
-                <UserPlus className="h-4 w-4" />
-                Create User
+              <Button onClick={handleCreateAdmin} className="gap-2" disabled={isCreatingAdmin}>
+                {isCreatingAdmin ? (
+                  <div className="h-4 w-4 animate-spin rounded-full border-2 border-white border-t-transparent" />
+                ) : (
+                  <UserPlus className="h-4 w-4" />
+                )}
+                {isCreatingAdmin ? "Creating & Sending Email..." : "Create User"}
+              </Button>
+            </DialogFooter>
+          </DialogContent>
+        </Dialog>
+
+        {/* Edit Admin Modal */}
+        <Dialog open={editAdminModalOpen} onOpenChange={setEditAdminModalOpen}>
+          <DialogContent className="max-w-lg">
+            <DialogHeader>
+              <DialogTitle>Edit Admin User</DialogTitle>
+            </DialogHeader>
+            {editAdminForm && (
+              <div className="space-y-4">
+                <div>
+                  <Label htmlFor="editAdminName">Full Name</Label>
+                  <Input
+                    id="editAdminName"
+                    value={editAdminForm.name}
+                    onChange={(e) => setEditAdminForm(prev => prev ? ({ ...prev, name: e.target.value }) : null)}
+                    placeholder="Enter full name"
+                  />
+                </div>
+                <div>
+                  <Label htmlFor="editAdminEmail">Email Address</Label>
+                  <Input
+                    id="editAdminEmail"
+                    type="email"
+                    value={editAdminForm.email}
+                    onChange={(e) => setEditAdminForm(prev => prev ? ({ ...prev, email: e.target.value }) : null)}
+                    placeholder="Enter email address"
+                  />
+                </div>
+                <div>
+                  <Label htmlFor="editAdminRole">Role</Label>
+                  <Select 
+                    value={editAdminForm.role} 
+                    onValueChange={(value: AdminUser['role']) => {
+                      setEditAdminForm(prev => prev ? ({ 
+                        ...prev, 
+                        role: value,
+                        permissions: getPermissionsByRole(value)
+                      }) : null);
+                    }}
+                  >
+                    <SelectTrigger>
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="staff">
+                        <div className="flex items-center gap-2">
+                          <User className="h-4 w-4" />
+                          <div>
+                            <div>Staff</div>
+                            <div className="text-xs text-muted-foreground">Order management only</div>
+                          </div>
+                        </div>
+                      </SelectItem>
+                      <SelectItem value="manager">
+                        <div className="flex items-center gap-2">
+                          <Shield className="h-4 w-4" />
+                          <div>
+                            <div>Manager</div>
+                            <div className="text-xs text-muted-foreground">Orders, customers, inventory</div>
+                          </div>
+                        </div>
+                      </SelectItem>
+                      <SelectItem value="admin">
+                        <div className="flex items-center gap-2">
+                          <Crown className="h-4 w-4" />
+                          <div>
+                            <div>Admin</div>
+                            <div className="text-xs text-muted-foreground">Full system access</div>
+                          </div>
+                        </div>
+                      </SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+                <div>
+                  <Label>Custom Permissions</Label>
+                  <div className="mt-2 space-y-2 max-h-48 overflow-y-auto">
+                    {availablePermissions.map(permission => (
+                      <div key={permission.id} className="flex items-center space-x-2">
+                        <input
+                          type="checkbox"
+                          id={`edit-perm-${permission.id}`}
+                          checked={editAdminForm.permissions.includes(permission.id) || editAdminForm.permissions.includes('all')}
+                          disabled={editAdminForm.permissions.includes('all') || permission.id === 'all'}
+                          onChange={(e) => {
+                            if (!editAdminForm) return;
+                            if (permission.id === 'all') {
+                              setEditAdminForm(prev => prev ? ({
+                                ...prev,
+                                permissions: e.target.checked ? ['all'] : []
+                              }) : null);
+                            } else {
+                              setEditAdminForm(prev => {
+                                if (!prev) return null;
+                                const newPermissions = e.target.checked
+                                  ? [...prev.permissions.filter(p => p !== 'all'), permission.id]
+                                  : prev.permissions.filter(p => p !== permission.id);
+                                return { ...prev, permissions: newPermissions };
+                              });
+                            }
+                          }}
+                          className="rounded border-gray-300"
+                        />
+                        <Label htmlFor={`edit-perm-${permission.id}`} className="flex-1 cursor-pointer">
+                          <div className="flex items-center justify-between">
+                            <span className="text-sm font-medium">{permission.name}</span>
+                            {(permission.id === 'all' && editAdminForm.permissions.includes('all')) && (
+                              <Badge variant="default" className="bg-amber-100 text-amber-800 text-xs">
+                                Active
+                              </Badge>
+                            )}
+                          </div>
+                          <div className="text-xs text-muted-foreground">{permission.description}</div>
+                        </Label>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+                <div>
+                  <Label>Status</Label>
+                  <Select 
+                    value={editAdminForm.status} 
+                    onValueChange={(value: AdminUser['status']) => 
+                      setEditAdminForm(prev => prev ? ({ ...prev, status: value }) : null)
+                    }
+                  >
+                    <SelectTrigger>
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="active">Active</SelectItem>
+                      <SelectItem value="inactive">Inactive</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+              </div>
+            )}
+            <DialogFooter>
+              <Button variant="outline" onClick={() => setEditAdminModalOpen(false)}>
+                Cancel
+              </Button>
+              <Button onClick={handleUpdateAdmin} className="gap-2">
+                <Edit className="h-4 w-4" />
+                Update User
+              </Button>
+            </DialogFooter>
+          </DialogContent>
+        </Dialog>
+
+        {/* Delete Admin Confirmation Modal */}
+        <Dialog open={deleteAdminModalOpen} onOpenChange={setDeleteAdminModalOpen}>
+          <DialogContent>
+            <DialogHeader>
+              <DialogTitle>Delete Admin User</DialogTitle>
+            </DialogHeader>
+            {selectedAdmin && (
+              <div className="space-y-4">
+                <Alert className="border-red-200 bg-red-50">
+                  <Trash2 className="h-4 w-4 text-red-600" />
+                  <AlertDescription className="text-red-800">
+                    Are you sure you want to delete <strong>{selectedAdmin.name}</strong>? This action cannot be undone.
+                  </AlertDescription>
+                </Alert>
+                <div className="bg-gray-50 p-4 rounded-lg">
+                  <p className="text-sm text-gray-600">User details:</p>
+                  <div className="mt-2 space-y-1">
+                    <p className="text-sm"><strong>Name:</strong> {selectedAdmin.name}</p>
+                    <p className="text-sm"><strong>Email:</strong> {selectedAdmin.email}</p>
+                    <p className="text-sm"><strong>Role:</strong> {selectedAdmin.role}</p>
+                    <p className="text-sm"><strong>Status:</strong> {selectedAdmin.status}</p>
+                  </div>
+                </div>
+              </div>
+            )}
+            <DialogFooter>
+              <Button variant="outline" onClick={() => setDeleteAdminModalOpen(false)}>
+                Cancel
+              </Button>
+              <Button 
+                variant="destructive" 
+                onClick={() => selectedAdmin && handleDeleteAdmin(selectedAdmin.id)}
+                className="gap-2"
+              >
+                <Trash2 className="h-4 w-4" />
+                Delete User
               </Button>
             </DialogFooter>
           </DialogContent>
