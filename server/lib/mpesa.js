@@ -42,13 +42,11 @@ class MpesaService {
 
   async initiateSTKPush(phoneNumber, amount, orderId, description = 'GetDeals Payment') {
     try {
-      // Validate credentials first
       this.validateCredentials();
 
       const accessToken = await this.getAccessToken();
       const { password, timestamp } = this.generatePassword();
 
-      // Format phone number (remove + and ensure it starts with 254)
       const formattedPhone = phoneNumber.replace(/^\+?/, '').replace(/^0/, '254');
       
       const stkPushData = {
@@ -56,9 +54,9 @@ class MpesaService {
         Password: password,
         Timestamp: timestamp,
         TransactionType: 'CustomerPayBillOnline',
-        Amount: Math.round(amount), // Ensure integer
+        Amount: Math.round(amount), 
         PartyA: formattedPhone,
-        PartyB: this.shortcode,
+        PartyB: "5686122",
         PhoneNumber: formattedPhone,
         CallBackURL: this.callbackUrl,
         AccountReference: orderId,
@@ -145,7 +143,6 @@ class MpesaService {
       };
 
       if (stkCallback.ResultCode === 0) {
-        // Payment successful
         const callbackMetadata = stkCallback.CallbackMetadata?.Item || [];
         
         result.success = true;
@@ -154,7 +151,6 @@ class MpesaService {
         result.transactionDate = this.getCallbackValue(callbackMetadata, 'TransactionDate');
         result.phoneNumber = this.getCallbackValue(callbackMetadata, 'PhoneNumber');
       } else {
-        // Payment failed
         result.success = false;
         result.error = stkCallback.ResultDesc;
       }
