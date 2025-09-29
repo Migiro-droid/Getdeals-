@@ -12,7 +12,8 @@ import { WalletActivationModal } from "../components/WalletActivationModal";
 import { ArrowDownCircle, ArrowUpCircle, Wallet, RotateCcw, Shield } from "lucide-react";
 
 export default function WalletPage() {
-  const { balance, transactions, pendingTransactions, initiateDeposit, refreshWallet, resetWalletData, walletId, loading, transactionsLoading } = useWallet();
+  const { balance, transactions, pendingTransactions, initiateDeposit, refreshWallet, resetWalletData, walletId, loading, transactionsLoading, walletData } = useWallet() as any;
+  console.log('[WalletPage] Render', { walletId, walletData, loading, transactionsLoading });
   const { toast } = useToast();
   const [amount, setAmount] = useState<string>("");
   const [isDepositing, setIsDepositing] = useState(false);
@@ -154,11 +155,9 @@ export default function WalletPage() {
             </h1>
             <div className="mt-1 flex flex-wrap items-center gap-3">
               <p className="text-muted-foreground">Manage your funds and transactions securely.</p>
-              {walletId && (
-                <span className="inline-flex items-center rounded-md bg-primary/10 text-primary border border-primary/20 px-2 py-1 text-xs font-mono tracking-wide">
-                  ID: {walletId}
-                </span>
-              )}
+              <span className="inline-flex items-center rounded-md bg-primary/10 text-primary border border-primary/20 px-2 py-1 text-xs font-mono tracking-wide">
+                ID: {walletId || (walletData?.user_id ? 'TEMP-' + walletData.user_id.slice(0,8) : '...')}
+              </span>
             </div>
           </div>
 

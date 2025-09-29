@@ -37,6 +37,45 @@ export interface DepositResponse {
 }
 
 class WalletService {
+  private async ensureWalletIdentifier(userId: string): Promise<string | null> {
+    // Try to get from user_profile first
+    const { data: profile, error: profileErr } = await (supabase.from('user_profile') as any)
+      .select('getdeals_number')
+      .eq('user_id', userId)
+      .single();
+
+    if (!profileErr && profile?.getdeals_number) {
+      return profile.getdeals_number as string;
+    }
+
+    // If missing, attempt to generate via existing sequence function
+    console.warn('[wallet] getdeals_number missing – generating on demand');
+    const { data: generated, error: genErr } = await (supabase.rpc('generate_getdeals_number') as any);
+    if (genErr || !generated) {
+      console.error('[wallet] failed to generate getdeals_number', genErr);
+      return null;
+    }
+
+    const newId = (generated as any) as string; // function returns TEXT
+
+    // Update user_profile
+    const { error: updProfErr } = await (supabase.from('user_profile') as any)
+      .update({ getdeals_number: newId })
+      .eq('user_id', userId);
+    if (updProfErr) {
+      console.error('[wallet] failed to update user_profile with new getdeals_number', updProfErr);
+    }
+
+    // Update wallet row if exists
+    const { error: updWalletErr } = await (supabase.from('wallets') as any)
+      .update({ getdeals_number: newId })
+      .eq('user_id', userId);
+    if (updWalletErr) {
+      console.error('[wallet] failed to update wallets with new getdeals_number', updWalletErr);
+    }
+
+    return newId;
+  }
   /**
    * Initiate a deposit to the user's wallet
    */
@@ -111,18 +150,15 @@ class WalletService {
 
       // Backfill getdeals_number if missing on wallet but present on profile
       if ((data as any)?.getdeals_number == null) {
-        const { data: profile, error: profileError } = await supabase
-          .from('user_profile')
-          .select('getdeals_number')
-          .eq('user_id', user.id)
-          .single<any>();
-        if (!profileError && profile && profile.getdeals_number) {
-          const { data: updated, error: updateError } = await (supabase.from('wallets') as any)
-            .update({ getdeals_number: profile.getdeals_number })
-            .eq('user_id', user.id)
-            .select('balance, user_id, updated_at, getdeals_number')
-            .single();
-          if (!updateError && updated) return updated as WalletBalance;
+        const ensured = await this.ensureWalletIdentifier(user.id);
+        if (ensured) {
+          // Re-fetch wallet row to include newly added id
+            const { data: updatedRow } = await supabase
+              .from('wallets')
+              .select('balance, user_id, updated_at, getdeals_number')
+              .eq('user_id', user.id)
+              .single();
+            if (updatedRow) return updatedRow as WalletBalance;
         }
       }
 
