@@ -6,6 +6,7 @@ export interface WalletContextType {
   // Data
   balance: number;
   walletData: WalletBalance | null;
+  walletId?: string; // Alias to getdeals_number for UI display
   transactions: WalletTransaction[];
   pendingTransactions: WalletTransaction[];
   
@@ -212,6 +213,7 @@ export const WalletProvider: React.FC<{ children: React.ReactNode }> = ({ childr
   const value: WalletContextType = {
     balance: walletData?.balance || 0,
     walletData,
+    walletId: walletData?.getdeals_number,
     transactions,
     pendingTransactions,
     

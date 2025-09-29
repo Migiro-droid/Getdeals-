@@ -19,6 +19,7 @@ export interface WalletBalance {
   balance: number;
   user_id: string;
   updated_at: string;
+  getdeals_number?: string; // Friendly external wallet identifier (GD-XXXXXX)
 }
 
 export interface DepositRequest {
@@ -76,7 +77,7 @@ class WalletService {
 
       const { data, error } = await supabase
         .from('wallets')
-        .select('balance, user_id, updated_at')
+        .select('balance, user_id, updated_at, getdeals_number')
         .eq('user_id', user.id)
         .single();
 
@@ -183,13 +184,15 @@ class WalletService {
       .on(
         'postgres_changes',
         {
-          event: 'UPDATE',
+          event: '*', // capture INSERT + UPDATE to initialize newly created wallets
           schema: 'public',
           table: 'wallets',
           filter: `user_id=eq.${userId}`
         },
         (payload) => {
-          callback(payload.new as WalletBalance);
+          if (payload.eventType === 'INSERT' || payload.eventType === 'UPDATE') {
+            callback(payload.new as WalletBalance);
+          }
         }
       )
       .subscribe();

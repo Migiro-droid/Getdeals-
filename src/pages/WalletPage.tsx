@@ -12,7 +12,7 @@ import { WalletActivationModal } from "../components/WalletActivationModal";
 import { ArrowDownCircle, ArrowUpCircle, Wallet, RotateCcw, Shield } from "lucide-react";
 
 export default function WalletPage() {
-  const { balance, transactions, pendingTransactions, initiateDeposit, refreshWallet, resetWalletData } = useWallet();
+  const { balance, transactions, pendingTransactions, initiateDeposit, refreshWallet, resetWalletData, walletId, loading, transactionsLoading } = useWallet();
   const { toast } = useToast();
   const [amount, setAmount] = useState<string>("");
   const [isDepositing, setIsDepositing] = useState(false);
@@ -152,7 +152,14 @@ export default function WalletPage() {
             <h1 className="text-3xl md:text-4xl font-extrabold tracking-tight flex items-center gap-2">
               <Wallet className="h-8 w-8 text-primary" /> Wallet
             </h1>
-            <p className="text-muted-foreground">Manage your funds and transactions securely.</p>
+            <div className="mt-1 flex flex-wrap items-center gap-3">
+              <p className="text-muted-foreground">Manage your funds and transactions securely.</p>
+              {walletId && (
+                <span className="inline-flex items-center rounded-md bg-primary/10 text-primary border border-primary/20 px-2 py-1 text-xs font-mono tracking-wide">
+                  ID: {walletId}
+                </span>
+              )}
+            </div>
           </div>
 
         </div>
@@ -391,6 +398,20 @@ export default function WalletPage() {
         }}
         onSuccess={handleKycSuccess}
       />
+
+      {/* Global Loading Overlay for wallet content */}
+      {isVerified && (loading || transactionsLoading) && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-background/70 backdrop-blur-sm">
+          <div className="flex flex-col items-center gap-4 p-8 rounded-lg border bg-card shadow-xl">
+            <div className="h-10 w-10 rounded-full border-4 border-primary border-t-transparent animate-spin" />
+            <div className="space-y-1 text-center">
+              <p className="font-semibold tracking-tight">Loading your wallet</p>
+              <p className="text-xs text-muted-foreground">Fetching balance, transactions & pending activities…</p>
+              {walletId && <p className="text-[10px] text-muted-foreground/70 font-mono">{walletId}</p>}
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
