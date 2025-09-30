@@ -268,10 +268,10 @@ export default function CheckoutPage() {
     try {
       const mpesaServiceUrl = import.meta.env.VITE_MPESA_SERVICE_URL || 
         (import.meta.env.PROD ? 'https://getdeals.co.ke' : 'http://localhost:3001');
-      const response = await fetch(`${mpesaServiceUrl}/api/payments/mpesa/query/${checkoutRequestId}`);
+      const response = await fetch(`${mpesaServiceUrl}/api/payments/mpesa/status/${checkoutRequestId}`);
 
       const responseText = await response.text();
-      console.log('Payment status response text:', responseText);
+      console.log('💳 Payment status response text:', responseText);
 
       if (!responseText) {
         throw new Error('Empty response from server');
@@ -284,6 +284,8 @@ export default function CheckoutPage() {
         console.error('JSON parsing error:', jsonError);
         throw new Error(`Invalid JSON response: ${responseText.substring(0, 100)}`);
       }
+
+      console.log('💳 Payment status parsed result:', result);
 
       if (response.ok) {
         return result;
@@ -453,7 +455,7 @@ export default function CheckoutPage() {
             console.log('💳 Payment status result:', statusResult);
 
             // Payment successful - NOW create the order
-            if (statusResult.success && (statusResult.resultCode === '0' || statusResult.resultCode === 0)) {
+            if (statusResult.success && statusResult.paymentConfirmed) {
               if (!paymentConfirmed) {
                 paymentConfirmed = true;
                 console.log(' Payment confirmed! Creating order...');
@@ -501,7 +503,7 @@ export default function CheckoutPage() {
             }
             
             // Payment explicitly failed
-            else if (statusResult.success && (
+            else if (statusResult.success && statusResult.paymentConfirmed === false && (
               statusResult.resultCode === '1032' || // User cancelled
               statusResult.resultCode === '1037' || // Payment timeout
               statusResult.resultCode === '1' ||    // Insufficient funds

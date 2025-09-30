@@ -69,7 +69,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       const transactionDate = getCallbackValue(callbackMetadata, 'TransactionDate');
       const phoneNumber = getCallbackValue(callbackMetadata, 'PhoneNumber');
 
-      console.log('Payment successful:', {
+      console.log('💰 Payment successful:', {
         amount,
         mpesaReceiptNumber,
         transactionDate,
@@ -77,7 +77,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
         checkoutRequestId
       });
 
-      // Update payment record in Supabase
+      // Update payment record in Supabase with comprehensive data
       const { error: updatePaymentError } = await supabase
         .from('payments')
         .update({
@@ -85,15 +85,21 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
           mpesa_receipt_number: mpesaReceiptNumber,
           transaction_date: transactionDate,
           processed_at: new Date().toISOString(),
-          updated_at: new Date().toISOString()
+          updated_at: new Date().toISOString(),
+          // Ensure amount is stored if not already
+          ...(amount && { amount: Math.round(amount * 100) }), // Store in cents
+          // Ensure phone number is stored if not already
+          ...(phoneNumber && { phone_number: phoneNumber })
         })
         .eq('transaction_id', checkoutRequestId);
 
       if (updatePaymentError) {
-        console.error('Error updating payment record:', updatePaymentError);
+        console.error('❌ Error updating payment record:', updatePaymentError);
       } else {
-        console.log('Payment record updated successfully');
+        console.log('✅ Payment record updated successfully');
       }
+
+      // TODO: Add comprehensive transaction logging once schema is fixed
 
       // Get the payment record to find the associated order
       const { data: payment, error: getPaymentError } = await supabase

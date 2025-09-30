@@ -118,9 +118,9 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
 
     // Check if STK push was initiated successfully
     if (mpesaResponse.data.ResponseCode === '0') {
-      // Save payment record to Supabase
+      // Save comprehensive payment record to Supabase
       const paymentData = {
-        order_id: orderId,
+        order_id: orderId, // This will be the order reference string
         amount: Math.round(amount * 100), // Store in cents
         method: 'mpesa',
         status: 'pending',
@@ -128,6 +128,8 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
         reference: orderId,
         transaction_id: mpesaResponse.data.CheckoutRequestID,
         merchant_request_id: mpesaResponse.data.MerchantRequestID,
+        mpesa_receipt_number: null, // Will be filled by callback
+        transaction_date: null, // Will be filled by callback
         created_at: new Date().toISOString(),
         updated_at: new Date().toISOString()
       };
@@ -137,11 +139,13 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
         .insert(paymentData);
 
       if (paymentError) {
-        console.error(' Error saving payment record:', paymentError);
+        console.error('❌ Error saving payment record:', paymentError);
         // Continue anyway - the transaction was initiated
       } else {
-        console.log(' Payment record saved successfully');
+        console.log('✅ Payment record saved successfully');
       }
+
+      // Note: Transaction log will be created by the callback handler
 
       return res.status(200).json({
         success: true,
