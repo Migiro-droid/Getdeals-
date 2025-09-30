@@ -12,7 +12,7 @@ import { WalletActivationModal } from "../components/WalletActivationModal";
 import { ArrowDownCircle, ArrowUpCircle, Wallet, RotateCcw, Shield } from "lucide-react";
 
 export default function WalletPage() {
-  const { balance, transactions, pendingTransactions, initiateDeposit, refreshWallet, resetWalletData, walletId, loading, transactionsLoading, walletData } = useWallet() as any;
+  const { balance, transactions, initiateDeposit, refreshWallet, resetWalletData, walletId, loading, transactionsLoading, walletData } = useWallet() as any;
   console.log('[WalletPage] Render', { walletId, walletData, loading, transactionsLoading });
   const { toast } = useToast();
   const [amount, setAmount] = useState<string>("");
@@ -296,47 +296,6 @@ export default function WalletPage() {
           </Card>
         </div>
 
-        {/* Pending Transactions Section */}
-        {pendingTransactions.length > 0 && (
-          <div className="mt-10">
-            <h2 className="text-xl font-bold mb-4 flex items-center gap-2">
-              <div className="animate-pulse w-2 h-2 bg-orange-500 rounded-full"></div>
-              Pending Transactions
-            </h2>
-            <Card className="border-orange-200 bg-orange-50 dark:bg-orange-950/20">
-              <CardContent className="p-0">
-                <div className="divide-y">
-                  {pendingTransactions.map((t) => (
-                    <div key={t.id} className="flex items-center justify-between p-4">
-                      <div className="flex items-center gap-3">
-                        <div className="animate-spin rounded-full h-5 w-5 border-2 border-orange-500 border-t-transparent"></div>
-                        <div>
-                          <div className="font-medium capitalize">{t.type}</div>
-                          <div className="text-xs text-muted-foreground">
-                            {new Date(t.created_at).toLocaleString()} • Awaiting confirmation
-                          </div>
-                        </div>
-                      </div>
-                      <div className="text-right">
-                        <div className="text-orange-700">
-                          +KES {t.amount.toLocaleString()}
-                        </div>
-                        <Badge variant="outline" className="mt-1 text-xs border-orange-300 text-orange-700">
-                          Pending
-                        </Badge>
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              </CardContent>
-            </Card>
-            <p className="text-xs text-muted-foreground mt-2">
-              Complete the M-Pesa payment on your phone to add these funds to your wallet balance.
-            </p>
-          </div>
-        )}
-
-        {}
         <div className="mt-10">
           <h2 className="text-xl font-bold mb-4">Recent Activity</h2>
           <Card>

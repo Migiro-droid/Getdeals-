@@ -3,12 +3,15 @@ import { useNavigate } from "react-router-dom";
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "../../lib/supabase";
 import { useAuth } from "@/contexts/AuthContext";
+import { OrganizationSetupModal } from "@/components/OrganizationSetupModal";
 
 export default function AuthCallbackPage() {
   const navigate = useNavigate();
   const { toast } = useToast();
   const { user } = useAuth();
   const [isProcessing, setIsProcessing] = useState(true);
+  const [showOrgSetup, setShowOrgSetup] = useState(false);
+  const [userInfo, setUserInfo] = useState<{ email: string; isOAuthUser: boolean } | null>(null);
 
   useEffect(() => {
     const handleAuthCallback = async () => {
@@ -43,12 +46,37 @@ export default function AuthCallbackPage() {
           // Wait a moment for the AuthContext to sync
           await new Promise(resolve => setTimeout(resolve, 1000));
           
-          toast({
-            title: "Signed in successfully! 🎉",
-            description: `Welcome ${data.session.user.user_metadata?.name || data.session.user.email}!`
-          });
+          // Check if this is an OAuth user (Google/Facebook login)
+          const isOAuthUser = data.session.user.app_metadata?.provider === 'google' || 
+                             data.session.user.app_metadata?.provider === 'facebook';
           
-          navigate('/', { replace: true });
+          // Check if user has organization details
+          const hasOrganizationDetails = data.session.user.user_metadata?.organization !== undefined;
+          
+          console.log('OAuth user:', isOAuthUser, 'Has org details:', hasOrganizationDetails);
+          
+          if (isOAuthUser && !hasOrganizationDetails) {
+            // Show organization setup modal for OAuth users without org details
+            setUserInfo({
+              email: data.session.user.email!,
+              isOAuthUser: true
+            });
+            setShowOrgSetup(true);
+            setIsProcessing(false);
+            
+            toast({
+              title: "Welcome to GetDeals! 🎉",
+              description: "Please complete your organization setup to continue."
+            });
+          } else {
+            // Regular flow for users with organization details or non-OAuth users
+            toast({
+              title: "Signed in successfully! 🎉",
+              description: `Welcome ${data.session.user.user_metadata?.name || data.session.user.email}!`
+            });
+            
+            navigate('/', { replace: true });
+          }
         } else {
           console.log('No session found in callback');
           // If no session after a reasonable wait, redirect to home
@@ -77,20 +105,40 @@ export default function AuthCallbackPage() {
 
   // If user is already authenticated, redirect immediately
   useEffect(() => {
-    if (user && !isProcessing) {
+    if (user && !isProcessing && !showOrgSetup) {
       console.log('User already authenticated, redirecting...');
       navigate('/', { replace: true });
     }
-  }, [user, navigate, isProcessing]);
+  }, [user, navigate, isProcessing, showOrgSetup]);
+
+  const handleOrganizationSetupComplete = () => {
+    setShowOrgSetup(false);
+    toast({
+      title: "Setup complete! 🎉",
+      description: "Welcome to GetDeals Kenya. You're all set to start shopping!"
+    });
+    navigate('/', { replace: true });
+  };
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gray-50">
-      <div className="text-center">
-        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary mx-auto"></div>
-        <p className="mt-4 text-gray-600">
-          {isProcessing ? "Completing sign in..." : "Redirecting..."}
-        </p>
+    <>
+      <div className="min-h-screen flex items-center justify-center bg-gray-50">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary mx-auto"></div>
+          <p className="mt-4 text-gray-600">
+            {isProcessing ? "Completing sign in..." : "Redirecting..."}
+          </p>
+        </div>
       </div>
-    </div>
+
+      {/* Organization Setup Modal for OAuth users */}
+      {showOrgSetup && userInfo && (
+        <OrganizationSetupModal
+          open={showOrgSetup}
+          onComplete={handleOrganizationSetupComplete}
+          userEmail={userInfo.email}
+        />
+      )}
+    </>
   );
 }

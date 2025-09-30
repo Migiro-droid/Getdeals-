@@ -2,7 +2,7 @@
 export const MPESA_CONFIG = {
   // Use environment variable or fallback based on environment
   SERVICE_URL: import.meta.env.VITE_MPESA_SERVICE_URL || 
-    (import.meta.env.PROD ? 'https://getdeals-kenya-showcase.vercel.app' : 'http://localhost:3001'),
+    (import.meta.env.PROD ? 'https://getdeals.co.ke' : 'http://localhost:3001'),
   
   // API endpoints
   ENDPOINTS: {

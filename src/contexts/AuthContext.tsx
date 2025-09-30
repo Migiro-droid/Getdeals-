@@ -292,11 +292,51 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
       console.log('Sign up successful:', data);
       if (data.user) {
+        // Send welcome email notification
+        try {
+          await fetch('/api/email/send', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              type: 'welcome',
+              recipientEmail: email,
+              data: {
+                name,
+                email,
+                organization: organization || 'Not specified'
+              }
+            })
+          });
+
+          // Add contact to Brevo mailing list
+          await fetch('/api/email/add-contact', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              email,
+              firstName: name.split(' ')[0],
+              lastName: name.split(' ').slice(1).join(' '),
+              attributes: {
+                PHONE: phone,
+                ORGANIZATION: organization || '',
+                ORGANIZATION_NUMBER: organizationNumber || '',
+                SIGNUP_DATE: new Date().toISOString(),
+                SIGNUP_METHOD: 'website'
+              }
+            })
+          });
+
+          console.log('📧 Welcome email and contact addition initiated');
+        } catch (emailError) {
+          console.error('❌ Failed to send welcome email:', emailError);
+          // Don't fail registration because of email issues
+        }
+
         toast({
           title: "Account Created!",
           description: data.user.email_confirmed_at 
-            ? `Welcome to GetDeals Kenya, ${name}!`
-            : "Please check your email to verify your account.",
+            ? `Welcome to GetDeals Kenya, ${name}! Check your email for welcome information.`
+            : "Please check your email to verify your account and for welcome information.",
         });
       }
     } catch (error) {

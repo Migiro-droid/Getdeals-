@@ -70,7 +70,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     // Format phone number (ensure 254 prefix)
     const formattedPhone = phoneNumber.replace(/^\+?/, '').replace(/^0/, '254');
 
-    console.log('🔄 Initiating STK Push:', {
+    console.log(' Initiating STK Push:', {
       phoneNumber: formattedPhone,
       amount,
       orderId,
@@ -88,10 +88,10 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       BusinessShortCode: parseInt(process.env.MPESA_SHORTCODE!),
       Password: password,
       Timestamp: timestamp,
-      TransactionType: 'CustomerPayBillOnline',
+      TransactionType: 'CustomerBuyGoodsOnline',
       Amount: Math.round(amount),
       PartyA: parseInt(formattedPhone),
-      PartyB: parseInt(process.env.MPESA_SHORTCODE!),
+      PartyB: 5686122, // Till number
       PhoneNumber: parseInt(formattedPhone),
       CallBackURL: `${process.env.VERCEL_URL ? `https://${process.env.VERCEL_URL}` : 'https://getdeals.co.ke'}/api/payments/mpesa/callback`,
       AccountReference: orderId,
@@ -103,7 +103,6 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       Password: '[HIDDEN]'
     });
 
-    // Make STK Push request to Safaricom
     const mpesaUrl = process.env.MPESA_ENVIRONMENT === 'sandbox'
       ? 'https://sandbox.safaricom.co.ke/mpesa/stkpush/v1/processrequest'
       : 'https://api.safaricom.co.ke/mpesa/stkpush/v1/processrequest';
@@ -115,7 +114,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       }
     });
 
-    console.log('✅ M-Pesa STK Response:', mpesaResponse.data);
+    console.log(' M-Pesa STK Response:', mpesaResponse.data);
 
     // Check if STK push was initiated successfully
     if (mpesaResponse.data.ResponseCode === '0') {
@@ -138,10 +137,10 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
         .insert(paymentData);
 
       if (paymentError) {
-        console.error('❌ Error saving payment record:', paymentError);
+        console.error(' Error saving payment record:', paymentError);
         // Continue anyway - the transaction was initiated
       } else {
-        console.log('✅ Payment record saved successfully');
+        console.log(' Payment record saved successfully');
       }
 
       return res.status(200).json({
@@ -154,7 +153,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       });
 
     } else {
-      console.error('❌ STK Push failed:', mpesaResponse.data);
+      console.error(' STK Push failed:', mpesaResponse.data);
       return res.status(400).json({
         success: false,
         error: mpesaResponse.data.ResponseDescription || 'STK Push initiation failed'
@@ -162,7 +161,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     }
 
   } catch (error: any) {
-    console.error('🚨 STK Push Error:', error.response?.data || error.message);
+    console.error(' STK Push Error:', error.response?.data || error.message);
     
     return res.status(500).json({
       success: false,
@@ -173,8 +172,12 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
 
 // Helper function to get M-Pesa access token
 async function getMpesaAccessToken(): Promise<string> {
-  const consumerKey = process.env.MPESA_CONSUMER_KEY!;
-  const consumerSecret = process.env.MPESA_CONSUMER_SECRET!;
+  const consumerKey = process.env.MPESA_CONSUMER_KEY;
+  const consumerSecret = process.env.MPESA_CONSUMER_SECRET;
+  
+  if (!consumerKey || !consumerSecret) {
+    throw new Error('M-Pesa Consumer Key and Secret are required');
+  }
   
   const credentials = Buffer.from(`${consumerKey}:${consumerSecret}`).toString('base64');
   
@@ -182,21 +185,38 @@ async function getMpesaAccessToken(): Promise<string> {
     ? 'https://sandbox.safaricom.co.ke/oauth/v1/generate?grant_type=client_credentials'
     : 'https://api.safaricom.co.ke/oauth/v1/generate?grant_type=client_credentials';
 
-  const response = await axios.get(tokenUrl, {
-    headers: {
-      'Authorization': `Basic ${credentials}`,
-      'Content-Type': 'application/json'
-    }
-  });
+  console.log('Getting M-Pesa access token from:', tokenUrl);
 
-  return response.data.access_token;
+  try {
+    const response = await axios.get(tokenUrl, {
+      headers: {
+        'Authorization': `Basic ${credentials}`,
+        'Content-Type': 'application/json'
+      }
+    });
+
+    if (!response.data.access_token) {
+      throw new Error('No access token received from M-Pesa API');
+    }
+
+    console.log('M-Pesa access token obtained successfully');
+    return response.data.access_token;
+  } catch (error) {
+    console.error('Error getting M-Pesa access token:', error);
+    throw new Error('Failed to get M-Pesa access token');
+  }
 }
 
 // Helper function to generate M-Pesa password
 function generateMpesaPassword() {
   const timestamp = new Date().toISOString().replace(/[^0-9]/g, '').slice(0, -3);
-  const shortcode = process.env.MPESA_SHORTCODE!;
-  const passkey = process.env.MPESA_PASSKEY!;
+  const shortcode = process.env.MPESA_SHORTCODE || process.env.MPESA_BUSINESS_SHORT_CODE;
+  const passkey = process.env.MPESA_PASSKEY;
+  
+  if (!shortcode || !passkey) {
+    throw new Error('M-Pesa shortcode and passkey are required');
+  }
+  
   const password = Buffer.from(`${shortcode}${passkey}${timestamp}`).toString('base64');
   
   return { password, timestamp };

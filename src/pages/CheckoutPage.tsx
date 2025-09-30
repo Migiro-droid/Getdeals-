@@ -212,7 +212,7 @@ export default function CheckoutPage() {
     try {
       // Use M-Pesa microservice - production ready
       const mpesaServiceUrl = import.meta.env.VITE_MPESA_SERVICE_URL || 
-        (import.meta.env.PROD ? 'https://getdeals-kenya-showcase.vercel.app' : 'http://localhost:3001');
+        (import.meta.env.PROD ? 'https://getdeals.co.ke' : 'http://localhost:3001');
       console.log('Initiating STK Push with M-Pesa microservice:', mpesaServiceUrl);
       
       const response = await fetch(`${mpesaServiceUrl}/api/payments/mpesa/stk-push`, {
@@ -221,7 +221,7 @@ export default function CheckoutPage() {
         body: JSON.stringify({
           amount,
           phoneNumber: formatPhoneNumber(phoneNumber),
-          orderReference,
+          orderId: orderReference,
           description: `Payment for GetDeals order ${orderReference}`
         }),
       });
@@ -267,7 +267,7 @@ export default function CheckoutPage() {
   const checkPaymentStatus = async (checkoutRequestId: string) => {
     try {
       const mpesaServiceUrl = import.meta.env.VITE_MPESA_SERVICE_URL || 
-        (import.meta.env.PROD ? 'https://getdeals-kenya-showcase.vercel.app' : 'http://localhost:3001');
+        (import.meta.env.PROD ? 'https://getdeals.co.ke' : 'http://localhost:3001');
       const response = await fetch(`${mpesaServiceUrl}/api/payments/mpesa/query/${checkoutRequestId}`);
 
       const responseText = await response.text();
@@ -449,7 +449,7 @@ export default function CheckoutPage() {
           console.log(`🔍 Checking payment status... Attempt ${attempts}/${maxAttempts}`);
           
           try {
-            const statusResult = await checkPaymentStatus(stkResult.checkoutRequestId);
+            const statusResult = await checkPaymentStatus(stkResult.CheckoutRequestID);
             console.log('💳 Payment status result:', statusResult);
 
             // Payment successful - NOW create the order
@@ -466,8 +466,8 @@ export default function CheckoutPage() {
                   paymentMethod,
                   mobileMoneyProvider,
                   mpesaPhone: formatPhoneNumber(phoneToUse),
-                  checkoutRequestId: stkResult.checkoutRequestId,
-                  merchantRequestId: stkResult.merchantRequestId,
+                  checkoutRequestId: stkResult.CheckoutRequestID,
+                  merchantRequestId: stkResult.MerchantRequestID,
                   paymentReference: orderReference,
                   paymentConfirmed: true,
                   mpesaReceiptNumber: statusResult.mpesaReceiptNumber || 'N/A',

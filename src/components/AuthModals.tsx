@@ -69,6 +69,7 @@ export function AuthModals({ open, onOpenChange, defaultTab = "signin" }: AuthMo
     const email = (form.querySelector('#signup-email') as HTMLInputElement)?.value;
     const password = (form.querySelector('#signup-password') as HTMLInputElement)?.value;
     const organization = (form.querySelector('#signup-organization') as HTMLInputElement)?.value;
+    const organizationId = (form.querySelector('#signup-organization-id') as HTMLInputElement)?.value;
     
     // Validate phone number is provided
     if (!phone || phone.trim() === '') {
@@ -78,7 +79,7 @@ export function AuthModals({ open, onOpenChange, defaultTab = "signin" }: AuthMo
     }
     
     try {
-      await signUp(name, phone, email, password, organization);
+      await signUp(name, phone, email, password, organization, organizationId);
       toast({ title: "Account created", description: "Welcome to GetDeals! A welcome SMS has been sent to your phone." });
       // Show checklist for new users (onboardingCompleted will be false by default)
       setShowChecklist(true);
@@ -330,6 +331,19 @@ export function AuthModals({ open, onOpenChange, defaultTab = "signin" }: AuthMo
                       id="signup-organization"
                       type="text"
                       placeholder="Your company or organization"
+                      className="pl-10 h-9 border-2 focus:border-primary/50 transition-colors"
+                    />
+                  </div>
+                </div>
+
+                <div className="space-y-1">
+                  <Label htmlFor="signup-organization-id" className="text-xs font-medium">Organization ID (Optional)</Label>
+                  <div className="relative">
+                    <Building2 className="absolute left-3 top-2.5 h-4 w-4 text-muted-foreground" />
+                    <Input
+                      id="signup-organization-id"
+                      type="text"
+                      placeholder="Your organization ID or registration number"
                       className="pl-10 h-9 border-2 focus:border-primary/50 transition-colors"
                     />
                   </div>
