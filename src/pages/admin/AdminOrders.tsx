@@ -280,6 +280,8 @@ export default function AdminOrders() {
     // If we have database orders, update via API
     if (databaseOrders.length > 0) {
       try {
+        console.log('Updating order status:', { orderId: active.id, newStatus: next });
+        
         const response = await fetch('/api/orders/update-status', {
           method: 'PUT',
           headers: { 'Content-Type': 'application/json' },
@@ -289,20 +291,23 @@ export default function AdminOrders() {
           })
         });
 
+        console.log('Response status:', response.status);
         const result = await response.json();
+        console.log('Response data:', result);
 
         if (result.success) {
           // Update local state
           setActive({ ...active, status: next });
           // Refresh the orders list
-          fetchDatabaseOrders();
+          await fetchDatabaseOrders();
+          console.log('Order status updated successfully');
         } else {
           console.error('Failed to update order status:', result.error);
-          alert('Failed to update order status: ' + result.error);
+          alert('Failed to update order status:\n' + (result.error || 'Unknown error'));
         }
-      } catch (error) {
+      } catch (error: any) {
         console.error('Error updating order status:', error);
-        alert('Error updating order status. Please try again.');
+        alert('Error updating order status:\n' + (error.message || 'Network error. Please try again.'));
       }
     } else {
       // Fallback to local orders context
