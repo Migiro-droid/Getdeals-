@@ -1,5 +1,5 @@
 import { VercelRequest, VercelResponse } from '@vercel/node';
-import { supabaseAdmin } from '../../lib/supabase';
+import { createClient } from '@supabase/supabase-js';
 
 /**
  * API Endpoint: Create Admin User with Password
@@ -11,6 +11,23 @@ import { supabaseAdmin } from '../../lib/supabase';
  * Required permissions: Admin only (manageUsers)
  */
 export default async function handler(req: VercelRequest, res: VercelResponse) {
+  // Initialize Supabase admin client with service role key
+  const supabaseUrl = process.env.VITE_SUPABASE_URL;
+  const supabaseServiceKey = process.env.VITE_SUPABASE_SERVICE_ROLE_KEY;
+
+  if (!supabaseUrl || !supabaseServiceKey) {
+    return res.status(500).json({
+      success: false,
+      error: 'Server configuration error: Missing Supabase credentials'
+    });
+  }
+
+  const supabaseAdmin = createClient(supabaseUrl, supabaseServiceKey, {
+    auth: {
+      autoRefreshToken: false,
+      persistSession: false
+    }
+  });
   // Only allow POST requests
   if (req.method !== 'POST') {
     return res.status(405).json({ 
