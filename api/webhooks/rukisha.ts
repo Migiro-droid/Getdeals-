@@ -20,26 +20,56 @@ interface RukishaCallback {
 }
 
 export default async function handler(req: VercelRequest, res: VercelResponse) {
-  // Only allow POST requests
+  // Handle OPTIONS for CORS preflight
+  if (req.method === 'OPTIONS') {
+    return res.status(200).json({ 
+      success: true,
+      message: 'CORS preflight successful'
+    });
+  }
+
+  // Handle GET for webhook URL validation (Rukisha may ping the endpoint)
+  if (req.method === 'GET') {
+    return res.status(200).json({ 
+      success: true,
+      message: 'Rukisha webhook endpoint is active',
+      endpoint: '/api/webhooks/rukisha',
+      accepts: 'POST requests with callback data'
+    });
+  }
+
+  // Only allow POST requests for actual callbacks
   if (req.method !== 'POST') {
     return res.status(405).json({ 
       success: false, 
-      error: 'Method not allowed' 
+      error: 'Method not allowed. Use POST for callbacks.' 
     });
   }
 
   try {
-    console.log(' Rukisha webhook received');
+    console.log('📞 Rukisha webhook received');
+    console.log('📦 Request headers:', JSON.stringify(req.headers));
+    console.log('📦 Request body:', JSON.stringify(req.body));
     
     const callbackData: RukishaCallback = req.body;
-    console.log(' Rukisha callback data:', callbackData);
+    
+    // Validate request body exists
+    if (!callbackData || typeof callbackData !== 'object') {
+      console.error('❌ Invalid request body - not an object');
+      return res.status(400).json({ 
+        success: false, 
+        error: 'Invalid request body. Expected JSON object.' 
+      });
+    }
 
     // Validate required fields
     if (!callbackData.TransactionID || !callbackData.Status) {
-      console.error(' Invalid callback data - missing required fields');
+      console.error('❌ Invalid callback data - missing required fields');
+      console.error('   Received fields:', Object.keys(callbackData));
       return res.status(400).json({ 
         success: false, 
-        error: 'Invalid callback data' 
+        error: 'Invalid callback data. Missing TransactionID or Status.',
+        received_fields: Object.keys(callbackData)
       });
     }
 

@@ -19,15 +19,15 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
   try {
     console.log('🔧 Starting stuck transactions fix...');
 
-    // Find pending transactions older than 10 minutes (likely stuck)
-    const tenMinutesAgo = new Date(Date.now() - 10 * 60 * 1000).toISOString();
+    // Find pending transactions older than 5 minutes (likely stuck)
+    const fiveMinutesAgo = new Date(Date.now() - 5 * 60 * 1000).toISOString();
     
     const { data: stuckTransactions, error: queryError } = await supabase
       .from('wallet_transactions')
       .select('*')
       .eq('status', 'pending')
-      .eq('type', 'deposit')
-      .lt('created_at', tenMinutesAgo)
+      .eq('transaction_type', 'deposit')
+      .lt('created_at', fiveMinutesAgo)
       .order('created_at', { ascending: false });
 
     if (queryError) {
@@ -63,8 +63,8 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
           .update({
             status: 'completed',
             updated_at: new Date().toISOString(),
-            processed_at: new Date().toISOString(),
-            confirmation_code: 'MANUAL_FIX'
+            completed_at: new Date().toISOString(),
+            mpesa_receipt_number: transaction.mpesa_receipt_number || 'MANUAL_FIX'
           })
           .eq('id', transaction.id);
 
@@ -77,10 +77,10 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
           continue;
         }
 
-        // Update wallet balance
-        const { error: balanceError } = await supabase.rpc('increment_wallet_balance', {
-          user_id: transaction.user_id,
-          amount: transaction.amount
+        // Update wallet balance using safe increment
+        const { error: balanceError } = await supabase.rpc('safe_increment_wallet_balance', {
+          p_user_id: transaction.user_id,
+          p_amount: 0 // Trigger recalculation
         });
 
         if (balanceError) {

@@ -84,8 +84,12 @@ export default function AdminDashboard() {
     return safeOrders.filter((o) => new Date(o.date) >= startDate);
   }, [safeOrders, startDate, range]);
 
-  // KPIs
+  // KPIs - Calculate revenue from all orders AND confirmed revenue from delivered orders
   const revenueInRange = useMemo(() => ordersInRange.reduce((s, o) => s + o.total, 0), [ordersInRange]);
+  const confirmedRevenue = useMemo(() => 
+    ordersInRange.filter(o => o.status === 'delivered').reduce((s, o) => s + o.total, 0), 
+    [ordersInRange]
+  );
   const aov = useMemo(() => (ordersInRange.length ? revenueInRange / ordersInRange.length : 0), [revenueInRange, ordersInRange]);
   const deliveredRate = useMemo(() => {
     const total = ordersInRange.length || 1;
@@ -127,7 +131,7 @@ export default function AdminDashboard() {
       { name: "Sugar", price: 280 },
       { name: "Cooking Oil", price: 980 },
     ];
-    const statuses: OrderStatus[] = ["pending", "confirmed", "preparing", "out_for_delivery", "delivered", "cancelled"];
+    const statuses: OrderStatus[] = ["pending", "confirmed", "shipped", "delivered", "cancelled"];
     const pay: Order["paymentMethod"][] = ["mpesa", "card", "wallet"];
     const del: Order["deliveryMethod"][] = ["pickup", "speedy"];
     const out: Order[] = [];
@@ -208,19 +212,18 @@ export default function AdminDashboard() {
     revenue: { label: "Revenue", color: "hsl(var(--primary))" },
   }), []);
 
+  // Updated to match database constraint: pending, confirmed, shipped, delivered, cancelled
   const statusKeys: OrderStatus[] = [
     "pending",
     "confirmed",
-    "preparing",
-    "out_for_delivery",
+    "shipped",
     "delivered",
     "cancelled",
   ];
   const statusColors: Record<OrderStatus, string> = {
     pending: "#F59E0B",         // amber-500
     confirmed: "#3B82F6",       // blue-500
-    preparing: "#A855F7",       // purple-500
-    out_for_delivery: "#F59E0B", // amber-500 (same family)
+    shipped: "#A855F7",         // purple-500
     delivered: "#22C55E",       // green-500
     cancelled: "#F43F5E",       // rose-500
   };
@@ -228,8 +231,7 @@ export default function AdminDashboard() {
     const byStatus = {
       pending: 0,
       confirmed: 0,
-      preparing: 0,
-      out_for_delivery: 0,
+      shipped: 0,
       delivered: 0,
       cancelled: 0,
     } as Record<OrderStatus, number>;
@@ -246,8 +248,7 @@ export default function AdminDashboard() {
     const byStatus = {
       pending: 0,
       confirmed: 0,
-      preparing: 0,
-      out_for_delivery: 0,
+      shipped: 0,
       delivered: 0,
       cancelled: 0,
     } as Record<OrderStatus, number>;
@@ -389,11 +390,11 @@ export default function AdminDashboard() {
     return Object.values(customerMap).sort((a, b) => b.totalSpent - a.totalSpent);
   }, [ordersInRange, range]);
 
-  // Ops snapshot (today)
+  // Ops snapshot (today) - Updated for new status values
   const todayKey = new Date().toISOString().slice(0, 10);
   const todayOrders = useMemo(() => safeOrders.filter((o) => o.date.slice(0, 10) === todayKey), [safeOrders, todayKey]);
   const todayCounts = useMemo(() => {
-    const c: Record<string, number> = { pending: 0, out_for_delivery: 0, cancelled: 0 };
+    const c: Record<string, number> = { pending: 0, shipped: 0, cancelled: 0 };
     for (const o of todayOrders) {
       if (o.status in c) c[o.status]++;
     }
@@ -455,10 +456,8 @@ export default function AdminDashboard() {
         return `${base} bg-yellow-100 text-yellow-800`;
       case "confirmed":
         return `${base} bg-blue-100 text-blue-800`;
-      case "preparing":
+      case "shipped":
         return `${base} bg-purple-100 text-purple-800`;
-      case "out_for_delivery":
-        return `${base} bg-amber-100 text-amber-800`;
       case "delivered":
         return `${base} bg-green-100 text-green-800`;
       case "cancelled":
@@ -541,8 +540,7 @@ export default function AdminDashboard() {
                         delivered: { label: "Delivered", color: statusColors.delivered },
                         pending: { label: "Pending", color: statusColors.pending },
                         confirmed: { label: "Confirmed", color: statusColors.confirmed },
-                        preparing: { label: "Preparing", color: statusColors.preparing },
-                        out_for_delivery: { label: "Out for delivery", color: statusColors.out_for_delivery },
+                        shipped: { label: "Shipped", color: statusColors.shipped },
                         cancelled: { label: "Cancelled", color: statusColors.cancelled },
                       }}
                       className="w-full h-full"
