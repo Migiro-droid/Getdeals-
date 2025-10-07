@@ -40,11 +40,11 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
 
     console.log('Updating order status:', { orderId, status });
 
-    // Validate status
-    const validStatuses = ['PENDING', 'CONFIRMED', 'PREPARING', 'OUT_FOR_DELIVERY', 'DELIVERED', 'CANCELLED'];
-    const upperStatus = status.toUpperCase();
+    // Validate status - database uses lowercase values
+    const validStatuses = ['pending', 'confirmed', 'preparing', 'out_for_delivery', 'delivered', 'cancelled'];
+    const lowerStatus = status.toLowerCase();
     
-    if (!validStatuses.includes(upperStatus)) {
+    if (!validStatuses.includes(lowerStatus)) {
       return res.status(400).json({
         success: false,
         error: `Invalid status. Must be one of: ${validStatuses.join(', ')}`
@@ -55,7 +55,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     const { data, error } = await supabase
       .from('orders')
       .update({ 
-        status: upperStatus,
+        status: lowerStatus,
         updated_at: new Date().toISOString()
       })
       .eq('order_reference', orderId)
