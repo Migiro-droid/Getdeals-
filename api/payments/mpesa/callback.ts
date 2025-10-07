@@ -68,12 +68,19 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       const mpesaReceiptNumber = getCallbackValue(callbackMetadata, 'MpesaReceiptNumber');
       const transactionDate = getCallbackValue(callbackMetadata, 'TransactionDate');
       const phoneNumber = getCallbackValue(callbackMetadata, 'PhoneNumber');
+      
+      // Capture sender's name from M-Pesa callback
+      const firstName = getCallbackValue(callbackMetadata, 'FirstName') || '';
+      const middleName = getCallbackValue(callbackMetadata, 'MiddleName') || '';
+      const lastName = getCallbackValue(callbackMetadata, 'LastName') || '';
+      const senderName = [firstName, middleName, lastName].filter(Boolean).join(' ').trim();
 
       console.log('💰 Payment successful:', {
         amount,
         mpesaReceiptNumber,
         transactionDate,
         phoneNumber,
+        senderName,
         checkoutRequestId
       });
 
@@ -84,6 +91,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
           status: 'success',
           mpesa_receipt_number: mpesaReceiptNumber,
           transaction_date: transactionDate,
+          sender_name: senderName || null,
           processed_at: new Date().toISOString(),
           updated_at: new Date().toISOString(),
           // Ensure amount is stored if not already

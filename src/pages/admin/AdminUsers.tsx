@@ -456,23 +456,34 @@ export default function AdminUsers() {
       defaultPermissions = ['orders'];
     }
 
-    // Generate temporary password
-    const temporaryPassword = generateTemporaryPassword();
-
     try {
       const baseUrl = getApiBase();
       
-      // First, create the admin user (we'll simulate this for now)
-      const newUser: AdminUser = {
-        id: `admin_${Date.now()}`,
-        ...newAdminForm,
-        permissions: defaultPermissions,
-        status: "active",
-        createdDate: new Date().toISOString(),
-        lastLogin: undefined
-      };
+      // Step 1: Create admin user with password in Supabase Auth
+      console.log('Creating admin user with authentication...');
+      const createResponse = await fetch(`${baseUrl}/api/admin/create-admin-user`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          name: newAdminForm.name,
+          email: newAdminForm.email,
+          role: newAdminForm.role,
+          permissions: defaultPermissions
+        }),
+      });
 
-      // Then send the credentials email
+      const createResult = await createResponse.json();
+
+      if (!createResponse.ok || !createResult.success) {
+        throw new Error(createResult.error || 'Failed to create admin user');
+      }
+
+      console.log('✅ Admin user created:', createResult.data);
+
+      const { userId, temporaryPassword } = createResult.data;
+
+      // Step 2: Send credentials email
+      console.log('Sending credentials email...');
       const emailResponse = await fetch(`${baseUrl}/api/admin/send-credentials`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -480,36 +491,67 @@ export default function AdminUsers() {
           name: newAdminForm.name,
           email: newAdminForm.email,
           password: temporaryPassword,
-          role: newAdminForm.role,
-          permissions: defaultPermissions
+          role: newAdminForm.role
         }),
       });
 
-      if (emailResponse.ok) {
-        const emailResult = await emailResponse.json();
-        setAdminUsers(prev => [...prev, newUser]);
+      const emailResult = await emailResponse.json();
+
+      // Create local user object for display
+      const newUser: AdminUser = {
+        id: userId,
+        name: newAdminForm.name,
+        email: newAdminForm.email,
+        role: newAdminForm.role,
+        permissions: defaultPermissions,
+        status: "active",
+        createdDate: new Date().toISOString(),
+        lastLogin: undefined
+      };
+
+      // Add to local state
+      setAdminUsers(prev => [...prev, newUser]);
+
+      if (emailResult.success) {
         toast({
-          title: "Admin user created successfully!",
+          title: "✅ Admin user created successfully!",
           description: `${newAdminForm.name} has been added as ${newAdminForm.role}. Login credentials have been sent to ${newAdminForm.email}`,
         });
-        setNewAdminModalOpen(false);
-        setNewAdminForm({ name: "", email: "", role: "staff", permissions: [] });
-      } else {
-        // Admin created but email failed
-        setAdminUsers(prev => [...prev, newUser]);
+      } else if (emailResult.warning) {
+        // Email not configured - show credentials
         toast({
-          title: "Admin user created (Email warning)",
-          description: `${newAdminForm.name} has been added as ${newAdminForm.role}, but email delivery failed. Please provide credentials manually.`,
-          variant: "destructive",
+          title: "⚠️ Admin user created (Manual credentials)",
+          description: `${newAdminForm.name} has been added. Email: ${newAdminForm.email}, Password: ${temporaryPassword}. Please provide credentials manually.`,
+          duration: 10000 // Show longer so admin can copy
         });
-        setNewAdminModalOpen(false);
-        setNewAdminForm({ name: "", email: "", role: "staff", permissions: [] });
+        
+        // Also log to console for easy copying
+        console.log('📧 Manual Credentials:');
+        console.log('Email:', newAdminForm.email);
+        console.log('Password:', temporaryPassword);
+        console.log('Role:', newAdminForm.role);
+      } else {
+        // Email failed but user created
+        toast({
+          title: "⚠️ Admin user created (Email failed)",
+          description: `${newAdminForm.name} has been added. Password: ${temporaryPassword}. Please provide credentials manually.`,
+          variant: "destructive",
+          duration: 10000
+        });
+        console.log('📧 Credentials (email failed):');
+        console.log('Email:', newAdminForm.email);
+        console.log('Password:', temporaryPassword);
       }
-    } catch (error) {
+
+      // Reset form and close modal
+      setNewAdminModalOpen(false);
+      setNewAdminForm({ name: "", email: "", role: "staff", permissions: [] });
+
+    } catch (error: any) {
       console.error('Error creating admin:', error);
       toast({
-        title: "Error creating admin user",
-        description: "Failed to create admin user. Please try again.",
+        title: "❌ Error creating admin user",
+        description: error.message || "Failed to create admin user. Please try again.",
         variant: "destructive",
       });
     } finally {

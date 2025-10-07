@@ -304,10 +304,10 @@ export default function CheckoutPage() {
         throw new Error('User not authenticated');
       }
 
-      // Calculate totals
+      // Calculate totals - CRITICAL: Only add delivery fee if delivery method is 'speedy'
       const subtotal = orderData.items.reduce((sum: number, item: any) => sum + (item.price * item.quantity), 0);
       const deliveryFee = orderData.deliveryMethod === 'speedy' ? 200 : 0;
-      const totalAmount = subtotal + deliveryFee;
+      const totalAmount = subtotal + deliveryFee; // This correctly reflects what customer actually pays
 
       // Prepare order data for database creation
       const dbOrderData = {
@@ -714,8 +714,10 @@ export default function CheckoutPage() {
     }
   };
 
+  // Calculate delivery fee and final total based on selected delivery method
+  // CRITICAL: Delivery fee (KES 200) only applies to 'speedy' delivery, NOT pickup
   const deliveryFee = deliveryMethod === "speedy" ? 200 : 0;
-  const finalTotal = total + deliveryFee;
+  const finalTotal = total + deliveryFee; // Customer pays: subtotal + delivery (if speedy)
 
   return (
     <div className="min-h-screen py-8">
