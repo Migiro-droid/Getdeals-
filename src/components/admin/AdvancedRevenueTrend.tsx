@@ -151,10 +151,6 @@ export const AdvancedRevenueTrend: React.FC<AdvancedRevenueTrendProps> = ({ orde
             </ComposedChart>
           </ChartContainer>
         </div>
-        <div className='mt-2 flex flex-wrap gap-3 text-[11px] text-muted-foreground'>
-          <span>Bars = daily revenue, dashed line = rolling average (stabilizes trend, prevents jumpy feel).</span>
-          <span>{data.length} days</span>
-        </div>
       </CardContent>
     </Card>
   );
