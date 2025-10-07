@@ -47,7 +47,7 @@ class BrevoService {
         to: Array.isArray(to) ? to.map(email => ({ email })) : [{ email: to }],
         sender: sender || {
           name: process.env.BREVO_SENDER_NAME || 'GetDeals Kenya',
-          email: process.env.BREVO_SENDER_EMAIL || 'noreply@getdeals.co.ke'
+          email: process.env.BREVO_SENDER_EMAIL || 'info@getdeals.co.ke'
         }
       };
 

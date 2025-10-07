@@ -271,7 +271,7 @@ export default function CheckoutPage() {
       const response = await fetch(`${mpesaServiceUrl}/api/payments/mpesa/status/${checkoutRequestId}`);
 
       const responseText = await response.text();
-      console.log('💳 Payment status response text:', responseText);
+      console.log(' Payment status response text:', responseText);
 
       if (!responseText) {
         throw new Error('Empty response from server');
@@ -285,7 +285,7 @@ export default function CheckoutPage() {
         throw new Error(`Invalid JSON response: ${responseText.substring(0, 100)}`);
       }
 
-      console.log('💳 Payment status parsed result:', result);
+      console.log(' Payment status parsed result:', result);
 
       if (response.ok) {
         return result;
@@ -300,7 +300,59 @@ export default function CheckoutPage() {
 
   const createOrder = async (orderData: any) => {
     try {
-      // Transform order data for OrdersContext
+      if (!auth.user?.id) {
+        throw new Error('User not authenticated');
+      }
+
+      // Calculate totals
+      const subtotal = orderData.items.reduce((sum: number, item: any) => sum + (item.price * item.quantity), 0);
+      const deliveryFee = orderData.deliveryMethod === 'speedy' ? 200 : 0;
+      const totalAmount = subtotal + deliveryFee;
+
+      // Prepare order data for database creation
+      const dbOrderData = {
+        user_id: auth.user.id,
+        customer_email: email,
+        customer_name: `${firstName} ${lastName}`.trim(),
+        customer_phone: orderData.mpesaPhone || phone,
+        items: orderData.items,
+        subtotal: subtotal,
+        delivery_fee: deliveryFee,
+        total_amount: totalAmount,
+        delivery_method: orderData.deliveryMethod,
+        delivery_address: orderData.deliveryAddress,
+        pickup_location: orderData.deliveryMethod === 'pickup' ? (selectedPickupLocationData?.name || pickupLocation) : undefined,
+        payment_method: orderData.paymentMethod,
+        payment_reference: orderData.paymentReference,
+        payment_confirmed: orderData.paymentConfirmed || false,
+        mpesa_receipt_number: orderData.mpesaReceiptNumber,
+        checkout_request_id: orderData.checkoutRequestId,
+        merchant_request_id: orderData.merchantRequestId
+      };
+
+      console.log(' Creating database order:', {
+        user_id: dbOrderData.user_id,
+        total_amount: dbOrderData.total_amount,
+        payment_confirmed: dbOrderData.payment_confirmed,
+        payment_reference: dbOrderData.payment_reference
+      });
+
+      // Call the database order creation API
+      const response = await fetch('/api/orders/create', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(dbOrderData)
+      });
+
+      const result = await response.json();
+
+      if (!response.ok || !result.success) {
+        throw new Error(result.error || 'Failed to create order in database');
+      }
+
+      console.log(' Order created in database:', result.order);
+
+      // Also update local context for immediate UI updates
       const orderForContext = {
         items: orderData.items.map((item: any) => ({
           id: item.id,
@@ -309,27 +361,35 @@ export default function CheckoutPage() {
           quantity: item.quantity,
           image: item.image,
         })),
-        subtotal: orderData.items.reduce((sum: number, item: any) => sum + (item.price * item.quantity), 0),
-        deliveryFee: orderData.deliveryMethod === 'speedy' ? 200 : 0,
-        total: orderData.items.reduce((sum: number, item: any) => sum + (item.price * item.quantity), 0) + (orderData.deliveryMethod === 'speedy' ? 200 : 0),
+        subtotal: subtotal,
+        deliveryFee: deliveryFee,
+        total: totalAmount,
         deliveryMethod: orderData.deliveryMethod,
         paymentMethod: orderData.paymentMethod,
         customer: {
           firstName,
           lastName,
-          phone,
+          phone: orderData.mpesaPhone || phone,
           email,
           address: orderData.deliveryAddress,
           pickupLocation: orderData.deliveryMethod === 'pickup' ? selectedPickupLocationData?.name || pickupLocation : undefined,
           pickupLocationDetails: orderData.deliveryMethod === 'pickup' ? selectedPickupLocationData : undefined,
         },
-        status: 'pending' as const,
+        status: 'confirmed' as const, // Orders are confirmed since payment is done
       };
 
-      const order = await createOrderContext(orderForContext);
-      return { success: true, order };
+      createOrderContext(orderForContext);
+
+      return { 
+        success: true, 
+        order: {
+          id: result.order.id,
+          order_reference: result.order.order_reference,
+          ...result.order
+        }
+      };
     } catch (error) {
-      console.error('Order creation error:', error);
+      console.error(' Order creation error:', error);
       return { 
         success: false, 
         error: error instanceof Error ? error.message : 'Order creation failed' 
@@ -427,7 +487,7 @@ export default function CheckoutPage() {
 
         const providerName = mobileMoneyProvider === 'mpesa' ? 'M-Pesa' : 'Airtel Money';
         toast({
-          title: `${providerName} Payment Initiated! 📱`,
+          title: `${providerName} Payment Initiated!`,
           description: `Please check your phone (${phoneToUse}) and enter your ${providerName} PIN to complete the payment. DO NOT REFRESH THE PAGE.`,
         });
 
@@ -442,17 +502,17 @@ export default function CheckoutPage() {
               setPaymentStatus("failed");
               setIsLoading(false);
               toast({
-                title: "Payment Timeout ⏰",
+                title: "Payment Timeout ",
                 description: "Payment verification timed out. If money was deducted, please contact support with order reference: " + orderReference,
                 variant: "destructive",
               });
               return;
             }          attempts++;
-          console.log(`🔍 Checking payment status... Attempt ${attempts}/${maxAttempts}`);
+          console.log(`Checking payment status... Attempt ${attempts}/${maxAttempts}`);
           
           try {
             const statusResult = await checkPaymentStatus(stkResult.CheckoutRequestID);
-            console.log('💳 Payment status result:', statusResult);
+            console.log(' Payment status result:', statusResult);
 
             // Payment successful - NOW create the order
             if (statusResult.success && statusResult.paymentConfirmed) {
@@ -482,7 +542,7 @@ export default function CheckoutPage() {
                   orderCreated = true;
                   setPaymentStatus("success");
                   toast({
-                    title: "Payment Successful! ✅",
+                    title: "Payment Successful! ",
                     description: `Your order has been confirmed! Receipt: ${statusResult.mpesaReceiptNumber || 'N/A'}`,
                   });
                   clearCart();
@@ -531,7 +591,7 @@ export default function CheckoutPage() {
             
             // Payment still pending - continue polling
             else {
-              console.log(`⏳ Payment still pending... (${attempts}/${maxAttempts})`);
+              console.log(`Payment still pending... (${attempts}/${maxAttempts})`);
               setTimeout(checkStatus, 6000); // Check again in 6 seconds
             }
             
@@ -629,7 +689,7 @@ export default function CheckoutPage() {
 
           setPaymentStatus("success");
           toast({
-            title: "Order Placed Successfully! 🎉",
+            title: "Order Placed Successfully!",
             description: "You will receive confirmation details shortly.",
           });
 
@@ -664,7 +724,7 @@ export default function CheckoutPage() {
         <div className="mb-6 bg-gradient-to-r from-green-500 to-blue-600 text-white p-4 rounded-lg shadow-lg">
           <div className="flex items-center justify-between">
             <div>
-              <h2 className="text-lg font-bold mb-1">🎉 Pay with Wallet & Save Big!</h2>
+              <h2 className="text-lg font-bold mb-1">Pay with Wallet & Save Big!</h2>
               <p className="text-sm opacity-90">
                 Get 5% cashback, instant payment, and no transaction fees. Join thousands of smart shoppers!
               </p>
@@ -843,7 +903,7 @@ export default function CheckoutPage() {
                           )}
 
                           <div className="text-xs text-blue-600 mt-2">
-                            ⏰ Operating Hours: {(() => {
+                            Operating Hours: {(() => {
                               const today = new Date().toLocaleDateString('en-US', { weekday: 'long' }).toLowerCase();
                               const todayHours = selectedPickupLocationData.operating_hours[today as keyof typeof selectedPickupLocationData.operating_hours];
                               return `Today: ${todayHours}`;
@@ -881,7 +941,7 @@ export default function CheckoutPage() {
                 {/* Wallet Incentive Banner */}
                 <div className="mb-4 p-3 bg-gradient-to-r from-green-50 to-blue-50 border border-green-200 rounded-lg">
                   <div className="flex items-center gap-2 text-green-800">
-                    <div className="text-lg">🎉</div>
+                    <div className="text-lg"></div>
                     <div className="text-sm font-medium">
                       Pay with Wallet & Earn 5% Cashback!
                     </div>
@@ -902,13 +962,16 @@ export default function CheckoutPage() {
                             <span className="bg-green-100 text-green-700 text-xs px-2 py-1 rounded-full font-medium">
                               RECOMMENDED
                             </span>
+                            <span className="bg-blue-100 text-blue-700 text-xs px-2 py-1 rounded-full font-medium">
+                              powered by rukisha
+                            </span>
                           </div>
                           <div className="text-sm text-green-700 mt-1">
-                            Balance: KES {balance.toLocaleString()} • ⚡ Instant payment • 💰 Earn rewards
+                            Balance: KES {balance.toLocaleString()} • Instant payment • Earn rewards
                           </div>
                           {balance < finalTotal && (
                             <div className="text-xs text-red-600 mt-1 font-medium">
-                              ⚠️ Insufficient balance - Need KES {(finalTotal - balance).toLocaleString()} more
+                              Insufficient balance - Need KES {(finalTotal - balance).toLocaleString()} more
                             </div>
                           )}
                         </div>
@@ -1019,7 +1082,7 @@ export default function CheckoutPage() {
                   <div className="bg-green-50 border border-green-200 rounded-lg p-3 mt-4">
                     <div className="flex items-center justify-between">
                       <div className="text-sm">
-                        <span className="font-medium text-green-800">💰 Cashback Reward:</span>
+                        <span className="font-medium text-green-800">Cashback Reward:</span>
                         <span className="text-green-700 ml-2">KES {Math.round(finalTotal * 0.05).toLocaleString()}</span>
                       </div>
                       <div className="text-xs text-green-600">
@@ -1074,7 +1137,7 @@ export default function CheckoutPage() {
                 {/* Payment Status Messages */}
                 {paymentStatus === "success" && (
                   <div className="text-center py-4 bg-green-50 rounded-lg border border-green-200">
-                    <div className="text-green-600 font-medium">✅ Payment Successful!</div>
+                    <div className="text-green-600 font-medium">Payment Successful!</div>
                     <p className="text-xs text-green-500 mt-1">Redirecting to your orders...</p>
                   </div>
                 )}
@@ -1096,18 +1159,18 @@ export default function CheckoutPage() {
 
                 {paymentMethod === "wallet" && balance >= finalTotal && (
                   <div className="text-xs text-center text-green-700 space-y-1 bg-green-50 p-3 rounded-lg border border-green-200">
-                    <p className="font-medium text-green-800">🎁 Wallet Benefits:</p>
-                    <p>• ⚡ <strong>Instant payment</strong> - No waiting for confirmation</p>
-                    <p>• 💰 <strong>Earn 5% cashback</strong> on every order</p>
-                    <p>• 🔒 <strong>Secure & encrypted</strong> transactions</p>
-                    <p>• 🚀 <strong>Lightning fast</strong> checkout process</p>
-                    <p>• 💳 <strong>No transaction fees</strong> - Save money!</p>
+                    <p className="font-medium text-green-800">Wallet Benefits:</p>
+                    <p>• <strong>Instant payment</strong> - No waiting for confirmation</p>
+                    <p>• <strong>Earn 5% cashback</strong> on every order</p>
+                    <p>• <strong>Secure & encrypted</strong> transactions</p>
+                    <p>• <strong>Lightning fast</strong> checkout process</p>
+                    <p>• <strong>No transaction fees</strong> - Save money!</p>
                   </div>
                 )}
 
                 {paymentMethod === "wallet" && balance < finalTotal && (
                   <div className="text-xs text-center text-orange-700 space-y-1 bg-orange-50 p-3 rounded-lg border border-orange-200">
-                    <p className="font-medium text-orange-800">💳 Insufficient Wallet Balance</p>
+                    <p className="font-medium text-orange-800">Insufficient Wallet Balance</p>
                     <p>You need <strong>KES {(finalTotal - balance).toLocaleString()}</strong> more to complete this order.</p>
                     <Button 
                       variant="outline" 

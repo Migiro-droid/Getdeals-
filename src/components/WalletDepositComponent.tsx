@@ -19,22 +19,24 @@ export const WalletDepositComponent: React.FC = () => {
     balance,
     pendingTransactions,
     depositLoading,
+    balanceUpdating,
     initiateDeposit,
     refreshWallet,
-    refreshPendingTransactions
+    refreshPendingTransactions,
+    forceBalanceRefresh
   } = useWallet();
 
   // Auto-refresh pending transactions periodically
   useEffect(() => {
     if (pendingTransactions.length > 0) {
-      const interval = setInterval(() => {
-        refreshPendingTransactions();
-        refreshWallet();
+      const interval = setInterval(async () => {
+        console.log('🔄 Auto-refreshing wallet data due to pending transactions');
+        await forceBalanceRefresh();
       }, 10000); // Check every 10 seconds
 
       return () => clearInterval(interval);
     }
-  }, [pendingTransactions.length, refreshPendingTransactions, refreshWallet]);
+  }, [pendingTransactions.length, forceBalanceRefresh]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();

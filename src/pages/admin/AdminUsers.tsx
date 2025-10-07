@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -74,8 +74,20 @@ export default function AdminUsers() {
   const { toast } = useToast();
   const [activeTab, setActiveTab] = useState("customers");
   const [customers, setCustomers] = useState<Customer[]>([]);
+  const [customerSummary, setCustomerSummary] = useState({
+    total: 0,
+    active: 0,
+    inactive: 0,
+    blocked: 0,
+    totalOrders: 0,
+    totalSpent: 0,
+    averageOrderValue: 0,
+  });
   const [adminUsers, setAdminUsers] = useState<AdminUser[]>([]);
   const [loading, setLoading] = useState(true);
+  
+  // Debug: Log admin users state changes
+  console.log('AdminUsers component rendered, adminUsers count:', adminUsers.length, adminUsers);
   const [searchTerm, setSearchTerm] = useState("");
   const [statusFilter, setStatusFilter] = useState("all");
   const [getdealsUsers, setGetdealsUsers] = useState<GetDealsUser[]>([]);
@@ -145,14 +157,46 @@ export default function AdminUsers() {
   }, []);
 
   const loadCustomers = async () => {
+    setLoading(true);
     try {
-  const baseUrl = getApiBase();
-  const response = await fetch(`${baseUrl}/api/admin/customers`);
-      if (response.ok) {
-        const data = await response.json();
-        setCustomers(data.customers || []);
-      } else {
+      const baseUrl = getApiBase();
+      const response = await fetch(`${baseUrl}/api/admin/customers`);
+      if (!response.ok) {
         throw new Error('Failed to load customers');
+      }
+
+      const data = await response.json();
+      const customersList = (data.customers || []) as Customer[];
+      setCustomers(customersList);
+
+      if (data.summary) {
+        const summary = data.summary || {};
+        const totalOrders = Number(summary.totalOrders ?? 0);
+        const totalSpent = Number(summary.totalSpent ?? 0);
+        setCustomerSummary({
+          total: Number(summary.total ?? customersList.length),
+          active: Number(summary.active ?? 0),
+          inactive: Number(summary.inactive ?? 0),
+          blocked: Number(summary.blocked ?? 0),
+          totalOrders,
+          totalSpent,
+          averageOrderValue: totalOrders > 0 ? totalSpent / totalOrders : 0,
+        });
+      } else {
+        const totalOrders = customersList.reduce((sum, customer) => sum + (customer.totalOrders || 0), 0);
+        const totalSpent = customersList.reduce((sum, customer) => sum + (customer.totalSpent || 0), 0);
+        const activeCount = customersList.filter((customer) => customer.status === 'active').length;
+        const inactiveCount = customersList.filter((customer) => customer.status === 'inactive').length;
+        const blockedCount = customersList.filter((customer) => customer.status === 'blocked').length;
+        setCustomerSummary({
+          total: customersList.length,
+          active: activeCount,
+          inactive: inactiveCount,
+          blocked: blockedCount,
+          totalOrders,
+          totalSpent,
+          averageOrderValue: totalOrders > 0 ? totalSpent / totalOrders : 0,
+        });
       }
     } catch (error) {
       console.error('Error loading customers:', error);
@@ -161,8 +205,16 @@ export default function AdminUsers() {
         description: "Failed to fetch customer data",
         variant: "destructive",
       });
-      // Load mock data for demo
-      setCustomers(generateMockCustomers());
+      setCustomers([]);
+      setCustomerSummary({
+        total: 0,
+        active: 0,
+        inactive: 0,
+        blocked: 0,
+        totalOrders: 0,
+        totalSpent: 0,
+        averageOrderValue: 0,
+      });
     } finally {
       setLoading(false);
     }
@@ -170,8 +222,8 @@ export default function AdminUsers() {
 
   const loadAdminUsers = async () => {
     try {
-  const baseUrl = getApiBase();
-  const response = await fetch(`${baseUrl}/api/admin/users`);
+      const baseUrl = getApiBase();
+      const response = await fetch(`${baseUrl}/api/admin/users`);
       if (response.ok) {
         const data = await response.json();
         setAdminUsers(data.users || []);
@@ -180,8 +232,50 @@ export default function AdminUsers() {
       }
     } catch (error) {
       console.error('Error loading admin users:', error);
-      // Load mock data for demo
-      setAdminUsers(generateMockAdminUsers());
+      
+      // Fallback to mock data for development
+      console.log('API failed, using mock admin users data');
+      const mockAdminUsers: AdminUser[] = [
+        {
+          id: 'admin_1',
+          name: 'GetDeals Admin',
+          email: 'admin@getdeals.co.ke', 
+          role: 'admin' as const,
+          status: 'active' as const,
+          lastLogin: new Date().toISOString(),
+          permissions: ['all'],
+          createdDate: new Date().toISOString()
+        },
+        {
+          id: 'staff_1',
+          name: 'Staff User',
+          email: 'staff@getdeals.co.ke',
+          role: 'staff' as const, 
+          status: 'active' as const,
+          lastLogin: new Date(Date.now() - 86400000).toISOString(), // 1 day ago
+          permissions: ['orders'],
+          createdDate: new Date(Date.now() - 7 * 86400000).toISOString() // 7 days ago
+        },
+        {
+          id: 'manager_1',
+          name: 'Operations Manager',
+          email: 'ops@getdeals.co.ke',
+          role: 'manager' as const, 
+          status: 'active' as const,
+          lastLogin: new Date(Date.now() - 2 * 86400000).toISOString(), // 2 days ago
+          permissions: ['orders', 'customers', 'inventory'],
+          createdDate: new Date(Date.now() - 14 * 86400000).toISOString() // 14 days ago
+        }
+      ];
+      
+      console.log('Setting mock admin users:', mockAdminUsers);
+      setAdminUsers(mockAdminUsers);
+      
+      toast({
+        title: "Using mock data",
+        description: "API unavailable, showing demo admin users",
+        variant: "default",
+      });
     }
   };
 
@@ -197,97 +291,6 @@ export default function AdminUsers() {
     } catch (error) {
       console.error('Error loading GetDeals data:', error);
     }
-  };
-
-  const generateMockCustomers = (): Customer[] => {
-    const names = [
-      { first: "James", last: "Mwangi" },
-      { first: "Aisha", last: "Khan" },
-      { first: "Peter", last: "Otieno" },
-      { first: "Grace", last: "Wanjiru" },
-      { first: "John", last: "Kamau" },
-      { first: "Mary", last: "Njeri" },
-      { first: "David", last: "Kiprotich" },
-      { first: "Sarah", last: "Wambui" }
-    ];
-    
-    const locations = ["Karen Branch", "Westlands Branch", "CBD Branch", "Kilimani Branch"];
-    
-    return names.map((name, index) => {
-      const getdealsNumber = `GD-${String(100001 + index).padStart(6, '0')}`;
-      return {
-        id: `cust_${Date.now()}_${index}`,
-        name: `${name.first} ${name.last}`,
-        email: `${name.first.toLowerCase()}.${name.last.toLowerCase()}@gmail.com`,
-        phone: `+254 7${String(Math.floor(Math.random() * 90000000) + 10000000)}`,
-        address: index % 3 === 0 ? `${Math.floor(Math.random() * 100) + 1} ${name.last} Street, Nairobi` : undefined,
-        joinDate: new Date(Date.now() - Math.random() * 365 * 24 * 60 * 60 * 1000).toISOString(),
-        lastOrderDate: Math.random() > 0.2 ? new Date(Date.now() - Math.random() * 30 * 24 * 60 * 60 * 1000).toISOString() : undefined,
-        totalOrders: Math.floor(Math.random() * 20) + 1,
-        totalSpent: Math.floor(Math.random() * 50000) + 1000,
-        status: Math.random() > 0.1 ? 'active' : Math.random() > 0.5 ? 'inactive' : 'blocked',
-        preferredLocation: locations[index % locations.length],
-        notes: index % 4 === 0 ? "VIP customer - prefers early delivery" : undefined,
-        getdealsNumber,
-        walletBalance: Math.floor(Math.random() * 5000) + 500,
-        walletActive: Math.random() > 0.1
-      };
-    });
-  };
-
-  const generateMockAdminUsers = (): AdminUser[] => {
-    return [
-      {
-        id: "admin_1",
-        name: "Eric Ndivo",
-        email: "eric@getdeals.co.ke",
-        role: "admin",
-        status: "active",
-        lastLogin: new Date().toISOString(),
-        permissions: ["all"],
-        createdDate: new Date(Date.now() - 180 * 24 * 60 * 60 * 1000).toISOString()
-      },
-      {
-        id: "admin_2",
-        name: "Jane Wanjiku",
-        email: "jane@getdeals.co.ke",
-        role: "manager",
-        status: "active",
-        lastLogin: new Date(Date.now() - 2 * 60 * 60 * 1000).toISOString(),
-        permissions: ["orders", "customers", "inventory", "reports"],
-        createdDate: new Date(Date.now() - 90 * 24 * 60 * 60 * 1000).toISOString()
-      },
-      {
-        id: "admin_3",
-        name: "Michael Ochieng",
-        email: "michael@getdeals.co.ke",
-        role: "staff",
-        status: "active",
-        lastLogin: new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString(),
-        permissions: ["orders"],
-        createdDate: new Date(Date.now() - 30 * 24 * 60 * 60 * 1000).toISOString()
-      },
-      {
-        id: "admin_4",
-        name: "Sarah Kiprotich",
-        email: "sarah@getdeals.co.ke",
-        role: "staff",
-        status: "inactive",
-        lastLogin: new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString(),
-        permissions: ["orders", "customers"],
-        createdDate: new Date(Date.now() - 45 * 24 * 60 * 60 * 1000).toISOString()
-      },
-      {
-        id: "admin_5",
-        name: "Robert Maina",
-        email: "robert@getdeals.co.ke",
-        role: "manager",
-        status: "active",
-        lastLogin: new Date(Date.now() - 6 * 60 * 60 * 1000).toISOString(),
-        permissions: ["orders", "customers", "inventory", "wallet", "support"],
-        createdDate: new Date(Date.now() - 60 * 24 * 60 * 60 * 1000).toISOString()
-      }
-    ];
   };
 
   // Filter functions
@@ -306,6 +309,14 @@ export default function AdminUsers() {
     const matchesStatus = statusFilter === "all" || user.status === statusFilter;
     return matchesSearch && matchesStatus;
   });
+
+  // Debug: Log filtered admin users
+  console.log('Filtered admin users:', filteredAdminUsers.length, filteredAdminUsers);
+  console.log('Search term:', searchTerm, 'Status filter:', statusFilter);
+
+  const totalWalletBalance = useMemo(() => (
+    customers.reduce((sum, customer) => sum + (customer.walletBalance || 0), 0)
+  ), [customers]);
 
   // Action handlers
   const handleUpdateCustomerStatus = async (customerId: string, newStatus: Customer['status']) => {
@@ -829,7 +840,7 @@ export default function AdminUsers() {
                   <div className="flex items-center justify-between">
                     <div>
                       <p className="text-sm font-medium text-muted-foreground">Total Customers</p>
-                      <p className="text-2xl font-bold">{customers.length}</p>
+                      <p className="text-2xl font-bold">{customerSummary.total}</p>
                     </div>
                     <Users className="h-8 w-8 text-blue-600" />
                   </div>
@@ -841,7 +852,7 @@ export default function AdminUsers() {
                     <div>
                       <p className="text-sm font-medium text-muted-foreground">Active Customers</p>
                       <p className="text-2xl font-bold text-green-600">
-                        {customers.filter(c => c.status === 'active').length}
+                        {customerSummary.active}
                       </p>
                     </div>
                     <UserCheck className="h-8 w-8 text-green-600" />
@@ -867,7 +878,7 @@ export default function AdminUsers() {
                     <div>
                       <p className="text-sm font-medium text-muted-foreground">Total Wallet Balance</p>
                       <p className="text-2xl font-bold text-emerald-600">
-                        KES {customers.reduce((sum, c) => sum + (c.walletBalance || 0), 0).toLocaleString()}
+                        KES {totalWalletBalance.toLocaleString(undefined, { minimumFractionDigits: 0, maximumFractionDigits: 2 })}
                       </p>
                     </div>
                     <Wallet className="h-8 w-8 text-emerald-600" />
@@ -880,7 +891,7 @@ export default function AdminUsers() {
                     <div>
                       <p className="text-sm font-medium text-muted-foreground">Avg Order Value</p>
                       <p className="text-2xl font-bold text-purple-600">
-                        KES {customers.length > 0 ? Math.round(customers.reduce((sum, c) => sum + c.totalSpent, 0) / customers.reduce((sum, c) => sum + c.totalOrders, 0) || 0).toLocaleString() : 0}
+                        KES {customerSummary.averageOrderValue.toLocaleString(undefined, { minimumFractionDigits: 0, maximumFractionDigits: 2 })}
                       </p>
                     </div>
                     <ShoppingBag className="h-8 w-8 text-purple-600" />
@@ -1127,12 +1138,6 @@ export default function AdminUsers() {
                   </div>
                 </div>
                 <div className="mt-4 space-y-3">
-                  <div className="text-sm text-muted-foreground">
-                    <p><strong>Format:</strong> GD-XXXXXX (e.g., GD-100001)</p>
-                    <p>Use this tool to quickly find users by their GetDeals number for customer support.</p>
-                    <p className="text-blue-600 mt-2">💡 Results will open in the customer details modal automatically</p>
-                  </div>
-                  
                   {/* Quick lookup buttons for testing */}
                   {customers.filter(c => c.getdealsNumber).length > 0 && (
                     <div>

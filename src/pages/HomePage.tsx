@@ -258,9 +258,9 @@ export default function HomePage() {
               </h1>
               
               <p className="text-xl text-white/90 max-w-xl drop-shadow-md animate-in fade-in-0 slide-in-from-left-4 duration-1000 delay-400">
-                Save up to <span className="text-yellow-400 font-bold">50% off</span> on curated family baskets! 
+                Discover <span className="text-yellow-400 font-bold">amazing deals</span> on curated family baskets! 
                 <span className="text-green-400 font-semibold">Free delivery</span> over KES 5,000. 
-                Exclusive deals on groceries, family baskets, and more. Join our growing community today!
+                Quality products at better prices on groceries, family baskets, and more. Join our growing community today!
               </p>
 
               {/* Key Metrics - Professional Display */}

@@ -14,6 +14,7 @@ export interface WalletContextType {
   loading: boolean;
   transactionsLoading: boolean;
   depositLoading: boolean;
+  balanceUpdating: boolean;
   
   // Actions
   initiateDeposit: (request: DepositRequest) => Promise<DepositResponse>;
@@ -21,6 +22,7 @@ export interface WalletContextType {
   refreshTransactions: () => Promise<void>;
   refreshPendingTransactions: () => Promise<void>;
   resetWalletData: () => Promise<void>;
+  forceBalanceRefresh: () => Promise<void>;
 }
 
 const WalletContext = createContext<WalletContextType | undefined>(undefined);
@@ -32,6 +34,7 @@ export const WalletProvider: React.FC<{ children: React.ReactNode }> = ({ childr
   const [loading, setLoading] = useState(true);
   const [transactionsLoading, setTransactionsLoading] = useState(true);
   const [depositLoading, setDepositLoading] = useState(false);
+  const [balanceUpdating, setBalanceUpdating] = useState(false);
 
   // Fetch wallet balance
   const refreshWallet = useCallback(async () => {
@@ -68,6 +71,22 @@ export const WalletProvider: React.FC<{ children: React.ReactNode }> = ({ childr
       setPendingTransactions([]);
     }
   }, []);
+
+  // Force balance refresh with loading indicator
+  const forceBalanceRefresh = useCallback(async () => {
+    setBalanceUpdating(true);
+    try {
+      const result = await walletService.getWalletBalance();
+      setWalletData(result);
+      
+      // Also refresh pending transactions to sync status
+      await refreshPendingTransactions();
+    } catch (error) {
+      console.error('Error force refreshing wallet:', error);
+    } finally {
+      setBalanceUpdating(false);
+    }
+  }, [refreshPendingTransactions]);
 
   // Initialize wallet data when user signs in
   useEffect(() => {
@@ -220,12 +239,14 @@ export const WalletProvider: React.FC<{ children: React.ReactNode }> = ({ childr
     loading,
     transactionsLoading,
     depositLoading,
+    balanceUpdating,
     
     initiateDeposit,
     refreshWallet,
     refreshTransactions,
     refreshPendingTransactions,
     resetWalletData,
+    forceBalanceRefresh,
   };
 
   return <WalletContext.Provider value={value}>{children}</WalletContext.Provider>;

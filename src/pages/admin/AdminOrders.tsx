@@ -1,4 +1,4 @@
-import { useMemo, useState } from "react";
+import { useMemo, useState, useEffect } from "react";
 import { useOrders, OrderStatus } from "@/contexts/OrdersContext";
 import { useAdmin } from "@/contexts/AdminContext";
 import { Card, CardContent } from "@/components/ui/card";
@@ -7,12 +7,55 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
-import { Circle, CheckCircle, Clock, Truck, Package, ChevronRight, MapPin, CreditCard, Calendar, User, Shield, Crown } from "lucide-react";
+import { Input } from "@/components/ui/input";
+import { Circle, CheckCircle, Clock, Truck, Package, ChevronRight, MapPin, CreditCard, Calendar, User, Shield, Crown, RefreshCw } from "lucide-react";
 import { ScrollArea } from "@/components/ui/scroll-area";
 
+interface DatabaseOrder {
+  id: string;
+  order_reference: string;
+  customer_name: string;
+  customer_email: string;
+  customer_phone: string;
+  total_amount_kes: number;
+  subtotal_kes: number;
+  delivery_fee_kes: number;
+  status: string;
+  payment_status: string;
+  payment_method: string;
+  delivery_method: string;
+  delivery_address?: string;
+  pickup_location?: string;
+  mpesa_receipt_number?: string;
+  payment_reference?: string;
+  created_at: string;
+  items: any[];
+}
+
+interface OrderStats {
+  total: number;
+  pending: number;
+  confirmed: number;
+  completed: number;
+  cancelled: number;
+  totalRevenue: number;
+}
+
 export default function AdminOrders() {
-  const { orders, updateStatus } = useOrders();
+  const { orders: localOrders, updateStatus } = useOrders();
   const { role, user } = useAdmin();
+  const [databaseOrders, setDatabaseOrders] = useState<DatabaseOrder[]>([]);
+  const [stats, setStats] = useState<OrderStats>({
+    total: 0,
+    pending: 0,
+    confirmed: 0,
+    completed: 0,
+    cancelled: 0,
+    totalRevenue: 0
+  });
+  const [loading, setLoading] = useState(true);
+  const [search, setSearch] = useState('');
+  
   const statuses: OrderStatus[] = [
     "pending",
     "confirmed",
@@ -23,6 +66,63 @@ export default function AdminOrders() {
   ];
   const [statusFilter, setStatusFilter] = useState<"all" | OrderStatus>("all");
   const [sortBy, setSortBy] = useState<"newest" | "oldest" | "total_desc" | "total_asc">("newest");
+
+  // Fetch database orders
+  const fetchDatabaseOrders = async () => {
+    setLoading(true);
+    try {
+      const params = new URLSearchParams({
+        limit: '100',
+        offset: '0',
+        ...(statusFilter !== 'all' && { status: statusFilter.toUpperCase() }),
+        ...(search && { search })
+      });
+
+      const response = await fetch(`/api/orders/list?${params}`);
+      const data = await response.json();
+
+      if (data.success) {
+        setDatabaseOrders(data.orders);
+        setStats(data.stats);
+      } else {
+        console.error('Failed to fetch orders:', data.error);
+      }
+    } catch (error) {
+      console.error('Error fetching orders:', error);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    fetchDatabaseOrders();
+  }, [statusFilter, search]);
+
+  // Convert database order to local order format for existing UI
+  const convertDatabaseOrderToLocal = (dbOrder: DatabaseOrder) => ({
+    id: dbOrder.order_reference,
+    date: dbOrder.created_at,
+    status: dbOrder.status.toLowerCase() as OrderStatus,
+    items: dbOrder.items || [],
+    subtotal: dbOrder.subtotal_kes,
+    deliveryFee: dbOrder.delivery_fee_kes,
+    total: dbOrder.total_amount_kes,
+    deliveryMethod: dbOrder.delivery_method === 'speedy' ? 'speedy' : 'pickup',
+    paymentMethod: dbOrder.payment_method,
+    customer: {
+      firstName: dbOrder.customer_name?.split(' ')[0] || '',
+      lastName: dbOrder.customer_name?.split(' ').slice(1).join(' ') || '',
+      phone: dbOrder.customer_phone,
+      email: dbOrder.customer_email,
+      address: dbOrder.delivery_address,
+      pickupLocation: dbOrder.pickup_location
+    }
+  });
+
+  // Use database orders if available, fallback to local orders
+  const orders = databaseOrders.length > 0
+    ? databaseOrders.map(convertDatabaseOrderToLocal)
+    : localOrders;
 
   const counts = useMemo(() => {
     const base = {
@@ -253,7 +353,15 @@ export default function AdminOrders() {
           <h1 className="text-3xl font-bold">Orders</h1>
           <UserDisplay />
         </div>
-        {orders.length > 0 && (
+
+        {loading && (
+          <div className="text-center py-8">
+            <RefreshCw className="h-8 w-8 animate-spin mx-auto mb-2" />
+            <div>Loading orders...</div>
+          </div>
+        )}
+
+        {orders.length > 0 && !loading && (
           <div className="flex flex-col gap-3 mb-6">
             <div className="flex items-center justify-between gap-3 flex-wrap">
                 <div className="flex items-center gap-2 overflow-x-auto [-ms-overflow-style:none] [scrollbar-width:none]">
@@ -366,6 +474,27 @@ export default function AdminOrders() {
                       <span className="font-medium text-foreground">KES {active.total.toLocaleString()}</span>
                     </div>
                   </div>
+                  
+                  {/* Show additional payment info for database orders */}
+                  {(() => {
+                    const dbOrder = databaseOrders.find(db => db.order_reference === active.id);
+                    if (!dbOrder) return null;
+                    return (
+                      <div className="mt-3 p-3 bg-blue-50 rounded-lg border border-blue-200">
+                        <div className="text-xs font-medium text-blue-800 mb-2">Payment Details</div>
+                        <div className="grid sm:grid-cols-2 gap-2 text-xs">
+                          {dbOrder.mpesa_receipt_number && (
+                            <div><span className="text-muted-foreground">M-Pesa Receipt:</span> <span className="font-mono">{dbOrder.mpesa_receipt_number}</span></div>
+                          )}
+                          {dbOrder.payment_reference && (
+                            <div><span className="text-muted-foreground">Payment Ref:</span> <span className="font-mono text-xs">{dbOrder.payment_reference}</span></div>
+                          )}
+                          <div><span className="text-muted-foreground">Payment Status:</span> <Badge variant={dbOrder.payment_status === 'paid' ? 'default' : 'secondary'}>{dbOrder.payment_status}</Badge></div>
+                          <div><span className="text-muted-foreground">Order Status:</span> <Badge className={dbOrder.status === 'CONFIRMED' ? 'bg-green-500' : 'bg-yellow-500'}>{dbOrder.status}</Badge></div>
+                        </div>
+                      </div>
+                    );
+                  })()}
                 </div>
                 <ScrollArea className="max-h-[80vh]">
                   <div className="p-6 space-y-5">

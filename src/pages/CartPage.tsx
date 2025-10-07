@@ -114,9 +114,9 @@ export default function CartPage() {
                     <span>Subtotal</span>
                     <span>KES {total.toLocaleString()}</span>
                   </div>
-                  <div className="flex justify-between">
+                  <div className="flex justify-between text-sm text-muted-foreground">
                     <span>Delivery Fee</span>
-                    <span>KES 200</span>
+                    <span>Calculated at checkout</span>
                   </div>
                 </div>
                 
@@ -124,8 +124,12 @@ export default function CartPage() {
                 
                 <div className="flex justify-between font-bold text-lg">
                   <span>Total</span>
-                  <span className="text-primary">KES {(total + 200).toLocaleString()}</span>
+                  <span className="text-primary">KES {total.toLocaleString()}</span>
                 </div>
+                
+                <p className="text-xs text-muted-foreground text-center">
+                  Final amount will be calculated based on your delivery option at checkout
+                </p>
                 
                 <Button size="lg" className="w-full" asChild>
                   <Link to="/checkout">Proceed to Checkout</Link>

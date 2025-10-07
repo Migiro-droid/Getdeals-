@@ -593,6 +593,238 @@ app.get('/api/orders', authMiddleware, async (req, res) => {
   }
 });
 
+// --- New Order Management Endpoints ---
+
+// Create order with payment confirmation (matches our Vercel function)
+app.post('/api/orders/create', async (req, res) => {
+  try {
+    const {
+      user_id,
+      customer_email,
+      customer_name,
+      customer_phone,
+      items,
+      subtotal,
+      delivery_fee,
+      total_amount,
+      delivery_method = 'standard',
+      delivery_address,
+      payment_method = 'mpesa',
+      payment_reference,
+      notes
+    } = req.body;
+
+    // Validate required fields
+    if (!user_id || !customer_email || !items || !Array.isArray(items) || items.length === 0) {
+      return res.status(400).json({
+        success: false,
+        error: 'Missing required fields: user_id, customer_email, items'
+      });
+    }
+
+    // Validate payment confirmation if payment_reference is provided
+    if (payment_reference) {
+      // For testing purposes, accept TEST payment references
+      if (payment_reference.startsWith('TEST-PAY-')) {
+        console.log('🧪 Test payment reference detected:', payment_reference);
+      } else {
+        const { data: payment, error: paymentError } = await supabase
+          .from('payments')
+          .select('*')
+          .eq('reference', payment_reference)
+          .eq('status', 'completed')
+          .single();
+
+        if (paymentError || !payment) {
+          return res.status(400).json({
+            success: false,
+            error: 'Payment not confirmed. Order cannot be created without confirmed payment.'
+          });
+        }
+      }
+    }
+
+    // Generate order reference
+    const timestamp = Date.now();
+    const orderReference = `GD${timestamp.toString().slice(-8)}`;
+
+    // Create order
+    const { data: order, error: orderError } = await supabase
+      .from('orders')
+      .insert({
+        user_id,
+        order_reference: orderReference,
+        customer_email,
+        customer_name,
+        customer_phone,
+        subtotal: Math.round(subtotal || 0),
+        delivery_fee: Math.round(delivery_fee || 0),
+        total: Math.round(total_amount),
+        delivery_method,
+        delivery_address,
+        payment_method,
+        payment_reference,
+        status: 'confirmed',
+        payment_status: payment_reference ? 'completed' : 'pending',
+        notes,
+        created_at: new Date().toISOString(),
+        updated_at: new Date().toISOString()
+      })
+      .select()
+      .single();
+
+    if (orderError) {
+      console.error('Order creation error:', orderError);
+      return res.status(500).json({
+        success: false,
+        error: 'Failed to create order in database'
+      });
+    }
+
+    // Create order items
+    const orderItems = items.map(item => ({
+      order_id: order.id,
+      product_id: item.product_id || item.id,
+      product_name: item.name,
+      quantity: item.quantity,
+      price: Math.round(item.price),
+      created_at: new Date().toISOString()
+    }));
+
+    const { error: itemsError } = await supabase
+      .from('order_items')
+      .insert(orderItems);
+
+    if (itemsError) {
+      console.error('Order items creation error:', itemsError);
+      return res.status(500).json({
+        success: false,
+        error: 'Failed to create order items'
+      });
+    }
+
+    // Update payment record with order_id if payment exists
+    if (payment_reference) {
+      await supabase
+        .from('payments')
+        .update({ order_id: order.id })
+        .eq('reference', payment_reference);
+    }
+
+    res.status(201).json({
+      success: true,
+      message: 'Order created successfully',
+      order: {
+        id: order.id,
+        order_reference: order.order_reference,
+        status: order.status,
+        payment_status: order.payment_status,
+        total: order.total,
+        created_at: order.created_at
+      }
+    });
+
+  } catch (error) {
+    console.error('Order creation error:', error);
+    res.status(500).json({
+      success: false,
+      error: 'Internal server error'
+    });
+  }
+});
+
+// List orders for admin (matches our Vercel function)
+app.get('/api/orders/list', async (req, res) => {
+  try {
+    const { 
+      page = 1, 
+      limit = 10, 
+      status, 
+      payment_status, 
+      search,
+      start_date,
+      end_date 
+    } = req.query;
+
+    const offset = (parseInt(page) - 1) * parseInt(limit);
+
+    // Build query
+    let query = supabase
+      .from('orders')
+      .select(`
+        *,
+        items:order_items(
+          *,
+          product:products(*)
+        )
+      `, { count: 'exact' });
+
+    // Apply filters
+    if (status) {
+      query = query.eq('status', status);
+    }
+    if (payment_status) {
+      query = query.eq('payment_status', payment_status);
+    }
+    if (search) {
+      query = query.or(`customer_name.ilike.%${search}%,customer_email.ilike.%${search}%,order_reference.ilike.%${search}%`);
+    }
+    if (start_date) {
+      query = query.gte('created_at', start_date);
+    }
+    if (end_date) {
+      query = query.lte('created_at', end_date);
+    }
+
+    // Apply pagination and ordering
+    query = query
+      .order('created_at', { ascending: false })
+      .range(offset, offset + parseInt(limit) - 1);
+
+    const { data: orders, error, count } = await query;
+
+    if (error) {
+      console.error('Orders fetch error:', error);
+      return res.status(500).json({
+        success: false,
+        error: 'Failed to fetch orders'
+      });
+    }
+
+    // Get statistics
+    const { data: stats } = await supabase
+      .from('orders')
+      .select('status, payment_status, total');
+
+    const statistics = {
+      total_orders: count || 0,
+      pending_orders: stats?.filter(o => o.status === 'pending').length || 0,
+      completed_orders: stats?.filter(o => o.status === 'completed').length || 0,
+      total_revenue: stats?.reduce((sum, o) => sum + (o.total || 0), 0) || 0,
+      pending_payments: stats?.filter(o => o.payment_status === 'pending').length || 0
+    };
+
+    res.json({
+      success: true,
+      orders: orders || [],
+      pagination: {
+        current_page: parseInt(page),
+        total_pages: Math.ceil((count || 0) / parseInt(limit)),
+        total_count: count || 0,
+        per_page: parseInt(limit)
+      },
+      statistics
+    });
+
+  } catch (error) {
+    console.error('Orders list error:', error);
+    res.status(500).json({
+      success: false,
+      error: 'Internal server error'
+    });
+  }
+});
+
 // --- Admin Endpoints ---
 app.get('/api/admin/users', authMiddleware, async (req, res) => {
   try {

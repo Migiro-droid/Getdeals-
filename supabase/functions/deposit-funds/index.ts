@@ -208,7 +208,7 @@ serve(async (req: Request) => {
       amount: Number(amount),
       phone: formattedPhone,
       customer_id: profile.customer_id,
-      callback_url: "https://getdeals.co.ke/api/rukisha/callback",
+      callback_url: "https://getdeals.co.ke/api/webhooks/rukisha",
       reference: reference
     }
 

@@ -1,7 +1,6 @@
 import type { VercelRequest, VercelResponse } from '@vercel/node';
 import { createClient } from '@supabase/supabase-js';
 
-// Initialize Supabase client
 const supabase = createClient(
   process.env.SUPABASE_URL!,
   process.env.SUPABASE_SERVICE_ROLE_KEY!
@@ -22,22 +21,22 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
   }
 
   try {
-    console.log('🔍 Checking payment status for:', checkoutRequestId);
+    console.log(' Checking payment status for:', checkoutRequestId);
 
-    // First, check our database for payment status
+    
     const { data: payment, error: dbError } = await supabase
       .from('payments')
       .select('*')
       .eq('transaction_id', checkoutRequestId)
       .single();
 
-    if (dbError && dbError.code !== 'PGRST116') { // PGRST116 = no rows found
+    if (dbError && dbError.code !== 'PGRST116') { 
       console.error('Database error:', dbError);
     }
 
     console.log('💾 Database payment record:', payment);
 
-    // If payment is already confirmed in our database, return success immediately
+    
     if (payment && payment.status === 'success') {
       return res.status(200).json({
         success: true,
@@ -45,21 +44,20 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
         resultDesc: 'Payment confirmed from database',
         mpesaReceiptNumber: payment.mpesa_receipt_number,
         transactionDate: payment.transaction_date,
-        amount: payment.amount / 100, // Convert from cents
+        amount: payment.amount / 100, 
         paymentConfirmed: true,
         source: 'database'
       });
     }
 
-    // If not confirmed in database, query M-Pesa API
+    
     const mpesaResult = await queryMpesaStatus(checkoutRequestId);
     
     if (mpesaResult.success) {
-      // Check if M-Pesa says payment is successful
+      
       const isPaymentSuccessful = mpesaResult.ResultCode === '0' || mpesaResult.resultCode === '0';
       
       if (isPaymentSuccessful && payment) {
-        // Update our database if M-Pesa says it's successful but our DB doesn't reflect it
         const { error: updateError } = await supabase
           .from('payments')
           .update({
@@ -74,7 +72,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
         if (updateError) {
           console.error('Error updating payment status:', updateError);
         } else {
-          console.log('✅ Payment status updated in database');
+          console.log(' Payment status updated in database');
         }
       }
 
@@ -89,7 +87,6 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
         source: 'mpesa-api'
       });
     } else {
-      // M-Pesa query failed
       return res.status(200).json({
         success: false,
         resultCode: '1',
@@ -112,10 +109,10 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
 
 async function queryMpesaStatus(checkoutRequestId: string) {
   try {
-    // Get M-Pesa access token
+    
     const accessToken = await getMpesaAccessToken();
     
-    // Generate password and timestamp
+  
     const { password, timestamp } = generateMpesaPassword();
     const shortCode = process.env.MPESA_SHORTCODE || process.env.MPESA_BUSINESS_SHORT_CODE;
 

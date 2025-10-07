@@ -4,6 +4,7 @@ import { useToast } from "@/hooks/use-toast";
 import { supabase } from "../../lib/supabase";
 import { useAuth } from "@/contexts/AuthContext";
 import { OrganizationSetupModal } from "@/components/OrganizationSetupModal";
+import { PostSignupChecklist } from "@/components/PostSignupChecklist";
 
 export default function AuthCallbackPage() {
   const navigate = useNavigate();
@@ -11,6 +12,7 @@ export default function AuthCallbackPage() {
   const { user } = useAuth();
   const [isProcessing, setIsProcessing] = useState(true);
   const [showOrgSetup, setShowOrgSetup] = useState(false);
+  const [showPreferences, setShowPreferences] = useState(false);
   const [userInfo, setUserInfo] = useState<{ email: string; isOAuthUser: boolean } | null>(null);
 
   useEffect(() => {
@@ -68,8 +70,33 @@ export default function AuthCallbackPage() {
               title: "Welcome to GetDeals! 🎉",
               description: "Please complete your organization setup to continue."
             });
+          } else if (isOAuthUser && hasOrganizationDetails) {
+            // OAuth user with organization details - check if preferences are needed
+            const hasPreferences = data.session.user.user_metadata?.preferences || 
+                                  data.session.user.user_metadata?.onboardingCompleted;
+            
+            setUserInfo({
+              email: data.session.user.email!,
+              isOAuthUser: true
+            });
+            setIsProcessing(false);
+            
+            if (!hasPreferences) {
+              setShowPreferences(true);
+              toast({
+                title: "Welcome back! 🎉",
+                description: "Let's personalize your shopping experience."
+              });
+            } else {
+              // User has both org details and preferences, redirect to home
+              toast({
+                title: "Welcome back! 🎉",
+                description: `Good to see you again!`
+              });
+              navigate('/', { replace: true });
+            }
           } else {
-            // Regular flow for users with organization details or non-OAuth users
+            // Regular flow for non-OAuth users
             toast({
               title: "Signed in successfully! 🎉",
               description: `Welcome ${data.session.user.user_metadata?.name || data.session.user.email}!`
@@ -103,19 +130,28 @@ export default function AuthCallbackPage() {
     }
   }, [navigate, toast, isProcessing]);
 
-  // If user is already authenticated, redirect immediately
+  // If user is already authenticated and no setup flows are active, redirect immediately
   useEffect(() => {
-    if (user && !isProcessing && !showOrgSetup) {
+    if (user && !isProcessing && !showOrgSetup && !showPreferences) {
       console.log('User already authenticated, redirecting...');
       navigate('/', { replace: true });
     }
-  }, [user, navigate, isProcessing, showOrgSetup]);
+  }, [user, navigate, isProcessing, showOrgSetup, showPreferences]);
 
   const handleOrganizationSetupComplete = () => {
     setShowOrgSetup(false);
+    setShowPreferences(true);
     toast({
       title: "Setup complete! 🎉",
-      description: "Welcome to GetDeals Kenya. You're all set to start shopping!"
+      description: "Now let's personalize your shopping experience."
+    });
+  };
+
+  const handlePreferencesComplete = () => {
+    setShowPreferences(false);
+    toast({
+      title: "All set! 🎉",
+      description: "Welcome to GetDeals Kenya. You're ready to start shopping!"
     });
     navigate('/', { replace: true });
   };
@@ -139,6 +175,12 @@ export default function AuthCallbackPage() {
           userEmail={userInfo.email}
         />
       )}
+
+      {/* Preferences Setup for OAuth users */}
+      <PostSignupChecklist
+        open={showPreferences}
+        onComplete={handlePreferencesComplete}
+      />
     </>
   );
 }

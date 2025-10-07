@@ -6,7 +6,6 @@ interface EmailData {
     subject?: string;
     htmlContent?: string;
     textContent?: string;
-    // Order confirmation data
     customerName?: string;
     orderNumber?: string;
     total?: number;
@@ -14,18 +13,15 @@ interface EmailData {
     deliveryAddress?: string;
     paymentMethod?: string;
     createdAt?: string;
-    // Payment confirmation data
     transactionId?: string;
     amount?: number;
     method?: string;
     paidAt?: string;
-    // Welcome email data
     email?: string;
     organization?: string;
-    // Password reset data
     resetLink?: string;
     expiryTime?: string;
-    [key: string]: unknown; // Changed from 'any' to 'unknown'
+    [key: string]: unknown; 
 }
 
 interface EmailRequestBody {
@@ -40,7 +36,7 @@ interface EmailResult {
     error?: string;
     details?: unknown;
     data?: unknown;
-    [key: string]: unknown; // Changed from 'any' to 'unknown'
+    [key: string]: unknown; 
 }
 
 export async function POST(request: Request): Promise<Response> {
