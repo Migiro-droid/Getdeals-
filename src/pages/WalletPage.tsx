@@ -4,12 +4,13 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
+import { Skeleton } from "@/components/ui/skeleton";
 import { useToast } from "@/hooks/use-toast";
 import { useWallet } from "@/contexts/NewWalletContext";
 import { useWalletKyc } from "../hooks/useWalletKyc";
 import { KycStatusDisplay } from "../components/KycStatusDisplay";
 import { WalletActivationModal } from "../components/WalletActivationModal";
-import { ArrowDownCircle, ArrowUpCircle, Wallet, RotateCcw, Shield } from "lucide-react";
+import { ArrowDownCircle, ArrowUpCircle, Wallet, Shield, Clock, XCircle } from "lucide-react";
 
 export default function WalletPage() {
   const { balance, transactions, initiateDeposit, refreshWallet, resetWalletData, walletId, loading, transactionsLoading, walletData } = useWallet() as any;
@@ -38,25 +39,6 @@ export default function WalletPage() {
       title: "Welcome to your wallet!",
       description: "Your identity has been verified and wallet is fully activated. All features are now available.",
     });
-  };
-
-  const handleReset = async () => {
-    if (window.confirm("Are you sure you want to reset your wallet data? This will permanently delete all incomplete transactions (pending, failed, cancelled) from the database and reset your balance display. This action cannot be undone.")) {
-      try {
-        await resetWalletData();
-        toast({
-          title: "Wallet Reset Complete",
-          description: "All incomplete transactions have been permanently deleted from the database. Only completed transactions will remain.",
-        });
-      } catch (error) {
-        console.error('Error resetting wallet data:', error);
-        toast({
-          title: "Reset Error",
-          description: "There was an error resetting your wallet data. Please try again.",
-          variant: "destructive"
-        });
-      }
-    }
   };
 
   const stats = useMemo(() => {
@@ -123,17 +105,45 @@ export default function WalletPage() {
         setAmount("");
         await refreshWallet();
       } else {
+        // Handle specific M-Pesa error codes
+        let errorTitle = 'Deposit Failed';
+        let errorDescription = result.error || 'Unable to initiate deposit. Please try again.';
+        let errorIcon = '❌';
+
+        // Check for common M-Pesa error patterns
+        if (result.error?.includes('timeout') || result.error?.includes('timed out') || result.error?.includes('2029')) {
+          errorTitle = '⏱️ Request Timeout';
+          errorDescription = 'The M-Pesa request did not reach your phone or timed out. Please check your phone network and try again.';
+          errorIcon = '⏱️';
+        } else if (result.error?.includes('cancel') || result.error?.includes('1032')) {
+          errorTitle = '🚫 Payment Cancelled';
+          errorDescription = 'You cancelled the M-Pesa payment request. No money was deducted from your account.';
+          errorIcon = '🚫';
+        } else if (result.error?.includes('insufficient') || result.error?.includes('funds') || result.error?.includes('1')) {
+          errorTitle = '💳 Insufficient Funds';
+          errorDescription = 'Your M-Pesa account does not have enough balance for this transaction. Please top up and try again.';
+          errorIcon = '💳';
+        } else if (result.error?.includes('1037')) {
+          errorTitle = '⏱️ Payment Timeout';
+          errorDescription = 'You did not enter your M-Pesa PIN in time. Please try again.';
+          errorIcon = '⏱️';
+        } else if (result.error?.includes('1001')) {
+          errorTitle = '❌ Unable to Complete';
+          errorDescription = 'M-Pesa was unable to process your payment. Please try again or contact M-Pesa support.';
+          errorIcon = '❌';
+        }
+
         toast({
-          title: 'Deposit Failed',
-          description: result.error || 'Unable to initiate deposit. Please try again.',
+          title: errorTitle,
+          description: errorDescription,
           variant: 'destructive',
           duration: 10000
         });
       }
     } catch (error) {
       toast({
-        title: 'Unexpected Error',
-        description: error?.message || 'An unexpected error occurred during deposit.',
+        title: '❌ Unexpected Error',
+        description: error?.message || 'An unexpected error occurred during deposit. Please try again or contact support.',
         variant: 'destructive',
         duration: 10000
       });
@@ -156,9 +166,13 @@ export default function WalletPage() {
             <p className="mt-1 text-muted-foreground">Manage your funds and transactions securely.</p>
           </div>
           <div className="flex items-center">
-            <span className="inline-flex items-center rounded-md bg-primary/10 text-primary border border-primary/20 px-3 py-1 text-xs md:text-sm font-mono tracking-wide">
-              Wallet ID: {walletId || (walletData?.user_id ? 'TEMP-' + walletData.user_id.slice(0,8) : '...')}
-            </span>
+            {loading ? (
+              <Skeleton className="h-8 w-64" />
+            ) : (
+              <span className="inline-flex items-center rounded-md bg-primary/10 text-primary border border-primary/20 px-3 py-1 text-xs md:text-sm font-mono tracking-wide">
+                Wallet ID: {walletId || (walletData?.user_id ? 'TEMP-' + walletData.user_id.slice(0,8) : '...')}
+              </span>
+            )}
           </div>
         </div>
 
@@ -186,17 +200,47 @@ export default function WalletPage() {
         {}
         {isVerified && !kycLoading && (
           <>
-            {}
+            {loading ? (
+              // Skeleton loading state
+              <div className="grid gap-6 md:grid-cols-3 mb-8">
+                <Card className="border-primary/20">
+                  <CardHeader>
+                    <CardTitle className="text-sm text-muted-foreground">Current Balance</CardTitle>
+                  </CardHeader>
+                  <CardContent>
+                    <Skeleton className="h-12 w-48" />
+                  </CardContent>
+                </Card>
+
+                <Card>
+                  <CardHeader>
+                    <CardTitle className="text-sm text-muted-foreground">Inflow (This Month)</CardTitle>
+                  </CardHeader>
+                  <CardContent className="flex items-center gap-2">
+                    <Skeleton className="h-6 w-6 rounded-full" />
+                    <Skeleton className="h-8 w-32" />
+                  </CardContent>
+                </Card>
+
+                <Card>
+                  <CardHeader>
+                    <CardTitle className="text-sm text-muted-foreground">Outflow (This Month)</CardTitle>
+                  </CardHeader>
+                  <CardContent className="flex items-center gap-2">
+                    <Skeleton className="h-6 w-6 rounded-full" />
+                    <Skeleton className="h-8 w-32" />
+                  </CardContent>
+                </Card>
+              </div>
+            ) : (
+              // Actual wallet content
             <div className="grid gap-6 md:grid-cols-3">
           <Card className="border-primary/20">
             <CardHeader>
               <CardTitle className="text-sm text-muted-foreground">Current Balance</CardTitle>
             </CardHeader>
-            <CardContent className="flex items-end justify-between">
+            <CardContent>
               <div className="text-4xl font-extrabold text-primary">KES {balance.toLocaleString()}</div>
-              <Button variant="outline" size="sm" onClick={handleReset}>
-                <RotateCcw className="h-4 w-4 mr-2" /> Reset
-              </Button>
             </CardContent>
           </Card>
 
@@ -220,8 +264,46 @@ export default function WalletPage() {
             </CardContent>
           </Card>
         </div>
+            )}
 
         {}
+        {loading ? (
+          // Skeleton for Manage Funds section
+          <div className="mt-8 grid md:grid-cols-3 gap-6">
+            <Card className="md:col-span-2">
+              <CardHeader>
+                <CardTitle>Manage Funds</CardTitle>
+              </CardHeader>
+              <CardContent className="space-y-5">
+                <div className="grid sm:grid-cols-[1fr_auto] gap-3">
+                  <Skeleton className="h-10 w-full" />
+                  <Skeleton className="h-10 w-32" />
+                </div>
+                <div className="flex flex-wrap gap-2">
+                  <Skeleton className="h-8 w-24" />
+                  <Skeleton className="h-8 w-24" />
+                  <Skeleton className="h-8 w-24" />
+                  <Skeleton className="h-8 w-24" />
+                </div>
+                <div className="space-y-2">
+                  <Skeleton className="h-4 w-full" />
+                  <Skeleton className="h-4 w-3/4" />
+                </div>
+              </CardContent>
+            </Card>
+
+            <Card>
+              <CardHeader>
+                <CardTitle>Quick Actions</CardTitle>
+              </CardHeader>
+              <CardContent className="grid gap-2">
+                <Skeleton className="h-10 w-full" />
+                <Skeleton className="h-10 w-full" />
+                <Skeleton className="h-10 w-full" />
+              </CardContent>
+            </Card>
+          </div>
+        ) : (
         <div className="mt-8 grid md:grid-cols-3 gap-6">
           <Card className="md:col-span-2">
             <CardHeader>
@@ -295,7 +377,33 @@ export default function WalletPage() {
             </CardContent>
           </Card>
         </div>
+        )}
 
+        {transactionsLoading ? (
+          // Skeleton for Recent Activity
+          <div className="mt-10">
+            <h2 className="text-xl font-bold mb-4">Recent Activity</h2>
+            <Card>
+              <CardContent className="p-0 divide-y">
+                {[1, 2, 3].map((i) => (
+                  <div key={i} className="flex items-center justify-between p-4">
+                    <div className="flex items-center gap-3">
+                      <Skeleton className="h-5 w-5 rounded-full" />
+                      <div className="space-y-2">
+                        <Skeleton className="h-4 w-24" />
+                        <Skeleton className="h-3 w-48" />
+                      </div>
+                    </div>
+                    <div className="text-right space-y-2">
+                      <Skeleton className="h-4 w-24" />
+                      <Skeleton className="h-5 w-20" />
+                    </div>
+                  </div>
+                ))}
+              </CardContent>
+            </Card>
+          </div>
+        ) : (
         <div className="mt-10">
           <h2 className="text-xl font-bold mb-4">Recent Activity</h2>
           <Card>
@@ -334,8 +442,9 @@ export default function WalletPage() {
             </CardContent>
           </Card>
         </div>
-          </>
         )}
+        </>
+      )}
 
         <div className="mt-8 text-center">
           <p className="text-sm text-muted-foreground">
@@ -355,20 +464,6 @@ export default function WalletPage() {
         }}
         onSuccess={handleKycSuccess}
       />
-
-      {/* Global Loading Overlay for wallet content */}
-      {isVerified && (loading || transactionsLoading) && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-background/70 backdrop-blur-sm">
-          <div className="flex flex-col items-center gap-4 p-8 rounded-lg border bg-card shadow-xl">
-            <div className="h-10 w-10 rounded-full border-4 border-primary border-t-transparent animate-spin" />
-            <div className="space-y-1 text-center">
-              <p className="font-semibold tracking-tight">Loading your wallet</p>
-              <p className="text-xs text-muted-foreground">Fetching balance, transactions & pending activities…</p>
-              {walletId && <p className="text-[10px] text-muted-foreground/70 font-mono">{walletId}</p>}
-            </div>
-          </div>
-        </div>
-      )}
     </div>
   );
 }
