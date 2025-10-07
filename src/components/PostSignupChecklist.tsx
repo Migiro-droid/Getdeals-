@@ -295,27 +295,27 @@ export function PostSignupChecklist({ open, onComplete }: PostSignupChecklistPro
 
   return (
     <Dialog open={open} onOpenChange={() => {}}>
-      <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
-        <DialogHeader className="text-center pb-4">
-          <div className="w-16 h-16 bg-primary/10 rounded-full flex items-center justify-center mx-auto mb-4">
-            <ShoppingCart className="w-8 h-8 text-primary" />
+      <DialogContent className="max-w-3xl max-h-[85vh] overflow-hidden flex flex-col p-4 sm:p-6">
+        <DialogHeader className="text-center pb-3 flex-shrink-0">
+          <div className="w-12 h-12 bg-primary/10 rounded-full flex items-center justify-center mx-auto mb-3">
+            <ShoppingCart className="w-6 h-6 text-primary" />
           </div>
-          <DialogTitle className="text-2xl font-bold">
+          <DialogTitle className="text-xl font-bold">
             Welcome to GetDeals, {user?.name}!
           </DialogTitle>
-          <DialogDescription className="text-base">
-            Help us create a highly personalized shopping experience by sharing your specific interests and shopping frequency
+          <DialogDescription className="text-sm">
+            Help us personalize your shopping experience
           </DialogDescription>
         </DialogHeader>
 
-        <div className="space-y-6">
+        <div className="space-y-4 overflow-y-auto flex-1 min-h-0 pr-2">
           <div className="text-center">
-            <p className="text-sm text-muted-foreground mb-4">
-              Select categories that interest you and provide details to get highly personalized recommendations and deals tailored to your shopping habits.
+            <p className="text-xs text-muted-foreground mb-3">
+              Select categories and provide details for personalized recommendations
             </p>
           </div>
 
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-2 gap-4">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
             {preferenceOptions.map((option) => {
               const Icon = option.icon;
               const isSelected = selectedCategories.includes(option.id);
@@ -329,34 +329,34 @@ export function PostSignupChecklist({ open, onComplete }: PostSignupChecklistPro
                   }`}
                   onClick={() => handleCategoryToggle(option.id)}
                 >
-                  <CardContent className="p-4">
-                    <div className="flex items-start space-x-3">
+                  <CardContent className="p-3">
+                    <div className="flex items-start space-x-2">
                       <Checkbox
                         id={option.id}
                         checked={isSelected}
                         onChange={() => handleCategoryToggle(option.id)}
-                        className="mt-1"
+                        className="mt-0.5"
                       />
                       <div className="flex-1 min-w-0">
-                        <div className="flex items-center space-x-2 mb-2">
-                          <Icon className="w-5 h-5 text-primary flex-shrink-0" />
+                        <div className="flex items-center space-x-1.5 mb-1">
+                          <Icon className="w-4 h-4 text-primary flex-shrink-0" />
                           <Label
                             htmlFor={option.id}
-                            className="font-medium cursor-pointer text-sm"
+                            className="font-medium cursor-pointer text-xs"
                           >
                             {option.label}
                           </Label>
                         </div>
-                        <p className="text-xs text-muted-foreground mb-3">
+                        <p className="text-xs text-muted-foreground mb-2">
                           {option.description}
                         </p>
 
                         {isSelected && (
-                          <div className="space-y-3 border-t pt-3">
+                          <div className="space-y-2 border-t pt-2">
                             {/* Subcategories */}
                             {option.subcategories && (
                               <div>
-                                <Label className="text-xs font-medium text-muted-foreground mb-2 block">
+                                <Label className="text-xs font-medium text-muted-foreground mb-1 block">
                                   Specific interests:
                                 </Label>
                                 <div className="flex flex-wrap gap-1">
@@ -414,27 +414,28 @@ export function PostSignupChecklist({ open, onComplete }: PostSignupChecklistPro
             })}
           </div>
 
-          <div className="bg-muted/50 rounded-lg p-4">
-            <div className="flex items-start space-x-3">
-              <CheckCircle className="w-5 h-5 text-green-600 mt-0.5 flex-shrink-0" />
+          <div className="bg-muted/50 rounded-lg p-3">
+            <div className="flex items-start space-x-2">
+              <CheckCircle className="w-4 h-4 text-green-600 mt-0.5 flex-shrink-0" />
               <div>
-                <h4 className="font-medium text-sm mb-1">Why provide detailed preferences?</h4>
-                <ul className="text-xs text-muted-foreground space-y-1">
-                  <li>• Get hyper-personalized product recommendations based on your specific interests</li>
-                  <li>• Receive deals and promotions that match your shopping frequency</li>
-                  <li>• Faster checkout with pre-suggested items from your preferred subcategories</li>
-                  <li>• Better curated baskets tailored to your exact needs</li>
-                  <li>• Timely notifications for deals in categories you care about most</li>
+                <h4 className="font-medium text-xs mb-1">Why provide preferences?</h4>
+                <ul className="text-xs text-muted-foreground space-y-0.5">
+                  <li>• Personalized recommendations</li>
+                  <li>• Relevant deals & promotions</li>
+                  <li>• Faster checkout experience</li>
                 </ul>
               </div>
             </div>
           </div>
+        </div>
 
-          <div className="flex flex-col sm:flex-row gap-3 pt-4">
+        <div className="flex-shrink-0 border-t pt-3 mt-3 space-y-2">
+          <div className="flex flex-col sm:flex-row gap-2">
             <Button
               onClick={handleComplete}
               disabled={loading || selectedCategories.length === 0}
-              className="flex-1 order-2 sm:order-1"
+              className="flex-1 order-2 sm:order-1 h-9"
+              size="sm"
             >
               {loading ? "Saving..." : "Save Preferences"}
             </Button>
@@ -442,14 +443,15 @@ export function PostSignupChecklist({ open, onComplete }: PostSignupChecklistPro
               variant="outline"
               onClick={handleSkip}
               disabled={loading}
-              className="flex-1 order-1 sm:order-2"
+              className="flex-1 order-1 sm:order-2 h-9"
+              size="sm"
             >
               Skip for Now
             </Button>
           </div>
 
           <p className="text-xs text-muted-foreground text-center">
-            You can update your preferences anytime in your account settings.
+            Update anytime in settings
           </p>
         </div>
       </DialogContent>
