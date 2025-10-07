@@ -104,9 +104,9 @@ export default function AdminOrders() {
     date: dbOrder.created_at,
     status: dbOrder.status.toLowerCase() as OrderStatus,
     items: dbOrder.items || [],
-    subtotal: dbOrder.subtotal_kes,
-    deliveryFee: dbOrder.delivery_fee_kes,
-    total: dbOrder.total_amount_kes,
+    subtotal: dbOrder.subtotal_kes || 0,
+    deliveryFee: dbOrder.delivery_fee_kes || 0,
+    total: dbOrder.total_amount_kes || 0,
     deliveryMethod: dbOrder.delivery_method === 'speedy' ? 'speedy' : 'pickup',
     paymentMethod: dbOrder.payment_method,
     customer: {
@@ -429,7 +429,7 @@ export default function AdminOrders() {
                           }
                         </TableCell>
                         <TableCell>{loc}</TableCell>
-                        <TableCell className="text-right">KES {o.total.toLocaleString()}</TableCell>
+                        <TableCell className="text-right">KES {(o.total || 0).toLocaleString()}</TableCell>
                         <TableCell>
                           <span className={statusPill(o.status)}>{statusLabelShort(o.status)}</span>
                         </TableCell>
@@ -471,7 +471,7 @@ export default function AdminOrders() {
                       <span className="truncate" title={getDisplayLocation(active)}>{getDisplayLocation(active)}</span>
                     </div>
                     <div className="flex items-center gap-2 min-w-0">
-                      <span className="font-medium text-foreground">KES {active.total.toLocaleString()}</span>
+                      <span className="font-medium text-foreground">KES {(active.total || 0).toLocaleString()}</span>
                     </div>
                   </div>
                   
@@ -589,21 +589,21 @@ export default function AdminOrders() {
                                 </div>
                               </TableCell>
                               <TableCell className="text-right">{it.quantity}</TableCell>
-                              <TableCell className="text-right">KES {it.price.toLocaleString()}</TableCell>
-                              <TableCell className="text-right">KES {(it.price * it.quantity).toLocaleString()}</TableCell>
+                              <TableCell className="text-right">KES {(it.price || 0).toLocaleString()}</TableCell>
+                              <TableCell className="text-right">KES {((it.price || 0) * (it.quantity || 0)).toLocaleString()}</TableCell>
                             </TableRow>
                           ))}
                           <TableRow>
                             <TableCell colSpan={3} className="text-right font-medium">Subtotal</TableCell>
-                            <TableCell className="text-right">KES {active.subtotal.toLocaleString()}</TableCell>
+                            <TableCell className="text-right">KES {(active.subtotal || 0).toLocaleString()}</TableCell>
                           </TableRow>
                           <TableRow>
                             <TableCell colSpan={3} className="text-right font-medium">Delivery</TableCell>
-                            <TableCell className="text-right">KES {active.deliveryFee.toLocaleString()}</TableCell>
+                            <TableCell className="text-right">KES {(active.deliveryFee || 0).toLocaleString()}</TableCell>
                           </TableRow>
                           <TableRow>
                             <TableCell colSpan={3} className="text-right font-bold">Total</TableCell>
-                            <TableCell className="text-right font-bold">KES {active.total.toLocaleString()}</TableCell>
+                            <TableCell className="text-right font-bold">KES {(active.total || 0).toLocaleString()}</TableCell>
                           </TableRow>
                         </TableBody>
                       </Table>
