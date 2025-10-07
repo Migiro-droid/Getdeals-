@@ -623,18 +623,20 @@ export default function CheckoutPage() {
             throw new Error(`Insufficient wallet balance. You have KES ${balance.toLocaleString()} but need KES ${finalTotal.toLocaleString()}. Please add funds to your wallet.`);
           }
 
-          // Handle GetDeals Wallet payment by deducting from balance
+          // Handle GetDeals Wallet payment via Rukisha merchant payment API
           setPaymentStatus("processing");
 
           const orderReference = `GD${Date.now()}${Math.random().toString(36).substr(2, 4).toUpperCase()}`;
 
-          // Use the wallet service to deduct money from existing balance
-          const { WalletService } = await import('../services/wallet-backend');
+          // Use the WalletPaymentService to transfer funds to merchant
+          const { WalletPaymentService } = await import('../services/WalletPaymentService');
 
-          const walletResult = await WalletService.recordWithdrawal(
-            finalTotal, 
-            `Checkout payment for order ${orderReference}`
-          );
+          const walletResult = await WalletPaymentService.initiatePayment({
+            amount: finalTotal,
+            phone: phone,
+            reference: orderReference,
+            description: `Order payment - ${orderReference}`
+          });
 
           if (!walletResult.success) {
             throw new Error(walletResult.error || "Failed to process wallet payment");
@@ -665,8 +667,8 @@ export default function CheckoutPage() {
           const cashback = Math.round(finalTotal * 0.05);
           
           toast({
-            title: " Wallet Payment Successful!",
-            description: `Payment of KES ${finalTotal.toLocaleString()} deducted from your wallet. You've earned KES ${cashback} cashback!`,
+            title: "💰 Wallet Payment Successful!",
+            description: `Payment of KES ${finalTotal.toLocaleString()} processed via your wallet. Transaction ID: ${walletResult.transaction_id}. You've earned KES ${cashback} cashback!`,
             duration: 8000,
           });
 
