@@ -4,24 +4,32 @@ export interface WalletPaymentRequest {
   amount: number;
   reference: string;
   phone: string;
+  description?: string;
 }
 
 export interface WalletPaymentResponse {
   success: boolean;
   reference?: string;
+  transaction_id?: string;
+  rukisha_transaction_id?: string;
   phone?: string;
   amount?: number;
   message?: string;
   error?: string;
+  status?: string;
   rukishaResponse?: any;
 }
 
 export class WalletPaymentService {
+  /**
+   * Initiate wallet-to-merchant payment using Rukisha API
+   * This transfers funds from user's GetDeals wallet to the merchant account
+   */
   static async initiatePayment(request: WalletPaymentRequest): Promise<WalletPaymentResponse> {
     try {
-      console.log('💳 Initiating wallet payment:', request);
+      console.log('💳 Initiating wallet-to-merchant payment:', request);
 
-      const { data, error } = await supabase.functions.invoke('wallet-payment', {
+      const { data, error } = await supabase.functions.invoke('wallet-to-merchant-payment', {
         body: request
       });
 
@@ -33,7 +41,7 @@ export class WalletPaymentService {
         };
       }
 
-      console.log('✅ Wallet payment response:', data);
+      console.log('✅ Wallet-to-merchant payment response:', data);
       return data;
 
     } catch (error) {
