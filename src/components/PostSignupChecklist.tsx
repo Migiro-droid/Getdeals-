@@ -295,7 +295,7 @@ export function PostSignupChecklist({ open, onComplete }: PostSignupChecklistPro
 
   return (
     <Dialog open={open} onOpenChange={() => {}}>
-      <DialogContent className="max-w-4xl w-full max-h-[90vh] overflow-y-auto mx-4">
+      <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
         <DialogHeader className="text-center pb-4">
           <div className="w-16 h-16 bg-primary/10 rounded-full flex items-center justify-center mx-auto mb-4">
             <ShoppingCart className="w-8 h-8 text-primary" />
