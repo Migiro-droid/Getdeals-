@@ -274,10 +274,41 @@ export default function AdminOrders() {
     );
   };
 
-  const setStatusForActive = (next: OrderStatus) => {
+  const setStatusForActive = async (next: OrderStatus) => {
     if (!active) return;
-    updateStatus(active.id, next);
-    setActive({ ...active, status: next });
+    
+    // If we have database orders, update via API
+    if (databaseOrders.length > 0) {
+      try {
+        const response = await fetch('/api/orders/update-status', {
+          method: 'PUT',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            orderId: active.id,
+            status: next
+          })
+        });
+
+        const result = await response.json();
+
+        if (result.success) {
+          // Update local state
+          setActive({ ...active, status: next });
+          // Refresh the orders list
+          fetchDatabaseOrders();
+        } else {
+          console.error('Failed to update order status:', result.error);
+          alert('Failed to update order status: ' + result.error);
+        }
+      } catch (error) {
+        console.error('Error updating order status:', error);
+        alert('Error updating order status. Please try again.');
+      }
+    } else {
+      // Fallback to local orders context
+      updateStatus(active.id, next);
+      setActive({ ...active, status: next });
+    }
   };
 
   const statusSequence: OrderStatus[] = [

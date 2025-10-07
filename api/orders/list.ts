@@ -48,10 +48,11 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
         const subtotal = order.subtotal_kes || order.subtotal || 0;
         const deliveryFee = order.delivery_fee_kes || order.delivery_fee || 0;
         
-        // Convert from cents if needed (values > 100000 are likely in cents)
-        const totalKes = total > 100000 ? total / 100 : total;
-        const subtotalKes = subtotal > 100000 ? subtotal / 100 : subtotal;
-        const deliveryFeeKes = deliveryFee > 100000 ? deliveryFee / 100 : deliveryFee;
+        // Database stores amounts in cents, so divide by 100 to get KES
+        // Only skip conversion if value is already very small (< 10, likely already in KES)
+        const totalKes = total >= 10 ? total / 100 : total;
+        const subtotalKes = subtotal >= 10 ? subtotal / 100 : subtotal;
+        const deliveryFeeKes = deliveryFee >= 10 ? deliveryFee / 100 : deliveryFee;
         
         return {
           ...order,
