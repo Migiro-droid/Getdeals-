@@ -40,6 +40,31 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
 
     let { data: orders, error: ordersError } = await query;
 
+    // Normalize data format for both view and direct queries
+    const normalizeOrders = (ordersList: any[]) => {
+      return ordersList.map((order: any) => {
+        // Handle different possible field names and formats
+        const total = order.total_amount_kes || order.total_amount || order.total || 0;
+        const subtotal = order.subtotal_kes || order.subtotal || 0;
+        const deliveryFee = order.delivery_fee_kes || order.delivery_fee || 0;
+        
+        // Convert from cents if needed (values > 100000 are likely in cents)
+        const totalKes = total > 100000 ? total / 100 : total;
+        const subtotalKes = subtotal > 100000 ? subtotal / 100 : subtotal;
+        const deliveryFeeKes = deliveryFee > 100000 ? deliveryFee / 100 : deliveryFee;
+        
+        return {
+          ...order,
+          total_amount_kes: totalKes,
+          subtotal_kes: subtotalKes,
+          delivery_fee_kes: deliveryFeeKes,
+          items: order.order_items || order.items || [],
+          delivery_address: typeof order.delivery_address === 'object' ? order.delivery_address?.address : order.delivery_address,
+          pickup_location: typeof order.delivery_address === 'object' ? order.delivery_address?.pickup_location : null
+        };
+      });
+    };
+
     // If view doesn't exist, fall back to direct orders table query
     if (ordersError && ordersError.message?.includes('orders_with_details')) {
       console.log('View not found, using direct orders query...');
@@ -65,16 +90,11 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
 
       // Transform data to match expected format
       if (orders && !ordersError) {
-        orders = orders.map((order: any) => ({
-          ...order,
-          total_amount_kes: order.total > 100000 ? order.total / 100 : order.total,
-          subtotal_kes: order.subtotal > 100000 ? order.subtotal / 100 : order.subtotal,
-          delivery_fee_kes: order.delivery_fee > 100000 ? order.delivery_fee / 100 : order.delivery_fee,
-          items: order.order_items || [],
-          delivery_address: typeof order.delivery_address === 'object' ? order.delivery_address?.address : order.delivery_address,
-          pickup_location: typeof order.delivery_address === 'object' ? order.delivery_address?.pickup_location : null
-        }));
+        orders = normalizeOrders(orders);
       }
+    } else if (orders && !ordersError) {
+      // Also normalize orders from the view
+      orders = normalizeOrders(orders);
     }
 
     if (ordersError) {
