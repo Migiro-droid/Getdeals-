@@ -461,7 +461,7 @@ export default function AdminUsers() {
       
       // Step 1: Create admin user with password in Supabase Auth
       console.log('Creating admin user with authentication...');
-      const createResponse = await fetch(`${baseUrl}/api/admin/create-admin-user`, {
+      const createResponse = await fetch(`${baseUrl}/admin/create-admin-user`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -484,7 +484,7 @@ export default function AdminUsers() {
 
       // Step 2: Send credentials email
       console.log('Sending credentials email...');
-      const emailResponse = await fetch(`${baseUrl}/api/admin/send-credentials`, {
+      const emailResponse = await fetch(`${baseUrl}/admin/send-credentials`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
