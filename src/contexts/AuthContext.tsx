@@ -472,14 +472,24 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       }
 
       // Update in Supabase Auth if relevant fields
-      if (updates.name) {
-        const { error: authError } = await auth.updateProfile({
-          name: updates.name,
-          full_name: updates.name
+      if (updates.name || updates.organization !== undefined || updates.organizationNumber !== undefined || updates.preferences !== undefined || updates.onboardingCompleted !== undefined) {
+        const authMetadata: any = {};
+        if (updates.name) {
+          authMetadata.name = updates.name;
+          authMetadata.full_name = updates.name;
+        }
+        if (updates.organization !== undefined) authMetadata.organization = updates.organization;
+        if (updates.organizationNumber !== undefined) authMetadata.organization_number = updates.organizationNumber;
+        if (updates.preferences !== undefined) authMetadata.preferences = updates.preferences;
+        if (updates.onboardingCompleted !== undefined) authMetadata.onboardingCompleted = updates.onboardingCompleted;
+        
+        const { error: authError } = await supabase.auth.updateUser({
+          data: authMetadata
         });
         
         if (authError) {
-          return { ok: false, error: authError.message };
+          console.warn('Failed to update auth metadata:', authError);
+          // Don't fail the whole update if auth metadata update fails
         }
       }
 
@@ -489,6 +499,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       if (updates.phone !== undefined) dbUpdates.phone = updates.phone;
       if (updates.preferences !== undefined) dbUpdates.preferences = updates.preferences;
       if (updates.onboardingCompleted !== undefined) dbUpdates.onboardingCompleted = updates.onboardingCompleted;
+      if (updates.organization !== undefined) dbUpdates.organization = updates.organization;
+      if (updates.organizationNumber !== undefined) dbUpdates.organization_number = updates.organizationNumber;
 
       if (Object.keys(dbUpdates).length > 0) {
         const { data, error } = await userAPI.update(user.id, dbUpdates);
@@ -499,7 +511,13 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
         // Update local state
         if (data) {
-          setUser(prev => prev ? { ...prev, ...dbUpdates } : null);
+          const stateUpdates: any = { ...dbUpdates };
+          // Map database fields to AuthUser fields
+          if (dbUpdates.organization_number !== undefined) {
+            stateUpdates.organizationNumber = dbUpdates.organization_number;
+            delete stateUpdates.organization_number;
+          }
+          setUser(prev => prev ? { ...prev, ...stateUpdates } : null);
         }
       }
 
