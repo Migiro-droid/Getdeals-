@@ -17,6 +17,7 @@ import { useOrders } from '../contexts/OrdersContext';
 import { useWallet } from '../contexts/NewWalletContext';
 import { getApiBase } from '@/lib/api';
 import { PickupLocationService, type PickupLocation } from '../services/pickup-location';
+import { WalletPaymentService } from '../services/WalletPaymentService';
 
 export default function CheckoutPage() {
   const { items, total, clearCart } = useCart();
@@ -304,12 +305,10 @@ export default function CheckoutPage() {
         throw new Error('User not authenticated');
       }
 
-      // Calculate totals - CRITICAL: Only add delivery fee if delivery method is 'speedy'
       const subtotal = orderData.items.reduce((sum: number, item: any) => sum + (item.price * item.quantity), 0);
       const deliveryFee = orderData.deliveryMethod === 'speedy' ? 200 : 0;
-      const totalAmount = subtotal + deliveryFee; // This correctly reflects what customer actually pays
+      const totalAmount = subtotal + deliveryFee;
 
-      // Prepare order data for database creation
       const dbOrderData = {
         user_id: auth.user.id,
         customer_email: email,
@@ -628,9 +627,6 @@ export default function CheckoutPage() {
 
           const orderReference = `GD${Date.now()}${Math.random().toString(36).substr(2, 4).toUpperCase()}`;
 
-          // Use the WalletPaymentService to transfer funds to merchant
-          const { WalletPaymentService } = await import('../services/WalletPaymentService');
-
           const walletResult = await WalletPaymentService.initiatePayment({
             amount: finalTotal,
             phone: phone,
@@ -652,6 +648,7 @@ export default function CheckoutPage() {
             deliveryAddress: deliveryMethod === "speedy" ? address : undefined,
             paymentMethod,
             paymentReference: orderReference,
+            paymentConfirmed: true,
             phone: phone, // Keep customer's phone for order notifications
           };
 

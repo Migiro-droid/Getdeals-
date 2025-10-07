@@ -8,6 +8,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { CheckCircle, ShoppingCart, Truck, Home, Utensils, Car, Smartphone, Shirt, Baby, Heart, Clock } from "lucide-react";
 import { useAuth } from "@/contexts/AuthContext";
 import { useToast } from "@/components/ui/use-toast";
+import { supabase } from "../../lib/supabase";
 
 interface PostSignupChecklistProps {
   open: boolean;
@@ -227,7 +228,6 @@ export function PostSignupChecklist({ open, onComplete }: PostSignupChecklistPro
       // Approach 2: If updateProfile failed, try direct Supabase auth metadata update
       if (!saveSuccessful) {
         try {
-          const { supabase } = await import('../../lib/supabase');
           const { error: authError } = await supabase.auth.updateUser({
             data: {
               preferences: JSON.stringify(detailedPreferences),

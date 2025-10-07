@@ -21,7 +21,31 @@ interface RukishaPaymentResponse {
   [key: string]: any;
 }
 
-serve(async (req) => {
+const getEnv = (key: string): string | undefined => {
+  const env = (globalThis as any)?.Deno?.env
+  return typeof env?.get === 'function' ? env.get(key) ?? undefined : undefined
+}
+
+const formatPhoneForRukisha = (rawPhone: string): string => {
+  if (!rawPhone) return rawPhone;
+  let formatted = rawPhone.trim();
+
+  if (formatted.startsWith('+')) {
+    formatted = formatted.substring(1);
+  }
+
+  if (formatted.startsWith('0')) {
+    formatted = `254${formatted.substring(1)}`;
+  }
+
+  if (!formatted.startsWith('254')) {
+    formatted = `254${formatted}`;
+  }
+
+  return formatted;
+};
+
+serve(async (req: Request) => {
   // Handle CORS preflight requests
   if (req.method === 'OPTIONS') {
     return new Response(null, { headers: corsHeaders })
@@ -35,8 +59,8 @@ serve(async (req) => {
     }
 
     // Initialize Supabase client
-    const supabaseUrl = Deno.env.get('SUPABASE_URL') ?? ''
-    const supabaseServiceKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? ''
+  const supabaseUrl = getEnv('SUPABASE_URL') ?? ''
+  const supabaseServiceKey = getEnv('SUPABASE_SERVICE_ROLE_KEY') ?? ''
     const supabase = createClient(supabaseUrl, supabaseServiceKey)
 
     // Verify user authentication
@@ -95,22 +119,49 @@ serve(async (req) => {
       )
     }
 
-    // Get user's wallet
-    const { data: wallet, error: walletError } = await supabase
+    // Get user's wallet (or create if doesn't exist)
+    let { data: wallet, error: walletError } = await supabase
       .from('wallets')
       .select('id, balance, user_id')
       .eq('user_id', user.id)
       .single()
 
-    if (walletError || !wallet) {
-      console.error('Wallet not found:', walletError)
+    // If wallet doesn't exist, try to create it
+    if (walletError && walletError.code === 'PGRST116') {
+      console.log('Wallet not found, attempting to create...')
+      
+      // Try to create wallet
+      const { data: newWallet, error: createError } = await supabase
+        .from('wallets')
+        .insert({ user_id: user.id, balance: 0 })
+        .select('id, balance, user_id')
+        .single()
+
+      if (createError || !newWallet) {
+        console.error('Failed to create wallet:', createError)
+        return new Response(
+          JSON.stringify({ 
+            success: false, 
+            error: 'Wallet not found and could not be created. Please deposit funds first or contact support.' 
+          }),
+          { 
+            status: 404, 
+            headers: { ...corsHeaders, 'Content-Type': 'application/json' } 
+          }
+        )
+      }
+
+      wallet = newWallet
+      console.log('Wallet created successfully')
+    } else if (walletError || !wallet) {
+      console.error('Wallet error:', walletError)
       return new Response(
         JSON.stringify({ 
           success: false, 
-          error: 'Wallet not found. Please contact support.' 
+          error: 'Error accessing wallet. Please try again or contact support.' 
         }),
         { 
-          status: 404, 
+          status: 500, 
           headers: { ...corsHeaders, 'Content-Type': 'application/json' } 
         }
       )
@@ -132,29 +183,46 @@ serve(async (req) => {
 
     // Get user profile for customer_id
     const { data: profile, error: profileError } = await supabase
-      .from('user_profile')
-      .select('customer_id, getdeals_number')
+      .from('profiles')
+      .select('customer_id, phone, first_name, last_name, email')
       .eq('user_id', user.id)
-      .single()
+      .maybeSingle()
 
-    if (profileError || !profile) {
-      console.error('User profile not found:', profileError)
+    if (profileError) {
+      console.error('User profile lookup error:', profileError)
       return new Response(
         JSON.stringify({ 
           success: false, 
-          error: 'User profile not found. Please complete your profile.' 
+          error: 'Unable to lookup wallet profile. Please try again later or contact support.' 
         }),
         { 
-          status: 404, 
+          status: 500, 
           headers: { ...corsHeaders, 'Content-Type': 'application/json' } 
         }
       )
     }
 
+    if (!profile || !profile.customer_id) {
+      console.warn('Wallet payment attempted without Rukisha customer_id', { user_id: user.id, profile })
+      return new Response(
+        JSON.stringify({ 
+          success: false, 
+          error: 'Wallet not activated for payments. Please complete wallet registration before trying again.' 
+        }),
+        { 
+          status: 400, 
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' } 
+        }
+      )
+    }
+
+    const customerId = profile.customer_id
+    const formattedPhone = formatPhoneForRukisha(phone)
+
     // Get environment variables
-    const rukishaApiToken = Deno.env.get('RUKISHA_API_TOKEN')
-    const rukishaMerchantId = Deno.env.get('RUKISHA_MERCHANT_ID') || Deno.env.get('RUKISHA_AGENT_ID')
-    const callbackUrl = `${Deno.env.get('SUPABASE_URL')}/functions/v1/wallet-payment-callback`
+  const rukishaApiToken = getEnv('RUKISHA_API_TOKEN')
+  const rukishaMerchantId = getEnv('RUKISHA_MERCHANT_ID') || getEnv('RUKISHA_AGENT_ID')
+  const callbackUrl = `${supabaseUrl}/functions/v1/wallet-payment-callback`
     
     if (!rukishaApiToken) {
       console.error('❌ Missing RUKISHA_API_TOKEN environment variable')
@@ -193,11 +261,11 @@ serve(async (req) => {
         amount: amount,
         status: 'pending',
         reference: reference,
-        phone_number: phone,
+        phone_number: formattedPhone,
         description: description || `Payment to merchant - ${reference}`,
         metadata: {
           merchant_id: rukishaMerchantId,
-          customer_id: profile.customer_id,
+          customer_id: customerId,
           payment_type: 'wallet_to_merchant'
         }
       })
@@ -224,8 +292,8 @@ serve(async (req) => {
     const rukishaPayload = {
       merchant_id: rukishaMerchantId,
       amount: amount,
-      phone: phone,
-      customer_id: profile.customer_id || profile.getdeals_number || user.id,
+      phone: formattedPhone,
+      customer_id: customerId,
       callback_url: callbackUrl,
       reference: reference
     }
@@ -350,7 +418,7 @@ serve(async (req) => {
           reference: reference,
           transaction_id: transaction.id,
           rukisha_transaction_id: rukishaResult.transaction_id,
-          phone: phone,
+          phone: formattedPhone,
           amount: amount,
           message: rukishaResult.message || 'Payment initiated successfully. Please check your phone for confirmation.',
           status: 'processing',
