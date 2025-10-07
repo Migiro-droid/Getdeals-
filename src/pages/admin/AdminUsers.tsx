@@ -12,6 +12,8 @@ import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useToast } from "@/hooks/use-toast";
 import { getApiBase } from '@/lib/api';
+import { useRolePermission } from '@/hooks/use-role-permission';
+import { UnauthorizedDialog } from '@/components/UnauthorizedDialog';
 import GetDealsNumberService, { GetDealsUser } from "@/services/getdeals-number";
 import { 
   Users, 
@@ -72,6 +74,7 @@ interface AdminUser {
 
 export default function AdminUsers() {
   const { toast } = useToast();
+  const { hasPermission, role } = useRolePermission();
   const [activeTab, setActiveTab] = useState("customers");
   const [customers, setCustomers] = useState<Customer[]>([]);
   const [customerSummary, setCustomerSummary] = useState({
@@ -92,6 +95,10 @@ export default function AdminUsers() {
   const [statusFilter, setStatusFilter] = useState("all");
   const [getdealsUsers, setGetdealsUsers] = useState<GetDealsUser[]>([]);
   const [getdealsStats, setGetdealsStats] = useState<any>(null);
+  
+  // RBAC: Unauthorized access dialog
+  const [showUnauthorized, setShowUnauthorized] = useState(false);
+  const [unauthorizedMessage, setUnauthorizedMessage] = useState("");
   
   // Modal states
   const [selectedCustomer, setSelectedCustomer] = useState<Customer | null>(null);
@@ -317,6 +324,30 @@ export default function AdminUsers() {
   const totalWalletBalance = useMemo(() => (
     customers.reduce((sum, customer) => sum + (customer.walletBalance || 0), 0)
   ), [customers]);
+
+  // RBAC: Tab change handler with permission checks
+  const handleTabChange = (value: string) => {
+    // Check permissions before switching tabs
+    if (value === 'admin' && !hasPermission('manageUsers')) {
+      setUnauthorizedMessage("You do not have permission to manage admin users. This section requires Admin access.");
+      setShowUnauthorized(true);
+      return; // Don't change tab
+    }
+    
+    if (value === 'customers' && !hasPermission('manageCustomers')) {
+      setUnauthorizedMessage("You do not have permission to manage customers. This section requires Manager or Admin access.");
+      setShowUnauthorized(true);
+      return;
+    }
+    
+    if (value === 'getdeals' && !hasPermission('manageCustomers')) {
+      setUnauthorizedMessage("You do not have permission to view GetDeals numbers. This section requires Manager or Admin access.");
+      setShowUnauthorized(true);
+      return;
+    }
+    
+    setActiveTab(value);
+  };
 
   // Action handlers
   const handleUpdateCustomerStatus = async (customerId: string, newStatus: Customer['status']) => {
@@ -815,7 +846,7 @@ export default function AdminUsers() {
         </Card>
 
         {/* Tabs */}
-        <Tabs value={activeTab} onValueChange={setActiveTab}>
+        <Tabs value={activeTab} onValueChange={handleTabChange}>
           <TabsList className="grid w-full grid-cols-3">
             <TabsTrigger value="customers" className="gap-2">
               <Users className="h-4 w-4" />
@@ -825,10 +856,13 @@ export default function AdminUsers() {
               <Hash className="h-4 w-4" />
               GetDeals Numbers
             </TabsTrigger>
-            <TabsTrigger value="admin" className="gap-2">
-              <Shield className="h-4 w-4" />
-              Admin Users ({filteredAdminUsers.length})
-            </TabsTrigger>
+            {/* Only show Admin Users tab if user has permission */}
+            {hasPermission('manageUsers') && (
+              <TabsTrigger value="admin" className="gap-2">
+                <Shield className="h-4 w-4" />
+                Admin Users ({filteredAdminUsers.length})
+              </TabsTrigger>
+            )}
           </TabsList>
 
           {/* Customers Tab */}
@@ -1321,10 +1355,13 @@ export default function AdminUsers() {
                 <h2 className="text-xl font-semibold">Admin Users</h2>
                 <p className="text-sm text-muted-foreground">Manage administrative access and permissions</p>
               </div>
-              <Button onClick={() => setNewAdminModalOpen(true)} className="gap-2">
-                <UserPlus className="h-4 w-4" />
-                Add Admin User
-              </Button>
+              {/* Only admins can create new admin users */}
+              {hasPermission('manageUsers') && (
+                <Button onClick={() => setNewAdminModalOpen(true)} className="gap-2">
+                  <UserPlus className="h-4 w-4" />
+                  Add Admin User
+                </Button>
+              )}
             </div>
 
             {/* Admin Stats */}
@@ -1445,29 +1482,36 @@ export default function AdminUsers() {
                             >
                               <Eye className="h-3 w-3" />
                             </Button>
-                            <Button 
-                              size="sm" 
-                              variant="outline"
-                              onClick={() => handleEditAdmin(user)}
-                              title="Edit User"
-                            >
-                              <Edit className="h-3 w-3" />
-                            </Button>
-                            <Select
-                              value={user.status}
-                              onValueChange={(value: AdminUser['status']) => 
-                                handleToggleAdminStatus(user.id, value)
-                              }
-                            >
-                              <SelectTrigger className="w-24 h-8">
-                                <SelectValue />
-                              </SelectTrigger>
-                              <SelectContent>
-                                <SelectItem value="active">Active</SelectItem>
-                                <SelectItem value="inactive">Inactive</SelectItem>
-                              </SelectContent>
-                            </Select>
-                            {user.id !== 'admin_1' && user.role !== 'admin' && (
+                            {/* Only admins can edit admin users */}
+                            {hasPermission('manageUsers') && (
+                              <Button 
+                                size="sm" 
+                                variant="outline"
+                                onClick={() => handleEditAdmin(user)}
+                                title="Edit User"
+                              >
+                                <Edit className="h-3 w-3" />
+                              </Button>
+                            )}
+                            {/* Only admins can change admin status */}
+                            {hasPermission('manageUsers') && (
+                              <Select
+                                value={user.status}
+                                onValueChange={(value: AdminUser['status']) => 
+                                  handleToggleAdminStatus(user.id, value)
+                                }
+                              >
+                                <SelectTrigger className="w-24 h-8">
+                                  <SelectValue />
+                                </SelectTrigger>
+                                <SelectContent>
+                                  <SelectItem value="active">Active</SelectItem>
+                                  <SelectItem value="inactive">Inactive</SelectItem>
+                                </SelectContent>
+                              </Select>
+                            )}
+                            {/* Only admins can delete admin users */}
+                            {hasPermission('manageUsers') && user.id !== 'admin_1' && user.role !== 'admin' && (
                               <Button 
                                 size="sm" 
                                 variant="outline"
@@ -2047,6 +2091,18 @@ export default function AdminUsers() {
             </DialogFooter>
           </DialogContent>
         </Dialog>
+
+        {/* Unauthorized Access Dialog */}
+        <UnauthorizedDialog
+          open={showUnauthorized}
+          onOpenChange={setShowUnauthorized}
+          message={unauthorizedMessage}
+          requiredRole={
+            role === 'staff' ? 'Manager or Admin' : 
+            role === 'manager' ? 'Admin' : 
+            'Higher privileges'
+          }
+        />
       </div>
     </div>
   );
