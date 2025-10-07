@@ -142,20 +142,7 @@ const App = () => {
   }
 
   function MaintenanceBanner() {
-    const { isAuthenticated } = useAuth();
-    
-    return (
-      <>
-        {}
-        {!isAuthenticated && (
-          <div className="bg-green-100 text-green-800 text-sm py-2">
-            <div className="container mx-auto px-4 text-center">
-              🔐 Authentication is now enabled! Please sign in to access all features.
-            </div>
-          </div>
-        )}
-      </>
-    );
+    return null; // Authentication banner removed
   }
 
   return (
