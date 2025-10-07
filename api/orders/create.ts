@@ -98,7 +98,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
         order_items: orderData.items,
         subtotal: Math.round(orderData.subtotal * 100), 
         delivery_fee: Math.round(orderData.delivery_fee * 100),
-        total: Math.round(orderData.total_amount * 100),
+        total_amount: Math.round(orderData.total_amount * 100), // Changed from 'total' to 'total_amount'
         delivery_method: orderData.delivery_method,
         delivery_address: orderData.delivery_method === 'speedy' && orderData.delivery_address 
           ? { address: orderData.delivery_address }
