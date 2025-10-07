@@ -347,7 +347,9 @@ export default function CheckoutPage() {
       const result = await response.json();
 
       if (!response.ok || !result.success) {
-        throw new Error(result.error || 'Failed to create order in database');
+        console.error(' Order creation failed with result:', result);
+        const errorDetails = result.details ? ` (${result.details})` : '';
+        throw new Error(result.error + errorDetails || 'Failed to create order in database');
       }
 
       console.log(' Order created in database:', result.order);

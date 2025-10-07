@@ -51,6 +51,14 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
   try {
     const orderData: CreateOrderRequest = req.body;
 
+    console.log(' Received order data:', {
+      user_id: orderData.user_id,
+      items_count: orderData.items?.length,
+      total_amount: orderData.total_amount,
+      payment_reference: orderData.payment_reference,
+      payment_confirmed: orderData.payment_confirmed,
+      delivery_method: orderData.delivery_method
+    });
     
     if (!orderData.user_id || !orderData.items || !orderData.total_amount || !orderData.payment_reference) {
       return res.status(400).json({
@@ -61,6 +69,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
 
     
     if (!orderData.payment_confirmed) {
+      console.warn('⚠️ Order creation attempted without payment confirmation');
       return res.status(400).json({
         success: false,
         error: 'Cannot create order without payment confirmation'
@@ -70,7 +79,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
    
     const orderReference = `ORD-${Date.now()}-${Math.random().toString(36).slice(2, 6).toUpperCase()}`;
 
-    console.log('🛍️ Creating order:', {
+    console.log(' Creating order:', {
       orderReference,
       user_id: orderData.user_id,
       total_amount: orderData.total_amount,
@@ -91,7 +100,11 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
         delivery_fee: Math.round(orderData.delivery_fee * 100),
         total: Math.round(orderData.total_amount * 100),
         delivery_method: orderData.delivery_method,
-        delivery_address: orderData.delivery_address ? { address: orderData.delivery_address, pickup_location: orderData.pickup_location } : null,
+        delivery_address: orderData.delivery_method === 'speedy' && orderData.delivery_address 
+          ? { address: orderData.delivery_address }
+          : orderData.delivery_method === 'pickup' && orderData.pickup_location
+          ? { pickup_location: orderData.pickup_location }
+          : null,
         payment_method: orderData.payment_method,
         payment_reference: orderData.payment_reference,
         payment_status: 'completed',
@@ -105,9 +118,11 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
 
     if (orderError) {
       console.error(' Error creating order:', orderError);
+      console.error('Full error details:', JSON.stringify(orderError, null, 2));
       return res.status(500).json({
         success: false,
-        error: 'Failed to create order in database'
+        error: 'Failed to create order in database',
+        details: orderError.message || orderError.hint || JSON.stringify(orderError)
       });
     }
 
