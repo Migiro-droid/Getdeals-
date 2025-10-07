@@ -40,8 +40,9 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
 
     console.log('Updating order status:', { orderId, status });
 
-    // Validate status - database uses lowercase values
-    const validStatuses = ['pending', 'confirmed', 'preparing', 'out_for_delivery', 'delivered', 'cancelled'];
+    // Validate status - must match database constraint in supabase-schema.sql
+    // CHECK (status IN ('pending', 'confirmed', 'shipped', 'delivered', 'cancelled'))
+    const validStatuses = ['pending', 'confirmed', 'shipped', 'delivered', 'cancelled'];
     const lowerStatus = status.toLowerCase();
     
     if (!validStatuses.includes(lowerStatus)) {

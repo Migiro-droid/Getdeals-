@@ -1,6 +1,7 @@
 import React, { createContext, useCallback, useContext, useEffect, useMemo, useState } from "react";
 
-export type OrderStatus = "pending" | "confirmed" | "preparing" | "out_for_delivery" | "delivered" | "cancelled";
+// Status values must match database constraint: ('pending', 'confirmed', 'shipped', 'delivered', 'cancelled')
+export type OrderStatus = "pending" | "confirmed" | "shipped" | "delivered" | "cancelled";
 
 export interface OrderItem {
   id: string;
@@ -99,8 +100,7 @@ export const OrdersProvider: React.FC<{ children: React.ReactNode }> = ({ childr
     const byStatus: OrdersContextValue["metrics"]["byStatus"] = {
       pending: 0,
       confirmed: 0,
-      preparing: 0,
-      out_for_delivery: 0,
+      shipped: 0,
       delivered: 0,
       cancelled: 0,
     };

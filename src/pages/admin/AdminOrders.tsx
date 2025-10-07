@@ -56,11 +56,11 @@ export default function AdminOrders() {
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState('');
   
+  // Status values must match database constraint: ('pending', 'confirmed', 'shipped', 'delivered', 'cancelled')
   const statuses: OrderStatus[] = [
     "pending",
     "confirmed",
-    "preparing",
-    "out_for_delivery",
+    "shipped",
     "delivered",
     "cancelled",
   ];
@@ -129,8 +129,7 @@ export default function AdminOrders() {
       all: orders.length,
       pending: 0,
       confirmed: 0,
-      preparing: 0,
-      out_for_delivery: 0,
+      shipped: 0,
       delivered: 0,
       cancelled: 0,
     } as Record<"all" | OrderStatus, number>;
@@ -145,10 +144,8 @@ export default function AdminOrders() {
         return `${base} bg-yellow-100 text-yellow-800`;
       case "confirmed":
         return `${base} bg-blue-100 text-blue-800`;
-      case "preparing":
+      case "shipped":
         return `${base} bg-purple-100 text-purple-800`;
-      case "out_for_delivery":
-        return `${base} bg-amber-100 text-amber-800`;
       case "delivered":
         return `${base} bg-green-100 text-green-800`;
       case "cancelled":
@@ -316,19 +313,18 @@ export default function AdminOrders() {
     }
   };
 
+  // Status sequence for order progression - matches database constraint
   const statusSequence: OrderStatus[] = [
     "pending",
     "confirmed",
-    "preparing",
-    "out_for_delivery",
+    "shipped",
     "delivered",
   ];
   const statusLabel = (s: OrderStatus) => {
     switch (s) {
       case "pending": return "Pending";
       case "confirmed": return "Confirmed";
-      case "preparing": return "Preparing";
-      case "out_for_delivery": return "Out for Delivery";
+      case "shipped": return "Shipped";
       case "delivered": return "Delivered";
       case "cancelled": return "Cancelled";
     }
@@ -338,8 +334,7 @@ export default function AdminOrders() {
     switch (s) {
       case "pending": return "Pending";
       case "confirmed": return "Confirmed";
-      case "preparing": return "Preparing";
-      case "out_for_delivery": return "Out for Del.";
+      case "shipped": return "Shipped";
       case "delivered": return "Delivered";
       case "cancelled": return "Cancelled";
     }
@@ -350,9 +345,7 @@ export default function AdminOrders() {
         return Circle;
       case "confirmed":
         return Package;
-      case "preparing":
-        return Clock;
-      case "out_for_delivery":
+      case "shipped":
         return Truck;
       case "delivered":
         return CheckCircle;
