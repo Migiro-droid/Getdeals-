@@ -663,6 +663,57 @@ export default function CheckoutPage() {
           // Calculate cashback (5% of total)
           const cashback = Math.round(finalTotal * 0.05);
           
+          // Send payment confirmation and order confirmation emails
+          try {
+            const baseUrl = import.meta.env.VITE_MPESA_SERVICE_URL || window.location.origin;
+            
+            // Send payment confirmation email
+            await fetch(`${baseUrl}/api/email/send`, {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({
+                type: 'payment-confirmation',
+                recipientEmail: email,
+                data: {
+                  customerName: `${firstName} ${lastName}`.trim(),
+                  transactionId: walletResult.transaction_id || orderReference,
+                  amount: finalTotal,
+                  paymentMethod: 'GetDeals Wallet',
+                  orderNumber: orderResult.order.order_reference || orderReference,
+                  paidAt: new Date().toISOString()
+                }
+              })
+            });
+
+            // Send order confirmation email
+            await fetch(`${baseUrl}/api/email/send`, {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({
+                type: 'order-confirmation',
+                recipientEmail: email,
+                data: {
+                  customerName: `${firstName} ${lastName}`.trim(),
+                  orderNumber: orderResult.order.order_reference || orderReference,
+                  total: finalTotal,
+                  items: items.map(item => ({
+                    name: item.name,
+                    quantity: item.quantity,
+                    price: item.price * item.quantity
+                  })),
+                  deliveryAddress: deliveryMethod === "speedy" ? address : (selectedPickupLocationData?.name || 'Store Pickup'),
+                  paymentMethod: 'GetDeals Wallet',
+                  createdAt: new Date().toISOString()
+                }
+              })
+            });
+
+            console.log('✅ Wallet payment emails sent successfully');
+          } catch (emailError) {
+            console.error('⚠️ Failed to send wallet payment emails:', emailError);
+            // Don't block the order flow if email fails
+          }
+          
           toast({
             title: "💰 Wallet Payment Successful!",
             description: `Payment of KES ${finalTotal.toLocaleString()} processed via your wallet. Transaction ID: ${walletResult.transaction_id}. You've earned KES ${cashback} cashback!`,

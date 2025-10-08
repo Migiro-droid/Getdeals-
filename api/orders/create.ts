@@ -178,6 +178,42 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       console.log(' Payment linked to order');
     }
 
+    // Send order confirmation email for non-M-Pesa payments
+    // (M-Pesa sends emails via callback, wallet sends via checkout page)
+    if (orderData.payment_method !== 'mobile-money' && orderData.payment_method !== 'wallet') {
+      try {
+        const baseUrl = process.env.FRONTEND_URL || 'https://getdeals.co.ke';
+        
+        await fetch(`${baseUrl}/api/email/send`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            type: 'order-confirmation',
+            recipientEmail: orderData.customer_email,
+            data: {
+              customerName: orderData.customer_name,
+              orderNumber: order.order_reference,
+              total: orderData.total_amount,
+              items: orderData.items.map((item: any) => ({
+                name: item.name,
+                quantity: item.quantity,
+                price: item.price * item.quantity
+              })),
+              deliveryAddress: typeof orderData.delivery_address === 'string' 
+                ? orderData.delivery_address 
+                : (orderData.delivery_address as any)?.address || (orderData.delivery_address as any)?.pickup_location || 'Not specified',
+              paymentMethod: orderData.payment_method,
+              createdAt: order.created_at
+            }
+          })
+        });
+        
+        console.log('✅ Order confirmation email sent');
+      } catch (emailError) {
+        console.error('⚠️ Failed to send order confirmation email:', emailError);
+        // Don't fail the order if email fails
+      }
+    }
     
     return res.status(201).json({
       success: true,
