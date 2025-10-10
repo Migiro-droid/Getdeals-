@@ -1,6 +1,5 @@
 import React, { createContext, useCallback, useContext, useEffect, useMemo, useState } from "react";
 
-// Status values must match database constraint: ('pending', 'confirmed', 'shipped', 'delivered', 'cancelled')
 export type OrderStatus = "pending" | "confirmed" | "shipped" | "delivered" | "cancelled";
 
 export interface OrderItem {
@@ -32,7 +31,6 @@ export interface Order {
   customer: OrderCustomer;
   status: OrderStatus;
   note?: string;
-  // Marks seeded demo orders so admin can clear them without affecting real ones
   demoSeed?: boolean;
 }
 
@@ -48,9 +46,9 @@ interface OrdersContextValue {
     byStatus: Record<OrderStatus, number>;
     todayCount: number;
   };
-  clearAll: () => void; // admin only helper
-  seedOrders: (sample: Order[], replace?: boolean) => void; // admin only helper
-  clearDemoOrders: () => void; // remove only demoSeed orders
+  clearAll: () => void; 
+  seedOrders: (sample: Order[], replace?: boolean) => void; 
+  clearDemoOrders: () => void; 
   hasDemoOrders: boolean;
 }
 

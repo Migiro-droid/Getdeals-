@@ -1,5 +1,6 @@
 import { useMemo, useState, useEffect } from "react";
 import { useOrders, OrderStatus } from "@/contexts/OrdersContext";
+import { useOrderNotification } from "@/contexts/OrderNotificationContext";
 import { useAdmin } from "@/contexts/AdminContext";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -43,6 +44,7 @@ interface OrderStats {
 
 export default function AdminOrders() {
   const { orders: localOrders, updateStatus } = useOrders();
+  const { acknowledgeOrders } = useOrderNotification();
   const { role, user } = useAdmin();
   const [databaseOrders, setDatabaseOrders] = useState<DatabaseOrder[]>([]);
   const [stats, setStats] = useState<OrderStats>({
@@ -97,6 +99,11 @@ export default function AdminOrders() {
   useEffect(() => {
     fetchDatabaseOrders();
   }, [statusFilter, search]);
+
+  // Acknowledge orders when the admin views this page
+  useEffect(() => {
+    acknowledgeOrders();
+  }, [acknowledgeOrders]);
 
   // Convert database order to local order format for existing UI
   const convertDatabaseOrderToLocal = (dbOrder: DatabaseOrder) => ({
