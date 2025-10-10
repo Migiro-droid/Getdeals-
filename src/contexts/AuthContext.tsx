@@ -25,7 +25,8 @@ type AuthContextType = {
   signIn: (email: string, password: string) => Promise<void>;
   signUp: (name: string, phone: string, email: string, password: string, organization?: string, organizationNumber?: string) => Promise<void>;
   signOut: () => Promise<void>;
-  changePassword: (newPassword: string) => Promise<{ ok: boolean; error?: string }>;
+  changePassword: (currentPassword: string, newPassword: string) => Promise<{ ok: boolean; error?: string }>;
+  updatePasswordAfterReset: (newPassword: string) => Promise<{ ok: boolean; error?: string }>;
   resetPassword: (email: string) => Promise<{ ok: boolean; error?: string }>;
   signInWithOAuth: (provider: 'google' | 'facebook') => Promise<{ ok: boolean; error?: string }>;
   updateProfile: (updates: Partial<AuthUser>) => Promise<{ ok: boolean; error?: string }>;
@@ -380,13 +381,35 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     }
   };
 
-  const changePassword = async (newPassword: string) => {
+  const changePassword = async (currentPassword: string, newPassword: string) => {
     try {
+      // First, verify the current password by trying to re-authenticate
+      if (!user?.email) {
+        return { ok: false, error: 'No user email found' };
+      }
+
+      console.log('🔐 Verifying current password...');
+      const { error: verifyError } = await supabase.auth.signInWithPassword({
+        email: user.email,
+        password: currentPassword
+      });
+
+      if (verifyError) {
+        console.error('❌ Current password verification failed:', verifyError);
+        return { ok: false, error: 'Current password is incorrect' };
+      }
+
+      console.log('✅ Current password verified, updating to new password...');
+
+      // Now update to the new password
       const { error } = await auth.updatePassword(newPassword);
 
       if (error) {
+        console.error('❌ Password update failed:', error);
         return { ok: false, error: error.message };
       }
+
+      console.log('✅ Password updated successfully');
 
       toast({
         title: "Password Changed",
@@ -395,7 +418,36 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
       return { ok: true };
     } catch (error) {
+      console.error('❌ Password change error:', error);
       const errorMessage = error instanceof Error ? error.message : 'Password change failed';
+      return { ok: false, error: errorMessage };
+    }
+  };
+
+  const updatePasswordAfterReset = async (newPassword: string) => {
+    try {
+      console.log('🔐 Updating password after reset...');
+
+      // This is used when user is already authenticated via password reset link
+      // No need to verify current password
+      const { error } = await auth.updatePassword(newPassword);
+
+      if (error) {
+        console.error('❌ Password update failed:', error);
+        return { ok: false, error: error.message };
+      }
+
+      console.log('✅ Password updated successfully');
+
+      toast({
+        title: "Password Updated",
+        description: "Your password has been reset successfully.",
+      });
+
+      return { ok: true };
+    } catch (error) {
+      console.error('❌ Password update error:', error);
+      const errorMessage = error instanceof Error ? error.message : 'Password update failed';
       return { ok: false, error: errorMessage };
     }
   };
@@ -550,6 +602,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     signUp,
     signOut,
     changePassword,
+    updatePasswordAfterReset,
     resetPassword,
     signInWithOAuth,
     updateProfile,

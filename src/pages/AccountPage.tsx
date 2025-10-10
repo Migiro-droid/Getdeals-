@@ -432,31 +432,109 @@ export default function AccountPage() {
         <DialogHeader>
           <DialogTitle>Change Password</DialogTitle>
         </DialogHeader>
-        <div className="space-y-3">
+        <div className="space-y-4">
           <div>
             <Label htmlFor="curr-pw">Current Password</Label>
-            <Input id="curr-pw" type="password" value={currPw} onChange={(e) => setCurrPw(e.target.value)} />
+            <Input 
+              id="curr-pw" 
+              type="password" 
+              value={currPw} 
+              onChange={(e) => setCurrPw(e.target.value)}
+              placeholder="Enter your current password"
+              autoComplete="current-password"
+            />
           </div>
           <div>
             <Label htmlFor="new-pw">New Password</Label>
-            <Input id="new-pw" type="password" value={newPw} onChange={(e) => setNewPw(e.target.value)} />
+            <Input 
+              id="new-pw" 
+              type="password" 
+              value={newPw} 
+              onChange={(e) => setNewPw(e.target.value)}
+              placeholder="Enter your new password"
+              autoComplete="new-password"
+            />
+            <p className="text-xs text-muted-foreground mt-1">
+              Must be at least 6 characters long
+            </p>
           </div>
           <div>
             <Label htmlFor="conf-pw">Confirm New Password</Label>
-            <Input id="conf-pw" type="password" value={confPw} onChange={(e) => setConfPw(e.target.value)} />
+            <Input 
+              id="conf-pw" 
+              type="password" 
+              value={confPw} 
+              onChange={(e) => setConfPw(e.target.value)}
+              placeholder="Confirm your new password"
+              autoComplete="new-password"
+            />
           </div>
           <div className="flex gap-2 justify-end pt-2">
-            <Button variant="outline" onClick={() => setPwOpen(false)}>Cancel</Button>
+            <Button variant="outline" onClick={() => {
+              setPwOpen(false);
+              setCurrPw("");
+              setNewPw("");
+              setConfPw("");
+            }}>Cancel</Button>
             <Button onClick={async () => {
-              if (!currPw || !newPw || !confPw) return toast({ title: 'Fill all fields' });
-              if (newPw !== confPw) return toast({ title: 'Passwords do not match' });
+              // Validation
+              if (!currPw || !newPw || !confPw) {
+                return toast({ 
+                  title: 'Missing fields', 
+                  description: 'Please fill in all fields',
+                  variant: 'destructive' 
+                });
+              }
+              
+              if (newPw.length < 6) {
+                return toast({ 
+                  title: 'Password too short', 
+                  description: 'New password must be at least 6 characters long',
+                  variant: 'destructive' 
+                });
+              }
+              
+              if (newPw !== confPw) {
+                return toast({ 
+                  title: 'Passwords do not match', 
+                  description: 'New password and confirmation must match',
+                  variant: 'destructive' 
+                });
+              }
+
+              if (currPw === newPw) {
+                return toast({ 
+                  title: 'Same password', 
+                  description: 'New password must be different from current password',
+                  variant: 'destructive' 
+                });
+              }
+
               setBusy(true);
-              const res = await changePassword(newPw);
+              const res = await changePassword(currPw, newPw);
               setBusy(false);
-              if (!res.ok) return toast({ title: 'Change failed', description: res.error, variant: 'destructive' as any });
-              toast({ title: 'Password changed' });
-              setCurrPw(""); setNewPw(""); setConfPw(""); setPwOpen(false);
-            }} disabled={busy}>Save</Button>
+              
+              if (!res.ok) {
+                return toast({ 
+                  title: 'Password change failed', 
+                  description: res.error || 'An error occurred while changing your password',
+                  variant: 'destructive' 
+                });
+              }
+              
+              toast({ 
+                title: 'Password changed successfully', 
+                description: 'Your password has been updated'
+              });
+              
+              // Clear form and close modal
+              setCurrPw("");
+              setNewPw("");
+              setConfPw("");
+              setPwOpen(false);
+            }} disabled={busy}>
+              {busy ? 'Changing...' : 'Change Password'}
+            </Button>
           </div>
         </div>
       </DialogContent>

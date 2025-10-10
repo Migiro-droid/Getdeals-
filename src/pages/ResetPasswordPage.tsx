@@ -20,7 +20,7 @@ export default function ResetPasswordPage() {
   const [isCheckingToken, setIsCheckingToken] = useState(true);
   const [requestingNewLink, setRequestingNewLink] = useState(false);
   const [userEmail, setUserEmail] = useState("");
-  const { changePassword, resetPassword } = useAuth();
+  const { updatePasswordAfterReset, resetPassword } = useAuth();
   const { toast } = useToast();
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
@@ -119,7 +119,7 @@ export default function ResetPasswordPage() {
 
     setLoading(true);
     try {
-      const result = await changePassword(password);
+      const result = await updatePasswordAfterReset(password);
       if (result.ok) {
         toast({
           title: "Password updated",
