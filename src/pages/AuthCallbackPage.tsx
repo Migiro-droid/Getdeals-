@@ -5,7 +5,6 @@ import { supabase } from "../../lib/supabase";
 import { useAuth } from "@/contexts/AuthContext";
 import { OrganizationSetupModal } from "@/components/OrganizationSetupModal";
 import { PostSignupChecklist } from "@/components/PostSignupChecklist";
-import { useSyncPendingPreferences } from "@/hooks/useSyncPendingPreferences";
 
 export default function AuthCallbackPage() {
   const navigate = useNavigate();
@@ -15,9 +14,6 @@ export default function AuthCallbackPage() {
   const [showOrgSetup, setShowOrgSetup] = useState(false);
   const [showPreferences, setShowPreferences] = useState(false);
   const [userInfo, setUserInfo] = useState<{ email: string; isOAuthUser: boolean } | null>(null);
-
-  // Automatically sync pending preferences from localStorage after login
-  useSyncPendingPreferences();
 
   useEffect(() => {
     const handleAuthCallback = async () => {
@@ -108,6 +104,11 @@ export default function AuthCallbackPage() {
             setIsProcessing(false);
             
             if (!hasPreferences) {
+              // Clear any temporary signup data
+              localStorage.removeItem('pendingPreferences');
+              localStorage.removeItem('pendingSignup');
+              localStorage.removeItem('tempUserEmail');
+              
               setShowPreferences(true);
               toast({
                 title: "Welcome back! 🎉",
@@ -134,6 +135,11 @@ export default function AuthCallbackPage() {
             setIsProcessing(false);
             
             if (!hasPreferences) {
+              // Clear any temporary signup data
+              localStorage.removeItem('pendingPreferences');
+              localStorage.removeItem('pendingSignup');
+              localStorage.removeItem('tempUserEmail');
+              
               // New user who just confirmed email - show preferences
               setShowPreferences(true);
               toast({

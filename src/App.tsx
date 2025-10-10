@@ -15,7 +15,6 @@ import { Header } from "@/components/Header";
 import { AuthProvider, useAuth } from "./contexts/AuthContext";
 import { AccountProvider } from "./contexts/AccountContext";
 import { UserProfileProvider } from "./contexts/UserProfileContext";
-import { useSyncPendingPreferences } from "@/hooks/useSyncPendingPreferences";
 import { Footer } from "@/components/Footer";
 import HomePage from "./pages/HomePage";
 import BasketsPage from "./pages/BasketsPage";
@@ -146,11 +145,8 @@ const App = () => {
     return null; // Authentication banner removed
   }
 
-  // Component to handle automatic preference syncing
+  // Component to handle app routing
   function AppContent() {
-    // Automatically sync pending preferences when user logs in
-    useSyncPendingPreferences();
-    
     return (
       <BrowserRouter>
         <div className="min-h-screen flex flex-col">

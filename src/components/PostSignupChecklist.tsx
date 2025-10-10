@@ -192,28 +192,24 @@ export function PostSignupChecklist({ open, onComplete }: PostSignupChecklistPro
         onboardingCompleted: true
       };
 
-      // STEP 1: ALWAYS save to localStorage first (works for unconfirmed users)
-      localStorage.setItem('pendingPreferences', JSON.stringify(detailedPreferences));
-      console.log('💾 Preferences saved to localStorage');
-
-      // STEP 2: Try to save to database (will work if email is confirmed)
+      // User is already confirmed and logged in at this point
+      // (preferences modal only appears after email confirmation)
       const { data: { session } } = await supabase.auth.getSession();
       
       if (!session?.user) {
-        // User not logged in yet (email not confirmed)
         toast({
-          title: "Preferences Saved! ✓",
-          description: "Please confirm your email to complete setup. Your preferences are saved and will sync automatically.",
+          title: "Session expired",
+          description: "Please sign in again to save your preferences.",
+          variant: "destructive"
         });
         setLoading(false);
-        onComplete();
         return;
       }
 
       const currentUserId = session.user.id;
-      console.log('💾 User is logged in, syncing preferences to database for user:', currentUserId);
+      console.log('💾 Saving preferences to database for user:', currentUserId);
 
-      // STEP 3: Try to save to database
+      // Save to database
       let saveSuccessful = false;
       let saveError = null;
 
@@ -226,9 +222,7 @@ export function PostSignupChecklist({ open, onComplete }: PostSignupChecklistPro
 
         if (result.ok) {
           saveSuccessful = true;
-          console.log('✅ Preferences synced to database via updateProfile');
-          // Clear localStorage since it's now in database
-          localStorage.removeItem('pendingPreferences');
+          console.log('✅ Preferences saved to database');
         } else {
           saveError = result.error;
           console.warn('⚠️ updateProfile failed:', result.error);
@@ -250,9 +244,7 @@ export function PostSignupChecklist({ open, onComplete }: PostSignupChecklistPro
 
           if (!authError) {
             saveSuccessful = true;
-            console.log('✅ Preferences synced to database via auth metadata');
-            // Clear localStorage since it's now in database
-            localStorage.removeItem('pendingPreferences');
+            console.log('✅ Preferences saved via auth metadata');
           } else {
             console.warn('⚠️ Auth metadata update failed:', authError);
           }
@@ -261,31 +253,34 @@ export function PostSignupChecklist({ open, onComplete }: PostSignupChecklistPro
         }
       }
 
+      // Clear any temporary localStorage data from the flow
+      console.log('🧹 Clearing temporary localStorage data');
+      localStorage.removeItem('pendingPreferences');
+      localStorage.removeItem('pendingSignup');
+      localStorage.removeItem('tempUserEmail');
+
       if (saveSuccessful) {
         toast({
-          title: "Preferences saved successfully!",
+          title: "Preferences saved successfully! ✓",
           description: "We'll use this to personalize your shopping experience.",
         });
         onComplete();
       } else {
-        // Still allow them to continue - preferences are in localStorage
         toast({
-          title: "Preferences saved locally",
-          description: "Your preferences are saved and will sync automatically.",
-          variant: "default"
+          title: "Error saving preferences",
+          description: "Please try again or update them later in your account settings.",
+          variant: "destructive"
         });
-        console.error('Database save failed, but localStorage has preferences:', saveError);
-        onComplete();
+        console.error('Failed to save preferences:', saveError);
       }
 
     } catch (error) {
       console.error("Error in preference saving flow:", error);
-      // Even if saving fails, let OAuth users continue
       toast({
-        title: "Setup completed",
-        description: "Welcome to GetDeals! You can set preferences later in your account settings.",
+        title: "Error saving preferences",
+        description: "Please try again later. You can update preferences in your account settings.",
+        variant: "destructive"
       });
-      onComplete();
     } finally {
       setLoading(false);
     }
