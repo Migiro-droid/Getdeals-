@@ -17,6 +17,7 @@ import { useOrders } from '../contexts/OrdersContext';
 import { useWallet } from '../contexts/NewWalletContext';
 import { getApiBase } from '@/lib/api';
 import { PickupLocationService, type PickupLocation } from '../services/pickup-location';
+import { WalletPaymentService } from '../services/WalletPaymentService';
 
 export default function CheckoutPage() {
   const { items, total, clearCart } = useCart();
@@ -304,12 +305,10 @@ export default function CheckoutPage() {
         throw new Error('User not authenticated');
       }
 
-      // Calculate totals - CRITICAL: Only add delivery fee if delivery method is 'speedy'
       const subtotal = orderData.items.reduce((sum: number, item: any) => sum + (item.price * item.quantity), 0);
       const deliveryFee = orderData.deliveryMethod === 'speedy' ? 200 : 0;
-      const totalAmount = subtotal + deliveryFee; // This correctly reflects what customer actually pays
+      const totalAmount = subtotal + deliveryFee;
 
-      // Prepare order data for database creation
       const dbOrderData = {
         user_id: auth.user.id,
         customer_email: email,
@@ -623,18 +622,17 @@ export default function CheckoutPage() {
             throw new Error(`Insufficient wallet balance. You have KES ${balance.toLocaleString()} but need KES ${finalTotal.toLocaleString()}. Please add funds to your wallet.`);
           }
 
-          // Handle GetDeals Wallet payment by deducting from balance
+          // Handle GetDeals Wallet payment via Rukisha merchant payment API
           setPaymentStatus("processing");
 
           const orderReference = `GD${Date.now()}${Math.random().toString(36).substr(2, 4).toUpperCase()}`;
 
-          // Use the wallet service to deduct money from existing balance
-          const { WalletService } = await import('../services/wallet-backend');
-
-          const walletResult = await WalletService.recordWithdrawal(
-            finalTotal, 
-            `Checkout payment for order ${orderReference}`
-          );
+          const walletResult = await WalletPaymentService.initiatePayment({
+            amount: finalTotal,
+            phone: phone,
+            reference: orderReference,
+            description: `Order payment - ${orderReference}`
+          });
 
           if (!walletResult.success) {
             throw new Error(walletResult.error || "Failed to process wallet payment");
@@ -650,6 +648,7 @@ export default function CheckoutPage() {
             deliveryAddress: deliveryMethod === "speedy" ? address : undefined,
             paymentMethod,
             paymentReference: orderReference,
+            paymentConfirmed: true,
             phone: phone, // Keep customer's phone for order notifications
           };
 
@@ -664,9 +663,60 @@ export default function CheckoutPage() {
           // Calculate cashback (5% of total)
           const cashback = Math.round(finalTotal * 0.05);
           
+          // Send payment confirmation and order confirmation emails
+          try {
+            const baseUrl = import.meta.env.VITE_MPESA_SERVICE_URL || window.location.origin;
+            
+            // Send payment confirmation email
+            await fetch(`${baseUrl}/api/email/send`, {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({
+                type: 'payment-confirmation',
+                recipientEmail: email,
+                data: {
+                  customerName: `${firstName} ${lastName}`.trim(),
+                  transactionId: walletResult.transaction_id || orderReference,
+                  amount: finalTotal,
+                  paymentMethod: 'GetDeals Wallet',
+                  orderNumber: orderResult.order.order_reference || orderReference,
+                  paidAt: new Date().toISOString()
+                }
+              })
+            });
+
+            // Send order confirmation email
+            await fetch(`${baseUrl}/api/email/send`, {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({
+                type: 'order-confirmation',
+                recipientEmail: email,
+                data: {
+                  customerName: `${firstName} ${lastName}`.trim(),
+                  orderNumber: orderResult.order.order_reference || orderReference,
+                  total: finalTotal,
+                  items: items.map(item => ({
+                    name: item.name,
+                    quantity: item.quantity,
+                    price: item.price * item.quantity
+                  })),
+                  deliveryAddress: deliveryMethod === "speedy" ? address : (selectedPickupLocationData?.name || 'Store Pickup'),
+                  paymentMethod: 'GetDeals Wallet',
+                  createdAt: new Date().toISOString()
+                }
+              })
+            });
+
+            console.log('✅ Wallet payment emails sent successfully');
+          } catch (emailError) {
+            console.error('⚠️ Failed to send wallet payment emails:', emailError);
+            // Don't block the order flow if email fails
+          }
+          
           toast({
-            title: " Wallet Payment Successful!",
-            description: `Payment of KES ${finalTotal.toLocaleString()} deducted from your wallet. You've earned KES ${cashback} cashback!`,
+            title: "💰 Wallet Payment Successful!",
+            description: `Payment of KES ${finalTotal.toLocaleString()} processed via your wallet. Transaction ID: ${walletResult.transaction_id}. You've earned KES ${cashback} cashback!`,
             duration: 8000,
           });
 
