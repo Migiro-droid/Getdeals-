@@ -175,6 +175,12 @@ export const WalletProvider: React.FC<{ children: React.ReactNode }> = ({ childr
           setPendingTransactions(prev => 
             prev.filter(t => t.id !== newTransaction.id)
           );
+          
+          // If transaction just completed, refresh wallet balance to sync
+          if (newTransaction.status === 'completed') {
+            console.log('[WalletContext] Transaction completed, refreshing wallet balance...');
+            refreshWallet();
+          }
         }
       }
     );
@@ -183,7 +189,7 @@ export const WalletProvider: React.FC<{ children: React.ReactNode }> = ({ childr
       walletSubscription.unsubscribe();
       transactionSubscription.unsubscribe();
     };
-  }, [walletData?.user_id]);
+  }, [walletData?.user_id, refreshWallet]);
 
   // Initiate deposit
   const initiateDeposit = async (request: DepositRequest): Promise<DepositResponse> => {

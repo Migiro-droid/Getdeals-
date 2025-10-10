@@ -59,11 +59,14 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     const transporter = nodemailer.createTransport({
       host: smtpHost,
       port: parseInt(smtpPort || '587'),
-      secure: smtpPort === '465', // true for 465, false for other ports
+      secure: false, // Use STARTTLS for port 587
       auth: {
         user: smtpUser,
         pass: smtpPass,
       },
+      tls: {
+        rejectUnauthorized: true // Verify SSL certificates
+      }
     });
 
     // Verify transporter configuration
