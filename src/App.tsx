@@ -56,9 +56,18 @@ const App = () => {
     const { setIsAdmin, setAdminUser } = useAdmin();
     
     useEffect(() => {
-      if (isAuthenticated && user?.role === 'admin') {
-        setAdminUser({ name: user.name, email: user.email });
-        setIsAdmin(true);
+      if (isAuthenticated && user) {
+        // Allow admin, manager, and staff roles
+        const allowedRoles = ['admin', 'manager', 'staff'];
+        const userRole = user.role?.toLowerCase();
+        
+        if (userRole && allowedRoles.includes(userRole)) {
+          setAdminUser({ name: user.name, email: user.email });
+          setIsAdmin(true);
+        } else {
+          setIsAdmin(false);
+          setAdminUser(null);
+        }
       } else {
         setIsAdmin(false);
         setAdminUser(null);
@@ -82,7 +91,11 @@ const App = () => {
       );
     }
 
-    if (user?.role !== 'admin') {
+    // Check if user has admin, manager, or staff role
+    const userRole = user?.role?.toLowerCase();
+    const allowedRoles = ['admin', 'manager', 'staff'];
+    
+    if (!userRole || !allowedRoles.includes(userRole)) {
       return (
         <div className="min-h-screen flex items-center justify-center bg-gray-50">
           <div className="max-w-md w-full space-y-8">
@@ -91,7 +104,7 @@ const App = () => {
                 Insufficient Permissions
               </h2>
               <p className="mt-2 text-sm text-gray-600">
-                You don't have permission to access the admin area.
+                You don't have permission to access the admin area. Admin, Manager, or Staff role required.
               </p>
             </div>
           </div>
