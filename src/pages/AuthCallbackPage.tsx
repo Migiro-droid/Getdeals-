@@ -96,13 +96,32 @@ export default function AuthCallbackPage() {
               navigate('/', { replace: true });
             }
           } else {
-            // Regular flow for non-OAuth users
-            toast({
-              title: "Signed in successfully! 🎉",
-              description: `Welcome ${data.session.user.user_metadata?.name || data.session.user.email}!`
-            });
+            // Regular email/password signup user confirmed their email
+            // Check if they need to set preferences
+            const hasPreferences = data.session.user.user_metadata?.preferences || 
+                                  data.session.user.user_metadata?.onboardingCompleted;
             
-            navigate('/', { replace: true });
+            setUserInfo({
+              email: data.session.user.email!,
+              isOAuthUser: false
+            });
+            setIsProcessing(false);
+            
+            if (!hasPreferences) {
+              // New user who just confirmed email - show preferences
+              setShowPreferences(true);
+              toast({
+                title: "Email confirmed! 🎉",
+                description: "Welcome to GetDeals! Let's personalize your experience."
+              });
+            } else {
+              // Returning user - just redirect
+              toast({
+                title: "Signed in successfully! 🎉",
+                description: `Welcome back ${data.session.user.user_metadata?.name || data.session.user.email}!`
+              });
+              navigate('/', { replace: true });
+            }
           }
         } else {
           console.log('No session found in callback');
