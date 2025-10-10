@@ -51,10 +51,10 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     console.log('📦 Request headers:', JSON.stringify(req.headers));
     console.log('📦 Request body:', JSON.stringify(req.body));
     
-    const callbackData: RukishaCallback = req.body;
+    const rawData = req.body;
     
     // Validate request body exists
-    if (!callbackData || typeof callbackData !== 'object') {
+    if (!rawData || typeof rawData !== 'object') {
       console.error('❌ Invalid request body - not an object');
       return res.status(400).json({ 
         success: false, 
@@ -62,75 +62,96 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       });
     }
 
-    // Validate required fields
-    if (!callbackData.TransactionID || !callbackData.Status) {
-      console.error('❌ Invalid callback data - missing required fields');
-      console.error('   Received fields:', Object.keys(callbackData));
+    // Rukisha sends data in this format:
+    // { success: true, status: "COMPLETE", reference: "...", mpesa_code: "...", data: { ... } }
+    let callbackData: any;
+    let reference: string;
+    let status: string;
+    let mpesaCode: string;
+    let phone: string;
+    let amount: number;
+
+    if (rawData.data && rawData.reference) {
+      // New Rukisha format
+      console.log('✅ Detected new Rukisha format');
+      callbackData = rawData.data;
+      reference = rawData.reference;
+      status = rawData.status;
+      mpesaCode = rawData.mpesa_code || callbackData.MpesaReceiptNumber;
+      phone = callbackData.phone;
+      amount = callbackData.amount;
+    } else if (rawData.TransactionID) {
+      // Old format (for backward compatibility)
+      console.log('✅ Detected old format');
+      callbackData = rawData;
+      reference = callbackData.Reference;
+      status = callbackData.Status;
+      mpesaCode = callbackData.ConfirmationCode;
+      phone = callbackData.Phone;
+      amount = callbackData.Amount;
+    } else {
+      console.error('❌ Invalid callback data - unknown format');
+      console.error('   Received fields:', Object.keys(rawData));
       return res.status(400).json({ 
         success: false, 
-        error: 'Invalid callback data. Missing TransactionID or Status.',
-        received_fields: Object.keys(callbackData)
+        error: 'Invalid callback data format.',
+        received_fields: Object.keys(rawData)
       });
     }
 
-    const {
-      TransactionID,
-      TransactionType,
-      Amount,
-      Phone,
-      Status,
-      Reference,
-      ConfirmationCode,
-      Timestamp
-    } = callbackData;
+    console.log('📋 Parsed data:', { reference, status, mpesaCode, phone, amount });
 
-    // Find the transaction by reference or transaction ID
+    // Find the transaction by reference
     let transaction;
     
-    if (Reference) {
+    if (reference) {
       const { data, error } = await supabase
         .from('wallet_transactions')
         .select('*')
-        .eq('reference', Reference)
+        .eq('reference', reference)
         .single();
       
       if (error) {
-        console.log(' Transaction not found by reference, trying by transaction_id');
-      } else {
-        transaction = data;
-      }
-    }
-
-    // Fallback to transaction ID lookup
-    if (!transaction) {
-      const { data, error } = await supabase
-        .from('wallet_transactions')
-        .select('*')
-        .eq('transaction_id', TransactionID)
-        .single();
-      
-      if (error) {
-        console.error(' Transaction not found:', { Reference, TransactionID });
+        console.error('❌ Transaction not found by reference:', reference);
         return res.status(404).json({ 
           success: false, 
-          error: 'Transaction not found' 
+          error: 'Transaction not found',
+          reference
         });
       }
       
       transaction = data;
+    } else {
+      console.error('❌ No reference provided');
+      return res.status(400).json({ 
+        success: false, 
+        error: 'No transaction reference provided' 
+      });
     }
 
-    console.log('📋 Found transaction:', transaction.id);
+    console.log('✅ Found transaction:', transaction.id);
+
+    // Map Rukisha status to our status
+    let transactionStatus: string;
+    if (status === 'COMPLETE' || status === 'completed') {
+      transactionStatus = 'completed';
+    } else if (status === 'FAILED' || status === 'failed') {
+      transactionStatus = 'failed';
+    } else {
+      transactionStatus = 'pending';
+    }
 
     // Update transaction status
     const updateData: any = {
-      status: Status,
+      status: transactionStatus,
       updated_at: new Date().toISOString(),
+      completed_at: transactionStatus === 'completed' ? new Date().toISOString() : null,
     };
 
-    // Add additional data if available
-    if (ConfirmationCode) updateData.confirmation_code = ConfirmationCode;
-    if (Timestamp) updateData.processed_at = new Date(Timestamp).toISOString();
+    // Add M-Pesa receipt number if available
+    if (mpesaCode) {
+      updateData.transaction_id = mpesaCode;
+    }
 
     const { error: updateError } = await supabase
       .from('wallet_transactions')
@@ -138,18 +159,18 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       .eq('id', transaction.id);
 
     if (updateError) {
-      console.error(' Failed to update transaction:', updateError);
+      console.error('❌ Failed to update transaction:', updateError);
       return res.status(500).json({ 
         success: false, 
         error: 'Failed to update transaction' 
       });
     }
 
-    console.log(' Transaction updated successfully');
+    console.log('✅ Transaction updated successfully');
 
     // If payment successful, update wallet balance
-    if (Status === 'completed' && TransactionType === 'deposit') {
-      const depositAmount = Amount || transaction.amount;
+    if (transactionStatus === 'completed' && transaction.type === 'deposit') {
+      const depositAmount = amount || transaction.amount;
       
       console.log('💰 Processing successful deposit:', { 
         userId: transaction.user_id, 
