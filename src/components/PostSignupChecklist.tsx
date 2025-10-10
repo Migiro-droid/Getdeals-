@@ -181,38 +181,43 @@ export function PostSignupChecklist({ open, onComplete }: PostSignupChecklistPro
     }
 
     setLoading(true);
+    
     try {
-      // Get current session directly from Supabase (more reliable than waiting for AuthContext)
-      const { data: { session } } = await supabase.auth.getSession();
-      
-      if (!session?.user) {
-        toast({
-          title: "Please wait",
-          description: "We're setting up your account. Please try again in a moment.",
-          variant: "destructive"
-        });
-        setLoading(false);
-        return;
-      }
-
-      const currentUserId = session.user.id;
-
       // Prepare detailed preferences data
       const detailedPreferences = {
         categories: selectedCategories,
         categoryDetails,
-        shoppingPreferences: selectedCategories, // Keep for backward compatibility
+        shoppingPreferences: selectedCategories,
         preferencesSetAt: new Date().toISOString(),
         onboardingCompleted: true
       };
 
-      console.log('Saving preferences for user:', currentUserId, detailedPreferences);
+      // STEP 1: ALWAYS save to localStorage first (works for unconfirmed users)
+      localStorage.setItem('pendingPreferences', JSON.stringify(detailedPreferences));
+      console.log('💾 Preferences saved to localStorage');
 
-      // Try multiple approaches to save preferences
+      // STEP 2: Try to save to database (will work if email is confirmed)
+      const { data: { session } } = await supabase.auth.getSession();
+      
+      if (!session?.user) {
+        // User not logged in yet (email not confirmed)
+        toast({
+          title: "Preferences Saved! ✓",
+          description: "Please confirm your email to complete setup. Your preferences are saved and will sync automatically.",
+        });
+        setLoading(false);
+        onComplete();
+        return;
+      }
+
+      const currentUserId = session.user.id;
+      console.log('💾 User is logged in, syncing preferences to database for user:', currentUserId);
+
+      // STEP 3: Try to save to database
       let saveSuccessful = false;
       let saveError = null;
 
-      // Approach 1: Try updateProfile from AuthContext
+      // Try updateProfile from AuthContext
       try {
         const result = await updateProfile({
           preferences: JSON.stringify(detailedPreferences),
@@ -221,7 +226,9 @@ export function PostSignupChecklist({ open, onComplete }: PostSignupChecklistPro
 
         if (result.ok) {
           saveSuccessful = true;
-          console.log('✅ Preferences saved via updateProfile');
+          console.log('✅ Preferences synced to database via updateProfile');
+          // Clear localStorage since it's now in database
+          localStorage.removeItem('pendingPreferences');
         } else {
           saveError = result.error;
           console.warn('⚠️ updateProfile failed:', result.error);
@@ -231,7 +238,7 @@ export function PostSignupChecklist({ open, onComplete }: PostSignupChecklistPro
         console.warn('⚠️ updateProfile threw error:', updateError);
       }
 
-      // Approach 2: If updateProfile failed, try direct Supabase auth metadata update
+      // If updateProfile failed, try direct Supabase auth metadata update
       if (!saveSuccessful) {
         try {
           const { error: authError } = await supabase.auth.updateUser({
@@ -243,25 +250,14 @@ export function PostSignupChecklist({ open, onComplete }: PostSignupChecklistPro
 
           if (!authError) {
             saveSuccessful = true;
-            console.log('✅ Preferences saved via auth metadata');
+            console.log('✅ Preferences synced to database via auth metadata');
+            // Clear localStorage since it's now in database
+            localStorage.removeItem('pendingPreferences');
           } else {
             console.warn('⚠️ Auth metadata update failed:', authError);
           }
         } catch (authError) {
           console.warn('⚠️ Auth metadata update threw error:', authError);
-        }
-      }
-
-      // Approach 3: If both failed, still show success for OAuth users
-      // (Google OAuth users might not have confirmed email but should still get preferences)
-      if (!saveSuccessful) {
-        // For OAuth users, we'll proceed anyway and store in localStorage as fallback
-        try {
-          localStorage.setItem(`preferences_${user.id}`, JSON.stringify(detailedPreferences));
-          console.log('📦 Preferences stored in localStorage as fallback');
-          saveSuccessful = true;
-        } catch (localError) {
-          console.error('❌ Even localStorage failed:', localError);
         }
       }
 
@@ -272,14 +268,14 @@ export function PostSignupChecklist({ open, onComplete }: PostSignupChecklistPro
         });
         onComplete();
       } else {
-        // Show the error but allow them to continue
+        // Still allow them to continue - preferences are in localStorage
         toast({
-          title: "Preferences saved with limitations",
-          description: "Your preferences were saved locally. You can update them later in settings.",
+          title: "Preferences saved locally",
+          description: "Your preferences are saved and will sync automatically.",
           variant: "default"
         });
-        console.error('All save approaches failed, but continuing:', saveError);
-        onComplete(); // Still complete the onboarding
+        console.error('Database save failed, but localStorage has preferences:', saveError);
+        onComplete();
       }
 
     } catch (error) {

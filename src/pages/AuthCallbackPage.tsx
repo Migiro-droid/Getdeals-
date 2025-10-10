@@ -5,6 +5,7 @@ import { supabase } from "../../lib/supabase";
 import { useAuth } from "@/contexts/AuthContext";
 import { OrganizationSetupModal } from "@/components/OrganizationSetupModal";
 import { PostSignupChecklist } from "@/components/PostSignupChecklist";
+import { useSyncPendingPreferences } from "@/hooks/useSyncPendingPreferences";
 
 export default function AuthCallbackPage() {
   const navigate = useNavigate();
@@ -14,6 +15,9 @@ export default function AuthCallbackPage() {
   const [showOrgSetup, setShowOrgSetup] = useState(false);
   const [showPreferences, setShowPreferences] = useState(false);
   const [userInfo, setUserInfo] = useState<{ email: string; isOAuthUser: boolean } | null>(null);
+
+  // Automatically sync pending preferences from localStorage after login
+  useSyncPendingPreferences();
 
   useEffect(() => {
     const handleAuthCallback = async () => {

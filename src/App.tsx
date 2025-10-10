@@ -15,6 +15,7 @@ import { Header } from "@/components/Header";
 import { AuthProvider, useAuth } from "./contexts/AuthContext";
 import { AccountProvider } from "./contexts/AccountContext";
 import { UserProfileProvider } from "./contexts/UserProfileContext";
+import { useSyncPendingPreferences } from "@/hooks/useSyncPendingPreferences";
 import { Footer } from "@/components/Footer";
 import HomePage from "./pages/HomePage";
 import BasketsPage from "./pages/BasketsPage";
@@ -145,6 +146,55 @@ const App = () => {
     return null; // Authentication banner removed
   }
 
+  // Component to handle automatic preference syncing
+  function AppContent() {
+    // Automatically sync pending preferences when user logs in
+    useSyncPendingPreferences();
+    
+    return (
+      <BrowserRouter>
+        <div className="min-h-screen flex flex-col">
+          <Header />
+          <main className="flex-1">
+            <MaintenanceBanner />
+            <Routes>
+              <Route path="/" element={<HomePage />} />
+              <Route path="/baskets" element={<BasketsPage />} />
+              <Route path="/cart" element={<CartPage />} />
+              <Route path="/checkout" element={<CheckoutPage />} />
+              <Route path="/contact" element={<ContactPage />} />
+              <Route path="/about" element={<AboutPage />} />
+              <Route path="/how-it-works" element={<HowItWorksPage />} />
+              <Route path="/account" element={<AccountPage />} />
+              <Route path="/faq" element={<FAQPage />} />
+              <Route path="/test-products" element={<TestProductsPage />} />
+              <Route path="/test-auth" element={<AuthTestPage />} />
+              <Route path="/wallet" element={<WalletPage />} />
+              <Route path="/auth" element={<AuthPage />} />
+              <Route path="/auth/callback" element={<AuthCallbackPage />} />
+              <Route path="/auth/reset-password" element={<ResetPasswordPage />} />
+              <Route path="/terms-of-service" element={<TermsOfServicePage />} />
+              <Route path="/privacy-policy" element={<PrivacyPolicyPage />} />
+              <Route path="/cookie-policy" element={<CookiePolicyPage />} />
+              <Route path="/admin" element={<AdminGuard><AdminDashboard /></AdminGuard>} />
+              <Route path="/admin/orders" element={<AdminGuard><AdminOrders /></AdminGuard>} />
+              <Route path="/admin/users" element={<AdminGuard><AdminUsers /></AdminGuard>} />
+              <Route path="/admin/settings" element={<AdminGuard><AdminSettings /></AdminGuard>} />
+              <Route path="/admin/products" element={<AdminProducts />} />
+              <Route path="/admin/inventory" element={<AdminGuard><InventoryPage /></AdminGuard>} />
+              <Route path="/admin/inventory/out-of-stock" element={<AdminGuard><OutOfStockPage /></AdminGuard>} />
+              <Route path="/category/:slug" element={<CategoryPage />} />
+              <Route path="/quickmart" element={<QuickMartDashboard />} />
+              {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
+              <Route path="*" element={<NotFound />} />
+            </Routes>
+          </main>
+          <Footer />
+        </div>
+      </BrowserRouter>
+    );
+  }
+
   return (
     <QueryClientProvider client={queryClient}>
       <TooltipProvider>
@@ -154,55 +204,15 @@ const App = () => {
               <AdminProvider>
                 <ProductsProvider>
                   <InventoryProvider>
-            <AuthProvider>
-              <UserProfileProvider>
-                <AccountProvider>
-          <Toaster />
-          <Sonner />
-          <BrowserRouter>
-            <div className="min-h-screen flex flex-col">
-              <Header />
-              <main className="flex-1">
-                {}
-                <MaintenanceBanner />
-                <Routes>
-                  <Route path="/" element={<HomePage />} />
-                  <Route path="/baskets" element={<BasketsPage />} />
-                  <Route path="/cart" element={<CartPage />} />
-                  <Route path="/checkout" element={<CheckoutPage />} />
-                  <Route path="/contact" element={<ContactPage />} />
-                  <Route path="/about" element={<AboutPage />} />
-                  <Route path="/how-it-works" element={<HowItWorksPage />} />
-                  <Route path="/account" element={<AccountPage />} />
-                  <Route path="/faq" element={<FAQPage />} />
-                  <Route path="/test-products" element={<TestProductsPage />} />
-                  <Route path="/test-auth" element={<AuthTestPage />} />
-                  <Route path="/wallet" element={<WalletPage />} />
-                  <Route path="/auth" element={<AuthPage />} />
-                  <Route path="/auth/callback" element={<AuthCallbackPage />} />
-                  <Route path="/auth/reset-password" element={<ResetPasswordPage />} />
-                  <Route path="/terms-of-service" element={<TermsOfServicePage />} />
-                  <Route path="/privacy-policy" element={<PrivacyPolicyPage />} />
-                  <Route path="/cookie-policy" element={<CookiePolicyPage />} />
-                  <Route path="/admin" element={<AdminGuard><AdminDashboard /></AdminGuard>} />
-                  <Route path="/admin/orders" element={<AdminGuard><AdminOrders /></AdminGuard>} />
-                  <Route path="/admin/users" element={<AdminGuard><AdminUsers /></AdminGuard>} />
-                  <Route path="/admin/settings" element={<AdminGuard><AdminSettings /></AdminGuard>} />
-                  <Route path="/admin/products" element={<AdminProducts />} />
-                  <Route path="/admin/inventory" element={<AdminGuard><InventoryPage /></AdminGuard>} />
-                  <Route path="/admin/inventory/out-of-stock" element={<AdminGuard><OutOfStockPage /></AdminGuard>} />
-                  <Route path="/category/:slug" element={<CategoryPage />} />
-                  <Route path="/quickmart" element={<QuickMartDashboard />} />
-                  {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
-                  <Route path="*" element={<NotFound />} />
-                </Routes>
-              </main>
-        <Footer />
-            </div>
-          </BrowserRouter>
-                </AccountProvider>
-              </UserProfileProvider>
-            </AuthProvider>
+                    <AuthProvider>
+                      <UserProfileProvider>
+                        <AccountProvider>
+                          <Toaster />
+                          <Sonner />
+                          <AppContent />
+                        </AccountProvider>
+                      </UserProfileProvider>
+                    </AuthProvider>
                   </InventoryProvider>
                 </ProductsProvider>
               </AdminProvider>
