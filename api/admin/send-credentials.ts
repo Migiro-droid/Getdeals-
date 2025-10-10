@@ -120,7 +120,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
  * Generate HTML email template
  */
 function generateCredentialsEmail(name: string, email: string, password: string, role: string): string {
-  const loginUrl = 'https://getdeals.co.ke/login';
+  const loginUrl = 'https://getdeals.co.ke/auth';
   const supportEmail = 'support@getdeals.co.ke';
   
   const roleDisplay = role.charAt(0).toUpperCase() + role.slice(1);
@@ -252,7 +252,7 @@ function generateCredentialsEmail(name: string, email: string, password: string,
  * Generate plain text email (fallback)
  */
 function generatePlainTextEmail(name: string, email: string, password: string, role: string): string {
-  const loginUrl = 'https://getdeals.co.ke/login';
+  const loginUrl = 'https://getdeals.co.ke/auth';
   const roleDisplay = role.charAt(0).toUpperCase() + role.slice(1);
 
   return `
