@@ -170,6 +170,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
  * Generate a secure random password
  * - 16 characters long
  * - Includes uppercase, lowercase, numbers, and special characters
+ * - Avoids confusing characters and HTML-problematic ones
  * - Cryptographically secure
  */
 function generateSecurePassword(): string {
@@ -177,7 +178,8 @@ function generateSecurePassword(): string {
   const uppercase = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ';
   const lowercase = 'abcdefghijklmnopqrstuvwxyz';
   const numbers = '0123456789';
-  const special = '!@#$%^&*()_+-=[]{}|;:,.<>?';
+  // Avoid HTML entities (<, >, &, ', ") and confusing characters (l, I, 0, O)
+  const special = '!@#$%^*()_+-=[]{}|;:,.?';
   
   const allChars = uppercase + lowercase + numbers + special;
   

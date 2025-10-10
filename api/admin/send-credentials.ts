@@ -117,6 +117,20 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
 }
 
 /**
+ * HTML-escape a string to prevent XSS and ensure proper display
+ */
+function escapeHtml(text: string): string {
+  const map: { [key: string]: string } = {
+    '&': '&amp;',
+    '<': '&lt;',
+    '>': '&gt;',
+    '"': '&quot;',
+    "'": '&#039;'
+  };
+  return text.replace(/[&<>"']/g, (m) => map[m]);
+}
+
+/**
  * Generate HTML email template
  */
 function generateCredentialsEmail(name: string, email: string, password: string, role: string): string {
@@ -124,6 +138,11 @@ function generateCredentialsEmail(name: string, email: string, password: string,
   const supportEmail = 'support@getdeals.co.ke';
   
   const roleDisplay = role.charAt(0).toUpperCase() + role.slice(1);
+  
+  // Escape HTML characters in user-provided content
+  const escapedName = escapeHtml(name);
+  const escapedEmail = escapeHtml(email);
+  const escapedPassword = escapeHtml(password);
 
   return `
 <!DOCTYPE html>
@@ -152,7 +171,7 @@ function generateCredentialsEmail(name: string, email: string, password: string,
             <td style="padding: 40px 30px;">
               
               <p style="margin: 0 0 20px 0; color: #333333; font-size: 16px; line-height: 1.6;">
-                Hi <strong>${name}</strong>,
+                Hi <strong>${escapedName}</strong>,
               </p>
 
               <p style="margin: 0 0 20px 0; color: #333333; font-size: 16px; line-height: 1.6;">
@@ -168,13 +187,14 @@ function generateCredentialsEmail(name: string, email: string, password: string,
                       <tr>
                         <td style="padding-bottom: 15px;">
                           <p style="margin: 0 0 5px 0; color: #666666; font-size: 14px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.5px;">Email</p>
-                          <p style="margin: 0; color: #333333; font-size: 16px; font-weight: 500;">${email}</p>
+                          <p style="margin: 0; color: #333333; font-size: 16px; font-weight: 500; word-break: break-all;">${escapedEmail}</p>
                         </td>
                       </tr>
                       <tr>
                         <td style="padding-top: 15px; border-top: 1px solid #dee2e6;">
                           <p style="margin: 0 0 5px 0; color: #666666; font-size: 14px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.5px;">Temporary Password</p>
-                          <p style="margin: 0; color: #333333; font-size: 18px; font-weight: bold; font-family: 'Courier New', monospace; background-color: #ffffff; padding: 10px; border-radius: 4px; border: 1px solid #dee2e6;">${password}</p>
+                          <p style="margin: 0; color: #333333; font-size: 18px; font-weight: bold; font-family: 'Courier New', monospace; background-color: #ffffff; padding: 10px; border-radius: 4px; border: 1px solid #dee2e6; word-break: break-all; user-select: all;">${escapedPassword}</p>
+                          <p style="margin: 10px 0 0 0; color: #dc3545; font-size: 13px; font-weight: 500;">⚠️ Copy the password exactly as shown, including all characters</p>
                         </td>
                       </tr>
                       <tr>
@@ -205,6 +225,12 @@ function generateCredentialsEmail(name: string, email: string, password: string,
                   <td style="padding: 20px;">
                     <p style="margin: 0 0 10px 0; color: #856404; font-size: 14px; font-weight: bold;">
                       🔒 Important Security Information
+                    </p>
+                    <p style="margin: 0 0 8px 0; color: #856404; font-size: 14px; line-height: 1.6;">
+                      • Copy the password exactly as shown - no extra spaces before or after
+                    </p>
+                    <p style="margin: 0 0 8px 0; color: #856404; font-size: 14px; line-height: 1.6;">
+                      • If login fails, try typing the password manually character by character
                     </p>
                     <p style="margin: 0 0 8px 0; color: #856404; font-size: 14px; line-height: 1.6;">
                       • Please change your password immediately after your first login
