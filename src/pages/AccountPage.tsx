@@ -48,6 +48,17 @@ export default function AccountPage() {
     console.log('2FA verification not yet implemented:', code);
     return { ok: false, error: '2FA not yet implemented' };
   };
+
+  // Calculate real user stats from orders
+  const totalOrders = orders.length;
+  const totalSaved = orders
+    .filter(order => order.status === 'delivered')
+    .reduce((sum, order) => {
+      // Calculate savings based on subtotal vs total difference (excluding delivery fee)
+      // Assuming savings come from discounts applied during checkout
+      // For now, we'll show 0 until we add a savings/discount field to Order interface
+      return sum + 0;
+    }, 0);
   const urlParams = new URLSearchParams(location.search);
   const defaultTab = urlParams.get("tab") || (location.state as any)?.tab || "profile";
   const statusPill = (s: OrderStatus) => {
@@ -55,8 +66,7 @@ export default function AccountPage() {
       delivered: "bg-emerald-100 text-emerald-800",
       pending: "bg-yellow-100 text-yellow-800",
       confirmed: "bg-blue-100 text-blue-800",
-      preparing: "bg-indigo-100 text-indigo-800",
-      out_for_delivery: "bg-purple-100 text-purple-800",
+      shipped: "bg-purple-100 text-purple-800",
       cancelled: "bg-red-100 text-red-800",
     };
     return `inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs ${map[s]}`;
@@ -97,11 +107,11 @@ export default function AccountPage() {
                   </div>
                   <div className="flex items-center justify-between text-sm">
                     <span>Total orders</span>
-                    <span>12</span>
+                    <span>{totalOrders}</span>
                   </div>
                   <div className="flex items-center justify-between text-sm">
                     <span>Total saved</span>
-                    <span className="text-green-600 font-medium">KES 15,000</span>
+                    <span className="text-green-600 font-medium">KES {totalSaved.toLocaleString()}</span>
                   </div>
                 </div>
               </CardContent>
@@ -572,8 +582,7 @@ function OrderDetailsModal({ order, onClose }: { order: Order | null; onClose: (
               <div className="mt-2 grid grid-cols-2 gap-2 text-sm">
                 <StatusBadge active={order.status === 'pending'}>Pending</StatusBadge>
                 <StatusBadge active={order.status === 'confirmed'}>Confirmed</StatusBadge>
-                <StatusBadge active={order.status === 'preparing'}>Preparing</StatusBadge>
-                <StatusBadge active={order.status === 'out_for_delivery'}>Out for delivery</StatusBadge>
+                <StatusBadge active={order.status === 'shipped'}>Shipped</StatusBadge>
                 <StatusBadge active={order.status === 'delivered'}>Delivered</StatusBadge>
                 <StatusBadge active={order.status === 'cancelled'}>Cancelled</StatusBadge>
               </div>
