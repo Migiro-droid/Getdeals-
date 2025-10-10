@@ -8,6 +8,7 @@ import { SpeedInsights } from "@vercel/speed-insights/react";
 import { CartProvider } from "@/contexts/CartContext";
 import { WalletProvider } from "./contexts/NewWalletContext";
 import { OrdersProvider } from "@/contexts/OrdersContext";
+import { OrderNotificationProvider } from "@/contexts/OrderNotificationContext";
 import { AdminProvider } from "@/contexts/AdminContext";
 import { ProductsProvider } from "@/contexts/ProductsContext";
 import { InventoryProvider } from "@/contexts/InventoryContext";
@@ -197,21 +198,23 @@ const App = () => {
         <CartProvider>
           <WalletProvider>
             <OrdersProvider>
-              <AdminProvider>
-                <ProductsProvider>
-                  <InventoryProvider>
-                    <AuthProvider>
-                      <UserProfileProvider>
-                        <AccountProvider>
-                          <Toaster />
-                          <Sonner />
-                          <AppContent />
-                        </AccountProvider>
-                      </UserProfileProvider>
-                    </AuthProvider>
-                  </InventoryProvider>
-                </ProductsProvider>
-              </AdminProvider>
+              <OrderNotificationProvider>
+                <AdminProvider>
+                  <ProductsProvider>
+                    <InventoryProvider>
+                      <AuthProvider>
+                        <UserProfileProvider>
+                          <AccountProvider>
+                            <Toaster />
+                            <Sonner />
+                            <AppContent />
+                          </AccountProvider>
+                        </UserProfileProvider>
+                      </AuthProvider>
+                    </InventoryProvider>
+                  </ProductsProvider>
+                </AdminProvider>
+              </OrderNotificationProvider>
             </OrdersProvider>
           </WalletProvider>
         </CartProvider>
