@@ -180,17 +180,23 @@ export function PostSignupChecklist({ open, onComplete }: PostSignupChecklistPro
       return;
     }
 
-    if (!user?.id) {
-      toast({
-        title: "Please wait",
-        description: "We're setting up your account. Please try again in a moment.",
-        variant: "destructive"
-      });
-      return;
-    }
-
     setLoading(true);
     try {
+      // Get current session directly from Supabase (more reliable than waiting for AuthContext)
+      const { data: { session } } = await supabase.auth.getSession();
+      
+      if (!session?.user) {
+        toast({
+          title: "Please wait",
+          description: "We're setting up your account. Please try again in a moment.",
+          variant: "destructive"
+        });
+        setLoading(false);
+        return;
+      }
+
+      const currentUserId = session.user.id;
+
       // Prepare detailed preferences data
       const detailedPreferences = {
         categories: selectedCategories,
@@ -200,7 +206,7 @@ export function PostSignupChecklist({ open, onComplete }: PostSignupChecklistPro
         onboardingCompleted: true
       };
 
-      console.log('Saving preferences for user:', user.id, detailedPreferences);
+      console.log('Saving preferences for user:', currentUserId, detailedPreferences);
 
       // Try multiple approaches to save preferences
       let saveSuccessful = false;

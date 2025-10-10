@@ -18,19 +18,41 @@ export default function AuthCallbackPage() {
   useEffect(() => {
     const handleAuthCallback = async () => {
       try {
-        console.log('Processing OAuth callback...');
+        console.log('Processing auth callback...');
         console.log('Current URL:', window.location.href);
         
-        // Check if we have hash fragments (implicit flow)
+        // Check if we have hash fragments (implicit flow) or query parameters (PKCE flow)
         const hash = window.location.hash;
+        const searchParams = new URLSearchParams(window.location.search);
+        
         if (hash && hash.includes('access_token')) {
-          console.log('Processing hash fragment authentication...');
+          console.log('Processing hash fragment authentication (implicit flow)...');
           // Let Supabase handle the hash fragment automatically
           await new Promise(resolve => setTimeout(resolve, 2000)); // Wait for Supabase to process
+        } else if (searchParams.has('code')) {
+          console.log('Processing PKCE code exchange...');
+          // Supabase will automatically exchange the code for a session
+          await new Promise(resolve => setTimeout(resolve, 2000)); // Wait for code exchange
         }
         
-        // Handle the OAuth callback session
-        const { data, error } = await supabase.auth.getSession();
+        // Handle the auth callback session - retry a few times if needed
+        let data, error;
+        let retries = 3;
+        
+        while (retries > 0) {
+          const result = await supabase.auth.getSession();
+          data = result.data;
+          error = result.error;
+          
+          if (data.session) {
+            console.log('✅ Session established successfully');
+            break;
+          }
+          
+          console.log(`⏳ No session yet, retrying... (${retries} attempts left)`);
+          await new Promise(resolve => setTimeout(resolve, 1000));
+          retries--;
+        }
         
         if (error) {
           console.error('OAuth callback error:', error);
