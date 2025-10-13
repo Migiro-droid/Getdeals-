@@ -103,7 +103,10 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
               supabaseUser.email!.split('@')[0],
         phone: supabaseUser.user_metadata?.phone || '',
         email: supabaseUser.email!,
-        role: 'customer', // Default role
+        // Get role from user_metadata or app_metadata, default to 'customer'
+        role: supabaseUser.user_metadata?.role || 
+              (supabaseUser as any).app_metadata?.role || 
+              'customer',
         createdAt: supabaseUser.created_at,
         twoFactorEnabled: false
       };
@@ -164,7 +167,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
             organization: supabaseUser.user_metadata?.organization || null,
             organization_number: supabaseUser.user_metadata?.organization_number || null,
             email_verified: !!supabaseUser.email_confirmed_at,
-            customer_id: `customer_${supabaseUser.id}`, // Generate customer_id
+            customer_id: null, // Will be set by Rukisha during KYC registration
             created_at: new Date().toISOString(),
             updated_at: new Date().toISOString()
           };

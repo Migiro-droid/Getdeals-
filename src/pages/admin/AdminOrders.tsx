@@ -58,7 +58,6 @@ export default function AdminOrders() {
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState('');
   
-  // Status values must match database constraint: ('pending', 'confirmed', 'shipped', 'delivered', 'cancelled')
   const statuses: OrderStatus[] = [
     "pending",
     "confirmed",
@@ -69,7 +68,6 @@ export default function AdminOrders() {
   const [statusFilter, setStatusFilter] = useState<"all" | OrderStatus>("all");
   const [sortBy, setSortBy] = useState<"newest" | "oldest" | "total_desc" | "total_asc">("newest");
 
-  // Fetch database orders
   const fetchDatabaseOrders = async () => {
     setLoading(true);
     try {
@@ -100,12 +98,10 @@ export default function AdminOrders() {
     fetchDatabaseOrders();
   }, [statusFilter, search]);
 
-  // Acknowledge orders when the admin views this page
   useEffect(() => {
     acknowledgeOrders();
   }, [acknowledgeOrders]);
 
-  // Convert database order to local order format for existing UI
   const convertDatabaseOrderToLocal = (dbOrder: DatabaseOrder) => ({
     id: dbOrder.order_reference,
     date: dbOrder.created_at,
@@ -126,7 +122,6 @@ export default function AdminOrders() {
     }
   });
 
-  // Use database orders if available, fallback to local orders
   const orders = databaseOrders.length > 0
     ? databaseOrders.map(convertDatabaseOrderToLocal)
     : localOrders;
@@ -162,7 +157,6 @@ export default function AdminOrders() {
     }
   };
 
-  // Deterministic dummy location when none provided
   const pickDeterministic = (arr: string[], key: string) => {
     let h = 0;
     for (let i = 0; i < key.length; i++) h = (h * 31 + key.charCodeAt(i)) >>> 0;
@@ -181,14 +175,11 @@ export default function AdminOrders() {
     return o.customer.address || pickDeterministic(addressPool, JSON.stringify(o));
   };
 
-  // Map product names to working images
   const getProductImage = (productName: string, existingImage?: string) => {
-    // If there's already a working image path, use it
     if (existingImage && !existingImage.includes('placeholder') && !existingImage.startsWith('src/')) {
       return existingImage;
     }
     
-    // Map common product names to actual images
     const imageMap: Record<string, string> = {
       'essential basket': '/src/assets/essential-basket.jpg',
       'mini essential basket': '/src/assets/essential-basket.jpg',
@@ -217,11 +208,9 @@ export default function AdminOrders() {
       'oil': '/src/assets/products/oil.jpg',
     };
     
-    // Try exact match first
     const exactMatch = imageMap[productName.toLowerCase()];
     if (exactMatch) return exactMatch;
     
-    // Try partial matches for common terms
     const lowerName = productName.toLowerCase();
     if (lowerName.includes('basket')) {
       if (lowerName.includes('family') || lowerName.includes('premium') || lowerName.includes('luxury')) {
@@ -235,14 +224,12 @@ export default function AdminOrders() {
     if (lowerName.includes('sugar')) return '/src/assets/products/sugar.jpg';
     if (lowerName.includes('oil')) return '/src/assets/products/oil.jpg';
     
-    // Default fallback to a working image
     return '/src/assets/essential-basket.jpg';
   };
 
   const [open, setOpen] = useState(false);
   const [active, setActive] = useState<ReturnType<typeof useOrders>["orders"][number] | null>(null);
 
-  // User display component
   const UserDisplay = () => {
     const getRoleIcon = () => {
       switch (role) {
@@ -281,7 +268,6 @@ export default function AdminOrders() {
   const setStatusForActive = async (next: OrderStatus) => {
     if (!active) return;
     
-    // If we have database orders, update via API
     if (databaseOrders.length > 0) {
       try {
         console.log('Updating order status:', { orderId: active.id, newStatus: next });
@@ -300,9 +286,7 @@ export default function AdminOrders() {
         console.log('Response data:', result);
 
         if (result.success) {
-          // Update local state
           setActive({ ...active, status: next });
-          // Refresh the orders list
           await fetchDatabaseOrders();
           console.log('Order status updated successfully');
         } else {
@@ -314,13 +298,11 @@ export default function AdminOrders() {
         alert('Error updating order status:\n' + (error.message || 'Network error. Please try again.'));
       }
     } else {
-      // Fallback to local orders context
       updateStatus(active.id, next);
       setActive({ ...active, status: next });
     }
   };
 
-  // Status sequence for order progression - matches database constraint
   const statusSequence: OrderStatus[] = [
     "pending",
     "confirmed",
@@ -511,7 +493,7 @@ export default function AdminOrders() {
                     </div>
                   </div>
                   
-                  {/* Show additional payment info for database orders */}
+                  {}
                   {(() => {
                     const dbOrder = databaseOrders.find(db => db.order_reference === active.id);
                     if (!dbOrder) return null;
@@ -616,7 +598,6 @@ export default function AdminOrders() {
                                     alt={it.name} 
                                     className="h-10 w-10 rounded object-contain bg-muted flex-shrink-0"
                                     onError={(e) => {
-                                      // Fallback to default image if loading fails
                                       const target = e.target as HTMLImageElement;
                                       target.src = '/src/assets/essential-basket.jpg';
                                     }}

@@ -5,7 +5,7 @@ CREATE TABLE IF NOT EXISTS public.users (
   name TEXT NOT NULL,
   phone TEXT,
   organization TEXT,
-  role TEXT NOT NULL DEFAULT 'customer' CHECK (role IN ('customer', 'admin', 'staff')),
+  role TEXT NOT NULL DEFAULT 'customer' CHECK (role IN ('customer', 'admin', 'manager', 'staff')),
   "emailVerified" BOOLEAN NOT NULL DEFAULT false,
   "phoneVerified" BOOLEAN NOT NULL DEFAULT false,
   "twoFactorEnabled" BOOLEAN NOT NULL DEFAULT false,

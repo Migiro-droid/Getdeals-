@@ -140,9 +140,94 @@ serve(async (req) => {
 
     if (!rukishaResponse.ok || !('customer' in rukishaData) || !rukishaData.customer?.id) {
       console.error('Rukisha API error:', rukishaData)
+      
+      // Check if customer already exists with Rukisha
       const errorMessage = ('error' in rukishaData && rukishaData.error) || 
                           ('message' in rukishaData && rukishaData.message) || 
                           'Failed to register with Rukisha API'
+      
+      const lowerErrorMsg = errorMessage.toLowerCase()
+      if (lowerErrorMsg.includes('already exists') || 
+          lowerErrorMsg.includes('already registered') ||
+          lowerErrorMsg.includes('duplicate')) {
+        
+        // Try to extract customer ID from error message
+        // Rukisha might return: "Customer already exists with ID: 7892" or similar
+        const idMatch = errorMessage.match(/ID[:\s]+(\d+)/) || 
+                       errorMessage.match(/customer[_\s]?id[:\s]+(\d+)/i) ||
+                       errorMessage.match(/\b(\d{4,})\b/) // Match 4+ digit numbers
+        
+        if (idMatch && idMatch[1]) {
+          const existingCustomerId = idMatch[1]
+          console.log('Extracted existing customer ID:', existingCustomerId)
+          
+          // Store the existing customer ID
+          const { error: profileError } = await supabaseClient
+            .from('profiles')
+            .upsert({
+              user_id: user.id,
+              id: user.id,
+              customer_id: existingCustomerId,
+              first_name,
+              last_name,
+              phone: rukishaPayload.phone,
+              updated_at: new Date().toISOString()
+            })
+          
+          if (profileError) {
+            console.error('Error updating profile with existing customer ID:', profileError)
+          } else {
+            // Activate wallet
+            await supabaseClient
+              .from('wallets')
+              .upsert({
+                user_id: user.id,
+                is_active: true,
+                updated_at: new Date().toISOString()
+              })
+            
+            // Update KYC status
+            await supabaseClient
+              .from('wallet_kyc')
+              .update({
+                status: 'verified',
+                verified_at: new Date().toISOString(),
+                updated_at: new Date().toISOString()
+              })
+              .eq('user_id', user.id)
+          }
+          
+          return new Response(
+            JSON.stringify({ 
+              success: true,
+              customer_id: existingCustomerId,
+              message: 'Account linked! You were already registered with Rukisha.',
+              is_existing_customer: true
+            }),
+            { 
+              status: 200,
+              headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+            }
+          )
+        }
+        
+        // Can't extract ID - inform user to contact support
+        return new Response(
+          JSON.stringify({ 
+            error: 'You are already registered with Rukisha but we could not automatically link your account.',
+            message: 'Please contact support to link your existing Rukisha account.',
+            contact_email: 'support@getdeals.co.ke',
+            phone: rukishaPayload.phone,
+            action: 'CONTACT_SUPPORT'
+          }),
+          { 
+            status: 409,
+            headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+          }
+        )
+      }
+      
+      // Other errors
       return new Response(
         JSON.stringify({ 
           error: errorMessage,

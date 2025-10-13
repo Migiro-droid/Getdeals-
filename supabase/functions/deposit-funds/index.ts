@@ -116,7 +116,28 @@ serve(async (req: Request) => {
     if (!profile || !profile.customer_id) {
       // No profile or no customer_id — provide a clear, actionable message
       return new Response(
-        JSON.stringify({ error: 'Wallet not activated. Please complete KYC verification first.' }),
+        JSON.stringify({ 
+          error: 'KYC_REQUIRED',
+          message: 'Wallet not activated. Please complete KYC verification first.',
+          action: 'REDIRECT_TO_KYC'
+        }),
+        { 
+          status: 400,
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+        }
+      )
+    }
+
+    // Validate customer_id format (Rukisha IDs are numeric strings like "7892")
+    if (profile.customer_id.startsWith('customer_') || !/^\d+$/.test(profile.customer_id)) {
+      console.error('Invalid customer_id format detected:', profile.customer_id)
+      return new Response(
+        JSON.stringify({ 
+          error: 'KYC_REQUIRED',
+          message: 'Your wallet needs to be re-verified. Please complete KYC registration.',
+          details: 'Invalid customer ID format detected',
+          action: 'REDIRECT_TO_KYC'
+        }),
         { 
           status: 400,
           headers: { ...corsHeaders, 'Content-Type': 'application/json' },
@@ -204,10 +225,11 @@ serve(async (req: Request) => {
     }
 
     // Prepare payload for Rukisha deposit-to-wallet API (TOP UP WALLET)
+    // Note: Rukisha API uses 'client_id' for deposit-to-wallet endpoint
     const rukishaPayload = {
       amount: Number(amount),
       phone: formattedPhone,
-      customer_id: profile.customer_id,
+      client_id: profile.customer_id, // Rukisha uses 'client_id' for deposits
       callback_url: "https://getdeals.co.ke/api/webhooks/rukisha",
       reference: reference
     }
