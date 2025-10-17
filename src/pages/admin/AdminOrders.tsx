@@ -516,7 +516,7 @@ export default function AdminOrders() {
                 </div>
                 <ScrollArea className="max-h-[80vh]">
                   <div className="p-6 space-y-5">
-                    {/* Status controls - stepper */}
+                    {}
                     <div className="flex flex-col gap-4">
                       <h3 className="text-sm font-medium text-muted-foreground">Order Status</h3>
                       <div className="flex items-center justify-between gap-4">

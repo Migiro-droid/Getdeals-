@@ -21,6 +21,9 @@ export default {
 			fontFamily: {
 				inter: ['Inter', 'sans-serif'],
 			},
+			backgroundSize: {
+				'200%': '200%',
+			},
 			colors: {
 				border: 'hsl(var(--border))',
 				input: 'hsl(var(--input))',
@@ -125,6 +128,22 @@ export default {
 					'50%': {
 						transform: 'translateY(-4px)'
 					}
+				},
+				'gradient-x': {
+					'0%, 100%': {
+						'background-position': '0% 50%'
+					},
+					'50%': {
+						'background-position': '100% 50%'
+					}
+				},
+				'marquee': {
+					'0%': {
+						transform: 'translateX(0%)'
+					},
+					'100%': {
+						transform: 'translateX(-100%)'
+					}
 				}
 			},
 			animation: {
@@ -132,7 +151,9 @@ export default {
 				'accordion-up': 'accordion-up 0.2s ease-out',
 				'fade-in': 'fade-in 0.3s ease-out',
 				'scale-in': 'scale-in 0.2s ease-out',
-				'bounce-soft': 'bounce-soft 2s ease-in-out infinite'
+				'bounce-soft': 'bounce-soft 2s ease-in-out infinite',
+				'gradient-x': 'gradient-x 15s ease infinite',
+				'marquee': 'marquee 30s linear infinite'
 			}
 		}
 	},

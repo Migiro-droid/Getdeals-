@@ -212,6 +212,95 @@ export default function HomePage() {
     <div className="min-h-screen">
       {/* Floating WhatsApp Chat Icon */}
       <ChatSupportButton variant="floating" labelPrimary="Chat with us on WhatsApp" />
+      
+      {/* VIBRANT PROMOTIONAL BANNER - Jumia/Kilimall Style */}
+      <div className="relative overflow-hidden bg-gradient-to-r from-orange-500 via-red-500 to-pink-500 animate-gradient-x">
+        {/* Animated Background Pattern */}
+        <div className="absolute inset-0 opacity-20">
+          <div className="absolute top-0 left-0 w-full h-full" style={{
+            backgroundImage: `repeating-linear-gradient(45deg, transparent, transparent 10px, rgba(255,255,255,.05) 10px, rgba(255,255,255,.05) 20px)`
+          }}></div>
+        </div>
+        
+        {/* Floating Shopping Icons */}
+        <div className="absolute inset-0 overflow-hidden pointer-events-none">
+          <div className="absolute top-2 left-[10%] animate-bounce" style={{ animationDelay: '0s', animationDuration: '3s' }}>
+            <Package className="h-6 w-6 text-white/30" />
+          </div>
+          <div className="absolute top-4 right-[15%] animate-bounce" style={{ animationDelay: '1s', animationDuration: '2.5s' }}>
+            <Sparkles className="h-5 w-5 text-yellow-300/40" />
+          </div>
+          <div className="absolute bottom-3 left-[25%] animate-bounce" style={{ animationDelay: '0.5s', animationDuration: '2.8s' }}>
+            <Star className="h-4 w-4 text-white/25" />
+          </div>
+          <div className="absolute bottom-2 right-[30%] animate-bounce" style={{ animationDelay: '1.5s', animationDuration: '3.2s' }}>
+            <Zap className="h-6 w-6 text-yellow-400/35" />
+          </div>
+        </div>
+        
+        {/* Main Banner Content */}
+        <div className="container mx-auto px-4 py-4 relative z-10">
+          <div className="flex flex-col sm:flex-row items-center justify-center gap-3 text-center">
+            {/* Left Icon */}
+            <div className="flex items-center gap-2 animate-pulse">
+              <div className="relative">
+                <Megaphone className="h-8 w-8 sm:h-10 sm:w-10 text-yellow-300 drop-shadow-lg" />
+                <div className="absolute -top-1 -right-1 w-3 h-3 bg-yellow-400 rounded-full animate-ping"></div>
+              </div>
+            </div>
+            
+            {/* Main Message */}
+            <div className="flex-1">
+              <h2 className="text-2xl sm:text-3xl md:text-4xl font-black text-white drop-shadow-2xl tracking-tight">
+                <span className="relative inline-block">
+                  <span className="relative z-10">Usikwame — Angukia Deals Every Shopping</span>
+                  <span className="absolute inset-0 blur-md bg-yellow-300/30 animate-pulse"></span>
+                </span>
+              </h2>
+              
+              {/* Subtitle */}
+              <div className="mt-2 flex items-center justify-center gap-2 text-white/95 text-sm sm:text-base font-semibold">
+                <Star className="h-4 w-4 text-yellow-300 fill-yellow-300 animate-spin" style={{ animationDuration: '3s' }} />
+                <span className="drop-shadow-lg">Your One-Stop Shop • Unbeatable Prices • Shop Smarter</span>
+                <Star className="h-4 w-4 text-yellow-300 fill-yellow-300 animate-spin" style={{ animationDuration: '3s', animationDirection: 'reverse' }} />
+              </div>
+            </div>
+            
+            {/* Right Icon/Badge */}
+            <div className="flex items-center gap-2">
+              <div className="relative">
+                <div className="bg-yellow-400 text-red-600 font-black text-xs sm:text-sm px-3 py-2 rounded-full shadow-2xl animate-pulse border-2 border-white transform rotate-12">
+                  <div className="flex items-center gap-1">
+                    <Sparkles className="h-4 w-4" />
+                    <span>HOT!</span>
+                  </div>
+                </div>
+                <div className="absolute -top-1 -right-1 w-4 h-4 bg-red-500 rounded-full animate-ping"></div>
+              </div>
+            </div>
+          </div>
+          
+          {/* Bottom ticker effect */}
+          <div className="mt-2 overflow-hidden">
+            <div className="flex gap-8 animate-marquee whitespace-nowrap text-white/80 text-xs font-medium">
+              <span>💰 Save Up to 70% Off Today</span>
+              <span>⚡ New Flash Deals Daily</span>
+              <span>🎁 Wallet Cashback on Every Purchase</span>
+              <span>🏆 Kenya's #1 Trusted Shopping Platform</span>
+              <span>🚀 Lightning-Fast Checkout</span>
+              <span>🔥 Hottest Products at Lowest Prices</span>
+              <span>🎯 Exclusive Member-Only Deals</span>
+              <span>💳 Safe & Secure Payment Options</span>
+              <span>💰 Save Up to 70% Off Today</span>
+              <span>⚡ New Flash Deals Daily</span>
+            </div>
+          </div>
+        </div>
+        
+        {/* Pulse effect borders */}
+        <div className="absolute bottom-0 left-0 right-0 h-1 bg-gradient-to-r from-yellow-300 via-white to-yellow-300 animate-pulse"></div>
+      </div>
+      
       {/* Enhanced Hero Section with Slideshow */}
       <section className="relative py-20 lg:py-32 min-h-[700px] overflow-hidden">
         {/* Background Slideshow */}

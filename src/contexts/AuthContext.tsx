@@ -133,7 +133,6 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
           return;
         }
         
-        // For other users, try the database query with timeout
         const timeoutPromise = new Promise((_, reject) => 
           setTimeout(() => reject(new Error('Database query timeout')), 5000)
         );
@@ -154,12 +153,11 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         let profile = existingProfile;
         console.log('Existing profile:', profile);
 
-        // If no profile exists in database, try to create one
         if (!profile) {
           console.log('No profile found, creating new profile...');
           const newProfile = {
             id: supabaseUser.id,
-            user_id: supabaseUser.id, // Use user_id as the reference
+            user_id: supabaseUser.id, 
             email: supabaseUser.email!,
             first_name: basicUser.name?.split(' ')[0] || supabaseUser.email!.split('@')[0],
             last_name: basicUser.name?.split(' ').slice(1).join(' ') || '',

@@ -57,7 +57,6 @@ const App = () => {
     
     useEffect(() => {
       if (isAuthenticated && user) {
-        // Allow admin, manager, and staff roles
         const allowedRoles = ['admin', 'manager', 'staff'];
         const userRole = user.role?.toLowerCase();
         
@@ -91,7 +90,6 @@ const App = () => {
       );
     }
 
-    // Check if user has admin, manager, or staff role
     const userRole = user?.role?.toLowerCase();
     const allowedRoles = ['admin', 'manager', 'staff'];
     
@@ -156,10 +154,9 @@ const App = () => {
   }
 
   function MaintenanceBanner() {
-    return null; // Authentication banner removed
+    return null; 
   }
 
-  // Component to handle app routing
   function AppContent() {
     return (
       <BrowserRouter>
@@ -195,7 +192,7 @@ const App = () => {
               <Route path="/admin/inventory/out-of-stock" element={<AdminGuard><OutOfStockPage /></AdminGuard>} />
               <Route path="/category/:slug" element={<CategoryPage />} />
               <Route path="/quickmart" element={<QuickMartDashboard />} />
-              {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
+              {}
               <Route path="*" element={<NotFound />} />
             </Routes>
           </main>
