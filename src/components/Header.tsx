@@ -63,16 +63,16 @@ export function Header() {
   };
 
   const categories = [
-    { name: "Groceries", href: "/baskets?category=groceries" },
-    { name: "Household", href: "/baskets?category=household" },
-    { name: "Fresh & Natural", href: "/baskets?category=fresh" },
-    { name: "Health & Beauty", href: "/baskets?category=health" },
-    { name: "Electronics", href: "/baskets?category=electronics" },
-    { name: "Appliances", href: "/baskets?category=appliances" },
-    { name: "Cleaning", href: "/baskets?category=cleaning" },
-    { name: "Furnishing & Furniture", href: "/baskets?category=furniture" },
-    { name: "Automotive", href: "/baskets?category=automotive" },
-    { name: "Accessories", href: "/baskets?category=accessories" },
+    { name: "Groceries", href: "/baskets" },
+    { name: "Household", href: "/baskets" },
+    { name: "Fresh & Natural", href: "/baskets" },
+    { name: "Health & Beauty", href: "/baskets" },
+    { name: "Electronics", href: "/baskets" },
+    { name: "Appliances", href: "/baskets" },
+    { name: "Cleaning", href: "/baskets" },
+    { name: "Furnishing & Furniture", href: "/baskets" },
+    { name: "Automotive", href: "/baskets" },
+    { name: "Accessories", href: "/baskets" },
   ];
 
   const mainNavigation: NavigationItem[] = [
