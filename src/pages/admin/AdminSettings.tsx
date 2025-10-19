@@ -320,13 +320,13 @@ export default function AdminSettings() {
                     className="group border border-gray-200 rounded-xl p-4 hover:border-blue-300 hover:shadow-lg transition-all bg-white hover:bg-gradient-to-br hover:from-white hover:to-blue-50"
                   >
                     {/* Brand Image Container */}
-                    <div className="mb-4 bg-gray-50 rounded-lg p-3 flex items-center justify-center min-h-24 group-hover:bg-blue-50 transition-colors">
+                    <div className="mb-4 bg-gray-50 rounded-lg p-3 flex items-center justify-center min-h-32 group-hover:bg-blue-50 transition-colors">
                       <img 
                         src={brand.image} 
                         alt={brand.name} 
-                        className="h-20 object-contain group-hover:scale-110 transition-transform" 
+                        className="h-28 object-contain group-hover:scale-110 transition-transform" 
                         onError={(e) => {
-                          (e.target as HTMLImageElement).src = 'https://via.placeholder.com/80?text=Image';
+                          (e.target as HTMLImageElement).src = 'https://via.placeholder.com/112?text=Image';
                         }}
                       />
                     </div>
