@@ -55,14 +55,16 @@ const tabVariants = [
 ];
 
 const categoryOptions = [
-  'Essentials',
-  'Appliances',
+  'Groceries',
+  'Household',
+  'Fresh & Natural',
+  'Health & Beauty',
   'Electronics',
-  'Back-to-School',
-  'Home & Garden',
-  'Personal Care',
-  'Baby Products',
-  'Sports & Fitness',
+  'Appliances',
+  'Cleaning',
+  'Furnishing & Furniture',
+  'Automotive',
+  'Accessories',
 ];
 
 const buyingFrequencies = ['Weekly', 'Monthly', 'Seasonal', 'Festive', 'As Needed'];

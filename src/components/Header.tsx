@@ -68,6 +68,11 @@ export function Header() {
     { name: "Fresh & Natural", href: "/baskets?category=fresh" },
     { name: "Health & Beauty", href: "/baskets?category=health" },
     { name: "Electronics", href: "/baskets?category=electronics" },
+    { name: "Appliances", href: "/baskets?category=appliances" },
+    { name: "Cleaning", href: "/baskets?category=cleaning" },
+    { name: "Furnishing & Furniture", href: "/baskets?category=furniture" },
+    { name: "Automotive", href: "/baskets?category=automotive" },
+    { name: "Accessories", href: "/baskets?category=accessories" },
   ];
 
   const mainNavigation: NavigationItem[] = [

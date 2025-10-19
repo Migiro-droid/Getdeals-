@@ -904,6 +904,7 @@ export default function HomePageRedesign() {
         </section>
 
         {/* 🏷️ SHOP BY BRAND */}
+        {settings.shopByBrandEnabled && (
         <section className="space-y-6">
           {/* Header */}
           <div className="flex items-center justify-between">
@@ -920,70 +921,9 @@ export default function HomePageRedesign() {
 
           {/* Brands Grid */}
           <div className="grid grid-cols-4 md:grid-cols-8 lg:grid-cols-12 gap-3">
-            {[
-              { 
-                name: 'Brookside', 
-                image: 'https://www.brookside.co.ke/wp-content/uploads/2022/03/Brookside-Logo.png',
-                category: 'Dairy'
-              },
-              { 
-                name: 'Tusker', 
-                image: 'https://upload.wikimedia.org/wikipedia/en/thumb/4/48/Tusker_Logo.svg/1200px-Tusker_Logo.svg.png',
-                category: 'Beverages'
-              },
-              { 
-                name: 'Kenya Cane', 
-                image: 'https://images.unsplash.com/photo-1587049352846-4a222e784720?w=400&h=400&fit=crop',
-                category: 'Sugar'
-              },
-              { 
-                name: 'Pembe', 
-                image: 'https://images.unsplash.com/photo-1574323347407-f5e1ad6d020b?w=400&h=400&fit=crop',
-                category: 'Flour'
-              },
-              { 
-                name: 'Elianto', 
-                image: 'https://images.unsplash.com/photo-1474979266404-7eaacbcd87c5?w=400&h=400&fit=crop',
-                category: 'Cooking Oil'
-              },
-              { 
-                name: 'Ketepa', 
-                image: 'https://www.ketepa.co.ke/wp-content/uploads/2020/01/Ketepa-Logo.png',
-                category: 'Tea'
-              },
-              { 
-                name: 'KCC', 
-                image: 'https://upload.wikimedia.org/wikipedia/en/8/84/New_KCC_Logo.png',
-                category: 'Dairy'
-              },
-              { 
-                name: 'Mumias Sugar', 
-                image: 'https://images.unsplash.com/photo-1587049633312-d628ae50a8ae?w=400&h=400&fit=crop',
-                category: 'Sugar'
-              },
-              { 
-                name: 'Omo', 
-                image: 'https://images.unsplash.com/photo-1610557892470-55d9e80c0bce?w=400&h=400&fit=crop',
-                category: 'Detergent'
-              },
-              { 
-                name: 'Soko', 
-                image: 'https://images.unsplash.com/photo-1586201375761-83865001e31c?w=400&h=400&fit=crop',
-                category: 'Maize Meal'
-              },
-              { 
-                name: 'Fresh Fri', 
-                image: 'https://images.unsplash.com/photo-1474979266404-7eaacbcd87c5?w=400&h=400&fit=crop',
-                category: 'Cooking Oil'
-              },
-              { 
-                name: 'Safaricom', 
-                image: 'https://upload.wikimedia.org/wikipedia/commons/thumb/9/9f/Safaricom_Logo.svg/2560px-Safaricom_Logo.svg.png',
-                category: 'Airtime'
-              }
-            ].map((brand) => (
+            {settings.brands.map((brand) => (
               <Link 
-                key={brand.name} 
+                key={brand.id} 
                 to={`/products?brand=${brand.name}`}
                 className="group flex justify-center"
               >
@@ -998,6 +938,7 @@ export default function HomePageRedesign() {
             ))}
           </div>
         </section>
+        )}
 
         {/* 💥 SPECIAL DEALS FOR YOU */}
         <section id="special-deals-section" className="space-y-6 rounded-2xl p-6">

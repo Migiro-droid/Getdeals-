@@ -7,6 +7,13 @@ interface SiteSettings {
   supportPhone: string;
   supportEmail: string;
   location: string;
+  shopByBrandEnabled: boolean;
+  brands: Array<{
+    id: string;
+    name: string;
+    image: string;
+    category: string;
+  }>;
 }
 
 type AdminRole = "guest" | "staff" | "admin";
@@ -51,6 +58,21 @@ const defaultSettings: SiteSettings = {
   supportPhone: "+254 700 123 456",
   supportEmail: "info@getdeals.co.ke",
   location: "Karen Green, Nairobi, Kenya",
+  shopByBrandEnabled: true,
+  brands: [
+    { id: '1', name: 'Brookside', image: 'https://www.brookside.co.ke/wp-content/uploads/2022/03/Brookside-Logo.png', category: 'Dairy' },
+    { id: '2', name: 'Tusker', image: 'https://upload.wikimedia.org/wikipedia/en/thumb/4/48/Tusker_Logo.svg/1200px-Tusker_Logo.svg.png', category: 'Beverages' },
+    { id: '3', name: 'Kenya Cane', image: 'https://images.unsplash.com/photo-1587049352846-4a222e784720?w=400&h=400&fit=crop', category: 'Sugar' },
+    { id: '4', name: 'Pembe', image: 'https://images.unsplash.com/photo-1574323347407-f5e1ad6d020b?w=400&h=400&fit=crop', category: 'Flour' },
+    { id: '5', name: 'Elianto', image: 'https://images.unsplash.com/photo-1474979266404-7eaacbcd87c5?w=400&h=400&fit=crop', category: 'Cooking Oil' },
+    { id: '6', name: 'Ketepa', image: 'https://www.ketepa.co.ke/wp-content/uploads/2020/01/Ketepa-Logo.png', category: 'Tea' },
+    { id: '7', name: 'KCC', image: 'https://upload.wikimedia.org/wikipedia/en/8/84/New_KCC_Logo.png', category: 'Dairy' },
+    { id: '8', name: 'Mumias Sugar', image: 'https://images.unsplash.com/photo-1587049633312-d628ae50a8ae?w=400&h=400&fit=crop', category: 'Sugar' },
+    { id: '9', name: 'Omo', image: 'https://images.unsplash.com/photo-1610557892470-55d9e80c0bce?w=400&h=400&fit=crop', category: 'Detergent' },
+    { id: '10', name: 'Soko', image: 'https://images.unsplash.com/photo-1586201375761-83865001e31c?w=400&h=400&fit=crop', category: 'Maize Meal' },
+    { id: '11', name: 'Fresh Fri', image: 'https://images.unsplash.com/photo-1474979266404-7eaacbcd87c5?w=400&h=400&fit=crop', category: 'Cooking Oil' },
+    { id: '12', name: 'Safaricom', image: 'https://upload.wikimedia.org/wikipedia/commons/thumb/9/9f/Safaricom_Logo.svg/2560px-Safaricom_Logo.svg.png', category: 'Airtime' },
+  ],
 };
 
 const AdminContext = createContext<AdminContextValue | undefined>(undefined);
