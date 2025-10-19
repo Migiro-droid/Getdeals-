@@ -14,6 +14,10 @@ interface SiteSettings {
     image: string;
     category: string;
   }>;
+  flashSaleEnabled: boolean;
+  flashSaleStartDate?: string; // ISO date string
+  flashSaleEndDate?: string; // ISO date string
+  flashSaleDiscount: number; // percentage (e.g., 50)
 }
 
 type AdminRole = "guest" | "staff" | "admin";
@@ -59,6 +63,10 @@ const defaultSettings: SiteSettings = {
   supportEmail: "info@getdeals.co.ke",
   location: "Karen Green, Nairobi, Kenya",
   shopByBrandEnabled: true,
+  flashSaleEnabled: true,
+  flashSaleStartDate: new Date().toISOString(),
+  flashSaleEndDate: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString(),
+  flashSaleDiscount: 50,
   brands: [
     { id: '1', name: 'Brookside', image: 'https://www.brookside.co.ke/wp-content/uploads/2022/03/Brookside-Logo.png', category: 'Dairy' },
     { id: '2', name: 'Tusker', image: 'https://upload.wikimedia.org/wikipedia/en/thumb/4/48/Tusker_Logo.svg/1200px-Tusker_Logo.svg.png', category: 'Beverages' },

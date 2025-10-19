@@ -14,6 +14,7 @@ export default function AdminSettings() {
   const [editingBrand, setEditingBrand] = useState<any>(null);
   const [brandForm, setBrandForm] = useState({ id: '', name: '', image: '', category: '' });
   const [isBrandGridExpanded, setIsBrandGridExpanded] = useState(false);
+  const [isFlashSaleExpanded, setIsFlashSaleExpanded] = useState(false);
 
   const handleAddBrand = () => {
     if (!brandForm.name || !brandForm.image || !brandForm.category) {
@@ -142,6 +143,81 @@ export default function AdminSettings() {
             </CardContent>
           </Card>
         </div>
+
+        {/* Flash Sale Settings */}
+        <Card className="border-0 shadow-lg hover:shadow-xl transition-shadow mb-6">
+          <CardHeader className="bg-gradient-to-r from-red-50 to-orange-100 border-b cursor-pointer hover:from-red-100 hover:to-orange-200 transition-all" onClick={() => setIsFlashSaleExpanded(!isFlashSaleExpanded)}>
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-3 flex-1">
+                {isFlashSaleExpanded ? (
+                  <ChevronUp className="h-5 w-5 text-red-900 transition-transform" />
+                ) : (
+                  <ChevronDown className="h-5 w-5 text-red-900 transition-transform" />
+                )}
+                <div>
+                  <CardTitle className="text-xl text-red-900">Flash Sale</CardTitle>
+                  <p className="text-xs text-red-700 mt-1">Manage flash sale promotions</p>
+                </div>
+              </div>
+              <Switch checked={settings.flashSaleEnabled} onCheckedChange={(v) => updateSettings({ flashSaleEnabled: v })} className="scale-125" />
+            </div>
+          </CardHeader>
+
+          {isFlashSaleExpanded && (
+            <CardContent className="pt-8 pb-8 border-t animate-in fade-in slide-in-from-top-2 duration-300 space-y-6">
+              <div className="grid md:grid-cols-2 gap-6">
+                <div className="space-y-2">
+                  <Label className="font-semibold text-gray-900 block">Flash Sale Start Date</Label>
+                  <div className="text-xs text-gray-600 mb-2">When the flash sale begins</div>
+                  <Input 
+                    type="datetime-local" 
+                    className="border-gray-200"
+                    value={settings.flashSaleStartDate ? new Date(settings.flashSaleStartDate).toISOString().slice(0, 16) : ''} 
+                    onChange={(e) => updateSettings({ flashSaleStartDate: e.target.value ? new Date(e.target.value).toISOString() : undefined })} 
+                  />
+                </div>
+
+                <div className="space-y-2">
+                  <Label className="font-semibold text-gray-900 block">Flash Sale End Date</Label>
+                  <div className="text-xs text-gray-600 mb-2">When the flash sale ends</div>
+                  <Input 
+                    type="datetime-local" 
+                    className="border-gray-200"
+                    value={settings.flashSaleEndDate ? new Date(settings.flashSaleEndDate).toISOString().slice(0, 16) : ''} 
+                    onChange={(e) => updateSettings({ flashSaleEndDate: e.target.value ? new Date(e.target.value).toISOString() : undefined })} 
+                  />
+                </div>
+              </div>
+
+              <div className="space-y-2">
+                <Label className="font-semibold text-gray-900 block">Discount Percentage</Label>
+                <div className="text-xs text-gray-600 mb-2">Enter the discount percentage (e.g., 50 for 50% off)</div>
+                <div className="flex items-center gap-4">
+                  <Input 
+                    type="number" 
+                    className="border-gray-200 flex-1"
+                    value={settings.flashSaleDiscount} 
+                    onChange={(e) => updateSettings({ flashSaleDiscount: Math.max(0, Math.min(100, parseInt(e.target.value) || 0)) })}
+                    min="0"
+                    max="100"
+                  />
+                  <span className="text-2xl font-bold text-red-600">{settings.flashSaleDiscount}%</span>
+                </div>
+              </div>
+
+              {settings.flashSaleStartDate && settings.flashSaleEndDate && (
+                <div className="p-4 bg-gradient-to-r from-red-50 to-orange-50 rounded-lg border border-red-200">
+                  <p className="text-sm text-gray-700">
+                    <span className="font-semibold">Sale Duration:</span> {new Date(settings.flashSaleStartDate).toLocaleString()} to {new Date(settings.flashSaleEndDate).toLocaleString()}
+                  </p>
+                  <p className="text-sm text-gray-600 mt-2">
+                    {new Date() < new Date(settings.flashSaleStartDate) ? '🔔 Sale has not started yet' : new Date() > new Date(settings.flashSaleEndDate) ? '❌ Sale has ended - showing "Coming Soon"' : '✅ Sale is currently live'}
+                  </p>
+                </div>
+              )}
+            </CardContent>
+          )}
+        </Card>
 
         {/* Shop by Brand Settings - Full Width */}
         <Card className="border-0 shadow-lg hover:shadow-xl transition-shadow">
