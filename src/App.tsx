@@ -18,6 +18,7 @@ import { AccountProvider } from "./contexts/AccountContext";
 import { UserProfileProvider } from "./contexts/UserProfileContext";
 import { Footer } from "@/components/Footer";
 import HomePage from "./pages/HomePage";
+import HomePageRedesign from "./pages/HomePageRedesign";
 import BasketsPage from "./pages/BasketsPage";
 import CartPage from "./pages/CartPage";
 import CheckoutPage from "./pages/CheckoutPage";
@@ -46,6 +47,9 @@ import PrivacyPolicyPage from "./pages/PrivacyPolicyPage";
 import CookiePolicyPage from "./pages/CookiePolicyPage";
 import { AuthTestPage } from "./components/AuthTestPage";
 import { QuickMartDashboard } from "./pages/quickmart/QuickMartDashboard";
+import BuildYourBasket from "./pages/BuildYourBasket";
+import ConsumerInsightsPage from "./pages/ConsumerInsightsPage";
+import WhoWeServe from "./pages/WhoWeServe";
 
 const queryClient = new QueryClient();
 
@@ -165,13 +169,15 @@ const App = () => {
           <main className="flex-1">
             <MaintenanceBanner />
             <Routes>
-              <Route path="/" element={<HomePage />} />
+              <Route path="/" element={<HomePageRedesign />} />
+              <Route path="/old-home" element={<HomePage />} />
               <Route path="/baskets" element={<BasketsPage />} />
               <Route path="/cart" element={<CartPage />} />
               <Route path="/checkout" element={<CheckoutPage />} />
               <Route path="/contact" element={<ContactPage />} />
               <Route path="/about" element={<AboutPage />} />
               <Route path="/how-it-works" element={<HowItWorksPage />} />
+              <Route path="/consumer-insights" element={<ConsumerInsightsPage />} />
               <Route path="/account" element={<AccountPage />} />
               <Route path="/faq" element={<FAQPage />} />
               <Route path="/test-products" element={<TestProductsPage />} />
@@ -192,6 +198,9 @@ const App = () => {
               <Route path="/admin/inventory/out-of-stock" element={<AdminGuard><OutOfStockPage /></AdminGuard>} />
               <Route path="/category/:slug" element={<CategoryPage />} />
               <Route path="/quickmart" element={<QuickMartDashboard />} />
+              <Route path="/build-your-basket" element={<BuildYourBasket />} />
+              <Route path="/membership" element={<BuildYourBasket />} />
+              <Route path="/who-we-serve" element={<WhoWeServe />} />
               {}
               <Route path="*" element={<NotFound />} />
             </Routes>

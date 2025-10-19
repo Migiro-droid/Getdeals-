@@ -1,7 +1,7 @@
 import { useState } from "react";
 import logo from "../assets/logo.png";
-import { Link, NavLink, useLocation, useNavigate } from "react-router-dom";
-import { Search, ShoppingCart, User, Menu, X } from "lucide-react";
+import { Link, useLocation, useNavigate } from "react-router-dom";
+import { Search, ShoppingCart, User, Menu, X, Heart, ChevronDown, Zap, ShoppingBag, Phone, Mail } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
@@ -18,12 +18,14 @@ interface NavigationItem {
   name: string;
   href: string;
   comingSoon?: boolean;
+  icon?: React.ReactNode;
 }
 
 export function Header() {
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
   const [isSearchExpanded, setIsSearchExpanded] = useState(false);
+  const [categoryDropdown, setCategoryDropdown] = useState(false);
   const location = useLocation();
   const navigate = useNavigate();
   const { items } = useCart();
@@ -60,310 +62,365 @@ export function Header() {
     }
   };
 
-  const handleContactSupport = () => {
-    // You can implement this to open a support modal or redirect to support page
-    window.open('mailto:support@getdeals.co.ke', '_blank');
-  };
+  const categories = [
+    { name: "Groceries", href: "/baskets?category=groceries" },
+    { name: "Household", href: "/baskets?category=household" },
+    { name: "Fresh & Natural", href: "/baskets?category=fresh" },
+    { name: "Health & Beauty", href: "/baskets?category=health" },
+    { name: "Electronics", href: "/baskets?category=electronics" },
+  ];
 
-  const navigation: NavigationItem[] = [
-    { name: "Home", href: "/" },
-    { name: "Baskets", href: "/baskets" },
+  const mainNavigation: NavigationItem[] = [
+    { name: "Shop", href: "/baskets" },
+    { name: "Deals", href: "/deals", icon: <Zap className="h-4 w-4" /> },
+    { name: "Insights", href: "/consumer-insights" },
+    { name: "Who GET DEALS Is For", href: "/who-we-serve", icon: <ShoppingBag className="h-4 w-4" /> },
     { name: "How It Works", href: "/how-it-works" },
-    { name: "About", href: "/about" },
-    { name: "Contact", href: "/contact" },
-    { name: "FAQ", href: "/faq" },
-    { name: "Membership", href: "/membership", comingSoon: true },
   ];
 
   const isActive = (href: string) => {
     if (href === "/") return location.pathname === "/";
-    return location.pathname.startsWith(href);
+    return location.pathname.startsWith(href.split("?")[0]);
+  };
+
+  // Handle smooth scroll to deals section on homepage
+  const handleDealsClick = (e: React.MouseEvent<HTMLAnchorElement>) => {
+    // If we're already on homepage, just scroll to the deals section
+    if (location.pathname === "/") {
+      e.preventDefault();
+      const dealsSection = document.getElementById("special-deals-section");
+      if (dealsSection) {
+        dealsSection.scrollIntoView({ behavior: "smooth", block: "start" });
+      }
+    }
+    // Otherwise, let navigation happen normally and scroll will happen on page load
+  };
+
+  // Handle category clicks with smooth transition
+  const handleCategoryClick = () => {
+    // Close mobile menu if open
+    if (isMobileMenuOpen) {
+      setIsMobileMenuOpen(false);
+    }
+    // Scroll to top smoothly on destination page
+    setTimeout(() => {
+      window.scrollTo({ top: 0, behavior: "smooth" });
+    }, 100);
   };
 
   return (
     <>
-  <header className="sticky top-0 z-[200] pointer-events-auto w-full border-b bg-white dark:bg-white shadow-sm">
-      <div className="container mx-auto px-4">
-        <div className="flex h-16 items-center justify-between">
-          {/* Logo */}
-          <Link to="/" className="flex items-center">
-            <img src={logo} alt="Logo" className="h-12 w-auto max-h-14 object-contain" style={{background: 'none'}} />
-          </Link>
+      {/* CONTACT INFORMATION BANNER - RED TOP - STICKY */}
+      <div className="sticky top-0 z-50 bg-gradient-to-r from-red-600 to-red-700 text-white py-2 px-4 w-full shadow-md">
+        <div className="container mx-auto flex flex-col md:flex-row items-center justify-center md:justify-between gap-3 text-xs md:text-sm font-semibold">
+          <div className="flex items-center gap-2">
+            <Phone className="h-4 w-4" />
+            <a href="tel:+254728322355" className="text-white/90 hover:text-white transition-colors">+254 728 322 355</a>
+          </div>
+          <div className="hidden md:block text-white/50">|</div>
+          <div className="flex items-center gap-2">
+            <Mail className="h-4 w-4" />
+            <a href="mailto:support@getdeals.co.ke" className="text-white/90 hover:text-white transition-colors">support@getdeals.co.ke</a>
+          </div>
+          <div className="hidden md:block text-white/50">|</div>
+          <div className="text-white/80">24/7 • Mon-Sun 8am-10pm</div>
+        </div>
+      </div>
 
-          {/* Desktop Navigation */}
-          <nav className="hidden md:flex items-center space-x-4">
-            {navigation.map((item) => {
-              const active = isActive(item.href);
-              const isComingSoon = item.comingSoon;
-              return (
-                <div className="flex flex-col items-center">
-                  <button
-                    key={item.name}
-                    onClick={(e) => {
-                      e.preventDefault();
-                      if (!isComingSoon) {
-                        navigate(item.href);
-                      }
-                    }}
-                    className={`inline-flex items-center justify-center gap-2 whitespace-nowrap rounded-md text-sm font-medium ring-offset-background transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 h-10 px-4 py-2 ${
-                      isComingSoon
-                        ? 'text-muted-foreground/60 cursor-not-allowed'
-                        : `cursor-pointer hover:bg-accent hover:text-accent-foreground ${
-                            active ? 'text-primary border-b-2 border-primary' : 'text-muted-foreground'
-                          }`
-                    }`}
-                    disabled={isComingSoon}
-                  >
-                    {item.name}
-                  </button>
-                  {isComingSoon && (
-                    <div className="flex items-center justify-center">
-                      <span className="text-xs font-medium text-slate-600 bg-slate-100 px-2 py-1 rounded-md shadow-sm">
-                        Coming Soon
-                      </span>
-                    </div>
-                  )}
-                </div>
-              );
-            })}
-          </nav>
+      {/* Main Header */}
+      <header className="sticky top-[36px] z-40 pointer-events-auto w-full bg-white border-b border-gray-200 shadow-sm">
+        <div className="container mx-auto px-4">
+          {/* Top Row - Logo & Search & Icons */}
+          <div className="flex h-20 items-center justify-between gap-4">
+            {/* Logo */}
+            <Link to="/" className="flex-shrink-0">
+              <img src={logo} alt="GET DEALS" className="h-14 w-auto object-contain" />
+            </Link>
 
-          {/* Wallet Button */}
-          {isAuthenticated && (
-            <button
-              onClick={handleWalletClick}
-              className="hidden md:inline-flex items-center justify-center gap-2 whitespace-nowrap rounded-md text-sm font-medium ring-offset-background transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 h-10 px-4 py-2 hover:bg-accent hover:text-accent-foreground cursor-pointer text-muted-foreground hover:text-primary"
-            >
-              Wallet
-            </button>
-          )}
+            {/* Desktop Search Bar - Center Prominent */}
+            <div className="hidden lg:flex flex-1 max-w-md mx-6">
+              <div className="w-full relative">
+                <Search className="absolute left-3 top-1/2 h-5 w-5 -translate-y-1/2 text-gray-400" />
+                <Input
+                  placeholder="Search products, deals..."
+                  value={searchQuery}
+                  onChange={(e) => setSearchQuery(e.target.value)}
+                  className="pl-10 pr-4 py-2.5 rounded-lg bg-gray-100 border-0 focus:bg-white transition-colors"
+                />
+              </div>
+            </div>
 
-          {/* Intelligent Search Bar */}
-          <div className="hidden lg:flex flex-1 max-w-sm mx-8">
-            <div className="relative w-full">
-              {!isSearchExpanded ? (
-                <button
-                  onClick={() => setIsSearchExpanded(true)}
-                  className="flex items-center justify-center w-10 h-10 rounded-full bg-gray-100 hover:bg-gray-200 transition-colors"
+            {/* Right Icons - Cart, Wishlist, Account */}
+            <div className="flex items-center gap-2 md:gap-4">
+              {/* Mobile Search */}
+              <Button 
+                variant="ghost" 
+                size="icon"
+                className="lg:hidden text-gray-600 hover:text-primary"
+              >
+                <Search className="h-5 w-5" />
+              </Button>
+
+              {/* Wallet - Desktop */}
+              {isAuthenticated && (
+                <button 
+                  onClick={handleWalletClick}
+                  className="hidden md:flex items-center gap-2 px-3 py-1.5 rounded-full text-xs font-bold bg-emerald-50 text-emerald-700 hover:bg-emerald-100 transition-colors"
                 >
-                  <Search className="h-4 w-4 text-muted-foreground" />
+                  💰 KES {balance.toLocaleString()}
                 </button>
-              ) : (
-                <div className="relative w-full animate-in slide-in-from-left-5 duration-300">
-                  <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
-                  <Input
-                    placeholder="Search products..."
-                    value={searchQuery}
-                    onChange={(e) => setSearchQuery(e.target.value)}
-                    onBlur={() => {
-                      if (!searchQuery) {
-                        setIsSearchExpanded(false);
-                      }
-                    }}
-                    autoFocus
-                    className="pl-10 pr-10"
-                  />
-                  <button
-                    onClick={() => {
-                      setIsSearchExpanded(false);
-                      setSearchQuery("");
-                    }}
-                    className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
-                  >
-                    <X className="h-4 w-4" />
-                  </button>
-                </div>
               )}
+
+              {/* Wishlist */}
+              <Button 
+                variant="ghost" 
+                size="icon"
+                className="text-gray-600 hover:text-red-600 relative"
+              >
+                <Heart className="h-5 w-5" />
+              </Button>
+
+              {/* Shopping Cart */}
+              <Link to="/cart">
+                <Button variant="ghost" size="icon" className="relative text-gray-600 hover:text-primary">
+                  <ShoppingCart className="h-5 w-5" />
+                  {cartItemsCount > 0 && (
+                    <Badge
+                      variant="default"
+                      className="absolute -top-2 -right-2 h-5 w-5 rounded-full p-0 flex items-center justify-center text-xs bg-red-600"
+                    >
+                      {cartItemsCount}
+                    </Badge>
+                  )}
+                </Button>
+              </Link>
+
+              {/* Account */}
+              {isAuthenticated ? (
+                <Link to="/account">
+                  <Button variant="ghost" size="icon" className="text-gray-600 hover:text-primary">
+                    <User className="h-5 w-5" />
+                  </Button>
+                </Link>
+              ) : (
+                <Button 
+                  variant="default"
+                  size="sm"
+                  onClick={() => setAuthOpen(true)}
+                  className="hidden md:flex bg-primary hover:bg-primary/90 text-white font-bold"
+                >
+                  Sign In
+                </Button>
+              )}
+
+              {/* Mobile Menu Toggle */}
+              <Button
+                variant="ghost"
+                size="icon"
+                className="md:hidden text-gray-600"
+                onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
+              >
+                {isMobileMenuOpen ? <X className="h-5 w-5" /> : <Menu className="h-5 w-5" />}
+              </Button>
             </div>
           </div>
 
-          {/* Right Actions */}
-          <div className="flex items-center space-x-4">
-            {/* Wallet quick pill */}
-            {isAuthenticated && (
-              <button 
-                onClick={handleWalletClick}
-                className="hidden md:flex px-3 py-1 rounded-full text-xs bg-primary/10 text-primary font-medium hover:bg-primary/20 transition-colors"
-              >
-                Wallet: KES {balance.toLocaleString()}
+          {/* Bottom Row - Desktop Navigation Menu */}
+          <div className="hidden md:flex items-center justify-between h-12 border-t border-gray-100">
+            {/* Categories Dropdown */}
+            <div className="relative group">
+              <button className="flex items-center gap-2 px-3 py-2 text-sm font-bold text-gray-700 hover:text-primary group-hover:bg-gray-50 rounded-md">
+                <ShoppingBag className="h-4 w-4" />
+                Shop by Category
+                <ChevronDown className="h-4 w-4 group-hover:rotate-180 transition-transform" />
               </button>
-            )}
-            
-            {/* Mobile Search Button */}
-            <Button 
-              variant="ghost" 
-              size="icon" 
-              className="md:hidden lg:hidden"
-              onClick={() => setIsMobileMenuOpen(true)}
-            >
-              <Search className="h-5 w-5" />
-            </Button>
-
-            {/* User Account / Authentication */}
-            {isAuthenticated ? (
-              <Link to="/account">
-                <Button variant="ghost" size="icon">
-                  <User className="h-5 w-5" />
-                </Button>
-              </Link>
-            ) : (
-              <Button 
-                variant="ghost" 
-                size="sm"
-                onClick={() => setAuthOpen(true)}
-                className="hidden md:flex"
-              >
-                Sign In
-              </Button>
-            )}
-
-            {/* Shopping Cart */}
-            <Link to="/cart" className="relative">
-              <Button variant="ghost" size="icon">
-                <ShoppingCart className="h-5 w-5" />
-                {cartItemsCount > 0 && (
-                  <Badge
-                    variant="default"
-                    className="absolute -top-2 -right-2 h-5 w-5 rounded-full p-0 flex items-center justify-center text-xs"
+              
+              {/* Dropdown Menu */}
+              <div className="absolute left-0 top-full hidden group-hover:flex flex-col bg-white border border-gray-200 rounded-lg shadow-xl z-50 min-w-48">
+                {categories.map((cat) => (
+                  <Link
+                    key={cat.name}
+                    to={cat.href}
+                    onClick={handleCategoryClick}
+                    className="px-4 py-3 text-sm text-gray-700 hover:bg-primary/5 hover:text-primary font-medium border-b last:border-0"
                   >
-                    {cartItemsCount}
-                  </Badge>
-                )}
-              </Button>
-            </Link>
+                    {cat.name}
+                  </Link>
+                ))}
+              </div>
+            </div>
 
-            {/* Mobile Menu Toggle */}
-            <Button
-              variant="ghost"
-              size="icon"
-              className="md:hidden"
-              onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
-            >
-              {isMobileMenuOpen ? <X className="h-5 w-5" /> : <Menu className="h-5 w-5" />}
-            </Button>
+            {/* Main Navigation */}
+            <nav className="flex items-center gap-6 flex-1 ml-6">
+              {mainNavigation.map((item) => {
+                const active = isActive(item.href);
+                // Special handling for Deals link to scroll on homepage
+                if (item.name === "Deals") {
+                  return (
+                    <a
+                      key={item.name}
+                      href="#special-deals-section"
+                      onClick={handleDealsClick}
+                      className={`flex items-center gap-1 py-2 px-3 text-sm font-bold transition-colors rounded-md cursor-pointer ${
+                        active
+                          ? "text-primary bg-primary/10 border-b-2 border-primary"
+                          : "text-gray-700 hover:text-primary hover:bg-gray-50"
+                      }`}
+                    >
+                      {item.icon}
+                      {item.name}
+                    </a>
+                  );
+                }
+                
+                return (
+                  <Link
+                    key={item.name}
+                    to={item.href}
+                    className={`flex items-center gap-1 py-2 px-3 text-sm font-bold transition-colors rounded-md ${
+                      active
+                        ? "text-primary bg-primary/10 border-b-2 border-primary"
+                        : "text-gray-700 hover:text-primary hover:bg-gray-50"
+                    }`}
+                  >
+                    {item.icon}
+                    {item.name}
+                  </Link>
+                );
+              })}
+            </nav>
+
+            {/* Right Actions */}
+            <div className="flex items-center gap-4">
+              <Link to="/contact" className="text-sm font-semibold text-gray-700 hover:text-primary">
+                Contact
+              </Link>
+              <Link to="/faq" className="text-sm font-semibold text-gray-700 hover:text-primary">
+                FAQ
+              </Link>
+            </div>
           </div>
         </div>
 
         {/* Mobile Menu */}
         {isMobileMenuOpen && (
-          <div className="md:hidden bg-white dark:bg-white border-t">
-            <div className="space-y-1 pb-3 pt-2">
-              <div className="px-3 pb-3">
-                <div className="relative">
-                  <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
-                  <Input
-                    placeholder="Search products..."
-                    value={searchQuery}
-                    onChange={(e) => setSearchQuery(e.target.value)}
-                    className="pl-10"
-                  />
-                </div>
+          <div className="md:hidden bg-white border-t border-gray-200">
+            <div className="container mx-auto px-4 py-4 space-y-4">
+              {/* Mobile Search */}
+              <div className="relative">
+                <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-gray-400" />
+                <Input
+                  placeholder="Search..."
+                  value={searchQuery}
+                  onChange={(e) => setSearchQuery(e.target.value)}
+                  className="pl-10"
+                />
               </div>
-              {navigation.map((item) => {
-                const isComingSoon = item.comingSoon;
-                return (
-                  <div className="flex flex-col items-start w-full">
-                    <button
-                      key={item.name}
-                      onClick={(e) => {
-                        e.preventDefault();
-                        if (!isComingSoon) {
-                          navigate(item.href);
+
+              {/* Mobile Navigation */}
+              <nav className="space-y-2">
+                {mainNavigation.map((item) => {
+                  // Special handling for Deals link on mobile
+                  if (item.name === "Deals") {
+                    return (
+                      <a
+                        key={item.name}
+                        href="#special-deals-section"
+                        onClick={(e) => {
+                          handleDealsClick(e);
                           setIsMobileMenuOpen(false);
-                        }
-                      }}
-                      className={`flex items-center justify-between px-3 py-2 text-base font-medium transition-colors w-full text-left ${
-                        isComingSoon
-                          ? "text-muted-foreground/60 cursor-not-allowed"
-                          : `cursor-pointer hover:text-primary ${
-                              isActive(item.href) ? "text-primary bg-primary/5" : "text-muted-foreground"
-                            }`
-                      }`}
-                      disabled={isComingSoon}
+                        }}
+                        className="block px-3 py-2 text-sm font-bold text-gray-700 hover:bg-primary/10 hover:text-primary rounded-md"
+                      >
+                        {item.name}
+                      </a>
+                    );
+                  }
+                  
+                  return (
+                    <Link
+                      key={item.name}
+                      to={item.href}
+                      onClick={() => setIsMobileMenuOpen(false)}
+                      className="block px-3 py-2 text-sm font-bold text-gray-700 hover:bg-primary/10 hover:text-primary rounded-md"
                     >
-                      <span>{item.name}</span>
-                    </button>
-                    {isComingSoon && (
-                      <div className="flex items-center ml-3 -mt-1">
-                        <span className="text-xs font-medium text-slate-600 bg-slate-100 px-2 py-1 rounded-md shadow-sm">
-                          Coming Soon
-                        </span>
-                      </div>
-                    )}
-                  </div>
-                );
-              })}
-              
-              {/* Mobile Wallet Button */}
+                      {item.name}
+                    </Link>
+                  );
+                })}
+              </nav>
+
+              {/* Mobile Categories */}
+              <div className="border-t pt-3">
+                <p className="text-xs font-bold text-gray-500 uppercase tracking-wider mb-2 px-3">Categories</p>
+                {categories.map((cat) => (
+                  <Link
+                    key={cat.name}
+                    to={cat.href}
+                    onClick={() => {
+                      handleCategoryClick();
+                      setIsMobileMenuOpen(false);
+                    }}
+                    className="block px-3 py-2 text-sm text-gray-700 hover:bg-primary/10 hover:text-primary rounded-md"
+                  >
+                    {cat.name}
+                  </Link>
+                ))}
+              </div>
+
+              {/* Mobile Wallet */}
               {isAuthenticated && (
                 <button
-                  onClick={(e) => {
-                    e.preventDefault();
+                  onClick={() => {
                     handleWalletClick();
                     setIsMobileMenuOpen(false);
                   }}
-                  className="block px-3 py-2 text-base font-medium transition-colors hover:text-primary cursor-pointer w-full text-left text-muted-foreground hover:text-primary"
+                  className="w-full text-left px-3 py-2 text-sm font-bold text-emerald-700 bg-emerald-50 rounded-md hover:bg-emerald-100"
                 >
-                  Wallet
+                  💰 Wallet: KES {balance.toLocaleString()}
                 </button>
               )}
-              
-              {/* Mobile Authentication */}
+
+              {/* Mobile Auth */}
               {!isAuthenticated && (
-                <div className="px-3 py-2 border-t">
-                  <Button 
-                    variant="default" 
-                    size="sm"
-                    onClick={() => {
-                      setAuthOpen(true);
-                      setIsMobileMenuOpen(false);
-                    }}
-                    className="w-full"
-                  >
-                    Sign In
-                  </Button>
-                </div>
+                <Button 
+                  onClick={() => {
+                    setAuthOpen(true);
+                    setIsMobileMenuOpen(false);
+                  }}
+                  className="w-full bg-primary hover:bg-primary/90"
+                >
+                  Sign In
+                </Button>
               )}
+
+              {/* Mobile Contact Links */}
+              <div className="border-t pt-3 space-y-2">
+                <Link to="/contact" className="block px-3 py-2 text-sm text-gray-700 hover:text-primary">
+                  Contact Us
+                </Link>
+                <Link to="/faq" className="block px-3 py-2 text-sm text-gray-700 hover:text-primary">
+                  FAQ
+                </Link>
+              </div>
             </div>
           </div>
         )}
-      </div>
-    </header>
-    
-    {/* Authentication Modals */}
-    <AuthModals open={authOpen} onOpenChange={setAuthOpen} defaultTab="signin" />
-    
-    {/* Wallet Activation Modal - only for users without KYC data */}
-    <WalletActivationModal 
-      open={walletModalOpen} 
-      onOpenChange={(open) => {
-        setWalletModalOpen(open);
-        // Refetch KYC data when modal closes to update status
-        if (!open) {
-          refetchKyc();
-        }
-      }}
-      onSuccess={() => {
-        // When KYC is successfully verified, navigate to wallet page
-        refetchKyc();
-        navigate('/wallet');
-      }}
-    />
+      </header>
 
-    {/* KYC Status Modal - for users who have already submitted KYC */}
-    <Dialog open={kycStatusModalOpen} onOpenChange={setKycStatusModalOpen}>
-      <DialogContent className="sm:max-w-[600px] max-h-[80vh] overflow-y-auto">
-        <DialogHeader>
-          <DialogTitle>Wallet KYC Status</DialogTitle>
-        </DialogHeader>
-        <KycStatusDisplay 
-          kycData={kycData} 
-          loading={kycLoading}
-          onRetry={refetchKyc}
-          onContactSupport={handleContactSupport}
-        />
-      </DialogContent>
-    </Dialog>
+      {/* Auth Modals */}
+      <AuthModals open={authOpen} onOpenChange={setAuthOpen} defaultTab="signin" />
+      <WalletActivationModal open={walletModalOpen} onOpenChange={setWalletModalOpen} />
+
+      {/* KYC Status Modal */}
+      <Dialog open={kycStatusModalOpen} onOpenChange={setKycStatusModalOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Wallet Status</DialogTitle>
+          </DialogHeader>
+          <KycStatusDisplay kycData={kycData} loading={kycLoading} />
+        </DialogContent>
+      </Dialog>
     </>
   );
 }
