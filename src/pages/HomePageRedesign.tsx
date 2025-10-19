@@ -952,7 +952,7 @@ export default function HomePageRedesign() {
                 to={`/products?brand=${brand.name}`}
                 className="group flex justify-center"
               >
-                <div className="w-16 h-16 md:w-20 md:h-20 rounded-full overflow-hidden bg-white shadow-sm hover:shadow-md transition-all p-2">
+                <div className="w-24 h-24 md:w-28 md:h-28 lg:w-32 lg:h-32 rounded-full overflow-hidden bg-white shadow-md hover:shadow-lg transition-all p-3">
                   <img 
                     src={brand.image} 
                     alt={brand.name}
