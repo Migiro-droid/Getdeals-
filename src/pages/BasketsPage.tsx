@@ -1,8 +1,9 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { SortAsc } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { ProductCard } from "@/components/ProductCard";
 import { useProducts } from "@/contexts/ProductsContext";
+import { useSearchParams } from "react-router-dom";
 import {
   Select,
   SelectContent,
@@ -14,9 +15,19 @@ import {
 export default function BasketsPage() {
   const [sortBy, setSortBy] = useState("featured");
   const [filter, setFilter] = useState<string>("all");
+  const [searchParams] = useSearchParams();
   const { all } = useProducts();
   const basketsOnly = all.filter(p => p.category !== 'alcohol' && p.category !== 'blackfriday');
   const categories = Array.from(new Set(basketsOnly.map(p => p.category))).filter(Boolean);
+  
+  // Initialize filter from URL query parameter
+  useEffect(() => {
+    const categoryParam = searchParams.get('category');
+    if (categoryParam) {
+      setFilter(categoryParam);
+    }
+  }, [searchParams]);
+  
   const visible = basketsOnly.filter(p => filter === 'all' ? true : p.category === filter);
 
   const sortedProducts = [...visible].sort((a, b) => {
