@@ -223,7 +223,7 @@ const WhoWeServe = () => {
                   className="bg-blue-600 hover:bg-blue-700 text-white font-bold rounded-lg px-4 py-2 text-sm"
                   asChild
                 >
-                  <Link to="/products">
+                  <Link to="/baskets">
                     Shop Now <ArrowRight className="ml-2 h-3 w-3" />
                   </Link>
                 </Button>
@@ -245,7 +245,7 @@ const WhoWeServe = () => {
               className="bg-blue-600 hover:bg-blue-700 text-white font-black px-8 py-6 rounded-lg"
               asChild
             >
-              <Link to="/products">
+              <Link to="/baskets">
                 Start Shopping Now <ArrowRight className="ml-2 h-5 w-5" />
               </Link>
             </Button>

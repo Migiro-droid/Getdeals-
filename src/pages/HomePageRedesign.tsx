@@ -427,8 +427,13 @@ export default function HomePageRedesign() {
               </Link>
 
               {/* New Arrivals Card - Image-Based */}
-              <Link
-                to="/products"
+              <a
+                href="#new-arrivals-section"
+                onClick={(e) => {
+                  e.preventDefault();
+                  const section = document.getElementById('new-arrivals-section');
+                  section?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+                }}
                 className="relative overflow-hidden rounded-2xl shadow-lg group cursor-pointer hover:shadow-2xl transition-all block"
               >
                 <div className="relative h-[240px]">
@@ -455,7 +460,7 @@ export default function HomePageRedesign() {
                     </div>
                   </div>
                 </div>
-              </Link>
+              </a>
             </div>
           </div>
 
@@ -835,7 +840,7 @@ export default function HomePageRedesign() {
         </section>
 
         {/* 🆕 NEW ARRIVALS */}
-        <section className="space-y-6 rounded-2xl p-6">
+        <section id="new-arrivals-section" className="space-y-6 rounded-2xl p-6">
           <div className="flex items-center justify-between">
             <div>
               <h2 className="text-3xl font-black text-gray-900">
