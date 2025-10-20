@@ -4,8 +4,9 @@ import {
   ArrowRight, ShoppingCart, Clock, TrendingUp, Sparkles, 
   Package, Tag, Heart, Eye, Plus, ChevronRight, Star,
   Zap, Award, Users, Shield, Flame, Gift, RefreshCw,
-  Check, Truck, ShoppingBag
+  Check, Truck, ShoppingBag, X
 } from "lucide-react";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogTrigger } from "@/components/ui/dialog";
 import ChatSupportButton from '@/components/ChatSupportButton';
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
@@ -152,6 +153,13 @@ export default function HomePageRedesign() {
     seconds: 0 
   });
 
+  // Force re-render when settings change (brands, enabled status, etc.)
+  const [, setSettingsVersion] = useState(0);
+  useEffect(() => {
+    // Trigger re-render when settings change
+    setSettingsVersion(v => v + 1);
+  }, [settings.brands, settings.shopByBrandEnabled]);
+
   useEffect(() => {
     const calculateTimeLeft = () => {
       if (!settings.blackFridayCountdownDate) {
@@ -216,6 +224,20 @@ export default function HomePageRedesign() {
 
   const [currentSlide, setCurrentSlide] = useState(0);
 
+  // Quick view modal state for Top Sellers
+  const [isQuickViewOpen, setIsQuickViewOpen] = useState(false);
+  const [selectedBasket, setSelectedBasket] = useState<ShoppingBasket | null>(null);
+
+  const openQuickViewModal = (basket: ShoppingBasket) => {
+    setSelectedBasket(basket);
+    setIsQuickViewOpen(true);
+  };
+
+  const closeQuickViewModal = () => {
+    setIsQuickViewOpen(false);
+    setSelectedBasket(null);
+  }
+
   useEffect(() => {
     const slideTimer = setInterval(() => {
       setCurrentSlide((prev) => (prev + 1) % heroSlides.length);
@@ -253,8 +275,8 @@ export default function HomePageRedesign() {
   };
 
   const handleQuickView = (basket: any) => {
-    // Navigate to product detail page or open a modal
-    window.location.href = `/product/${basket.id}`;
+    // Backwards-compatible helper - open quick view modal
+    openQuickViewModal(basket as ShoppingBasket);
   };
 
   return (
@@ -619,6 +641,55 @@ export default function HomePageRedesign() {
           </div>
         </section>
 
+      {/* Quick View Modal for Top Sellers */}
+      <Dialog open={isQuickViewOpen} onOpenChange={(open) => { if (!open) closeQuickViewModal(); setIsQuickViewOpen(open); }}>
+        <DialogContent className="max-w-3xl">
+          <DialogHeader>
+            <DialogTitle>{selectedBasket ? selectedBasket.name : 'Basket Preview'}</DialogTitle>
+            <DialogDescription>{selectedBasket ? selectedBasket.description : ''}</DialogDescription>
+          </DialogHeader>
+
+          <div className="mt-4 grid grid-cols-1 md:grid-cols-3 gap-4">
+            <div className="md:col-span-1 bg-gray-50 rounded-lg p-3 flex items-center justify-center">
+              <img src={selectedBasket?.image} alt={selectedBasket?.name} className="w-full h-40 object-contain" />
+            </div>
+            <div className="md:col-span-2">
+              <h4 className="font-bold text-lg">Items in this basket ({selectedBasket?.itemCount || 0})</h4>
+              <div className="mt-3 space-y-2 max-h-64 overflow-auto pr-2">
+                {selectedBasket?.items && selectedBasket.items.length > 0 ? (
+                  selectedBasket.items.map((it, idx) => {
+                    const product = all?.find(p => p.id === it.productId);
+                    return (
+                      <div key={it.productId + '-' + idx} className="flex items-center gap-3 p-2 rounded-lg bg-white border">
+                        <img src={product?.image} alt={product?.name} className="w-12 h-12 object-contain" />
+                        <div className="flex-1">
+                          <div className="text-sm font-semibold">{product?.name || 'Product'}</div>
+                          <div className="text-xs text-gray-500">Qty: {it.quantity}</div>
+                        </div>
+                        <div className="text-sm font-bold">KES {product ? product.price.toLocaleString() : '0'}</div>
+                      </div>
+                    );
+                  })
+                ) : (
+                  <div className="text-sm text-gray-500">No items available for preview.</div>
+                )}
+              </div>
+
+              <div className="mt-4 flex items-center gap-3">
+                <Button className="bg-gradient-to-r from-blue-600 to-cyan-600 text-white" onClick={() => {
+                  if (selectedBasket) handleAddBasketToCart(selectedBasket);
+                  closeQuickViewModal();
+                }}>
+                  <ShoppingCart className="h-4 w-4 mr-2" />
+                  Add Basket to Cart
+                </Button>
+                <Button variant="outline" onClick={closeQuickViewModal}>Close</Button>
+              </div>
+            </div>
+          </div>
+        </DialogContent>
+      </Dialog>
+
         {/* 🏆 TOP SELLERS - Featured Baskets */}
         <section className="space-y-6">
           {/* Header */}
@@ -713,7 +784,7 @@ export default function HomePageRedesign() {
                             className="border-blue-400 hover:bg-blue-50 py-6"
                             onClick={(e) => {
                               e.stopPropagation();
-                              handleQuickView(basket);
+                              openQuickViewModal(basket as ShoppingBasket);
                             }}
                           >
                             <Eye className="h-5 w-5 text-blue-600" />

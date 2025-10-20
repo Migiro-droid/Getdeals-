@@ -3,7 +3,6 @@ import App from './App.tsx'
 import './index.css'
 import { ErrorBoundary } from './components/ErrorBoundary.tsx'
 
-// Ensure favicon uses our logo in both dev and prod (safe guard)
 (() => {
 	try {
 		const logoUrl = '/logo.png';
@@ -19,14 +18,10 @@ import { ErrorBoundary } from './components/ErrorBoundary.tsx'
 		setIcon('icon', logoUrl);
 		setIcon('apple-touch-icon', logoUrl);
 	} catch (e) {
-		// swallow to avoid breaking startup
-		// eslint-disable-next-line no-console
 		console.warn('favicon setup failed', e);
 	}
 })();
 
-// Basic global error handlers so the app doesn't show a white screen
-// Forward errors to a global event the ErrorBoundary can pick up
 window.addEventListener('error', (ev) => {
 	try {
 		const err = ev.error || new Error(String(ev.message || 'Unknown error'));

@@ -2,7 +2,6 @@
 @tailwind components;
 @tailwind utilities;
 
-/* Prevent image flickering and layout shift */
 img {
   max-width: 100%;
   height: auto;
@@ -19,13 +18,6 @@ img {
   object-fit: contain;
 }
 
-/* Removed FOUC visibility hack and custom image-loading overlay to avoid content hiding */
-
-/* GetDeals Kenya Design System - Premium E-commerce
-Brand Colors: Blue (#2563eb), Dark Blue (#1e40af), White (#ffffff)
-Typography: Inter font family for modern, clean design
-*/
-
 @layer base {
   :root {
     --background: 0 0% 99%;
@@ -37,7 +29,6 @@ Typography: Inter font family for modern, clean design
     --popover: 0 0% 100%;
     --popover-foreground: 0 0% 9%;
 
-    /* GetDeals brand blue #2563eb */
     --primary: 217 91% 60%;
     --primary-foreground: 0 0% 100%;
     --primary-light: 217 91% 70%;
@@ -65,11 +56,9 @@ Typography: Inter font family for modern, clean design
     --warning: 43 96% 56%;
     --warning-foreground: 0 0% 9%;
 
-    /* Custom gradient for hero sections */
     --gradient-hero: linear-gradient(135deg, hsl(217 91% 60%), hsl(217 91% 70%));
     --gradient-subtle: linear-gradient(180deg, hsl(0 0% 99%), hsl(0 0% 96%));
 
-    /* Premium shadows */
     --shadow-soft: 0 2px 8px hsl(0 0% 0% / 0.04);
     --shadow-medium: 0 4px 16px hsl(0 0% 0% / 0.08);
     --shadow-strong: 0 8px 32px hsl(0 0% 0% / 0.12);
@@ -177,7 +166,6 @@ Typography: Inter font family for modern, clean design
   }
 }
 
-/* Enhanced Hero Section Animations */
 @keyframes slide-in-from-left-4 {
   0% {
     opacity: 0;
