@@ -171,6 +171,12 @@ export function ProductCard({ product, onQuickView }: ProductCardProps) {
           {product.name}
         </h3>
 
+        {product.description && (
+          <p className="text-xs text-muted-foreground mb-1 line-clamp-2">
+            {product.description}
+          </p>
+        )}
+
         <div className="flex items-baseline space-x-1">
           <span className="font-bold text-sm text-primary">
             KES {product.price.toLocaleString()}
