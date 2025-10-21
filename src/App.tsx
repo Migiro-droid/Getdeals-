@@ -48,7 +48,7 @@ import TermsOfServicePage from "./pages/TermsOfServicePage";
 import PrivacyPolicyPage from "./pages/PrivacyPolicyPage";
 import CookiePolicyPage from "./pages/CookiePolicyPage";
 import { AuthTestPage } from "./components/AuthTestPage";
-import { QuickMartDashboard } from "./pages/quickmart/QuickMartDashboard";
+import QuickMartAdminDashboard from "./pages/quickmart/QuickMartAdminDashboard";
 import BuildYourBasket from "./pages/BuildYourBasket";
 import ConsumerInsightsPage from "./pages/ConsumerInsightsPage";
 import WhoWeServe from "./pages/WhoWeServe";
@@ -119,45 +119,7 @@ const App = () => {
     return children;
   }
 
-  function QuickMartGuard({ children }: { children: JSX.Element }) {
-    const { isAuthenticated, user } = useAuth();
 
-    if (!isAuthenticated) {
-      return (
-        <div className="min-h-screen flex items-center justify-center bg-gray-50">
-          <div className="max-w-md w-full space-y-8">
-            <div className="text-center">
-              <h2 className="mt-6 text-3xl font-extrabold text-gray-900">
-                QuickMart Access Required
-              </h2>
-              <p className="mt-2 text-sm text-gray-600">
-                Please sign in with a QuickMart account to access this area.
-              </p>
-            </div>
-          </div>
-        </div>
-      );
-    }
-
-    if (user?.role !== 'quickmart') {
-      return (
-        <div className="min-h-screen flex items-center justify-center bg-gray-50">
-          <div className="max-w-md w-full space-y-8">
-            <div className="text-center">
-              <h2 className="mt-6 text-3xl font-extrabold text-gray-900">
-                QuickMart Access Only
-              </h2>
-              <p className="mt-2 text-sm text-gray-600">
-                You don't have permission to access the QuickMart dashboard.
-              </p>
-            </div>
-          </div>
-        </div>
-      );
-    }
-
-    return children;
-  }
 
   function MaintenanceBanner() {
     return null; 
@@ -201,7 +163,7 @@ const App = () => {
               <Route path="/admin/inventory" element={<AdminGuard><InventoryPage /></AdminGuard>} />
               <Route path="/admin/inventory/out-of-stock" element={<AdminGuard><OutOfStockPage /></AdminGuard>} />
               <Route path="/category/:slug" element={<CategoryPage />} />
-              <Route path="/quickmart" element={<QuickMartDashboard />} />
+              <Route path="/quickmart" element={<QuickMartAdminDashboard />} />
               <Route path="/build-your-basket" element={<BuildYourBasket />} />
               <Route path="/membership" element={<BuildYourBasket />} />
               <Route path="/who-we-serve" element={<WhoWeServe />} />
