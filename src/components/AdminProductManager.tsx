@@ -727,14 +727,26 @@ export function AdminProductManager() {
               {/* Promotional Tags Section */}
               <div className="md:col-span-2 space-y-3 border-t pt-4">
                 <Label className="font-semibold text-base">Promotional Sections</Label>
-                <p className="text-xs text-muted-foreground">Select which promotional sections this product should appear in:</p>
+                <p className="text-xs text-muted-foreground">Select which promotional section this product should appear in (only one allowed):</p>
                 
                 <div className="space-y-3">
                   <div className="flex items-center space-x-3 p-3 bg-blue-50 rounded-lg border border-blue-200">
                     <Switch
                       id="hot-deals"
                       checked={formData.isHotDeal}
-                      onCheckedChange={(checked) => setFormData(prev => ({ ...prev, isHotDeal: checked }))}
+                      onCheckedChange={(checked) => {
+                        if (checked) {
+                          setFormData(prev => ({ 
+                            ...prev, 
+                            isHotDeal: true,
+                            isNewArrival: false,
+                            isSpecialDeal: false,
+                            isTopBasket: false
+                          }));
+                        } else {
+                          setFormData(prev => ({ ...prev, isHotDeal: false }));
+                        }
+                      }}
                     />
                     <Label htmlFor="hot-deals" className="flex flex-col cursor-pointer flex-1 m-0">
                       <span className="font-semibold text-blue-900">Hot Deals</span>
@@ -746,7 +758,19 @@ export function AdminProductManager() {
                     <Switch
                       id="new-arrival"
                       checked={formData.isNewArrival}
-                      onCheckedChange={(checked) => setFormData(prev => ({ ...prev, isNewArrival: checked }))}
+                      onCheckedChange={(checked) => {
+                        if (checked) {
+                          setFormData(prev => ({ 
+                            ...prev, 
+                            isHotDeal: false,
+                            isNewArrival: true,
+                            isSpecialDeal: false,
+                            isTopBasket: false
+                          }));
+                        } else {
+                          setFormData(prev => ({ ...prev, isNewArrival: false }));
+                        }
+                      }}
                     />
                     <Label htmlFor="new-arrival" className="flex flex-col cursor-pointer flex-1 m-0">
                       <span className="font-semibold text-green-900">New Arrivals</span>
@@ -758,7 +782,19 @@ export function AdminProductManager() {
                     <Switch
                       id="special-deal"
                       checked={formData.isSpecialDeal}
-                      onCheckedChange={(checked) => setFormData(prev => ({ ...prev, isSpecialDeal: checked }))}
+                      onCheckedChange={(checked) => {
+                        if (checked) {
+                          setFormData(prev => ({ 
+                            ...prev, 
+                            isHotDeal: false,
+                            isNewArrival: false,
+                            isSpecialDeal: true,
+                            isTopBasket: false
+                          }));
+                        } else {
+                          setFormData(prev => ({ ...prev, isSpecialDeal: false }));
+                        }
+                      }}
                     />
                     <Label htmlFor="special-deal" className="flex flex-col cursor-pointer flex-1 m-0">
                       <span className="font-semibold text-purple-900">Special Deals</span>
@@ -770,7 +806,19 @@ export function AdminProductManager() {
                     <Switch
                       id="top-basket"
                       checked={formData.isTopBasket}
-                      onCheckedChange={(checked) => setFormData(prev => ({ ...prev, isTopBasket: checked }))}
+                      onCheckedChange={(checked) => {
+                        if (checked) {
+                          setFormData(prev => ({ 
+                            ...prev, 
+                            isHotDeal: false,
+                            isNewArrival: false,
+                            isSpecialDeal: false,
+                            isTopBasket: true
+                          }));
+                        } else {
+                          setFormData(prev => ({ ...prev, isTopBasket: false }));
+                        }
+                      }}
                     />
                     <Label htmlFor="top-basket" className="flex flex-col cursor-pointer flex-1 m-0">
                       <span className="font-semibold text-amber-900">Top Baskets</span>
