@@ -1182,7 +1182,7 @@ export default function HomePageRedesign() {
             {settings.brands.map((brand) => (
               <Link 
                 key={brand.id} 
-                to={`/products?brand=${brand.name}`}
+                to="/baskets"
                 className="group flex justify-center"
               >
                 <div className="w-16 h-16 md:w-20 md:h-20 rounded-full overflow-hidden bg-white shadow-sm hover:shadow-md transition-all p-2">

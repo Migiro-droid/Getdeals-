@@ -23,7 +23,7 @@ const SupabaseAdminContext = createContext<SupabaseAdminContextType | undefined>
 export function SupabaseAdminProvider({ children }: { children: React.ReactNode }) {
   const [settings, setSettings] = useState<AdminSettings>({
     black_friday_enabled: true,
-    black_friday_date: '2025-11-28T00:00:00Z',
+    black_friday_date: '2025-11-01T00:00:00Z',
     maintenance_mode: false,
     support_phone: '+254 700 123 456',
     support_email: 'support@getdeals.co.ke',

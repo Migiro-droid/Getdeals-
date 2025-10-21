@@ -306,7 +306,7 @@ export default function CheckoutPage() {
       }
 
       const subtotal = orderData.items.reduce((sum: number, item: any) => sum + (item.price * item.quantity), 0);
-      const deliveryFee = orderData.deliveryMethod === 'speedy' ? 200 : 0;
+      const deliveryFee = orderData.deliveryMethod === 'speedy' ? 300 : 0;
       const totalAmount = subtotal + deliveryFee;
 
       const dbOrderData = {
@@ -765,8 +765,8 @@ export default function CheckoutPage() {
   };
 
   // Calculate delivery fee and final total based on selected delivery method
-  // CRITICAL: Delivery fee (KES 200) only applies to 'speedy' delivery, NOT pickup
-  const deliveryFee = deliveryMethod === "speedy" ? 200 : 0;
+  // CRITICAL: Delivery fee (KES 300) only applies to 'speedy' delivery, NOT pickup
+  const deliveryFee = deliveryMethod === "speedy" ? 300 : 0;
   const finalTotal = total + deliveryFee; // Customer pays: subtotal + delivery (if speedy)
 
   return (
@@ -867,7 +867,7 @@ export default function CheckoutPage() {
                   <div className="flex items-center space-x-2">
                     <RadioGroupItem value="speedy" id="speedy" />
                     <Label htmlFor="speedy" className="flex-1">
-                      <div className="font-medium">Speedy Delivery (KES 200)</div>
+                      <div className="font-medium">Speedy Delivery (KES 300)</div>
                       <div className="text-sm text-muted-foreground">
                         Fast delivery to your doorstep
                       </div>

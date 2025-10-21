@@ -13,7 +13,7 @@ import { useToast } from '@/hooks/use-toast';
 import { productAPI } from '../../lib/supabase';
 import { AdminBulkUpload } from './AdminBulkUpload';
 import { useProducts } from '@/contexts/ProductsContext';
-import { Plus, Edit, Trash2, Package, AlertCircle, Check, Search, Filter, X, SlidersHorizontal, Upload, Grid3x3, List } from 'lucide-react';
+import { Plus, Edit, Trash2, Package, AlertCircle, Check, Search, Filter, X, SlidersHorizontal, Upload } from 'lucide-react';
 
 type Product = {
   id: string;
@@ -85,7 +85,6 @@ export function AdminProductManager() {
   const [minPrice, setMinPrice] = useState<string>('');
   const [maxPrice, setMaxPrice] = useState<string>('');
   const [showFilters, setShowFilters] = useState(false);
-  const [gridView, setGridView] = useState(false);
 
   // ONLY these specific categories are allowed for GetDeals Kenya products
   // These match the categories shown in the "Shop by Category" navbar dropdown
@@ -396,51 +395,27 @@ export function AdminProductManager() {
             </div>
 
             {/* Filter Toggle */}
-            <div className="flex items-center justify-between gap-2">
-              <div className="flex items-center gap-2">
-                <Button
-                  variant="outline"
-                  onClick={() => setShowFilters(!showFilters)}
-                  className="gap-2"
-                >
-                  <SlidersHorizontal className="w-4 h-4" />
-                  {showFilters ? 'Hide Filters' : 'Show Filters'}
-                  {(selectedCategory !== 'all' || minPrice || maxPrice) && (
-                    <Badge variant="secondary" className="ml-2">
-                      {[selectedCategory !== 'all', minPrice, maxPrice].filter(Boolean).length}
-                    </Badge>
-                  )}
-                </Button>
-
-                {(selectedCategory !== 'all' || minPrice || maxPrice || searchQuery) && (
-                  <Button variant="ghost" onClick={clearFilters} className="gap-2 text-muted-foreground">
-                    <X className="w-4 h-4" />
-                    Clear Filters
-                  </Button>
+            <div className="flex items-center justify-between">
+              <Button
+                variant="outline"
+                onClick={() => setShowFilters(!showFilters)}
+                className="gap-2"
+              >
+                <SlidersHorizontal className="w-4 h-4" />
+                {showFilters ? 'Hide Filters' : 'Show Filters'}
+                {(selectedCategory !== 'all' || minPrice || maxPrice) && (
+                  <Badge variant="secondary" className="ml-2">
+                    {[selectedCategory !== 'all', minPrice, maxPrice].filter(Boolean).length}
+                  </Badge>
                 )}
-              </div>
+              </Button>
 
-              {/* Grid/List View Toggle */}
-              <div className="flex gap-1 border rounded-lg p-1 bg-muted">
-                <Button
-                  variant={gridView ? "default" : "ghost"}
-                  size="sm"
-                  onClick={() => setGridView(false)}
-                  className="gap-2"
-                  title="List View"
-                >
-                  <List className="w-4 h-4" />
+              {(selectedCategory !== 'all' || minPrice || maxPrice || searchQuery) && (
+                <Button variant="ghost" onClick={clearFilters} className="gap-2 text-muted-foreground">
+                  <X className="w-4 h-4" />
+                  Clear Filters
                 </Button>
-                <Button
-                  variant={gridView ? "default" : "ghost"}
-                  size="sm"
-                  onClick={() => setGridView(true)}
-                  className="gap-2"
-                  title="Grid View"
-                >
-                  <Grid3x3 className="w-4 h-4" />
-                </Button>
-              </div>
+              )}
             </div>
 
             {/* Advanced Filters */}
@@ -530,9 +505,9 @@ export function AdminProductManager() {
         </div>
       )}
 
-      <div className={gridView ? "grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-2" : "grid gap-4"}>
+      <div className="grid gap-4">
         {filteredProducts.length === 0 ? (
-          <Card className={gridView ? "sm:col-span-3 md:col-span-4 lg:col-span-5 xl:col-span-6" : ""}>
+          <Card>
             <CardContent className="p-8 text-center">
               <Package className="w-12 h-12 mx-auto mb-4 text-muted-foreground" />
               <h3 className="text-lg font-semibold mb-2">
@@ -559,152 +534,81 @@ export function AdminProductManager() {
           </Card>
         ) : (
           filteredProducts.map((product) => (
-            gridView ? (
-              // Grid View Card - Matching ProductCard styling
-              <Card key={product.id} className="group overflow-hidden transition-all duration-300 hover:shadow-sm border border-gray-200 flex flex-col">
-                <div className="relative overflow-hidden bg-muted">
-                  <div className="w-full aspect-square bg-muted flex items-center justify-center">
-                    {product.imageUrl ? (
-                      <img
-                        src={product.imageUrl}
-                        alt={product.name}
-                        className="w-full h-full object-contain"
-                        onError={(e) => {
-                          e.currentTarget.src = '/placeholder.svg';
-                        }}
-                      />
-                    ) : (
-                      <Package className="w-8 h-8 text-muted-foreground" />
-                    )}
-                  </div>
-                  
-                  {/* Discount Badge - Top Left */}
-                  {product.originalPrice && (
-                    <div className="absolute top-1 left-1 bg-red-500 text-white px-2 py-1 rounded text-xs font-semibold">
-                      {Math.round(((product.originalPrice - product.price) / product.originalPrice) * 100)}% OFF
-                    </div>
+            <Card key={product.id}>
+              <CardContent className="p-6">
+                <div className="flex items-start gap-4">
+                  {product.imageUrl && (
+                    <img
+                      src={product.imageUrl}
+                      alt={product.name}
+                      className="w-20 h-20 object-cover rounded-lg border"
+                      onError={(e) => {
+                        e.currentTarget.src = '/placeholder.svg';
+                      }}
+                    />
                   )}
                   
-                  {/* Admin Edit/Delete Buttons Overlay - Bottom */}
-                  <div className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/80 to-transparent p-1 opacity-0 group-hover:opacity-100 transition-opacity duration-300 flex gap-1">
-                    <Button
-                      variant="secondary"
-                      size="sm"
-                      onClick={() => openEditModal(product)}
-                      className="flex-1 gap-0.5 text-xxs h-6 px-1"
-                    >
-                      <Edit className="w-2.5 h-2.5" />
-                      Edit
-                    </Button>
-                    <Button
-                      variant="destructive"
-                      size="sm"
-                      onClick={() => handleDelete(product)}
-                      className="flex-1 gap-0.5 text-xxs h-6 px-1"
-                    >
-                      <Trash2 className="w-2.5 h-2.5" />
-                      Delete
-                    </Button>
-                  </div>
-                </div>
-                
-                <CardContent className="p-1.5 flex-1 flex flex-col justify-between">
-                  <div>
-                    <h3 className="font-medium text-2xs line-clamp-2 h-5">{product.name}</h3>
-                    
-                    <div className="flex items-baseline gap-0.5 mt-0.5">
-                      <span className="font-bold text-xs text-primary">{formatPrice(product.price)}</span>
-                      {product.originalPrice && (
-                        <span className="text-2xs text-muted-foreground line-through">
-                          {formatPrice(product.originalPrice)}
-                        </span>
-                      )}
-                    </div>
-                  </div>
-                  
-                  <div className="flex items-center gap-0.5 mt-0.5">
-                    <Badge variant="secondary" className="text-2xs px-1 py-0">{product.category}</Badge>
-                  </div>
-                </CardContent>
-              </Card>
-            ) : (
-              // List View Card
-              <Card key={product.id}>
-                <CardContent className="p-6">
-                  <div className="flex items-start gap-4">
-                    {product.imageUrl && (
-                      <img
-                        src={product.imageUrl}
-                        alt={product.name}
-                        className="w-20 h-20 object-cover rounded-lg border"
-                        onError={(e) => {
-                          e.currentTarget.src = '/placeholder.svg';
-                        }}
-                      />
-                    )}
-                    
-                    <div className="flex-1 min-w-0">
-                      <div className="flex items-start justify-between gap-4">
-                        <div className="flex-1 min-w-0">
-                          <h3 className="font-semibold text-lg truncate">{product.name}</h3>
-                          {product.description && (
-                            <p className="text-muted-foreground text-sm mt-1 line-clamp-2">
-                              {product.description}
-                            </p>
-                          )}
-                          
-                          <div className="flex items-center gap-2 mt-2">
-                            <Badge variant="secondary">{product.category}</Badge>
-                          </div>
-
-                          {product.tags && product.tags.length > 0 && (
-                            <div className="flex flex-wrap gap-1 mt-2">
-                              {product.tags.map((tag, index) => (
-                                <Badge key={index} variant="outline" className="text-xs">
-                                  {tag}
-                                </Badge>
-                              ))}
-                            </div>
-                          )}
+                  <div className="flex-1 min-w-0">
+                    <div className="flex items-start justify-between gap-4">
+                      <div className="flex-1 min-w-0">
+                        <h3 className="font-semibold text-lg truncate">{product.name}</h3>
+                        {product.description && (
+                          <p className="text-muted-foreground text-sm mt-1 line-clamp-2">
+                            {product.description}
+                          </p>
+                        )}
+                        
+                        <div className="flex items-center gap-2 mt-2">
+                          <Badge variant="secondary">{product.category}</Badge>
                         </div>
 
-                        <div className="text-right flex-shrink-0">
-                          <div className="text-lg font-bold text-green-600">
-                            {formatPrice(product.price)}
+                        {product.tags && product.tags.length > 0 && (
+                          <div className="flex flex-wrap gap-1 mt-2">
+                            {product.tags.map((tag, index) => (
+                              <Badge key={index} variant="outline" className="text-xs">
+                                {tag}
+                              </Badge>
+                            ))}
                           </div>
-                          {product.originalPrice && (
-                            <div className="text-sm text-muted-foreground line-through">
-                              {formatPrice(product.originalPrice)}
-                            </div>
-                          )}
-                          
-                          <div className="flex gap-2 mt-3">
-                            <Button
-                              variant="outline"
-                              size="sm"
-                              onClick={() => openEditModal(product)}
-                              className="gap-1"
-                            >
-                              <Edit className="w-3 h-3" />
-                              Edit
-                            </Button>
-                            <Button
-                              variant="destructive"
-                              size="sm"
-                              onClick={() => handleDelete(product)}
-                              className="gap-1"
-                            >
-                              <Trash2 className="w-3 h-3" />
-                              Delete
-                            </Button>
+                        )}
+                      </div>
+
+                      <div className="text-right flex-shrink-0">
+                        <div className="text-lg font-bold text-green-600">
+                          {formatPrice(product.price)}
+                        </div>
+                        {product.originalPrice && (
+                          <div className="text-sm text-muted-foreground line-through">
+                            {formatPrice(product.originalPrice)}
                           </div>
+                        )}
+                        
+                        <div className="flex gap-2 mt-3">
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            onClick={() => openEditModal(product)}
+                            className="gap-1"
+                          >
+                            <Edit className="w-3 h-3" />
+                            Edit
+                          </Button>
+                          <Button
+                            variant="destructive"
+                            size="sm"
+                            onClick={() => handleDelete(product)}
+                            className="gap-1"
+                          >
+                            <Trash2 className="w-3 h-3" />
+                            Delete
+                          </Button>
                         </div>
                       </div>
                     </div>
                   </div>
-                </CardContent>
-              </Card>
-            )
+                </div>
+              </CardContent>
+            </Card>
           ))
         )}
       </div>

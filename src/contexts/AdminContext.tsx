@@ -65,7 +65,7 @@ interface AdminContextValue {
 
 const defaultSettings: SiteSettings = {
   blackFridayEnabled: true,
-  blackFridayCountdownDate: new Date(Date.now() + 34 * 24 * 60 * 60 * 1000).toISOString(), 
+  blackFridayCountdownDate: new Date(2025, 10, 1, 0, 0, 0).toISOString(), // November 1, 2025 
   maintenanceMode: false,
   supportPhone: "+254 700 123 456",
   supportEmail: "info@getdeals.co.ke",

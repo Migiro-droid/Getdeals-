@@ -20,8 +20,8 @@ export default function BlackFridayPage() {
 
   useEffect(() => {
     const timer = setInterval(() => {
-      // Black Friday 2025 (Last Friday of November)
-      const blackFridayDate = new Date(2025, 10, 28); // November 28, 2025
+      // Black Friday 2025 (November 1st)
+      const blackFridayDate = new Date(2025, 10, 1); // November 1, 2025
       const now = new Date();
       const difference = blackFridayDate.getTime() - now.getTime();
 

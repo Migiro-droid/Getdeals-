@@ -139,7 +139,7 @@ async function main() {
   const settings = [
     { key: 'site_name', value: 'GetDeals Kenya', type: 'string' },
     { key: 'site_description', value: 'Best deals on essential products in Kenya', type: 'string' },
-    { key: 'delivery_fee', value: '200', type: 'number' },
+    { key: 'delivery_fee', value: '300', type: 'number' },
     { key: 'free_delivery_threshold', value: '5000', type: 'number' },
     { key: 'mpesa_enabled', value: 'true', type: 'boolean' },
     { key: 'email_notifications', value: 'true', type: 'boolean' },
