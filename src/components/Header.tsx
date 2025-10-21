@@ -106,6 +106,27 @@ export function Header() {
     }, 100);
   };
 
+  // Handle search functionality
+  const handleSearch = (e: React.KeyboardEvent<HTMLInputElement>) => {
+    if (e.key === "Enter" && searchQuery.trim()) {
+      // Navigate to deals page with search query
+      navigate(`/deals?search=${encodeURIComponent(searchQuery.trim())}`);
+      setSearchQuery("");
+      setIsSearchExpanded(false);
+      setIsMobileMenuOpen(false);
+    }
+  };
+
+  // Handle search submission for mobile
+  const handleMobileSearch = () => {
+    if (searchQuery.trim()) {
+      navigate(`/deals?search=${encodeURIComponent(searchQuery.trim())}`);
+      setSearchQuery("");
+      setIsSearchExpanded(false);
+      setIsMobileMenuOpen(false);
+    }
+  };
+
   return (
     <>
       {/* CONTACT INFORMATION BANNER - RED TOP - STICKY */}
@@ -138,12 +159,13 @@ export function Header() {
             {/* Desktop Search Bar - Center Prominent */}
             <div className="hidden lg:flex flex-1 max-w-md mx-6">
               <div className="w-full relative">
-                <Search className="absolute left-3 top-1/2 h-5 w-5 -translate-y-1/2 text-gray-400" />
+                <Search className="absolute left-3 top-1/2 h-5 w-5 -translate-y-1/2 text-gray-400 pointer-events-none" />
                 <Input
                   placeholder="Search products, deals..."
                   value={searchQuery}
                   onChange={(e) => setSearchQuery(e.target.value)}
-                  className="pl-10 pr-4 py-2.5 rounded-lg bg-gray-100 border-0 focus:bg-white transition-colors"
+                  onKeyPress={handleSearch}
+                  className="pl-10 pr-4 py-2.5 rounded-lg bg-gray-100 border-0 focus:bg-white transition-colors focus:outline-none focus:ring-2 focus:ring-primary/30"
                 />
               </div>
             </div>
@@ -286,14 +308,23 @@ export function Header() {
           <div className="md:hidden bg-white border-t border-gray-200">
             <div className="container mx-auto px-4 py-4 space-y-4">
               {/* Mobile Search */}
-              <div className="relative">
-                <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-gray-400" />
+              <div className="relative flex gap-2">
+                <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-gray-400 pointer-events-none" />
                 <Input
                   placeholder="Search..."
                   value={searchQuery}
                   onChange={(e) => setSearchQuery(e.target.value)}
-                  className="pl-10"
+                  onKeyPress={handleSearch}
+                  className="pl-10 flex-1"
                 />
+                <Button
+                  size="sm"
+                  onClick={handleMobileSearch}
+                  disabled={!searchQuery.trim()}
+                  className="bg-primary hover:bg-primary/90 text-white font-bold"
+                >
+                  Search
+                </Button>
               </div>
 
               {/* Mobile Navigation */}

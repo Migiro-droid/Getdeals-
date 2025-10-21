@@ -1,6 +1,7 @@
-import { useState, useEffect } from "react";
-import { SortAsc, Sparkles } from "lucide-react";
+import { useState, useEffect, useMemo } from "react";
+import { SortAsc, Sparkles, Search, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
 import { ProductCard } from "@/components/ProductCard";
 import { useProducts } from "@/contexts/ProductsContext";
 import { useSearchParams, Link } from "react-router-dom";
@@ -15,6 +16,7 @@ import {
 export default function DealsPage() {
   const [sortBy, setSortBy] = useState("featured");
   const [filter, setFilter] = useState<string>("all");
+  const [searchQuery, setSearchQuery] = useState<string>("");
   const [searchParams] = useSearchParams();
   const { all } = useProducts();
 
@@ -31,13 +33,33 @@ export default function DealsPage() {
   // Initialize filter from URL query parameter
   useEffect(() => {
     const categoryParam = searchParams.get('category');
+    const searchParam = searchParams.get('search');
     if (categoryParam) {
       setFilter(categoryParam);
     }
+    if (searchParam) {
+      setSearchQuery(searchParam);
+    }
   }, [searchParams]);
 
-  // Apply filter
-  const visible = dealsOnly.filter(p => filter === 'all' ? true : p.category === filter);
+  // Apply filter and search
+  const visible = useMemo(() => {
+    let filtered = dealsOnly.filter(p => filter === 'all' ? true : p.category === filter);
+    
+    if (searchQuery.trim()) {
+      const query = searchQuery.toLowerCase();
+      filtered = filtered.filter(p => 
+        p.name.toLowerCase().includes(query) ||
+        p.description?.toLowerCase().includes(query) ||
+        p.category.toLowerCase().includes(query) ||
+        (p.items && p.items.some(item => 
+          typeof item === 'string' && item.toLowerCase().includes(query)
+        ))
+      );
+    }
+    
+    return filtered;
+  }, [dealsOnly, filter, searchQuery]);
 
   const sortedProducts = [...visible].sort((a, b) => {
     switch (sortBy) {
@@ -76,35 +98,57 @@ export default function DealsPage() {
         </div>
 
         {/* Filters and Sorting */}
-        <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-8">
-          <div className="flex flex-col sm:flex-row items-start sm:items-center gap-3">
-            <span className="text-sm font-semibold text-muted-foreground">Category:</span>
-            <Select value={filter} onValueChange={setFilter}>
-              <SelectTrigger className="w-[180px]"><SelectValue placeholder="All Categories" /></SelectTrigger>
-              <SelectContent>
-                <SelectItem value="all">All Categories</SelectItem>
-                {categories.map(c => (<SelectItem key={c} value={c}>{c}</SelectItem>))}
-              </SelectContent>
-            </Select>
-            <span className="text-sm text-muted-foreground ml-2">
-              {visible.length} {visible.length === 1 ? 'deal' : 'deals'} available
-            </span>
+        <div className="flex flex-col gap-4 mb-8">
+          {/* Search Bar */}
+          <div className="w-full relative">
+            <Search className="absolute left-3 top-1/2 h-5 w-5 -translate-y-1/2 text-gray-400 pointer-events-none" />
+            <Input
+              placeholder="Search products, categories..."
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              className="pl-10 pr-10 py-2.5 rounded-lg bg-gray-100 border-0 focus:bg-white transition-colors focus:outline-none focus:ring-2 focus:ring-primary/30"
+            />
+            {searchQuery && (
+              <button
+                onClick={() => setSearchQuery("")}
+                className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600 transition-colors"
+              >
+                <X className="h-5 w-5" />
+              </button>
+            )}
           </div>
 
-          <div className="flex items-center gap-2">
-            <SortAsc className="h-4 w-4 text-muted-foreground" />
-            <Select value={sortBy} onValueChange={setSortBy}>
-              <SelectTrigger className="w-[180px]">
-                <SelectValue placeholder="Sort by" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="featured">Featured</SelectItem>
-                <SelectItem value="newest">Newest First</SelectItem>
-                <SelectItem value="price-low">Price: Low to High</SelectItem>
-                <SelectItem value="price-high">Price: High to Low</SelectItem>
-                <SelectItem value="discount">Highest Discount</SelectItem>
-              </SelectContent>
-            </Select>
+          {/* Filters and Sorting */}
+          <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
+            <div className="flex flex-col sm:flex-row items-start sm:items-center gap-3">
+              <span className="text-sm font-semibold text-muted-foreground">Category:</span>
+              <Select value={filter} onValueChange={setFilter}>
+                <SelectTrigger className="w-[180px]"><SelectValue placeholder="All Categories" /></SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">All Categories</SelectItem>
+                  {categories.map(c => (<SelectItem key={c} value={c}>{c}</SelectItem>))}
+                </SelectContent>
+              </Select>
+              <span className="text-sm text-muted-foreground ml-2">
+                {visible.length} {visible.length === 1 ? 'deal' : 'deals'} available
+              </span>
+            </div>
+
+            <div className="flex items-center gap-2">
+              <SortAsc className="h-4 w-4 text-muted-foreground" />
+              <Select value={sortBy} onValueChange={setSortBy}>
+                <SelectTrigger className="w-[180px]">
+                  <SelectValue placeholder="Sort by" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="featured">Featured</SelectItem>
+                  <SelectItem value="newest">Newest First</SelectItem>
+                  <SelectItem value="price-low">Price: Low to High</SelectItem>
+                  <SelectItem value="price-high">Price: High to Low</SelectItem>
+                  <SelectItem value="discount">Highest Discount</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
           </div>
         </div>
 

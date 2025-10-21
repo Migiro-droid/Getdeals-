@@ -13,7 +13,7 @@ import { useToast } from '@/hooks/use-toast';
 import { productAPI } from '../../lib/supabase';
 import { AdminBulkUpload } from './AdminBulkUpload';
 import { useProducts } from '@/contexts/ProductsContext';
-import { Plus, Edit, Trash2, Package, AlertCircle, Check, Search, Filter, X, SlidersHorizontal, Upload } from 'lucide-react';
+import { Plus, Edit, Trash2, Package, AlertCircle, Check, Search, Filter, X, SlidersHorizontal, Upload, Grid3x3, List } from 'lucide-react';
 
 type Product = {
   id: string;
@@ -85,6 +85,7 @@ export function AdminProductManager() {
   const [minPrice, setMinPrice] = useState<string>('');
   const [maxPrice, setMaxPrice] = useState<string>('');
   const [showFilters, setShowFilters] = useState(false);
+  const [viewMode, setViewMode] = useState<'list' | 'grid'>('list');
 
   // ONLY these specific categories are allowed for GetDeals Kenya products
   // These match the categories shown in the "Shop by Category" navbar dropdown
@@ -403,6 +404,28 @@ export function AdminProductManager() {
           </p>
         </div>
         <div className="flex gap-2">
+          {/* View Mode Toggle */}
+          <div className="flex border rounded-lg">
+            <Button
+              onClick={() => setViewMode('list')}
+              variant={viewMode === 'list' ? 'default' : 'ghost'}
+              size="sm"
+              className="rounded-none"
+              title="List View"
+            >
+              <List className="w-4 h-4" />
+            </Button>
+            <Button
+              onClick={() => setViewMode('grid')}
+              variant={viewMode === 'grid' ? 'default' : 'ghost'}
+              size="sm"
+              className="rounded-none border-l"
+              title="Grid View"
+            >
+              <Grid3x3 className="w-4 h-4" />
+            </Button>
+          </div>
+
           <Button onClick={() => setIsBulkUploadOpen(true)} variant="outline" className="gap-2">
             <Upload className="w-4 h-4" />
             Bulk Upload
@@ -540,34 +563,107 @@ export function AdminProductManager() {
         </div>
       )}
 
-      <div className="grid gap-4">
+      <div className={viewMode === 'grid' ? 'grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4' : 'grid gap-4'}>
         {filteredProducts.length === 0 ? (
-          <Card>
-            <CardContent className="p-8 text-center">
-              <Package className="w-12 h-12 mx-auto mb-4 text-muted-foreground" />
-              <h3 className="text-lg font-semibold mb-2">
-                {products.length === 0 ? 'No Products Found' : 'No Products Match Filters'}
-              </h3>
-              <p className="text-muted-foreground mb-4">
-                {products.length === 0
-                  ? 'Start building your catalog by adding your first product.'
-                  : 'Try adjusting your filters or search terms.'
-                }
-              </p>
-              {products.length === 0 ? (
-                <Button onClick={openAddModal} className="gap-2">
-                  <Plus className="w-4 h-4" />
-                  Add Your First Product
-                </Button>
-              ) : (
-                <Button onClick={clearFilters} variant="outline" className="gap-2">
-                  <X className="w-4 h-4" />
-                  Clear Filters
-                </Button>
-              )}
-            </CardContent>
-          </Card>
+          <div className={viewMode === 'grid' ? 'md:col-span-2 lg:col-span-3 xl:col-span-4' : ''}>
+            <Card>
+              <CardContent className="p-8 text-center">
+                <Package className="w-12 h-12 mx-auto mb-4 text-muted-foreground" />
+                <h3 className="text-lg font-semibold mb-2">
+                  {products.length === 0 ? 'No Products Found' : 'No Products Match Filters'}
+                </h3>
+                <p className="text-muted-foreground mb-4">
+                  {products.length === 0
+                    ? 'Start building your catalog by adding your first product.'
+                    : 'Try adjusting your filters or search terms.'
+                  }
+                </p>
+                {products.length === 0 ? (
+                  <Button onClick={openAddModal} className="gap-2">
+                    <Plus className="w-4 h-4" />
+                    Add Your First Product
+                  </Button>
+                ) : (
+                  <Button onClick={clearFilters} variant="outline" className="gap-2">
+                    <X className="w-4 h-4" />
+                    Clear Filters
+                  </Button>
+                )}
+              </CardContent>
+            </Card>
+          </div>
+        ) : viewMode === 'grid' ? (
+          // Grid View
+          filteredProducts.map((product) => (
+            <Card key={product.id} className="flex flex-col overflow-hidden hover:shadow-lg transition-shadow">
+              <div className="relative w-full h-48 bg-gray-100 flex items-center justify-center overflow-hidden">
+                {product.imageUrl ? (
+                  <img
+                    src={product.imageUrl}
+                    alt={product.name}
+                    className="w-full h-full object-cover hover:scale-105 transition-transform duration-300"
+                    onError={(e) => {
+                      e.currentTarget.src = '/placeholder.svg';
+                    }}
+                  />
+                ) : (
+                  <Package className="w-12 h-12 text-muted-foreground" />
+                )}
+              </div>
+
+              <CardContent className="p-4 flex-1 flex flex-col">
+                <h3 className="font-semibold text-sm line-clamp-2 mb-2">{product.name}</h3>
+
+                {product.description && (
+                  <p className="text-xs text-muted-foreground line-clamp-2 mb-3">
+                    {product.description}
+                  </p>
+                )}
+
+                <div className="mb-3">
+                  <Badge variant="secondary" className="text-xs">
+                    {product.category}
+                  </Badge>
+                </div>
+
+                <div className="flex-1" />
+
+                <div className="mb-3">
+                  <div className="text-lg font-bold text-green-600">
+                    {formatPrice(product.price)}
+                  </div>
+                  {product.originalPrice && (
+                    <div className="text-xs text-muted-foreground line-through">
+                      {formatPrice(product.originalPrice)}
+                    </div>
+                  )}
+                </div>
+
+                <div className="flex gap-2">
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => openEditModal(product)}
+                    className="flex-1 gap-1 text-xs"
+                  >
+                    <Edit className="w-3 h-3" />
+                    Edit
+                  </Button>
+                  <Button
+                    variant="destructive"
+                    size="sm"
+                    onClick={() => handleDelete(product)}
+                    className="flex-1 gap-1 text-xs"
+                  >
+                    <Trash2 className="w-3 h-3" />
+                    Delete
+                  </Button>
+                </div>
+              </CardContent>
+            </Card>
+          ))
         ) : (
+          // List View
           filteredProducts.map((product) => (
             <Card key={product.id}>
               <CardContent className="p-6">
@@ -576,7 +672,7 @@ export function AdminProductManager() {
                     <img
                       src={product.imageUrl}
                       alt={product.name}
-                      className="w-20 h-20 object-cover rounded-lg border"
+                      className="w-20 h-20 object-cover rounded-lg border flex-shrink-0"
                       onError={(e) => {
                         e.currentTarget.src = '/placeholder.svg';
                       }}

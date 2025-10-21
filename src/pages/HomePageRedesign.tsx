@@ -1101,7 +1101,7 @@ export default function HomePageRedesign() {
               <p className="text-xs sm:text-sm text-gray-600 mt-1">Fresh stock just landed. Be the first to grab them!</p>
             </div>
             <Button variant="ghost" className="text-cyan-600 hover:text-cyan-700 text-sm sm:text-base px-2 sm:px-4" asChild>
-              <Link to="/products">
+              <Link to="/baskets">
                 View All <ChevronRight className="h-3 w-3 sm:h-4 sm:w-4 ml-1" />
               </Link>
             </Button>
@@ -1171,7 +1171,7 @@ export default function HomePageRedesign() {
               <p className="text-gray-600 mt-1">Your favorite brands, all in one place</p>
             </div>
             <Button variant="ghost" className="text-gray-700 hover:text-gray-900" asChild>
-              <Link to="/products">
+              <Link to="/baskets">
                 All Brands <ChevronRight className="h-4 w-4 ml-1" />
               </Link>
             </Button>
