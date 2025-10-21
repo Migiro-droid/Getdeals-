@@ -10,6 +10,10 @@ export interface Product {
   category: string;
   description?: string;
   featured?: boolean;
+  isHotDeal?: boolean;
+  isNewArrival?: boolean;
+  isSpecialDeal?: boolean;
+  isTopBasket?: boolean;
 }
 
 export const products: Product[] = [

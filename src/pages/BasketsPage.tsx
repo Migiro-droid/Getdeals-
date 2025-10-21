@@ -1,9 +1,9 @@
 import { useState, useEffect } from "react";
-import { SortAsc } from "lucide-react";
+import { SortAsc, ShoppingBag } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { ProductCard } from "@/components/ProductCard";
 import { useProducts } from "@/contexts/ProductsContext";
-import { useSearchParams } from "react-router-dom";
+import { useSearchParams, Link } from "react-router-dom";
 import {
   Select,
   SelectContent,
@@ -17,7 +17,14 @@ export default function BasketsPage() {
   const [filter, setFilter] = useState<string>("all");
   const [searchParams] = useSearchParams();
   const { all } = useProducts();
-  const basketsOnly = all.filter(p => p.category !== 'alcohol' && p.category !== 'blackfriday');
+  
+  // Show ONLY baskets (items with multiple products in them)
+  // A basket has multiple items in the items array
+  const basketsOnly = all.filter(p => {
+    const items = Array.isArray(p.items) ? p.items : [];
+    // Show products that have 2 or more items (actual baskets)
+    return items.length >= 2;
+  });
   const categories = Array.from(new Set(basketsOnly.map(p => p.category))).filter(Boolean);
   
   // Initialize filter from URL query parameter
@@ -48,27 +55,35 @@ export default function BasketsPage() {
   return (
     <div className="min-h-screen py-8">
       <div className="container mx-auto px-4">
-        {}
+        {/* Header */}
         <div className="mb-8">
-          <h1 className="text-3xl lg:text-4xl font-bold mb-4">Our Curated Baskets</h1>
+          <div className="flex items-center gap-3 mb-4">
+            <ShoppingBag className="h-6 w-6 text-primary" />
+            <h1 className="text-3xl lg:text-4xl font-bold">Our Curated Baskets</h1>
+          </div>
           <p className="text-xl text-muted-foreground max-w-2xl">
             Choose from our carefully selected bundles designed to save you time and money on your grocery shopping.
           </p>
+          <div className="mt-4 flex gap-2">
+            <Link to="/deals">
+              <Button variant="outline">View All Deals</Button>
+            </Link>
+          </div>
         </div>
 
-        {}
+        {/* Filter and Sort */}
         <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-8">
           <div className="flex items-center gap-3">
             <span className="text-sm text-muted-foreground">Filter:</span>
             <Select value={filter} onValueChange={setFilter}>
               <SelectTrigger className="w-[180px]"><SelectValue placeholder="All" /></SelectTrigger>
               <SelectContent>
-                <SelectItem value="all">All</SelectItem>
+                <SelectItem value="all">All Baskets</SelectItem>
                 {categories.map(c => (<SelectItem key={c} value={c}>{c}</SelectItem>))}
               </SelectContent>
             </Select>
             <span className="text-sm text-muted-foreground">
-              {visible.length} baskets available
+              {visible.length} {visible.length === 1 ? 'basket' : 'baskets'} available
             </span>
           </div>
           
@@ -88,15 +103,15 @@ export default function BasketsPage() {
           </div>
         </div>
 
-        {}
-        <div className="grid md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6 mb-12">
+        {/* Baskets Grid */}
+        <div className="grid sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-5 xl:grid-cols-6 gap-2 mb-12">
           {sortedProducts.map((product) => (
             <ProductCard key={product.id} product={product} />
           ))}
         </div>
 
-        {}
-        <div className="text-center py-12 bg-muted/30 rounded-2xl">
+        {/* CTA Section */}
+        <div className="text-center border-t pt-12">
           <h2 className="text-2xl font-bold mb-4">Need a Custom Basket?</h2>
           <p className="text-muted-foreground mb-6 max-w-md mx-auto">
             Contact us to create a personalized basket that perfectly fits your family's needs.

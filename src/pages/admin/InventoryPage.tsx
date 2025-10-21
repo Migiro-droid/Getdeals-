@@ -13,7 +13,7 @@ import { Package, Search, Plus, Minus, TrendingUp, AlertTriangle, User, Shield, 
 import { Link } from "react-router-dom";
 
 export default function InventoryPage() {
-  const { inventory, updateStock, restockItem, getInStockItems, getLowStockItems, getTotalValue } = useInventory();
+  const { inventory, updateStock, restockItem, getInStockItems, getLowStockItems, getTotalValue, isLoading, error } = useInventory();
   const { role, user } = useAdmin();
   const [searchTerm, setSearchTerm] = useState("");
   const [categoryFilter, setCategoryFilter] = useState<string>("all");
@@ -176,6 +176,54 @@ export default function InventoryPage() {
             </CardContent>
           </Card>
         </div>
+
+        {/* Loading State */}
+        {isLoading && (
+          <Card className="border-blue-200 bg-blue-50">
+            <CardContent className="p-4">
+              <div className="flex items-center gap-3">
+                <div className="animate-spin">
+                  <Package className="h-6 w-6 text-blue-600" />
+                </div>
+                <div>
+                  <p className="font-medium text-blue-900">Loading Inventory</p>
+                  <p className="text-sm text-blue-700">Fetching items from database...</p>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+        )}
+
+        {/* Error State */}
+        {error && (
+          <Card className="border-red-200 bg-red-50">
+            <CardContent className="p-4">
+              <div className="flex items-center gap-3">
+                <AlertTriangle className="h-6 w-6 text-red-600" />
+                <div>
+                  <p className="font-medium text-red-900">Error Loading Inventory</p>
+                  <p className="text-sm text-red-700">{error}</p>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+        )}
+
+        {/* Empty State */}
+        {!isLoading && inventory.length === 0 && !error && (
+          <Card className="border-yellow-200 bg-yellow-50">
+            <CardContent className="p-6 text-center">
+              <Package className="h-12 w-12 mx-auto mb-4 text-yellow-600" />
+              <h3 className="text-lg font-semibold text-yellow-900 mb-2">No Inventory Items Found</h3>
+              <p className="text-sm text-yellow-700 mb-4">
+                Your inventory is empty. You can add items from the dashboard or load demo inventory to test the system.
+              </p>
+              <Button asChild variant="outline" className="gap-2">
+                <Link to="/admin">Go to Dashboard</Link>
+              </Button>
+            </CardContent>
+          </Card>
+        )}
 
         {/* Quick Actions */}
         <div className="flex flex-wrap gap-2">

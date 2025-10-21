@@ -25,6 +25,12 @@ CREATE TABLE IF NOT EXISTS public.products (
   "inStock" BOOLEAN NOT NULL DEFAULT true,
   tags TEXT[],
   featured BOOLEAN NOT NULL DEFAULT false,
+  "isHotDeal" BOOLEAN NOT NULL DEFAULT false,
+  "isNewArrival" BOOLEAN NOT NULL DEFAULT false,
+  "isSpecialDeal" BOOLEAN NOT NULL DEFAULT false,
+  "isTopBasket" BOOLEAN NOT NULL DEFAULT false,
+  items TEXT[],
+  "itemsDetail" JSONB,
   "createdAt" TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT NOW(),
   "updatedAt" TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT NOW()
 );
@@ -126,6 +132,10 @@ CREATE INDEX IF NOT EXISTS idx_users_email ON public.users(email);
 CREATE INDEX IF NOT EXISTS idx_users_role ON public.users(role);
 CREATE INDEX IF NOT EXISTS idx_products_category ON public.products(category);
 CREATE INDEX IF NOT EXISTS idx_products_featured ON public.products(featured);
+CREATE INDEX IF NOT EXISTS idx_products_is_hot_deal ON public.products("isHotDeal");
+CREATE INDEX IF NOT EXISTS idx_products_is_new_arrival ON public.products("isNewArrival");
+CREATE INDEX IF NOT EXISTS idx_products_is_special_deal ON public.products("isSpecialDeal");
+CREATE INDEX IF NOT EXISTS idx_products_is_top_basket ON public.products("isTopBasket");
 CREATE INDEX IF NOT EXISTS idx_orders_user_id ON public.orders("userId");
 CREATE INDEX IF NOT EXISTS idx_orders_status ON public.orders(status);
 

@@ -40,6 +40,15 @@ export function ProductDetailModal({ product, open, onOpenChange }: ProductDetai
   const itemDetails = Array.isArray(live.itemsDetail) ? live.itemsDetail : [];
   const nameOnlyItems = itemDetails.length === 0 && Array.isArray(live.items) ? live.items : [];
 
+  // Debug log to see what items we have
+  console.log('🔍 ProductDetailModal - Items Debug:', {
+    productId: live.id,
+    productName: live.name,
+    itemsDetail: itemDetails,
+    nameOnlyItems: nameOnlyItems,
+    itemsLength: live.items?.length,
+  });
+
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
     <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
@@ -90,35 +99,39 @@ export function ProductDetailModal({ product, open, onOpenChange }: ProductDetai
             </div>
 
             {(itemDetails.length > 0 || nameOnlyItems.length > 0) && (
-              <div>
-                <h3 className="text-lg font-semibold mb-4">Items Included</h3>
-                <div className="grid grid-cols-2 gap-4">
+              <div className="border-t pt-4 mt-4">
+                <h3 className="text-lg font-bold mb-3 text-gray-900">Items Included ({itemDetails.length || nameOnlyItems.length})</h3>
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                   {itemDetails.length > 0
                     ? itemDetails.map((item, index) => {
                         const raw = (item.image || '').trim();
                         const src = raw ? withVersion(raw) : `/placeholder.svg?v=${version}`;
                         return (
-                          <div key={index} className="flex items-center space-x-3 p-3 bg-muted/30 rounded-lg">
-                            <div className="w-12 h-12 bg-muted rounded overflow-hidden flex items-center justify-center">
+                          <div key={index} className="flex items-start gap-3 p-3 bg-gray-50 rounded-lg border border-gray-200 hover:border-gray-300 transition-colors">
+                            <div className="w-14 h-14 bg-white rounded border border-gray-200 flex-shrink-0 flex items-center justify-center">
                               <img
                                 src={src}
-                                alt={item.name}
+                                alt={item.name || 'Item'}
                                 loading="lazy"
                                 decoding="async"
                                 className="max-w-full max-h-full object-contain"
                                 onError={(e) => { (e.currentTarget as HTMLImageElement).src = `/placeholder.svg?v=${version}`; }}
                               />
                             </div>
-                            <span className="text-sm font-medium">{item.name}</span>
+                            <div className="flex-1 min-w-0 pt-1">
+                              <span className="text-sm font-semibold text-gray-900 block">{item.name || 'Item'}</span>
+                            </div>
                           </div>
                         );
                       })
                     : nameOnlyItems.map((name, index) => (
-                        <div key={index} className="flex items-center space-x-3 p-3 bg-muted/30 rounded-lg">
-                          <div className="w-12 h-12 bg-muted rounded overflow-hidden flex items-center justify-center">
-                            <img src={`/placeholder.svg?v=${version}`} alt={String(name)} loading="lazy" decoding="async" className="max-w-full max-h-full object-contain" />
+                        <div key={index} className="flex items-start gap-3 p-3 bg-gray-50 rounded-lg border border-gray-200 hover:border-gray-300 transition-colors">
+                          <div className="w-14 h-14 bg-white rounded border border-gray-200 flex-shrink-0 flex items-center justify-center">
+                            <span className="text-xs text-gray-400">Item</span>
                           </div>
-                          <span className="text-sm font-medium">{String(name)}</span>
+                          <div className="flex-1 min-w-0 pt-1">
+                            <span className="text-sm font-semibold text-gray-900 line-clamp-2">{String(name)}</span>
+                          </div>
                         </div>
                       ))}
                 </div>

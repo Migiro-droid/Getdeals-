@@ -18,6 +18,7 @@ interface Product {
   image: string;
   discount?: number;
   items?: string[];
+  itemsDetail?: { name: string; image: string }[];
   category: string;
   description?: string;
 }
@@ -91,12 +92,12 @@ export function ProductCard({ product, onQuickView }: ProductCardProps) {
 
   return (
     <Card
-      className="group overflow-hidden transition-all duration-300 hover:shadow-medium cursor-pointer"
+      className="group overflow-hidden transition-all duration-300 hover:shadow-sm cursor-pointer border border-gray-200"
       onMouseEnter={() => setIsHovered(true)}
       onMouseLeave={() => setIsHovered(false)}
     >
       <div className="relative overflow-hidden">
-        <div className="w-full aspect-[4/3] bg-muted flex items-center justify-center">
+        <div className="w-full aspect-square bg-muted flex items-center justify-center">
           <img
             src={withVersion(product.image)}
             alt={product.name}
@@ -116,8 +117,8 @@ export function ProductCard({ product, onQuickView }: ProductCardProps) {
 
         {/* Discount Badge */}
         {discountPercentage && (
-          <Badge className="absolute top-2 left-2 bg-destructive text-destructive-foreground">
-            {discountPercentage}% OFF
+          <Badge className="absolute top-1 left-1 bg-destructive text-destructive-foreground text-xs py-0.5 px-1.5">
+            -{discountPercentage}%
           </Badge>
         )}
 
@@ -126,7 +127,7 @@ export function ProductCard({ product, onQuickView }: ProductCardProps) {
           aria-label="Add to wishlist"
           variant="ghost"
           size="icon"
-          className={`absolute top-2 right-2 h-8 w-8 transition-all duration-300 ${
+          className={`absolute top-1 right-1 h-7 w-7 transition-all duration-300 ${
             isHovered
               ? "opacity-100 translate-y-0"
               : "opacity-0 translate-y-2"
@@ -135,65 +136,61 @@ export function ProductCard({ product, onQuickView }: ProductCardProps) {
             : "text-muted-foreground hover:text-destructive"}`}
           onClick={handleWishlist}
         >
-          <Heart className={`h-4 w-4 ${isWishlisted ? "fill-current" : ""}`} />
+          <Heart className={`h-3.5 w-3.5 ${isWishlisted ? "fill-current" : ""}`} />
         </Button>
 
         {/* Quick Actions Overlay */}
         <div
-          className={`absolute inset-x-0 bottom-0 p-3 bg-gradient-to-t from-black/60 to-transparent transition-all duration-300 ${
+          className={`absolute inset-x-0 bottom-0 p-2 bg-gradient-to-t from-black/50 to-transparent transition-all duration-300 ${
             isHovered ? "opacity-100 translate-y-0" : "opacity-0 translate-y-4"
           }`}
         >
-          <div className="flex space-x-2">
-            <Button size="sm" className="flex-1" onClick={handleAddToCart}>
-              <ShoppingCart className="h-4 w-4 mr-2" />
-              Add to Cart
+          <div className="flex gap-1">
+            <Button size="sm" className="flex-1 text-xs h-7" onClick={handleAddToCart}>
+              <ShoppingCart className="h-3 w-3 mr-1" />
+              Add
             </Button>
             <Button
               aria-label="Quick view"
               variant="secondary"
               size="sm"
+              className="h-7 w-7 p-0"
               onClick={(e) => {
                 e.stopPropagation();
                 onQuickView ? onQuickView(product) : setShowDetailModal(true);
               }}
             >
-              <Eye className="h-4 w-4" />
+              <Eye className="h-3 w-3" />
             </Button>
           </div>
         </div>
       </div>
 
-      <CardContent className="p-4">
-        <h3 className="font-semibold text-sm mb-2 line-clamp-2">
+      <CardContent className="p-2">
+        <h3 className="font-medium text-xs mb-1 line-clamp-2 h-7">
           {product.name}
         </h3>
 
-        {product.items && (
-          <p className="text-xs text-muted-foreground mb-2">
-            {product.items.length} Items • Save KES{" "}
-            {product.originalPrice
-              ? product.originalPrice - product.price
-              : 0}
+        {product.description && (
+          <p className="text-xs text-muted-foreground mb-1 line-clamp-2">
+            {product.description}
           </p>
         )}
 
-        <div className="flex items-center justify-between">
-          <div className="flex items-center space-x-2">
-            <span className="font-bold text-lg text-primary">
-              KES {product.price.toLocaleString()}
+        <div className="flex items-baseline space-x-1">
+          <span className="font-bold text-sm text-primary">
+            KES {product.price.toLocaleString()}
+          </span>
+          {product.originalPrice && (
+            <span className="text-xs text-muted-foreground line-through">
+              {product.originalPrice.toLocaleString()}
             </span>
-            {product.originalPrice && (
-              <span className="text-sm text-muted-foreground line-through">
-                KES {product.originalPrice.toLocaleString()}
-              </span>
-            )}
-          </div>
+          )}
         </div>
 
-        {product.description && (
-          <p className="text-xs text-muted-foreground mt-2 line-clamp-2">
-            {product.description}
+        {product.items && product.items.length > 1 && (
+          <p className="text-xs text-muted-foreground mt-1">
+            {product.items.length} items
           </p>
         )}
       </CardContent>

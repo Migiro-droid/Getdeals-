@@ -20,6 +20,12 @@ interface SiteSettings {
   flashSaleDiscount: number; // percentage (e.g., 50)
 }
 
+interface SyncState {
+  isSyncing: boolean;
+  lastSyncTime: number | null;
+  lastSyncError: string | null;
+}
+
 type AdminRole = "guest" | "staff" | "admin";
 
 type AdminPermission =
@@ -42,6 +48,8 @@ interface AdminSession {
 interface AdminContextValue {
   settings: SiteSettings;
   updateSettings: (partial: Partial<SiteSettings>) => void;
+  syncState: SyncState;
+  manualSync: () => Promise<void>;
 
   role: AdminRole;
   user: AdminUserInfo | null;
@@ -107,6 +115,85 @@ export const AdminProvider: React.FC<{ children: React.ReactNode }> = ({ childre
     }
   });
 
+  const [syncState, setSyncState] = useState<SyncState>({
+    isSyncing: false,
+    lastSyncTime: null,
+    lastSyncError: null,
+  });
+
+  const syncSettingsToServer = async (settingsToSync: SiteSettings) => {
+    try {
+      setSyncState(prev => ({ ...prev, isSyncing: true, lastSyncError: null }));
+      
+      const response = await fetch('/api/admin/settings', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer admin_${(import.meta as any)?.env?.VITE_ADMIN_PIN ?? '1234'}`,
+        },
+        body: JSON.stringify(settingsToSync),
+      });
+
+      if (!response.ok) {
+        throw new Error(`Server error: ${response.statusText}`);
+      }
+
+      const data = await response.json();
+      setSyncState(prev => ({
+        ...prev,
+        isSyncing: false,
+        lastSyncTime: Date.now(),
+      }));
+      
+      return data.data;
+    } catch (error: any) {
+      const errorMsg = error?.message || 'Failed to sync settings';
+      setSyncState(prev => ({
+        ...prev,
+        isSyncing: false,
+        lastSyncError: errorMsg,
+      }));
+      console.error('Settings sync error:', errorMsg);
+      // Return null to indicate sync failed, but don't throw - let app continue with local settings
+      return null;
+    }
+  };
+
+  const loadSettingsFromServer = async () => {
+    try {
+      const response = await fetch('/api/admin/settings', {
+        method: 'GET',
+        headers: { 'Content-Type': 'application/json' },
+      });
+
+      if (!response.ok) {
+        throw new Error(`Server error: ${response.statusText}`);
+      }
+
+      const data = await response.json();
+      if (data.data) {
+        setSettings(data.data);
+        // Also update localStorage as fallback
+        try {
+          localStorage.setItem(LS_SETTINGS, JSON.stringify(data.data));
+        } catch {}
+        setSyncState(prev => ({
+          ...prev,
+          lastSyncTime: Date.now(),
+        }));
+        return data.data;
+      }
+    } catch (error: any) {
+      console.warn('Failed to load settings from server, using local cache:', error?.message);
+      // Silently fall back to localStorage
+    }
+    return null;
+  };
+
+  const manualSync = async () => {
+    await loadSettingsFromServer();
+  };
+
   const [role, setRole] = useState<AdminRole>(() => {
     try {
       const raw = localStorage.getItem(LS_SESSION);
@@ -141,10 +228,29 @@ export const AdminProvider: React.FC<{ children: React.ReactNode }> = ({ childre
     return null;
   });
 
-  const sessionRef = useRef<{ timer?: number | null }>({ timer: null });
+  const sessionRef = useRef<{ timer?: number | null; syncTimer?: NodeJS.Timeout }>({ timer: null, syncTimer: undefined });
 
+  // Sync settings to server (debounced to avoid too many requests)
   useEffect(() => {
-    try { localStorage.setItem(LS_SETTINGS, JSON.stringify(settings)); } catch {}
+    // Save to localStorage immediately
+    try { 
+      localStorage.setItem(LS_SETTINGS, JSON.stringify(settings)); 
+    } catch {}
+
+    // Debounce server sync by 1 second to avoid hammering the API
+    if (sessionRef.current.syncTimer) {
+      clearTimeout(sessionRef.current.syncTimer);
+    }
+
+    sessionRef.current.syncTimer = setTimeout(() => {
+      syncSettingsToServer(settings);
+    }, 1000);
+
+    return () => {
+      if (sessionRef.current.syncTimer) {
+        clearTimeout(sessionRef.current.syncTimer);
+      }
+    };
   }, [settings]);
 
   const persistSession = (s: AdminSession | null) => {
@@ -214,6 +320,11 @@ export const AdminProvider: React.FC<{ children: React.ReactNode }> = ({ childre
     return () => window.removeEventListener("storage", onStorage);
   }, []);
 
+  // Load settings from server on mount
+  useEffect(() => {
+    loadSettingsFromServer();
+  }, []);
+
   const doLogin = (passcode: string, info?: AdminUserInfo): AdminSession | null => {
     // Determine role based on passcode
     const adminPin = (import.meta as any)?.env?.VITE_ADMIN_PIN ?? (import.meta as any)?.env?.VITE_ADMIN_PASSCODE ?? "1234";
@@ -275,6 +386,8 @@ export const AdminProvider: React.FC<{ children: React.ReactNode }> = ({ childre
     () => ({
       settings,
       updateSettings,
+      syncState,
+      manualSync,
       role,
       user,
       session: { expiresAt },
@@ -286,7 +399,7 @@ export const AdminProvider: React.FC<{ children: React.ReactNode }> = ({ childre
       isAdmin,
       setIsAdmin,
     }),
-    [settings, role, user, expiresAt]
+    [settings, syncState, role, user, expiresAt]
   );
 
   return <AdminContext.Provider value={value}>{children}</AdminContext.Provider>;

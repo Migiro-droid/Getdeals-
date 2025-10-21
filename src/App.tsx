@@ -19,7 +19,9 @@ import { UserProfileProvider } from "./contexts/UserProfileContext";
 import { Footer } from "@/components/Footer";
 import HomePage from "./pages/HomePage";
 import HomePageRedesign from "./pages/HomePageRedesign";
+import BlackFridayPage from "./pages/BlackFridayPage";
 import BasketsPage from "./pages/BasketsPage";
+import DealsPage from "./pages/DealsPage";
 import CartPage from "./pages/CartPage";
 import CheckoutPage from "./pages/CheckoutPage";
 import ContactPage from "./pages/ContactPage";
@@ -171,7 +173,9 @@ const App = () => {
             <Routes>
               <Route path="/" element={<HomePageRedesign />} />
               <Route path="/old-home" element={<HomePage />} />
+              <Route path="/black-friday" element={<BlackFridayPage />} />
               <Route path="/baskets" element={<BasketsPage />} />
+              <Route path="/deals" element={<DealsPage />} />
               <Route path="/cart" element={<CartPage />} />
               <Route path="/checkout" element={<CheckoutPage />} />
               <Route path="/contact" element={<ContactPage />} />

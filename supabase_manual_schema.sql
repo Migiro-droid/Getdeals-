@@ -16,6 +16,10 @@ CREATE TABLE IF NOT EXISTS public.products (
   items_detail JSONB,
   category TEXT DEFAULT 'basket',
   description TEXT,
+  "isHotDeal" BOOLEAN NOT NULL DEFAULT false,
+  "isNewArrival" BOOLEAN NOT NULL DEFAULT false,
+  "isSpecialDeal" BOOLEAN NOT NULL DEFAULT false,
+  "isTopBasket" BOOLEAN NOT NULL DEFAULT false,
   created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
   updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
 );

@@ -4,7 +4,7 @@ import {
   ArrowRight, ShoppingCart, Clock, TrendingUp, Sparkles, 
   Package, Tag, Heart, Eye, Plus, ChevronRight, Star,
   Zap, Award, Users, Shield, Flame, Gift, RefreshCw,
-  Check, Truck, ShoppingBag, X
+  Check, Truck, ShoppingBag, X, Trophy
 } from "lucide-react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogTrigger } from "@/components/ui/dialog";
 import ChatSupportButton from '@/components/ChatSupportButton';
@@ -39,32 +39,89 @@ export default function HomePageRedesign() {
   const { toast } = useToast();
   const { settings } = useAdmin();
 
-  // Fetch hot deals from database - products with good discounts (can be single items or baskets)
-  const hotBaskets = useMemo(() => {
+  // Hot Deals - products marked as isHotDeal
+  const promotionalHotDeals = useMemo(() => {
     if (!all || all.length === 0) return [];
     
-    // Filter for products with significant savings
-    const deals = all
-      .filter(p => p.originalPrice && p.originalPrice > p.price) // Must have a discount
+    const filtered = all.filter(p => (p as any).isHotDeal === true);
+    console.log('🔥 Hot Deals filtered:', filtered.length, 'products with isHotDeal=true out of', all.length, 'total products');
+    
+    return filtered
       .map(product => {
         const savings = product.originalPrice ? product.originalPrice - product.price : 0;
-        const itemCount = product.items?.length || 1; // 1 for single items
+        const itemCount = product.items?.length || 1;
         const isBasket = product.items && product.items.length > 0;
         
-        // Determine badge based on savings percentage or category
-        let badge = "";
-        if (product.originalPrice) {
-          const discountPercent = ((savings / product.originalPrice) * 100);
-          if (discountPercent >= 30) badge = "Most Popular";
-          else if (discountPercent >= 20) badge = "Best Value";
-          else if (product.category === 'family') badge = "Business Favorite";
-          else if (product.category === 'essential') badge = "Parent's Choice";
-        }
+        const discountPercent = product.originalPrice ? ((savings / product.originalPrice) * 100) : 0;
+        let badge = "Hot Deal";
+        if (discountPercent >= 30) badge = "Mega Deal";
+        else if (discountPercent >= 20) badge = "Great Savings";
         
         return {
           id: product.id,
           name: product.name,
-          description: product.description || 'Amazing deal at unbeatable prices',
+          description: product.description || 'Incredible savings on this item',
+          image: product.image || 'https://images.unsplash.com/photo-1542838132-92c53300491e?w=500',
+          items: product.items?.map((item, idx) => ({ productId: item, quantity: 1 })) || [],
+          itemsDetail: (product as any).itemsDetail || [], // Include itemsDetail from product
+          totalValue: product.originalPrice || product.price,
+          savings: savings,
+          finalPrice: product.price,
+          itemCount: itemCount,
+          badge: badge,
+          isBasket: isBasket
+        } as ShoppingBasket & { isBasket: boolean };
+      })
+      .slice(0, 4);
+  }, [all]);
+
+  // New Arrivals (by promotional tag) - products marked as isNewArrival
+  const promotionalNewArrivals = useMemo(() => {
+    if (!all || all.length === 0) return [];
+    
+    return all
+      .filter(p => (p as any).isNewArrival === true)
+      .map(product => {
+        const savings = product.originalPrice ? product.originalPrice - product.price : 0;
+        const itemCount = product.items?.length || 1;
+        const isBasket = product.items && product.items.length > 0;
+        
+        return {
+          id: product.id,
+          name: product.name,
+          description: product.description || 'Latest arrival to our collection',
+          image: product.image || 'https://images.unsplash.com/photo-1542838132-92c53300491e?w=500',
+          items: product.items?.map((item, idx) => ({ productId: item, quantity: 1 })) || [],
+          totalValue: product.originalPrice || product.price,
+          savings: savings,
+          finalPrice: product.price,
+          itemCount: itemCount,
+          badge: "New Arrival",
+          isBasket: isBasket
+        } as ShoppingBasket & { isBasket: boolean };
+      })
+      .slice(0, 4);
+  }, [all]);
+
+  // Special Deals (by promotional tag) - products marked as isSpecialDeal
+  const promotionalSpecialDeals = useMemo(() => {
+    if (!all || all.length === 0) return [];
+    
+    return all
+      .filter(p => (p as any).isSpecialDeal === true)
+      .map(product => {
+        const savings = product.originalPrice ? product.originalPrice - product.price : 0;
+        const itemCount = product.items?.length || 1;
+        const isBasket = product.items && product.items.length > 0;
+        
+        const discountPercent = product.originalPrice ? ((savings / product.originalPrice) * 100) : 0;
+        let badge = "Special Deal";
+        if (discountPercent >= 25) badge = "Limited Time";
+        
+        return {
+          id: product.id,
+          name: product.name,
+          description: product.description || 'Special offer available now',
           image: product.image || 'https://images.unsplash.com/photo-1542838132-92c53300491e?w=500',
           items: product.items?.map((item, idx) => ({ productId: item, quantity: 1 })) || [],
           totalValue: product.originalPrice || product.price,
@@ -72,16 +129,64 @@ export default function HomePageRedesign() {
           finalPrice: product.price,
           itemCount: itemCount,
           badge: badge,
-          isBasket: isBasket // Track if it's a basket or single item
+          isBasket: isBasket
         } as ShoppingBasket & { isBasket: boolean };
       })
-      .sort((a, b) => {
-        // Sort by savings percentage (best deals first)
-        const aPercent = a.totalValue > 0 ? (a.savings / a.totalValue) * 100 : 0;
-        const bPercent = b.totalValue > 0 ? (b.savings / b.totalValue) * 100 : 0;
-        return bPercent - aPercent;
+      .slice(0, 4);
+  }, [all]);
+
+  // Fetch hot deals from database - specific baskets from the request
+  const hotBaskets = useMemo(() => {
+    if (!all || all.length === 0) return [];
+    
+    // Target basket names as specified
+    const targetBaskets = [
+      "Mid month Top-up ( Katikati ya Mwezi)",
+      "Jipange Pack (Starter Pack)",
+      "Family Refill Basket( Jamii Pack)",
+      "Usafi ProMax"
+    ];
+    
+    // Filter for products that match the target basket names
+    const deals = all
+      .filter(p => {
+        // Check if product name matches any of the target baskets or contains "basket/pack"
+        return targetBaskets.some(basket => 
+          p.name.toLowerCase().includes(basket.toLowerCase())
+        ) || (p.items && p.items.length > 0); // Fallback: any product with items
       })
-      .slice(0, 4); // Get top 4 hot deals
+      .map(product => {
+        const savings = product.originalPrice ? product.originalPrice - product.price : 0;
+        const itemCount = product.items?.length || 1;
+        const isBasket = product.items && product.items.length > 0;
+        
+        // Determine badge based on basket type
+        let badge = "";
+        if (product.name.includes("Starter")) badge = "Starter Deal";
+        else if (product.name.includes("Family")) badge = "Family Choice";
+        else if (product.name.includes("Usafi")) badge = "Premium Care";
+        else if (product.name.includes("Top-up")) badge = "Mid-Month Special";
+        else if (product.originalPrice) {
+          const discountPercent = ((savings / product.originalPrice) * 100);
+          if (discountPercent >= 30) badge = "Most Popular";
+          else if (discountPercent >= 20) badge = "Best Value";
+        }
+        
+        return {
+          id: product.id,
+          name: product.name,
+          description: product.description || 'Curated basket with amazing savings',
+          image: product.image || 'https://images.unsplash.com/photo-1542838132-92c53300491e?w=500',
+          items: product.items?.map((item, idx) => ({ productId: item, quantity: 1 })) || [],
+          totalValue: product.originalPrice || product.price,
+          savings: savings,
+          finalPrice: product.price,
+          itemCount: itemCount,
+          badge: badge,
+          isBasket: isBasket
+        } as ShoppingBasket & { isBasket: boolean };
+      })
+      .slice(0, 4); // Get top 4 baskets
     
     return deals;
   }, [all]);
@@ -375,7 +480,7 @@ export default function HomePageRedesign() {
                       className="bg-red-600 hover:bg-red-700 text-white font-bold"
                       asChild
                     >
-                      <Link to="/products">
+                      <Link to="/baskets">
                         Shop Now <ArrowRight className="ml-2 h-5 w-5" />
                       </Link>
                     </Button>
@@ -403,8 +508,9 @@ export default function HomePageRedesign() {
             {/* Side Promotions */}
             <div className="space-y-6">
               {/* Flash Sale Card - Dynamic & Animated */}
+              {settings.flashSaleEnabled ? (
               <Link 
-                to="/products"
+                to="/baskets"
                 className="relative overflow-hidden rounded-2xl shadow-lg bg-gradient-to-br from-red-600 via-orange-600 to-yellow-500 p-8 text-white group cursor-pointer hover:shadow-2xl transition-all block"
               >
                 <div className="relative z-10 space-y-3">
@@ -414,7 +520,7 @@ export default function HomePageRedesign() {
                   </div>
                   <h3 className="text-4xl font-black leading-tight">
                     Save up to<br />
-                    <span className="text-6xl text-yellow-300">50% OFF</span>
+                    <span className="text-6xl text-yellow-300">{settings.flashSaleDiscount}% OFF</span>
                   </h3>
                   <p className="text-lg font-semibold text-white/90">On thousands of products</p>
                   
@@ -447,6 +553,46 @@ export default function HomePageRedesign() {
                 </div>
                 <div className="absolute -bottom-8 -right-8 w-32 h-32 bg-white/10 rounded-full blur-2xl group-hover:scale-150 transition-transform"></div>
               </Link>
+              ) : (
+              <div className="relative overflow-hidden rounded-2xl shadow-lg bg-gradient-to-br from-gray-900 via-gray-800 to-gray-900 p-8 group hover:shadow-xl transition-all block border border-gray-700 min-h-[340px] flex items-center justify-center">
+                {/* Subtle Dots Pattern */}
+                <div className="absolute inset-0 opacity-5">
+                  <div className="absolute inset-0 bg-repeat" style={{
+                    backgroundImage: 'radial-gradient(circle, rgba(255,255,255,.5) 1px, transparent 1px)',
+                    backgroundSize: '20px 20px'
+                  }}></div>
+                </div>
+
+                {/* Top Gradient Line */}
+                <div className="absolute left-0 top-0 w-full h-1 bg-gradient-to-r from-gray-600 via-gray-500 to-gray-600"></div>
+
+                <div className="relative z-10 space-y-4 text-center w-full">
+                  <div className="inline-block bg-gray-700 text-gray-200 px-4 py-2 rounded-lg font-black text-xs uppercase tracking-widest border border-gray-600">
+                    COMING SOON
+                  </div>
+                  
+                  <h3 className="text-3xl font-black leading-tight text-white">
+                    <span className="text-red-500">EXCLUSIVE</span><br />
+                    <span className="text-4xl bg-gradient-to-r from-red-500 via-red-400 to-red-500 bg-clip-text text-transparent">SALE EVENT</span>
+                  </h3>
+
+                  <p className="text-sm font-semibold text-red-400 uppercase tracking-wide mt-4">
+                    Stay Tuned for Unbeatable Deals
+                  </p>
+
+                  <p className="text-xs text-gray-400 leading-relaxed max-w-xs mx-auto">
+                    We are preparing something extraordinary. Get ready for massive savings across thousands of products.
+                  </p>
+
+                  <div className="flex items-center justify-center gap-2 mt-6 font-semibold text-xs uppercase tracking-widest bg-gray-800 hover:bg-gray-700 border border-red-600/40 hover:border-red-500/60 rounded-lg py-3 text-red-400 transition-all cursor-default">
+                    <Clock className="h-4 w-4" /> Launching Soon
+                  </div>
+                </div>
+
+                {/* Side Accent */}
+                <div className="absolute -bottom-8 -left-8 w-24 h-24 bg-gray-700/10 rounded-full blur-2xl"></div>
+              </div>
+              )}
 
               {/* New Arrivals Card - Image-Based */}
               <a
@@ -454,7 +600,7 @@ export default function HomePageRedesign() {
                 onClick={(e) => {
                   e.preventDefault();
                   const section = document.getElementById('new-arrivals-section');
-                  section?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+                  section?.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
                 }}
                 className="relative overflow-hidden rounded-2xl shadow-lg group cursor-pointer hover:shadow-2xl transition-all block"
               >
@@ -548,7 +694,7 @@ export default function HomePageRedesign() {
                     className="bg-yellow-400 hover:bg-yellow-300 text-black font-black rounded-full shadow-xl mt-2"
                     asChild
                   >
-                    <Link to="/products">
+                    <Link to="/black-friday">
                       Shop Black Friday <ArrowRight className="ml-2 h-5 w-5" />
                     </Link>
                   </Button>
@@ -559,6 +705,170 @@ export default function HomePageRedesign() {
         </div>
       </section>
       <div className="container mx-auto px-4 py-8 space-y-12">
+        {/* 🏆 TOP BASKETS - Featured Baskets */}
+        <section className="space-y-6">
+          {/* Header */}
+          <div className="flex items-center justify-between">
+            <div>
+              <h2 className="text-3xl font-black text-gray-900">Top Baskets</h2>
+              <p className="text-gray-600 mt-1">Most popular curated baskets - flying off the shelves!</p>
+            </div>
+            <Button variant="ghost" className="text-amber-600 hover:text-amber-700" asChild>
+              <Link to="/baskets">
+                View All Baskets <ChevronRight className="h-4 w-4 ml-1" />
+              </Link>
+            </Button>
+          </div>
+
+          {/* Baskets - 5-Column Layout (Resized Original Design) */}
+          <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-4">
+            {topSellerBaskets.slice(0, 5).length > 0 ? topSellerBaskets.slice(0, 5).map((basket, index) => {
+              const savings = basket.originalPrice ? basket.originalPrice - basket.price : 0;
+              const itemCount = basket.items?.length || 0;
+
+              return (
+                <Card key={basket.id} className="group hover:shadow-xl transition-all duration-300 border-2 hover:border-blue-400 bg-white overflow-hidden cursor-pointer">
+                  <div className="flex flex-col" onClick={() => handleQuickView(basket)}>
+                    {/* Image Section */}
+                    <div className="relative overflow-hidden bg-gray-50 h-40">
+                      <img 
+                        src={basket.image || 'https://images.unsplash.com/photo-1563453392212-326f5e854473?w=800&h=600&fit=crop'}
+                        alt={basket.name}
+                        className="w-full h-full object-contain group-hover:scale-105 transition-transform duration-500"
+                      />
+                      {index === 0 && (
+                        <Badge className="absolute top-2 left-2 bg-gradient-to-br from-red-600 to-red-700 text-white font-bold px-2 py-1 text-xs uppercase tracking-wider shadow-lg border border-red-500/20">
+                          🏆 #1 Best Seller
+                        </Badge>
+                      )}
+                    </div>
+
+                    {/* Content Section */}
+                    <CardContent className="p-3 flex flex-col justify-between flex-1">
+                      <div className="space-y-2">
+                        <h3 className="font-black text-sm text-gray-900 line-clamp-2">{basket.name}</h3>
+                        <p className="text-xs text-gray-600 line-clamp-2">{basket.description || 'Curated bundle of essential items'}</p>
+
+                        {/* Stats */}
+                        <div className="flex items-center gap-2 text-xs">
+                          <span className="flex items-center gap-0.5 text-gray-600">
+                            <Package className="h-3 w-3 text-blue-600" />
+                            <span className="font-semibold">{itemCount} Items</span>
+                          </span>
+                          {savings > 0 && (
+                            <span className="flex items-center gap-0.5 text-emerald-600 font-bold">
+                              <Tag className="h-3 w-3" />
+                              Save KES {savings.toLocaleString()}
+                            </span>
+                          )}
+                        </div>
+                      </div>
+
+                      {/* Pricing & Action */}
+                      <div className="mt-2 space-y-2">
+                        <div className="flex items-baseline gap-2">
+                          <span className="text-lg font-black text-emerald-600">
+                            KES {basket.price.toLocaleString()}
+                          </span>
+                          {basket.originalPrice && (
+                            <span className="text-xs text-gray-400 line-through">
+                              KES {basket.originalPrice.toLocaleString()}
+                            </span>
+                          )}
+                        </div>
+
+                        <div className="flex gap-2">
+                          <Button 
+                            className="flex-1 bg-gradient-to-r from-blue-600 to-cyan-600 hover:from-blue-700 hover:to-cyan-700 text-white font-bold shadow-md hover:shadow-lg transition-all text-xs py-1 h-8"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              handleAddToCart(basket.id);
+                            }}
+                          >
+                            <ShoppingCart className="h-3 w-3 mr-1" />
+                            Add Basket
+                          </Button>
+                          <Button 
+                            variant="outline"
+                            size="icon"
+                            className="border-blue-400 hover:bg-blue-50 h-8 w-8"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              openQuickViewModal(basket as any);
+                            }}
+                          >
+                            <Eye className="h-4 w-4 text-blue-600" />
+                          </Button>
+                        </div>
+                      </div>
+                    </CardContent>
+                  </div>
+                </Card>
+              );
+            }) : (
+              // Fallback to hotBaskets if no database baskets found
+              hotBaskets.slice(0, 5).map((basket, index) => (
+                <Card key={basket.id} className="group hover:shadow-xl transition-all duration-300 border-2 hover:border-blue-400 bg-white overflow-hidden">
+                  <div className="flex flex-col">
+                    {/* Image Section */}
+                    <div className="relative overflow-hidden bg-gray-50 h-40">
+                      <img 
+                        src={basket.image}
+                        alt={basket.name}
+                        className="w-full h-full object-contain group-hover:scale-105 transition-transform duration-500"
+                      />
+                      {index === 0 && (
+                        <Badge className="absolute top-2 left-2 bg-gradient-to-br from-red-600 to-red-700 text-white font-bold px-2 py-1 text-xs uppercase tracking-wider shadow-lg border border-red-500/20">
+                          🏆 #1 Best Seller
+                        </Badge>
+                      )}
+                    </div>
+
+                    {/* Content Section */}
+                    <CardContent className="p-3 flex flex-col justify-between flex-1">
+                      <div className="space-y-2">
+                        <h3 className="font-black text-sm text-gray-900 line-clamp-2">{basket.name}</h3>
+                        <p className="text-xs text-gray-600 line-clamp-2">{basket.description}</p>
+
+                        {/* Stats */}
+                        <div className="flex items-center gap-2 text-xs">
+                          <span className="flex items-center gap-0.5 text-gray-600">
+                            <Package className="h-3 w-3 text-blue-600" />
+                            <span className="font-semibold">{basket.itemCount} items</span>
+                          </span>
+                          <span className="flex items-center gap-0.5 text-emerald-600 font-bold">
+                            <Tag className="h-3 w-3" />
+                            Save KES {basket.savings.toLocaleString()}
+                          </span>
+                        </div>
+                      </div>
+
+                      {/* Pricing & Action */}
+                      <div className="mt-2 space-y-2">
+                        <div className="flex items-baseline gap-2">
+                          <span className="text-lg font-black text-emerald-600">
+                            KES {basket.finalPrice.toLocaleString()}
+                          </span>
+                          <span className="text-xs text-gray-400 line-through">
+                            KES {basket.totalValue.toLocaleString()}
+                          </span>
+                        </div>
+
+                        <Button 
+                          className="w-full bg-gradient-to-r from-blue-600 to-cyan-600 hover:from-blue-700 hover:to-cyan-700 text-white font-bold shadow-md hover:shadow-lg transition-all text-xs py-1 h-8"
+                          onClick={() => handleAddBasketToCart(basket)}
+                        >
+                          <ShoppingCart className="h-3 w-3 mr-1" />
+                          Add Basket
+                        </Button>
+                      </div>
+                    </CardContent>
+                  </div>
+                </Card>
+              ))
+            )}
+          </div>
+        </section>
 
         {/* 🔥 HOT DEALS */}
         <section id="hot-deals-section" className="space-y-6">
@@ -577,71 +887,89 @@ export default function HomePageRedesign() {
             </Button>
           </div>
 
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-            {hotBaskets.map((basket) => (
-              <Card key={basket.id} className="group hover:shadow-xl transition-all duration-300 border-2 hover:border-rose-400">
+          <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 xl:grid-cols-6 gap-2">
+            {promotionalHotDeals.length > 0 ? promotionalHotDeals.map((basket) => (
+              <Card key={basket.id} className="group hover:shadow-lg transition-all duration-300 border border-gray-200 hover:border-rose-400">
                 <CardContent className="p-0">
-                  {/* Image */}
+                  {/* Image with View Icon Overlay */}
                   <div className="relative overflow-hidden bg-gray-50">
                     <img 
                       src={basket.image} 
                       alt={basket.name}
-                      className="w-full h-48 object-contain group-hover:scale-105 transition-transform duration-500"
+                      className="w-full h-32 object-contain group-hover:scale-105 transition-transform duration-500"
                     />
+                    
+                    {/* View Items Overlay Icon */}
+                    <div className="absolute inset-0 bg-black/0 group-hover:bg-black/30 transition-all duration-300 flex items-center justify-center opacity-0 group-hover:opacity-100">
+                      <Button
+                        size="icon"
+                        className="h-10 w-10 rounded-full bg-white hover:bg-white text-rose-600 hover:text-rose-700 shadow-lg transform scale-0 group-hover:scale-100 transition-transform duration-300"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          openQuickViewModal(basket as any);
+                        }}
+                      >
+                        <Eye className="h-5 w-5" />
+                      </Button>
+                    </div>
+
                     {basket.badge && (
-                      <Badge className="absolute top-3 right-3 bg-gradient-to-br from-red-600 to-red-700 text-white font-bold px-3 py-1.5 text-xs uppercase tracking-wider shadow-lg border border-red-500/20">
+                      <Badge className="absolute top-1 right-1 bg-gradient-to-br from-red-600 to-red-700 text-white font-bold px-2 py-0.5 text-xs uppercase tracking-wider shadow-lg border border-red-500/20">
                         {basket.badge}
                       </Badge>
                     )}
                   </div>
 
                   {/* Content */}
-                  <div className="p-4 space-y-3">
-                    <h3 className="font-bold text-lg line-clamp-1">{basket.name}</h3>
-                    <p className="text-sm text-gray-600 line-clamp-2">{basket.description}</p>
+                  <div className="p-2 space-y-1.5">
+                    <h3 className="font-bold text-xs line-clamp-2">{basket.name}</h3>
+                    
+                    {basket.description && (
+                      <p className="text-xs text-gray-600 line-clamp-2">{basket.description}</p>
+                    )}
 
                     {/* Stats */}
-                    <div className="flex items-center gap-4 text-sm">
-                      <span className="flex items-center gap-1 text-gray-600">
-                        <Package className="h-4 w-4" />
+                    <div className="flex items-center gap-2 text-xs">
+                      <span className="flex items-center gap-0.5 text-gray-600">
+                        <Package className="h-3 w-3" />
                         {basket.itemCount} items
                       </span>
                     </div>
 
                     {/* Pricing */}
-                    <div className="space-y-2">
-                      <div className="flex items-baseline gap-2">
-                        <span className="text-2xl font-black text-emerald-600">
+                    <div className="space-y-1">
+                      <div className="flex items-baseline gap-1">
+                        <span className="text-sm font-black text-emerald-600">
                           KES {basket.finalPrice.toLocaleString()}
                         </span>
-                        <span className="text-sm text-gray-400 line-through">
-                          KES {basket.totalValue.toLocaleString()}
+                        <span className="text-xs text-gray-400 line-through">
+                          {(basket.totalValue / 1000).toFixed(0)}K
                         </span>
                       </div>
-                      <Badge className="bg-emerald-100 text-emerald-700 hover:bg-emerald-100">
-                        <Tag className="h-3 w-3 mr-1" />
-                        You Save KES {basket.savings.toLocaleString()}
-                      </Badge>
                     </div>
 
                     {/* Actions */}
-                    <div className="pt-2">
+                    <div className="pt-1">
                       <Button 
-                        className="w-full bg-gradient-to-r from-blue-600 to-cyan-600 hover:from-blue-700 hover:to-cyan-700 text-white font-bold shadow-md"
+                        className="w-full bg-gradient-to-r from-rose-600 to-red-600 hover:from-rose-700 hover:to-red-700 text-white font-bold shadow-md hover:shadow-lg transition-all text-xs py-1 h-7"
                         onClick={() => handleAddBasketToCart(basket)}
                       >
-                        <ShoppingCart className="h-4 w-4 mr-2" />
-                        Add to Cart
+                        <ShoppingCart className="h-3 w-3 mr-1" />
+                        Add
                       </Button>
                     </div>
                   </div>
                 </CardContent>
               </Card>
-            ))}
+            )) : (
+              <div className="col-span-full text-center py-12">
+                <p className="text-gray-600">No hot deals available yet. Check back soon!</p>
+              </div>
+            )}
           </div>
         </section>
 
-      {/* Quick View Modal for Top Sellers */}
+      {/* Quick View Modal for Top Baskets */}
       <Dialog open={isQuickViewOpen} onOpenChange={(open) => { if (!open) closeQuickViewModal(); setIsQuickViewOpen(open); }}>
         <DialogContent className="max-w-3xl">
           <DialogHeader>
@@ -654,24 +982,97 @@ export default function HomePageRedesign() {
               <img src={selectedBasket?.image} alt={selectedBasket?.name} className="w-full h-40 object-contain" />
             </div>
             <div className="md:col-span-2">
-              <h4 className="font-bold text-lg">Items in this basket ({selectedBasket?.itemCount || 0})</h4>
-              <div className="mt-3 space-y-2 max-h-64 overflow-auto pr-2">
-                {selectedBasket?.items && selectedBasket.items.length > 0 ? (
-                  selectedBasket.items.map((it, idx) => {
-                    const product = all?.find(p => p.id === it.productId);
+              <h4 className="font-bold text-lg mb-3">Items in this basket ({selectedBasket?.itemCount || (selectedBasket as any)?.items?.length || (selectedBasket as any)?.itemsDetail?.length || 0})</h4>
+              <div className="mt-3 space-y-2 max-h-72 overflow-y-auto pr-2">
+                {selectedBasket && (selectedBasket as any).itemsDetail && (selectedBasket as any).itemsDetail.length > 0 ? (
+                  // Use itemsDetail if available (structured data with images)
+                  (selectedBasket as any).itemsDetail.map((item: any, idx: number) => {
+                    const raw = (item.image || '').trim();
+                    const src = raw ? (raw.startsWith('http') ? raw : `/${raw}`) : '/placeholder.svg';
                     return (
-                      <div key={it.productId + '-' + idx} className="flex items-center gap-3 p-2 rounded-lg bg-white border">
-                        <img src={product?.image} alt={product?.name} className="w-12 h-12 object-contain" />
-                        <div className="flex-1">
-                          <div className="text-sm font-semibold">{product?.name || 'Product'}</div>
-                          <div className="text-xs text-gray-500">Qty: {it.quantity}</div>
+                      <div key={idx} className="flex items-start gap-3 p-3 bg-white rounded-lg border border-gray-200 hover:border-gray-300 hover:shadow-sm transition-all">
+                        <img 
+                          src={src} 
+                          alt={item.name} 
+                          className="w-14 h-14 rounded border border-gray-100 object-contain flex-shrink-0"
+                          onError={(e) => {(e.currentTarget as HTMLImageElement).src = '/placeholder.svg';}}
+                        />
+                        <div className="flex-1 min-w-0 py-0.5">
+                          <div className="text-sm font-semibold text-gray-900">{item.name || 'Product'}</div>
+                          <div className="text-xs text-gray-500">Qty: 1</div>
                         </div>
-                        <div className="text-sm font-bold">KES {product ? product.price.toLocaleString() : '0'}</div>
+                      </div>
+                    );
+                  })
+                ) : selectedBasket?.items && selectedBasket.items.length > 0 ? (
+                  // Fallback to items array with search logic
+                  selectedBasket.items.map((it: any, idx: number) => {
+                    const isObjectItem = typeof it === 'object' && it !== null;
+                    
+                    let product = null;
+                    let itemName = '';
+                    let itemQty = 1;
+                    
+                    if (isObjectItem) {
+                      product = all?.find(p => p.id === it.productId);
+                      itemName = product?.name || 'Product';
+                      itemQty = it.quantity || 1;
+                    } else if (typeof it === 'string') {
+                      itemName = it.trim();
+                      
+                      // Enhanced search strategies for string items like "Soko Maize Flour 2Kg"
+                      // Strategy 1: Exact name match
+                      product = all?.find(p => p.name && p.name.toLowerCase().trim() === itemName.toLowerCase());
+                      
+                      // Strategy 2: Remove quantity/size info and search (e.g., "Soko Maize Flour" from "Soko Maize Flour 2Kg")
+                      if (!product) {
+                        const nameWithoutSize = itemName.toLowerCase().replace(/\d+\s*(kg|g|ml|l|lb|oz)\b/gi, '').trim();
+                        product = all?.find(p => p.name && p.name.toLowerCase().trim() === nameWithoutSize);
+                      }
+                      
+                      // Strategy 3: Partial match with keywords
+                      if (!product) {
+                        const keywords = itemName.toLowerCase()
+                          .replace(/\d+\s*(kg|g|ml|l|lb|oz)\b/gi, '')
+                          .split(/\s+/)
+                          .filter((w: string) => w.length > 2);
+                        product = all?.find(p => 
+                          p.name && keywords.some((kw: string) => p.name.toLowerCase().includes(kw))
+                        );
+                      }
+                      
+                      // Strategy 4: Brand name search (first word)
+                      if (!product) {
+                        const brandName = itemName.split(/\s+/)[0].toLowerCase();
+                        product = all?.find(p => 
+                          p.name && p.name.toLowerCase().includes(brandName)
+                        );
+                      }
+                    }
+                    
+                    const itemKey = isObjectItem ? (it.productId + '-' + idx) : (idx);
+                    
+                    return (
+                      <div key={itemKey} className="flex items-start gap-3 p-3 bg-white rounded-lg border border-gray-200 hover:border-gray-300 hover:shadow-sm transition-all">
+                        {product?.image ? (
+                          <img src={product.image} alt={itemName} className="w-14 h-14 rounded border border-gray-100 object-contain flex-shrink-0" onError={(e) => {(e.currentTarget as HTMLImageElement).src = '/placeholder.svg';}} />
+                        ) : (
+                          <div className="w-14 h-14 bg-gray-100 rounded border border-gray-200 flex items-center justify-center flex-shrink-0">
+                            <Package className="w-6 h-6 text-gray-400" />
+                          </div>
+                        )}
+                        <div className="flex-1 min-w-0 py-0.5">
+                          <div className="text-sm font-semibold text-gray-900">{itemName || 'Product'}</div>
+                          <div className="text-xs text-gray-500">Qty: {itemQty}</div>
+                        </div>
+                        {product && (
+                          <div className="text-sm font-bold text-emerald-600 flex-shrink-0">KES {(product.price * itemQty).toLocaleString()}</div>
+                        )}
                       </div>
                     );
                   })
                 ) : (
-                  <div className="text-sm text-gray-500">No items available for preview.</div>
+                  <div className="text-sm text-gray-500 p-4 text-center bg-gray-50 rounded-lg">No items available for preview.</div>
                 )}
               </div>
 
@@ -690,228 +1091,8 @@ export default function HomePageRedesign() {
         </DialogContent>
       </Dialog>
 
-        {/* 🏆 TOP SELLERS - Featured Baskets */}
-        <section className="space-y-6">
-          {/* Header */}
-          <div className="flex items-center justify-between">
-            <div>
-              <h2 className="text-3xl font-black text-gray-900">Top Sellers</h2>
-              <p className="text-gray-600 mt-1">Most popular curated baskets - flying off the shelves!</p>
-            </div>
-            <Button variant="ghost" className="text-amber-600 hover:text-amber-700" asChild>
-              <Link to="/baskets">
-                View All Baskets <ChevronRight className="h-4 w-4 ml-1" />
-              </Link>
-            </Button>
-          </div>
-
-          {/* Baskets - Linear Professional Layout */}
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-            {topSellerBaskets.length > 0 ? topSellerBaskets.map((basket, index) => {
-              const savings = basket.originalPrice ? basket.originalPrice - basket.price : 0;
-              const itemCount = basket.items?.length || 0;
-
-              return (
-                <Card key={basket.id} className="group hover:shadow-xl transition-all duration-300 border-2 hover:border-blue-400 bg-white overflow-hidden cursor-pointer">
-                  <div className="flex flex-col md:flex-row" onClick={() => handleQuickView(basket)}>
-                    {/* Image Section */}
-                    <div className="relative md:w-2/5 overflow-hidden bg-gray-50">
-                      <img 
-                        src={basket.image || 'https://images.unsplash.com/photo-1563453392212-326f5e854473?w=800&h=600&fit=crop'}
-                        alt={basket.name}
-                        className="w-full h-48 md:h-full object-contain group-hover:scale-105 transition-transform duration-500"
-                      />
-                      {index === 0 && (
-                        <Badge className="absolute top-3 left-3 bg-gradient-to-br from-red-600 to-red-700 text-white font-bold px-3 py-1.5 text-xs uppercase tracking-wider shadow-lg border border-red-500/20">
-                          🏆 #1 Best Seller
-                        </Badge>
-                      )}
-                      {index === 1 && (
-                        <Badge className="absolute top-3 left-3 bg-gradient-to-br from-red-600 to-red-700 text-white font-bold px-3 py-1.5 text-xs uppercase tracking-wider shadow-lg border border-red-500/20">
-                          Premium
-                        </Badge>
-                      )}
-                    </div>
-
-                    {/* Content Section */}
-                    <CardContent className="md:w-3/5 p-6 flex flex-col justify-between">
-                      <div className="space-y-3">
-                        <h3 className="font-black text-xl text-gray-900 line-clamp-2">{basket.name}</h3>
-                        <p className="text-sm text-gray-600 line-clamp-3">{basket.description || 'Curated bundle of essential items'}</p>
-
-                        {/* Stats */}
-                        <div className="flex items-center gap-4 text-sm">
-                          <span className="flex items-center gap-1 text-gray-600">
-                            <Package className="h-4 w-4 text-blue-600" />
-                            <span className="font-semibold">{itemCount} Items</span>
-                          </span>
-                          {savings > 0 && (
-                            <span className="flex items-center gap-1 text-emerald-600 font-bold">
-                              <Tag className="h-4 w-4" />
-                              Save KES {savings.toLocaleString()}
-                            </span>
-                          )}
-                        </div>
-                      </div>
-
-                      {/* Pricing & Action */}
-                      <div className="mt-4 space-y-3">
-                        <div className="flex items-baseline gap-3">
-                          <span className="text-3xl font-black text-emerald-600">
-                            KES {basket.price.toLocaleString()}
-                          </span>
-                          {basket.originalPrice && (
-                            <span className="text-lg text-gray-400 line-through">
-                              KES {basket.originalPrice.toLocaleString()}
-                            </span>
-                          )}
-                        </div>
-
-                        <div className="flex gap-2">
-                          <Button 
-                            className="flex-1 bg-gradient-to-r from-blue-600 to-cyan-600 hover:from-blue-700 hover:to-cyan-700 text-white font-black shadow-lg hover:shadow-xl transition-all text-base py-6"
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              handleAddToCart(basket.id);
-                            }}
-                          >
-                            <ShoppingCart className="h-5 w-5 mr-2" />
-                            Add Basket
-                          </Button>
-                          <Button 
-                            variant="outline"
-                            size="icon"
-                            className="border-blue-400 hover:bg-blue-50 py-6"
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              openQuickViewModal(basket as ShoppingBasket);
-                            }}
-                          >
-                            <Eye className="h-5 w-5 text-blue-600" />
-                          </Button>
-                        </div>
-                      </div>
-                    </CardContent>
-                  </div>
-                </Card>
-              );
-            }) : (
-              // Fallback to hotBaskets if no database baskets found
-              hotBaskets.slice(0, 2).map((basket, index) => (
-                <Card key={basket.id} className="group hover:shadow-xl transition-all duration-300 border-2 hover:border-blue-400 bg-white overflow-hidden">
-                  <div className="flex flex-col md:flex-row">
-                    {/* Image Section */}
-                    <div className="relative md:w-2/5 overflow-hidden bg-gray-50">
-                      <img 
-                        src={basket.image}
-                        alt={basket.name}
-                        className="w-full h-48 md:h-full object-contain group-hover:scale-105 transition-transform duration-500"
-                      />
-                      {index === 0 && (
-                        <Badge className="absolute top-3 left-3 bg-gradient-to-br from-red-600 to-red-700 text-white font-bold px-3 py-1.5 text-xs uppercase tracking-wider shadow-lg border border-red-500/20">
-                          🏆 #1 Best Seller
-                        </Badge>
-                      )}
-                      {basket.badge && index !== 0 && (
-                        <Badge className="absolute top-3 left-3 bg-gradient-to-br from-red-600 to-red-700 text-white font-bold px-3 py-1.5 text-xs uppercase tracking-wider shadow-lg border border-red-500/20">
-                          {basket.badge}
-                        </Badge>
-                      )}
-                    </div>
-
-                    {/* Content Section */}
-                    <CardContent className="md:w-3/5 p-6 flex flex-col justify-between">
-                      <div className="space-y-3">
-                        <h3 className="font-black text-xl text-gray-900 line-clamp-2">{basket.name}</h3>
-                        <p className="text-sm text-gray-600 line-clamp-3">{basket.description}</p>
-
-                        {/* Stats */}
-                        <div className="flex items-center gap-4 text-sm">
-                          <span className="flex items-center gap-1 text-gray-600">
-                            <Package className="h-4 w-4 text-blue-600" />
-                            <span className="font-semibold">{basket.itemCount} items</span>
-                          </span>
-                          <span className="flex items-center gap-1 text-emerald-600 font-bold">
-                            <Tag className="h-4 w-4" />
-                            Save KES {basket.savings.toLocaleString()}
-                          </span>
-                        </div>
-                      </div>
-
-                      {/* Pricing & Action */}
-                      <div className="mt-4 space-y-3">
-                        <div className="flex items-baseline gap-3">
-                          <span className="text-3xl font-black text-emerald-600">
-                            KES {basket.finalPrice.toLocaleString()}
-                          </span>
-                          <span className="text-lg text-gray-400 line-through">
-                            KES {basket.totalValue.toLocaleString()}
-                          </span>
-                        </div>
-
-                        <Button 
-                          className="w-full bg-gradient-to-r from-blue-600 to-cyan-600 hover:from-blue-700 hover:to-cyan-700 text-white font-black shadow-lg hover:shadow-xl transition-all text-base py-6"
-                          onClick={() => handleAddBasketToCart(basket)}
-                        >
-                          <ShoppingCart className="h-5 w-5 mr-2" />
-                          Add Basket
-                        </Button>
-                      </div>
-                    </CardContent>
-                  </div>
-                </Card>
-              ))
-            )}
-          </div>
-
-          {/* Additional Baskets - Compact Row */}
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mt-4">
-            {hotBaskets.slice(2, 4).map((basket) => (
-              <Card key={basket.id} className="group hover:shadow-lg transition-all border hover:border-amber-300 bg-white">
-                <CardContent className="p-4 flex gap-4">
-                  {/* Small Image */}
-                  <div className="relative w-24 h-24 flex-shrink-0 overflow-hidden rounded-lg bg-gray-50">
-                    <img 
-                      src={basket.image} 
-                      alt={basket.name}
-                      className="w-full h-full object-contain group-hover:scale-105 transition-transform"
-                    />
-                  </div>
-
-                  {/* Compact Info */}
-                  <div className="flex-1 flex flex-col justify-between">
-                    <div>
-                      <h4 className="font-bold text-sm line-clamp-1 mb-1">{basket.name}</h4>
-                      <p className="text-xs text-gray-600 line-clamp-2">{basket.description}</p>
-                    </div>
-                    
-                    <div className="flex items-center justify-between mt-2">
-                      <div className="flex flex-col">
-                        <span className="text-lg font-black text-emerald-600">
-                          KES {basket.finalPrice.toLocaleString()}
-                        </span>
-                        <span className="text-xs text-gray-400 line-through">
-                          KES {basket.totalValue.toLocaleString()}
-                        </span>
-                      </div>
-                      <Button 
-                        size="sm"
-                        className="bg-gradient-to-r from-amber-500 to-yellow-500 hover:from-amber-600 hover:to-yellow-600 text-gray-900 font-bold"
-                        onClick={() => handleAddBasketToCart(basket)}
-                      >
-                        <ShoppingCart className="h-4 w-4 mr-1" />
-                        Add
-                      </Button>
-                    </div>
-                  </div>
-                </CardContent>
-              </Card>
-            ))}
-          </div>
-        </section>
-
-        {/* 🆕 NEW ARRIVALS */}
-        <section id="new-arrivals-section" className="space-y-6 rounded-2xl p-3 sm:p-6">
+        {/*  NEW ARRIVALS */}
+        <section id="new-arrivals-section" className="space-y-6">
           <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 sm:gap-0">
             <div>
               <h2 className="text-2xl sm:text-3xl font-black text-gray-900">
@@ -926,36 +1107,40 @@ export default function HomePageRedesign() {
             </Button>
           </div>
 
-          <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-2 sm:gap-3 md:gap-4">
+          <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 xl:grid-cols-6 gap-2">
             {newArrivals.map((product) => (
               <Card key={product.id} className="group hover:shadow-xl transition-all border-2 hover:border-cyan-300 bg-white">
-                <CardContent className="p-2 sm:p-4">
-                  <div className="relative mb-2 sm:mb-3">
+                <CardContent className="p-2">
+                  <div className="relative mb-1.5">
                     <img 
                       src={product.image || '/placeholder.jpg'} 
                       alt={product.name}
-                      className="w-full h-auto aspect-square sm:aspect-auto sm:h-40 lg:h-48 object-contain rounded-lg group-hover:scale-105 transition-transform"
+                      className="w-full h-auto aspect-square object-contain rounded-lg group-hover:scale-105 transition-transform"
                     />
                     {/* NEW Badge - Top Left Corner */}
-                    <div className="absolute top-1 left-1 sm:top-2 sm:left-2 bg-gradient-to-br from-red-600 to-red-700 text-white px-2 py-1 sm:px-3 sm:py-1.5 rounded-md font-bold text-xs uppercase tracking-wider shadow-lg border border-red-500/20">
+                    <div className="absolute top-1 left-1 bg-gradient-to-br from-red-600 to-red-700 text-white px-1.5 py-0.5 rounded-md font-bold text-xs uppercase tracking-wider shadow-lg border border-red-500/20">
                       NEW
                     </div>
                   </div>
 
-                  <h3 className="font-semibold text-xs sm:text-sm line-clamp-2 mb-2 min-h-[30px] sm:min-h-[40px]">{product.name}</h3>
+                  <h3 className="font-semibold text-xs line-clamp-2 mb-1 min-h-[30px]">{product.name}</h3>
                   
-                  <div className="text-xs text-gray-500 mb-2 sm:mb-3 flex items-center gap-1">
-                    <div className="w-1.5 h-1.5 sm:w-2 sm:h-2 bg-emerald-500 rounded-full animate-pulse"></div>
+                  {product.description && (
+                    <p className="text-xs text-gray-600 line-clamp-2 mb-1.5 min-h-[32px]">{product.description}</p>
+                  )}
+                  
+                  <div className="text-xs text-gray-500 mb-1.5 flex items-center gap-1">
+                    <div className="w-1 h-1 bg-emerald-500 rounded-full animate-pulse"></div>
                     In Stock
                   </div>
 
-                  <div className="flex flex-col gap-1 mb-2 sm:mb-3">
-                    <div className="flex items-baseline gap-1 sm:gap-2">
-                      <span className="text-sm sm:text-xl font-black text-emerald-600">
+                  <div className="flex flex-col gap-1 mb-1.5">
+                    <div className="flex items-baseline gap-1">
+                      <span className="text-sm font-black text-emerald-600">
                         KES {product.price.toLocaleString()}
                       </span>
                       {product.originalPrice && (
-                        <span className="text-xs sm:text-sm text-gray-400 line-through">
+                        <span className="text-xs text-gray-400 line-through">
                           {(product.originalPrice / 1000).toFixed(0)}K
                         </span>
                       )}
@@ -964,11 +1149,11 @@ export default function HomePageRedesign() {
 
                   <Button 
                     size="sm" 
-                    className="w-full bg-gradient-to-r from-blue-600 to-cyan-600 hover:from-blue-700 hover:to-cyan-700 text-white font-bold shadow-md hover:shadow-lg transition-all text-xs sm:text-sm py-1 sm:py-2"
+                    className="w-full bg-gradient-to-r from-blue-600 to-cyan-600 hover:from-blue-700 hover:to-cyan-700 text-white font-bold shadow-md hover:shadow-lg transition-all text-xs py-1 h-7"
                     onClick={() => handleAddToCart(product.id)}
                   >
-                    <ShoppingCart className="h-3 w-3 sm:h-4 sm:w-4 mr-1 sm:mr-2" />
-                    Add to Cart
+                    <ShoppingCart className="h-3 w-3 mr-1" />
+                    Add
                   </Button>
                 </CardContent>
               </Card>
@@ -1014,7 +1199,7 @@ export default function HomePageRedesign() {
         )}
 
         {/* 💥 SPECIAL DEALS FOR YOU */}
-        <section id="special-deals-section" className="space-y-6 rounded-2xl p-3 sm:p-6">
+        <section id="special-deals-section" className="space-y-6">
           <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 sm:gap-4">
             <div>
               <h2 className="text-2xl sm:text-3xl font-black flex items-center gap-2 sm:gap-3">
@@ -1023,30 +1208,9 @@ export default function HomePageRedesign() {
               </h2>
               <p className="text-xs sm:text-sm text-gray-600 mt-1">Personalized offers. Limited time. Act fast!</p>
             </div>
-            
-            {/* Countdown Timer - Responsive */}
-            <div className="flex gap-1 sm:gap-2 items-center flex-shrink-0">
-              <Clock className="h-4 w-4 sm:h-5 sm:w-5 text-rose-600 flex-shrink-0" />
-              <div className="flex gap-0.5 sm:gap-1 text-center font-mono">
-                <div className="bg-white px-1.5 sm:px-2 py-0.5 sm:py-1 rounded shadow-md border border-rose-200">
-                  <span className="text-sm sm:text-xl font-bold text-rose-600">{String(blackFridayTimeLeft.hours).padStart(2, '0')}</span>
-                  <p className="text-xs text-gray-500 leading-tight">hrs</p>
-                </div>
-                <span className="text-sm sm:text-2xl text-rose-600 self-center">:</span>
-                <div className="bg-white px-1.5 sm:px-2 py-0.5 sm:py-1 rounded shadow-md border border-rose-200">
-                  <span className="text-sm sm:text-xl font-bold text-rose-600">{String(blackFridayTimeLeft.minutes).padStart(2, '0')}</span>
-                  <p className="text-xs text-gray-500 leading-tight">min</p>
-                </div>
-                <span className="text-sm sm:text-2xl text-rose-600 self-center">:</span>
-                <div className="bg-white px-1.5 sm:px-2 py-0.5 sm:py-1 rounded shadow-md border border-rose-200">
-                  <span className="text-sm sm:text-xl font-bold text-rose-600">{String(blackFridayTimeLeft.seconds).padStart(2, '0')}</span>
-                  <p className="text-xs text-gray-500 leading-tight">sec</p>
-                </div>
-              </div>
-            </div>
           </div>
 
-          <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-2 sm:gap-3 md:gap-4">
+          <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 xl:grid-cols-6 gap-2">
             {specialDeals.map((product) => {
               const discount = product.originalPrice 
                 ? Math.round(((product.originalPrice - product.price) / product.originalPrice) * 100)
@@ -1054,53 +1218,51 @@ export default function HomePageRedesign() {
 
               return (
                 <Card key={product.id} className="group hover:shadow-lg transition-all bg-white border-2 border-rose-200 hover:border-rose-400">
-                  <CardContent className="p-2 sm:p-3">
-                    <div className="relative mb-2 sm:mb-3 bg-gray-50 rounded-lg overflow-hidden">
+                  <CardContent className="p-2">
+                    <div className="relative mb-1.5 bg-gray-50 rounded-lg overflow-hidden">
                       <img 
                         src={product.image || '/placeholder.jpg'} 
                         alt={product.name}
-                        className="w-full h-auto aspect-square sm:aspect-auto sm:h-32 lg:h-40 object-contain rounded-lg group-hover:scale-105 transition-transform"
+                        className="w-full h-auto aspect-square object-contain rounded-lg group-hover:scale-105 transition-transform"
                       />
                       {discount > 0 && (
-                        <Badge className="absolute top-1 right-1 sm:top-2 sm:right-2 bg-gradient-to-r from-rose-600 to-red-600 text-white font-bold text-xs sm:text-lg shadow-lg">
+                        <Badge className="absolute top-1 right-1 bg-gradient-to-r from-rose-600 to-red-600 text-white font-bold text-xs shadow-lg">
                           -{discount}%
                         </Badge>
                       )}
                       {isAuthenticated && (
-                        <Badge className="absolute top-1 left-1 sm:top-2 sm:left-2 bg-gradient-to-r from-amber-400 to-yellow-400 text-gray-900 font-bold text-xs sm:text-sm shadow-lg">
-                          Member Price
+                        <Badge className="absolute top-1 left-1 bg-gradient-to-r from-amber-400 to-yellow-400 text-gray-900 font-bold text-xs shadow-lg">
+                          Member
                         </Badge>
                       )}
                     </div>
 
-                    <h3 className="font-semibold text-xs sm:text-sm line-clamp-2 mb-1 sm:mb-2">{product.name}</h3>
+                    <h3 className="font-semibold text-xs line-clamp-2 mb-1">{product.name}</h3>
                     
-                    <div className="space-y-0.5 sm:space-y-1 mb-2 sm:mb-3">
-                      <div className="flex items-baseline gap-1 sm:gap-2">
-                        <span className="text-sm sm:text-xl font-black text-gray-900">
+                    {product.description && (
+                      <p className="text-xs text-gray-600 line-clamp-2 mb-1.5">{product.description}</p>
+                    )}
+                    
+                    <div className="space-y-0.5 mb-1.5">
+                      <div className="flex items-baseline gap-1">
+                        <span className="text-sm font-black text-gray-900">
                           KES {product.price.toLocaleString()}
                         </span>
                         {product.originalPrice && (
-                          <span className="text-xs sm:text-sm text-gray-400 line-through">
+                          <span className="text-xs text-gray-400 line-through">
                             {(product.originalPrice / 1000).toFixed(0)}K
                           </span>
                         )}
                       </div>
-                      {product.originalPrice && (
-                        <p className="text-xs text-emerald-600 font-semibold">
-                          Save KES {(product.originalPrice - product.price).toLocaleString()}!
-                        </p>
-                      )}
                     </div>
 
                     <Button 
                       size="sm" 
-                      className="w-full bg-gradient-to-r from-rose-600 to-red-600 hover:from-rose-700 hover:to-red-700 text-white font-black shadow-lg hover:shadow-xl transition-all transform hover:scale-105 text-xs sm:text-sm py-1 sm:py-2"
+                      className="w-full bg-gradient-to-r from-rose-600 to-red-600 hover:from-rose-700 hover:to-red-700 text-white font-bold text-xs py-1 h-7"
                       onClick={() => handleAddToCart(product.id)}
                     >
-                      <Zap className="h-3 w-3 sm:h-4 sm:w-4 mr-1 sm:mr-2" />
-                      <span className="hidden sm:inline">Grab Deal Now!</span>
-                      <span className="sm:hidden">Grab</span>
+                      <ShoppingCart className="h-3 w-3 mr-1" />
+                      Add
                     </Button>
                   </CardContent>
                 </Card>
@@ -1110,7 +1272,7 @@ export default function HomePageRedesign() {
         </section>
 
         {/* Trust Section - Simple & Elegant */}
-        <section className="p-12 md:p-16">
+        <section>
           {/* Section Header */}
           <div className="text-center mb-12">
             <h2 className="text-3xl md:text-4xl font-bold text-gray-900 mb-3">

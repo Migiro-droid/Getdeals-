@@ -21,10 +21,6 @@ export interface WalletPaymentResponse {
 }
 
 export class WalletPaymentService {
-  /**
-   * Initiate wallet-to-merchant payment using Rukisha API
-   * This transfers funds from user's GetDeals wallet to the merchant account
-   */
   static async initiatePayment(request: WalletPaymentRequest): Promise<WalletPaymentResponse> {
     try {
       console.log('💳 Initiating wallet-to-merchant payment:', request);
@@ -34,18 +30,18 @@ export class WalletPaymentService {
       });
 
       if (error) {
-        console.error('❌ Supabase function error:', error);
+        console.error(' Supabase function error:', error);
         return {
           success: false,
           error: error.message || 'Failed to process wallet payment'
         };
       }
 
-      console.log('✅ Wallet-to-merchant payment response:', data);
+      console.log(' Wallet-to-merchant payment response:', data);
       return data;
 
     } catch (error) {
-      console.error('❌ Wallet payment service error:', error);
+      console.error(' Wallet payment service error:', error);
       return {
         success: false,
         error: error instanceof Error ? error.message : 'Unknown error occurred'
@@ -55,9 +51,8 @@ export class WalletPaymentService {
 
   static async testDirectCall(request: WalletPaymentRequest): Promise<WalletPaymentResponse> {
     try {
-      console.log('🧪 Testing direct wallet payment call:', request);
+      console.log(' Testing direct wallet payment call:', request);
 
-      // Get the current session for authentication
       const { data: { session } } = await supabase.auth.getSession();
       
       if (!session?.access_token) {
@@ -77,7 +72,7 @@ export class WalletPaymentService {
       });
 
       const responseText = await response.text();
-      console.log('📡 Direct wallet payment response:', responseText);
+      console.log(' Direct wallet payment response:', responseText);
 
       if (!response.ok) {
         throw new Error(`HTTP ${response.status}: ${responseText}`);
@@ -87,7 +82,7 @@ export class WalletPaymentService {
       return result;
 
     } catch (error) {
-      console.error('❌ Direct wallet payment call error:', error);
+      console.error(' Direct wallet payment call error:', error);
       return {
         success: false,
         error: error instanceof Error ? error.message : 'Direct wallet payment call failed'

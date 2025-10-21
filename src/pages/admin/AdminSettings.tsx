@@ -161,6 +161,67 @@ export default function AdminSettings() {
           </Card>
         </div>
 
+        {/* Flash Sale Settings - Full Width */}
+        <Card className="border-0 shadow-lg hover:shadow-xl transition-shadow bg-gradient-to-br from-orange-50 to-red-50">
+          <CardHeader className="bg-gradient-to-r from-orange-100 to-red-100 border-b">
+            <div className="flex items-center justify-between">
+              <div>
+                <CardTitle className="text-xl text-orange-900">⚡ Flash Sale Settings</CardTitle>
+                <p className="text-xs text-orange-700 mt-1">Control the "Live Flash Sale" banner in hero section</p>
+              </div>
+              <Switch checked={settings.flashSaleEnabled} onCheckedChange={(v) => updateSettings({ flashSaleEnabled: v })} className="scale-125" />
+            </div>
+          </CardHeader>
+          
+          {settings.flashSaleEnabled && (
+            <CardContent className="space-y-6 pt-6">
+              <div className="grid md:grid-cols-3 gap-4">
+                <div>
+                  <Label className="font-semibold text-gray-900 block mb-2">Discount Percentage</Label>
+                  <div className="flex items-center gap-2">
+                    <Input 
+                      type="number"
+                      min="0"
+                      max="100"
+                      className="border-gray-200"
+                      value={settings.flashSaleDiscount} 
+                      onChange={(e) => updateSettings({ flashSaleDiscount: parseInt(e.target.value) || 0 })}
+                    />
+                    <span className="text-2xl font-bold text-orange-600">%</span>
+                  </div>
+                </div>
+
+                <div>
+                  <Label className="font-semibold text-gray-900 block mb-2">Start Date & Time</Label>
+                  <Input 
+                    type="datetime-local"
+                    className="border-gray-200"
+                    value={settings.flashSaleStartDate ? new Date(settings.flashSaleStartDate).toISOString().slice(0, 16) : ''}
+                    onChange={(e) => updateSettings({ flashSaleStartDate: e.target.value ? new Date(e.target.value).toISOString() : undefined })}
+                  />
+                </div>
+
+                <div>
+                  <Label className="font-semibold text-gray-900 block mb-2">End Date & Time</Label>
+                  <Input 
+                    type="datetime-local"
+                    className="border-gray-200"
+                    value={settings.flashSaleEndDate ? new Date(settings.flashSaleEndDate).toISOString().slice(0, 16) : ''}
+                    onChange={(e) => updateSettings({ flashSaleEndDate: e.target.value ? new Date(e.target.value).toISOString() : undefined })}
+                  />
+                </div>
+              </div>
+
+              <div className="p-4 bg-orange-100 border border-orange-300 rounded-lg">
+                <p className="text-sm text-orange-900 font-semibold">Preview:</p>
+                <p className="text-lg font-bold text-orange-600 mt-2">
+                  🔥 FLASH SALE LIVE — Save up to {settings.flashSaleDiscount}%!
+                </p>
+              </div>
+            </CardContent>
+          )}
+        </Card>
+
         {/* Shop by Brand Settings - Full Width */}
         <Card className="border-0 shadow-lg hover:shadow-xl transition-shadow">
           <CardHeader className="bg-gradient-to-r from-purple-50 to-purple-100 border-b cursor-pointer hover:from-purple-100 hover:to-purple-200 transition-all" onClick={() => setIsBrandGridExpanded(!isBrandGridExpanded)}>

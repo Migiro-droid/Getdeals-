@@ -114,15 +114,15 @@ export class SupabaseProductService {
 
         if (resp.ok) {
           const created = await resp.json();
-          console.log('✅ SupabaseProductService: Product added via server API');
+          console.log(' SupabaseProductService: Product added via server API');
           return this.transformSupabaseProduct(created);
         }
 
         // If server responded with an error, try direct Supabase insert as a fallback
         const text = await resp.text();
-        console.warn('⚠️ SupabaseProductService: Server API returned error:', resp.status, resp.statusText, text);
+        console.warn(' SupabaseProductService: Server API returned error:', resp.status, resp.statusText, text);
       } catch (fetchErr) {
-        console.warn('⚠️ SupabaseProductService: Server API unreachable, falling back to direct Supabase insert', fetchErr);
+        console.warn(' SupabaseProductService: Server API unreachable, falling back to direct Supabase insert', fetchErr);
       }
 
       // Fallback: direct Supabase insert (may fail due to permissions)
@@ -136,7 +136,7 @@ export class SupabaseProductService {
         .single();
 
       if (error) {
-        console.error('❌ Supabase insert error:', error);
+        console.error(' Supabase insert error:', error);
         // Throw a detailed error so the UI can show the exact Supabase message
         throw new Error(error.message || JSON.stringify(error));
       }
@@ -248,7 +248,7 @@ export class SupabaseProductService {
    * Transform Supabase data to Product interface
    */
   private static transformSupabaseProduct(supabaseProduct: any): Product {
-    return {
+    const product = {
       id: supabaseProduct.id,
       name: supabaseProduct.name,
       price: supabaseProduct.price,
@@ -259,8 +259,23 @@ export class SupabaseProductService {
       itemsDetail: supabaseProduct.itemsDetail || [],
       category: supabaseProduct.category,
       description: supabaseProduct.description,
+      isHotDeal: supabaseProduct.isHotDeal || false,
+      isNewArrival: supabaseProduct.isNewArrival || false,
+      isSpecialDeal: supabaseProduct.isSpecialDeal || false,
       // featured and inStock intentionally omitted - source-of-truth in DB schema does not include these fields for frontend
     };
+    
+    // Debug logging for loaded promotional flags
+    if (product.isHotDeal || product.isNewArrival || product.isSpecialDeal) {
+      console.log('🔍 Product with promotional flags loaded:', {
+        name: product.name,
+        isHotDeal: product.isHotDeal,
+        isNewArrival: product.isNewArrival,
+        isSpecialDeal: product.isSpecialDeal
+      });
+    }
+    
+    return product;
   }
 
   /**
@@ -278,6 +293,17 @@ export class SupabaseProductService {
     if (product.itemsDetail !== undefined) result.itemsDetail = product.itemsDetail;
     if (product.category !== undefined) result.category = product.category;
     if (product.description !== undefined) result.description = product.description;
+    if ((product as any).isHotDeal !== undefined) result.isHotDeal = (product as any).isHotDeal;
+    if ((product as any).isNewArrival !== undefined) result.isNewArrival = (product as any).isNewArrival;
+    if ((product as any).isSpecialDeal !== undefined) result.isSpecialDeal = (product as any).isSpecialDeal;
+    
+    // Debug logging for promotional flags
+    console.log('🔍 Promotional flags being saved:', {
+      isHotDeal: result.isHotDeal,
+      isNewArrival: result.isNewArrival,
+      isSpecialDeal: result.isSpecialDeal,
+      productName: result.name
+    });
   // featured/inStock intentionally not included in the insert/update payload
 
     // Ensure createdAt/updatedAt are included when creating/updating from frontend

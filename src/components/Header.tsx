@@ -88,17 +88,10 @@ export function Header() {
     return location.pathname.startsWith(href.split("?")[0]);
   };
 
-  // Handle smooth scroll to deals section on homepage
-  const handleDealsClick = (e: React.MouseEvent<HTMLAnchorElement>) => {
-    // If we're already on homepage, just scroll to the deals section
-    if (location.pathname === "/") {
-      e.preventDefault();
-      const dealsSection = document.getElementById("special-deals-section");
-      if (dealsSection) {
-        dealsSection.scrollIntoView({ behavior: "smooth", block: "start" });
-      }
-    }
-    // Otherwise, let navigation happen normally and scroll will happen on page load
+  // Handle navigation to deals page
+  const handleDealsClick = () => {
+    navigate("/deals");
+    setIsMobileMenuOpen(false);
   };
 
   // Handle category clicks with smooth transition
@@ -259,25 +252,6 @@ export function Header() {
             <nav className="flex items-center gap-6 flex-1 ml-6">
               {mainNavigation.map((item) => {
                 const active = isActive(item.href);
-                // Special handling for Deals link to scroll on homepage
-                if (item.name === "Deals") {
-                  return (
-                    <a
-                      key={item.name}
-                      href="#special-deals-section"
-                      onClick={handleDealsClick}
-                      className={`flex items-center gap-1 py-2 px-3 text-sm font-bold transition-colors rounded-md cursor-pointer ${
-                        active
-                          ? "text-primary bg-primary/10 border-b-2 border-primary"
-                          : "text-gray-700 hover:text-primary hover:bg-gray-50"
-                      }`}
-                    >
-                      {item.icon}
-                      {item.name}
-                    </a>
-                  );
-                }
-                
                 return (
                   <Link
                     key={item.name}
@@ -325,23 +299,6 @@ export function Header() {
               {/* Mobile Navigation */}
               <nav className="space-y-2">
                 {mainNavigation.map((item) => {
-                  // Special handling for Deals link on mobile
-                  if (item.name === "Deals") {
-                    return (
-                      <a
-                        key={item.name}
-                        href="#special-deals-section"
-                        onClick={(e) => {
-                          handleDealsClick(e);
-                          setIsMobileMenuOpen(false);
-                        }}
-                        className="block px-3 py-2 text-sm font-bold text-gray-700 hover:bg-primary/10 hover:text-primary rounded-md"
-                      >
-                        {item.name}
-                      </a>
-                    );
-                  }
-                  
                   return (
                     <Link
                       key={item.name}
