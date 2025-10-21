@@ -262,16 +262,28 @@ export class SupabaseProductService {
       isHotDeal: supabaseProduct.isHotDeal || false,
       isNewArrival: supabaseProduct.isNewArrival || false,
       isSpecialDeal: supabaseProduct.isSpecialDeal || false,
+      isTopBasket: supabaseProduct.isTopBasket || false,
       // featured and inStock intentionally omitted - source-of-truth in DB schema does not include these fields for frontend
     };
     
     // Debug logging for loaded promotional flags
-    if (product.isHotDeal || product.isNewArrival || product.isSpecialDeal) {
-      console.log('🔍 Product with promotional flags loaded:', {
+    const activeFlags = (product.isHotDeal ? 1 : 0) + (product.isNewArrival ? 1 : 0) + (product.isSpecialDeal ? 1 : 0) + (product.isTopBasket ? 1 : 0);
+    if (activeFlags > 1) {
+      console.warn('⚠️ MUTUAL EXCLUSIVITY VIOLATION: Product with multiple flags loaded from DB:', {
         name: product.name,
         isHotDeal: product.isHotDeal,
         isNewArrival: product.isNewArrival,
-        isSpecialDeal: product.isSpecialDeal
+        isSpecialDeal: product.isSpecialDeal,
+        isTopBasket: product.isTopBasket,
+        activeCount: activeFlags
+      });
+    } else if (activeFlags === 1) {
+      console.log('✅ Product with single promotional flag loaded:', {
+        name: product.name,
+        isHotDeal: product.isHotDeal,
+        isNewArrival: product.isNewArrival,
+        isSpecialDeal: product.isSpecialDeal,
+        isTopBasket: product.isTopBasket
       });
     }
     
@@ -293,17 +305,41 @@ export class SupabaseProductService {
     if (product.itemsDetail !== undefined) result.itemsDetail = product.itemsDetail;
     if (product.category !== undefined) result.category = product.category;
     if (product.description !== undefined) result.description = product.description;
-    if ((product as any).isHotDeal !== undefined) result.isHotDeal = (product as any).isHotDeal;
-    if ((product as any).isNewArrival !== undefined) result.isNewArrival = (product as any).isNewArrival;
-    if ((product as any).isSpecialDeal !== undefined) result.isSpecialDeal = (product as any).isSpecialDeal;
+    
+    // CRITICAL: Ensure mutual exclusivity for promotional flags
+    // Only one flag can be true at a time
+    const isHotDeal = (product as any).isHotDeal || false;
+    const isNewArrival = (product as any).isNewArrival || false;
+    const isSpecialDeal = (product as any).isSpecialDeal || false;
+    const isTopBasket = (product as any).isTopBasket || false;
+    
+    // Always save all promotional flags, but enforce only one is true
+    result.isHotDeal = isHotDeal;
+    result.isNewArrival = isNewArrival;
+    result.isSpecialDeal = isSpecialDeal;
+    result.isTopBasket = isTopBasket;
     
     // Debug logging for promotional flags
-    console.log('🔍 Promotional flags being saved:', {
-      isHotDeal: result.isHotDeal,
-      isNewArrival: result.isNewArrival,
-      isSpecialDeal: result.isSpecialDeal,
-      productName: result.name
-    });
+    const activeFlags = (isHotDeal ? 1 : 0) + (isNewArrival ? 1 : 0) + (isSpecialDeal ? 1 : 0) + (isTopBasket ? 1 : 0);
+    if (activeFlags > 1) {
+      console.warn('⚠️ MUTUAL EXCLUSIVITY VIOLATION: Product has multiple promotional flags set!', {
+        name: result.name,
+        isHotDeal: result.isHotDeal,
+        isNewArrival: result.isNewArrival,
+        isSpecialDeal: result.isSpecialDeal,
+        isTopBasket: result.isTopBasket,
+        activeCount: activeFlags
+      });
+    } else if (activeFlags === 1) {
+      console.log('✅ Promotional flag being saved (single, correct):', {
+        isHotDeal: result.isHotDeal,
+        isNewArrival: result.isNewArrival,
+        isSpecialDeal: result.isSpecialDeal,
+        isTopBasket: result.isTopBasket,
+        productName: result.name
+      });
+    }
+    
   // featured/inStock intentionally not included in the insert/update payload
 
     // Ensure createdAt/updatedAt are included when creating/updating from frontend
