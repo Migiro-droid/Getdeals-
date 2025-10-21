@@ -465,7 +465,7 @@ export default function AdminOrders() {
           </Card>
         )}
         <Dialog open={open} onOpenChange={(v) => { setOpen(v); if (!v) setActive(null); }}>
-          <DialogContent className="max-w-3xl p-0 pr-10">
+          <DialogContent className="max-w-2xl max-h-[90vh] p-0 pr-10 overflow-hidden flex flex-col">
             {active && (
               <div className="flex flex-col">
                 <div className="px-6 pt-5 pb-4 border-b bg-muted/30 pr-6">
