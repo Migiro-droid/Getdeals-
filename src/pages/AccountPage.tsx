@@ -1,5 +1,5 @@
 import { useEffect, useState, type ReactNode } from "react";
-import { User, Package, MapPin, Bell, Shield, LogOut, Truck, Phone, Mail, CalendarClock, CircleDot, Check, Star, Trash2, Plus, Power } from "lucide-react";
+import { User, Package, MapPin, Bell, Shield, LogOut, Truck, Phone, Mail, CalendarClock, CircleDot, Check, Star, Trash2, Plus, Power, AlertCircle } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -9,7 +9,7 @@ import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
 import { Switch } from "@/components/ui/switch";
 import { useOrders, type Order, type OrderStatus } from "@/contexts/OrdersContext";
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
 import { useLocation } from "react-router-dom";
 import { useAccount, type Address } from "@/contexts/AccountContext";
 import { AddressForm } from "@/components/AddressForm";
@@ -30,6 +30,7 @@ export default function AccountPage() {
   const [busy, setBusy] = useState(false);
   const [addressModalOpen, setAddressModalOpen] = useState(false);
   const [editingAddress, setEditingAddress] = useState<Address | null>(null);
+  const [signOutModalOpen, setSignOutModalOpen] = useState(false);
   
   // Password change modal state
   const [pwOpen, setPwOpen] = useState(false);
@@ -407,12 +408,7 @@ export default function AccountPage() {
                         <Button variant="outline" className="justify-start" onClick={() => setTwoFAOpen(true)}>
                           <Shield className="h-4 w-4 mr-2" /> Setup 2FA
                         </Button>
-                        <Button variant="destructive" className="justify-start" onClick={() => {
-                          if (confirm('Sign out of your account?')) { 
-                            signOut(); 
-                            toast({ title: 'Signed out successfully' }); 
-                          }
-                        }}>
+                        <Button variant="destructive" className="justify-start" onClick={() => setSignOutModalOpen(true)}>
                           <LogOut className="h-4 w-4 mr-2" /> Sign Out
                         </Button>
                       </div>
@@ -604,6 +600,41 @@ export default function AccountPage() {
             setEditingAddress(null);
           }}
         />
+      </DialogContent>
+    </Dialog>
+    {/* Sign Out Confirmation Modal */}
+    <Dialog open={signOutModalOpen} onOpenChange={setSignOutModalOpen}>
+      <DialogContent className="sm:max-w-md">
+        <DialogHeader>
+          <DialogTitle className="flex items-center gap-2">
+            <AlertCircle className="h-5 w-5 text-red-500" />
+            Confirm Sign Out
+          </DialogTitle>
+        </DialogHeader>
+        <div className="py-4">
+          <p className="text-muted-foreground">
+            Are you sure you want to sign out? You'll need to sign in again to access your account.
+          </p>
+        </div>
+        <DialogFooter className="flex gap-2 justify-end">
+          <Button 
+            variant="outline" 
+            onClick={() => setSignOutModalOpen(false)}
+          >
+            Cancel
+          </Button>
+          <Button 
+            variant="destructive"
+            onClick={() => {
+              signOut();
+              setSignOutModalOpen(false);
+              toast({ title: 'Signed out successfully', description: 'See you again soon!' });
+            }}
+          >
+            <LogOut className="h-4 w-4 mr-2" />
+            Sign Out
+          </Button>
+        </DialogFooter>
       </DialogContent>
     </Dialog>
     </>

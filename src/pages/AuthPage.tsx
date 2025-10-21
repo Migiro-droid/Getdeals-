@@ -7,7 +7,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { useToast } from '@/hooks/use-toast';
-import { LogIn, UserPlus, ArrowLeft } from 'lucide-react';
+import { LogIn, UserPlus, ArrowLeft, Loader2 } from 'lucide-react';
 
 export default function AuthPage() {
   const [signInEmail, setSignInEmail] = useState('');
@@ -97,17 +97,33 @@ export default function AuthPage() {
   return (
     <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-primary/5 via-background to-primary/10 p-4">
       <div className="w-full max-w-md">
-        <div className="flex items-center justify-center mb-8">
-          <Link to="/" className="flex items-center gap-2 text-primary hover:text-primary/80">
+        {/* Back to Home */}
+        <div className="flex items-center justify-center mb-4">
+          <Link to="/" className="flex items-center gap-2 text-primary hover:text-primary/80 text-sm transition-colors">
             <ArrowLeft className="h-4 w-4" />
             Back to Home
           </Link>
         </div>
 
-        <Card>
-          <CardHeader className="text-center">
-            <CardTitle className="text-2xl font-bold">Welcome to GetDeals Kenya</CardTitle>
-            <p className="text-muted-foreground">Sign in to your account or create a new one</p>
+        <Card className="shadow-lg border-primary/10">
+          <CardHeader className="text-center pb-6 border-b bg-gradient-to-br from-primary/5 to-transparent">
+            {/* Logo and Branding */}
+            <div className="flex flex-col items-center gap-3 mb-4">
+              <img 
+                src="/logo.png" 
+                alt="GetDeals Kenya" 
+                className="h-14 w-auto object-contain"
+                onError={(e) => {
+                  (e.currentTarget as HTMLImageElement).style.display = 'none';
+                }}
+              />
+              <div>
+                <h1 className="text-2xl font-bold">GetDeals Kenya</h1>
+                <p className="text-xs text-muted-foreground mt-1">Your trusted marketplace</p>
+              </div>
+            </div>
+            <CardTitle className="text-lg font-semibold">Welcome</CardTitle>
+            <p className="text-muted-foreground text-sm mt-2">Sign in to your account or create a new one</p>
           </CardHeader>
           <CardContent>
             <Tabs defaultValue="signin" className="w-full">
@@ -148,11 +164,16 @@ export default function AuthPage() {
                   </div>
                   <Button type="submit" className="w-full" disabled={loading}>
                     {loading ? (
-                      <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></div>
+                      <>
+                        <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                        Signing in...
+                      </>
                     ) : (
-                      <LogIn className="h-4 w-4 mr-2" />
+                      <>
+                        <LogIn className="h-4 w-4 mr-2" />
+                        Sign In
+                      </>
                     )}
-                    Sign In
                   </Button>
                 </form>
               </TabsContent>
@@ -228,11 +249,16 @@ export default function AuthPage() {
                   </div>
                   <Button type="submit" className="w-full" disabled={loading}>
                     {loading ? (
-                      <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></div>
+                      <>
+                        <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                        Creating Account...
+                      </>
                     ) : (
-                      <UserPlus className="h-4 w-4 mr-2" />
+                      <>
+                        <UserPlus className="h-4 w-4 mr-2" />
+                        Create Account
+                      </>
                     )}
-                    Create Account
                   </Button>
                 </form>
                 <p className="text-sm text-muted-foreground text-center">

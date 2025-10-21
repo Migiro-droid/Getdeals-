@@ -66,7 +66,7 @@ export const QuickMartAdminDashboard: React.FC = () => {
             {/* Header with Logo */}
             <div className="flex flex-col items-center space-y-4">
               <img 
-                src="https://tse2.mm.bing.net/th/id/OIP.JJK7Zh2Cg1CVxA98q6FZUwHaE8?cb=12&pid=ImgDet&w=178&h=118&c=7&dpr=1.5&o=7&rm=3" 
+                src="/logo.png" 
                 alt="Quickmart Logo" 
                 className="h-20 w-auto object-contain"
                 onError={(e) => {
@@ -89,7 +89,6 @@ export const QuickMartAdminDashboard: React.FC = () => {
                 <Input
                   id="email"
                   type="email"
-                  placeholder="admin@getdeals.co.ke"
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
                   disabled={loading}
@@ -107,7 +106,6 @@ export const QuickMartAdminDashboard: React.FC = () => {
                   <Input
                     id="password"
                     type={showPassword ? 'text' : 'password'}
-                    placeholder="••••••••"
                     value={password}
                     onChange={(e) => setPassword(e.target.value)}
                     disabled={loading}
