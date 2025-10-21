@@ -170,6 +170,41 @@ export function AdminProductManager() {
     const baseItemsDetail = (product.itemsDetail && product.itemsDetail.length > 0)
       ? product.itemsDetail
       : (product.tags || []).map(n => ({ name: n, image: '' }));
+    
+    // Sanitize promotional flags: If multiple are true, keep only the first one
+    // Priority: Hot Deals > New Arrivals > Special Deals > Top Baskets
+    const isHotDeal = (product as any).isHotDeal || false;
+    const isNewArrival = (product as any).isNewArrival || false;
+    const isSpecialDeal = (product as any).isSpecialDeal || false;
+    const isTopBasket = (product as any).isTopBasket || false;
+    
+    // Count active flags
+    const activeFlags = (isHotDeal ? 1 : 0) + (isNewArrival ? 1 : 0) + (isSpecialDeal ? 1 : 0) + (isTopBasket ? 1 : 0);
+    
+    // If more than one flag is active, keep only the highest priority one
+    let cleanedFlags = {
+      isHotDeal: false,
+      isNewArrival: false,
+      isSpecialDeal: false,
+      isTopBasket: false,
+    };
+    
+    if (activeFlags > 1) {
+      // Multiple flags active - apply priority logic
+      if (isHotDeal) {
+        cleanedFlags.isHotDeal = true;
+      } else if (isNewArrival) {
+        cleanedFlags.isNewArrival = true;
+      } else if (isSpecialDeal) {
+        cleanedFlags.isSpecialDeal = true;
+      } else if (isTopBasket) {
+        cleanedFlags.isTopBasket = true;
+      }
+    } else {
+      // Single or no flag - use as-is
+      cleanedFlags = { isHotDeal, isNewArrival, isSpecialDeal, isTopBasket };
+    }
+    
     setFormData({
       name: product.name,
       description: product.description || '',
@@ -179,10 +214,10 @@ export function AdminProductManager() {
       imageUrl: product.imageUrl || '',
       tags: product.tags ? product.tags.join(', ') : '',
       itemsDetail: baseItemsDetail,
-      isHotDeal: (product as any).isHotDeal || false,
-      isNewArrival: (product as any).isNewArrival || false,
-      isSpecialDeal: (product as any).isSpecialDeal || false,
-      isTopBasket: (product as any).isTopBasket || false,
+      isHotDeal: cleanedFlags.isHotDeal,
+      isNewArrival: cleanedFlags.isNewArrival,
+      isSpecialDeal: cleanedFlags.isSpecialDeal,
+      isTopBasket: cleanedFlags.isTopBasket,
     });
     setFormErrors({});
     setIsModalOpen(true);
