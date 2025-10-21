@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Zap, Gift, Flame, TrendingUp, Clock } from 'lucide-react';
 import { Link } from 'react-router-dom';
+import { useAdmin } from '@/contexts/AdminContext';
 
 interface TimeLeft {
   days: number;
@@ -11,6 +12,7 @@ interface TimeLeft {
 }
 
 export default function BlackFridayPage() {
+  const { settings } = useAdmin();
   const [timeLeft, setTimeLeft] = useState<TimeLeft>({
     days: 0,
     hours: 0,
@@ -19,26 +21,35 @@ export default function BlackFridayPage() {
   });
 
   useEffect(() => {
-    const timer = setInterval(() => {
-      // Black Friday 2025 (November 1st)
-      const blackFridayDate = new Date(2025, 10, 1); // November 1, 2025
-      const now = new Date();
-      const difference = blackFridayDate.getTime() - now.getTime();
-
-      if (difference > 0) {
-        setTimeLeft({
-          days: Math.floor(difference / (1000 * 60 * 60 * 24)),
-          hours: Math.floor((difference / (1000 * 60 * 60)) % 24),
-          minutes: Math.floor((difference / 1000 / 60) % 60),
-          seconds: Math.floor((difference / 1000) % 60),
-        });
-      } else {
-        setTimeLeft({ days: 0, hours: 0, minutes: 0, seconds: 0 });
+    const calculateTimeLeft = () => {
+      if (!settings.blackFridayCountdownDate) {
+        return { days: 0, hours: 0, minutes: 0, seconds: 0 };
       }
+
+      const targetDate = new Date(settings.blackFridayCountdownDate).getTime();
+      const now = new Date().getTime();
+      const difference = targetDate - now;
+
+      if (difference <= 0) {
+        return { days: 0, hours: 0, minutes: 0, seconds: 0 };
+      }
+
+      return {
+        days: Math.floor(difference / (1000 * 60 * 60 * 24)),
+        hours: Math.floor((difference % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60)),
+        minutes: Math.floor((difference % (1000 * 60 * 60)) / (1000 * 60)),
+        seconds: Math.floor((difference % (1000 * 60)) / 1000)
+      };
+    };
+
+    setTimeLeft(calculateTimeLeft());
+
+    const timer = setInterval(() => {
+      setTimeLeft(calculateTimeLeft());
     }, 1000);
 
     return () => clearInterval(timer);
-  }, []);
+  }, [settings.blackFridayCountdownDate]);
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-gray-950 via-red-950 to-black overflow-hidden">
