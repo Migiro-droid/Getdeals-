@@ -1,11 +1,58 @@
 import { Link } from "react-router-dom";
-import { Facebook, Twitter, Instagram, Phone, Mail, MapPin } from "lucide-react";
+import { Facebook, Twitter, Instagram, Phone, Mail, MapPin, CheckCircle } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Separator } from "@/components/ui/separator";
+import { useState } from "react";
 
 export function Footer() {
   const currentYear = new Date().getFullYear();
+  const [email, setEmail] = useState("");
+  const [showSuccess, setShowSuccess] = useState(false);
+  const [isLoading, setIsLoading] = useState(false);
+
+  const handleSubscribe = async (e: React.FormEvent) => {
+    e.preventDefault();
+    
+    if (!email || !email.includes("@")) {
+      console.log("Invalid email:", email);
+      return;
+    }
+
+    console.log("Subscribing email:", email);
+    setIsLoading(true);
+
+    try {
+      // Call the API to subscribe the user
+      const response = await fetch("/api/newsletter/subscribe", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({ email }),
+      });
+
+      console.log("API Response status:", response.status);
+      const data = await response.json();
+      console.log("API Response data:", data);
+
+      if (response.ok) {
+        console.log("Subscription successful");
+        setShowSuccess(true);
+        setEmail("");
+        // Auto-hide success message after 3 seconds
+        setTimeout(() => {
+          setShowSuccess(false);
+        }, 3000);
+      } else {
+        console.error("Subscription failed:", data);
+      }
+    } catch (error) {
+      console.error("Subscription error:", error);
+    } finally {
+      setIsLoading(false);
+    }
+  };
 
   return (
     <footer className="bg-secondary/50 border-t">
@@ -74,15 +121,39 @@ export function Footer() {
           </div>
 
           {/* Newsletter */}
-          <div className="space-y-4">
+          <div className="space-y-4 relative">
             <h3 className="font-semibold">Stay Updated</h3>
             <p className="text-sm text-muted-foreground">
               Subscribe to get special offers and updates.
             </p>
-            <div className="flex space-x-2">
-              <Input placeholder="Your email" className="flex-1" />
-              <Button size="sm">Subscribe</Button>
-            </div>
+            <form onSubmit={handleSubscribe} className="flex space-x-2">
+              <Input 
+                type="email"
+                placeholder="Your email" 
+                className="flex-1"
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
+                required
+                disabled={isLoading}
+              />
+              <Button 
+                size="sm" 
+                type="submit"
+                disabled={isLoading || !email}
+              >
+                {isLoading ? "..." : "Subscribe"}
+              </Button>
+            </form>
+
+            {/* Floating Success Message */}
+            {showSuccess && (
+              <div className="absolute -top-24 left-1/2 transform -translate-x-1/2 animate-bounce">
+                <div className="bg-green-500 text-white px-4 py-3 rounded-lg shadow-lg flex items-center gap-2 whitespace-nowrap">
+                  <CheckCircle className="h-4 w-4" />
+                  <span className="text-sm font-medium">Successfully subscribed!</span>
+                </div>
+              </div>
+            )}
           </div>
         </div>
 
