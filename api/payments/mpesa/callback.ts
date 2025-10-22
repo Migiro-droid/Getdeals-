@@ -7,6 +7,37 @@ const supabase = createClient(
   process.env.SUPABASE_SERVICE_ROLE_KEY!
 );
 
+// Helper function to send SMS notification
+async function sendSMSNotification(
+  phoneNumber: string,
+  type: 'payment-confirmation' | 'order-status',
+  data: any
+): Promise<void> {
+  try {
+    const baseUrl = process.env.FRONTEND_URL || process.env.VERCEL_URL || 'https://getdeals.co.ke';
+    const apiUrl = `${baseUrl}/api/sms/send`;
+
+    const response = await fetch(apiUrl, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        type,
+        phoneNumber,
+        data
+      })
+    });
+
+    if (!response.ok) {
+      console.error('❌ Failed to send SMS notification:', await response.text());
+    } else {
+      console.log('✅ SMS notification sent successfully');
+    }
+  } catch (error) {
+    console.error('❌ Error sending SMS notification:', error);
+    // Don't fail the callback because of SMS issues
+  }
+}
+
 interface MpesaCallbackData {
   Body: {
     stkCallback: {
@@ -95,7 +126,8 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
           processed_at: new Date().toISOString(),
           updated_at: new Date().toISOString(),
           // Ensure amount is stored if not already
-          ...(amount && { amount: Math.round(amount * 100) }), // Store in cents
+          // NOTE: M-Pesa already provides amount in cents, do not multiply by 100 again
+          ...(amount && { amount: amount }), // amount is already in cents
           // Ensure phone number is stored if not already
           ...(phoneNumber && { phone_number: phoneNumber })
         })
@@ -134,7 +166,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
         } else {
           console.log('✅ Order status updated to CONFIRMED');
           
-          // Send email notifications for successful payment
+          // Send email and SMS notifications for successful payment (with retry logic)
           try {
             // Get order and customer details for email
             const { data: orderDetails } = await supabase
@@ -151,32 +183,49 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
 
             if (orderDetails && orderDetails.customer_email) {
               const baseUrl = process.env.FRONTEND_URL || 'https://getdeals.co.ke';
+              const amountInKES = Math.round(amount / 100) || Math.round(orderDetails.total_amount / 100);
               
-              // Send payment confirmation email
-              await fetch(`${baseUrl}/api/email/send`, {
+              // Send payment confirmation email with RETRY LOGIC (HIGH PRIORITY)
+              // This ensures customers always receive payment confirmation
+              await fetch(`${baseUrl}/api/email/delivery`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({
+                  action: 'send',
                   type: 'payment-confirmation',
                   recipientEmail: orderDetails.customer_email,
+                  priority: 'high', // High priority = faster retries
                   data: {
                     customerName: orderDetails.customer_name || 'Valued Customer',
                     transactionId: mpesaReceiptNumber,
-                    amount: (amount / 100) || (orderDetails.total_amount / 100), // Convert from cents
+                    amount: amountInKES,
                     paymentMethod: 'M-Pesa',
                     orderNumber: orderDetails.order_reference || `ORD-${orderDetails.id}`,
                     paidAt: new Date().toISOString()
                   }
                 })
-              });
+              }).catch(err => console.error('Payment confirmation email error:', err));
 
-              // Send order confirmation email
-              await fetch(`${baseUrl}/api/email/send`, {
+              // Send payment confirmation SMS to customer
+              if (phoneNumber) {
+                await sendSMSNotification(phoneNumber, 'payment-confirmation', {
+                  amount: amountInKES,
+                  orderNumber: orderDetails.order_reference || `ORD-${orderDetails.id}`,
+                  method: 'M-Pesa',
+                  transactionId: mpesaReceiptNumber
+                }).catch(err => console.error('SMS error:', err));
+              }
+
+              // Send order confirmation email with RETRY LOGIC (HIGH PRIORITY)
+              // This is CRITICAL - customers must receive their order receipt
+              await fetch(`${baseUrl}/api/email/delivery`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({
+                  action: 'send',
                   type: 'order-confirmation',
                   recipientEmail: orderDetails.customer_email,
+                  priority: 'high', // High priority = faster retries
                   data: {
                     customerName: orderDetails.customer_name || 'Valued Customer',
                     orderNumber: orderDetails.order_reference || `ORD-${orderDetails.id}`,
@@ -187,13 +236,13 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
                     createdAt: orderDetails.created_at
                   }
                 })
-              });
+              }).catch(err => console.error('Order confirmation email error:', err));
 
-              console.log('📧 Email notifications sent for successful payment');
+              console.log('📧 Email notifications queued with retry logic for successful payment');
             }
           } catch (emailError) {
-            console.error('❌ Failed to send email notifications:', emailError);
-            // Don't fail the callback because of email issues
+            console.error('❌ Error preparing email notifications:', emailError);
+            // Don't fail the callback because of email issues - they'll retry via delivery service
           }
         }
 

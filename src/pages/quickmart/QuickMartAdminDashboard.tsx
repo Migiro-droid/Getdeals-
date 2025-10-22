@@ -66,7 +66,7 @@ export const QuickMartAdminDashboard: React.FC = () => {
             {/* Header with Logo */}
             <div className="flex flex-col items-center space-y-4">
               <img 
-                src="/logo.png" 
+                src="https://tse2.mm.bing.net/th/id/OIP.JJK7Zh2Cg1CVxA98q6FZUwHaE8?cb=12&pid=ImgDet&w=178&h=118&c=7&dpr=1.5&o=7&rm=3" 
                 alt="Quickmart Logo" 
                 className="h-20 w-auto object-contain"
                 onError={(e) => {
