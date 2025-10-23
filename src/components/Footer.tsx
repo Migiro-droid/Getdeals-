@@ -92,12 +92,12 @@ export function Footer() {
               <Link to="/how-it-works" className="block text-muted-foreground hover:text-primary transition-colors">
                 How It Works
               </Link>
-              <Link to="/delivery" className="block text-muted-foreground hover:text-primary transition-colors">
+              <a href="/how-it-works#delivery-pickup" className="block text-muted-foreground hover:text-primary transition-colors">
                 Delivery Options
-              </Link>
-              <Link to="/payment" className="block text-muted-foreground hover:text-primary transition-colors">
+              </a>
+              <a href="/how-it-works#secure-payment" className="block text-muted-foreground hover:text-primary transition-colors">
                 Payment Methods
-              </Link>
+              </a>
             </div>
           </div>
 
@@ -114,9 +114,9 @@ export function Footer() {
               <Link to="/about" className="block text-muted-foreground hover:text-primary transition-colors">
                 About Us
               </Link>
-              <a href="#" className="block text-muted-foreground hover:text-primary transition-colors">
+              <Link to="/return-policy" className="block text-muted-foreground hover:text-primary transition-colors">
                 Return Policy
-              </a>
+              </Link>
             </div>
           </div>
 
