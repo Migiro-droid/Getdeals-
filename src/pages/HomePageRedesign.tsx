@@ -139,7 +139,7 @@ export default function HomePageRedesign() {
           isBasket: isBasket
         } as ShoppingBasket & { isBasket: boolean };
       })
-      .slice(0, 5); // Hot Deals: Show up to 5 items
+      .slice(0, 6); // Hot Deals: Show up to 6 items
   }, [all]);
 
   // New Arrivals - products marked as isNewArrival ONLY (no other promotional flags)
@@ -992,8 +992,8 @@ export default function HomePageRedesign() {
 
           <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 xl:grid-cols-6 gap-2">
             {promotionalHotDeals.length > 0 ? promotionalHotDeals.map((basket) => (
-              <Card key={basket.id} className="group hover:shadow-lg transition-all duration-300 border border-gray-200 hover:border-rose-400">
-                <CardContent className="p-0">
+              <Card key={basket.id} className="group hover:shadow-lg transition-all duration-300 border border-gray-200 hover:border-rose-400 flex flex-col">
+                <CardContent className="p-0 flex flex-col h-full">
                   {/* Image with View Icon Overlay */}
                   <div className="relative overflow-hidden bg-gray-50">
                     <img 
@@ -1024,15 +1024,15 @@ export default function HomePageRedesign() {
                   </div>
 
                   {/* Content */}
-                  <div className="p-2 space-y-1.5">
-                    <h3 className="font-bold text-xs line-clamp-2">{basket.name}</h3>
+                  <div className="p-2 flex flex-col flex-grow">
+                    <h3 className="font-bold text-xs line-clamp-2 min-h-[32px]">{basket.name}</h3>
                     
                     {basket.description && (
-                      <p className="text-xs text-gray-600 line-clamp-2">{basket.description}</p>
+                      <p className="text-xs text-gray-600 line-clamp-2 min-h-[32px] mb-1.5">{basket.description}</p>
                     )}
 
                     {/* Stats */}
-                    <div className="flex items-center gap-2 text-xs">
+                    <div className="flex items-center gap-2 text-xs mb-1.5">
                       <span className="flex items-center gap-0.5 text-gray-600">
                         <Package className="h-3 w-3" />
                         {basket.itemCount} items
@@ -1040,7 +1040,7 @@ export default function HomePageRedesign() {
                     </div>
 
                     {/* Pricing */}
-                    <div className="space-y-1">
+                    <div className="space-y-1 mb-1.5">
                       <div className="flex items-baseline gap-1">
                         <span className="text-sm font-black text-emerald-600">
                           KES {basket.finalPrice.toLocaleString()}
@@ -1051,8 +1051,8 @@ export default function HomePageRedesign() {
                       </div>
                     </div>
 
-                    {/* Actions */}
-                    <div className="pt-1">
+                    {/* Actions - Push to bottom */}
+                    <div className="mt-auto">
                       <Button 
                         className="w-full bg-gradient-to-r from-rose-600 to-red-600 hover:from-rose-700 hover:to-red-700 text-white font-bold shadow-md hover:shadow-lg transition-all text-xs py-1 h-7"
                         onClick={() => handleAddBasketToCart(basket)}
@@ -1181,6 +1181,25 @@ export default function HomePageRedesign() {
                   <div className="text-sm text-gray-500 p-4 text-center bg-gray-50 rounded-lg">No items available for preview.</div>
                 )}
               </div>
+              
+              {/* Pricing and Savings for Baskets */}
+              <div className="mt-4 grid grid-cols-2 gap-3">
+                <div className="p-4 bg-emerald-50 rounded-lg border border-emerald-200">
+                  <div className="text-xs text-emerald-600 font-semibold mb-1">Total Price</div>
+                  <div className="text-xl font-black text-emerald-700">
+                    KES {selectedBasket?.finalPrice?.toLocaleString() || '0'}
+                  </div>
+                </div>
+                
+                {selectedBasket && selectedBasket.totalValue > selectedBasket.finalPrice && (
+                  <div className="p-4 bg-rose-50 rounded-lg border border-rose-200">
+                    <div className="text-xs text-rose-600 font-semibold mb-1">You Save</div>
+                    <div className="text-xl font-black text-rose-700">
+                      KES {(selectedBasket.totalValue - selectedBasket.finalPrice).toLocaleString()}
+                    </div>
+                  </div>
+                )}
+              </div>
                 </>
               ) : (
                 // Single product view (not a basket)
@@ -1255,8 +1274,8 @@ export default function HomePageRedesign() {
 
           <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 xl:grid-cols-6 gap-2">
             {promotionalNewArrivals.length > 0 ? promotionalNewArrivals.map((basket) => (
-              <Card key={basket.id} className="group hover:shadow-xl transition-all border-2 hover:border-cyan-300 bg-white">
-                <CardContent className="p-2">
+              <Card key={basket.id} className="group hover:shadow-xl transition-all border-2 hover:border-cyan-300 bg-white flex flex-col">
+                <CardContent className="p-2 flex flex-col h-full">
                   <div className="relative mb-1.5">
                     <img 
                       src={basket.image || '/placeholder.jpg'} 
@@ -1286,7 +1305,7 @@ export default function HomePageRedesign() {
                     )}
                   </div>
 
-                  <h3 className="font-semibold text-xs line-clamp-2 mb-1 min-h-[30px]">{basket.name}</h3>
+                  <h3 className="font-semibold text-xs line-clamp-2 mb-1 min-h-[32px]">{basket.name}</h3>
                   
                   {basket.description && (
                     <p className="text-xs text-gray-600 line-clamp-2 mb-1.5 min-h-[32px]">{basket.description}</p>
@@ -1312,14 +1331,17 @@ export default function HomePageRedesign() {
                     </div>
                   </div>
 
-                  <Button 
-                    size="sm" 
-                    className="w-full bg-gradient-to-r from-blue-600 to-cyan-600 hover:from-blue-700 hover:to-cyan-700 text-white font-bold shadow-md hover:shadow-lg transition-all text-xs py-1 h-7"
-                    onClick={() => basket.isBasket ? handleAddBasketToCart(basket) : handleAddToCart(basket.id)}
-                  >
-                    <ShoppingCart className="h-3 w-3 mr-1" />
-                    Add
-                  </Button>
+                  {/* Push button to bottom */}
+                  <div className="mt-auto">
+                    <Button 
+                      size="sm" 
+                      className="w-full bg-gradient-to-r from-blue-600 to-cyan-600 hover:from-blue-700 hover:to-cyan-700 text-white font-bold shadow-md hover:shadow-lg transition-all text-xs py-1 h-7"
+                      onClick={() => basket.isBasket ? handleAddBasketToCart(basket) : handleAddToCart(basket.id)}
+                    >
+                      <ShoppingCart className="h-3 w-3 mr-1" />
+                      Add
+                    </Button>
+                  </div>
                 </CardContent>
               </Card>
             )) : (
@@ -1386,8 +1408,8 @@ export default function HomePageRedesign() {
                 : 0;
 
               return (
-                <Card key={basket.id} className="group hover:shadow-lg transition-all bg-white border-2 border-rose-200 hover:border-rose-400">
-                  <CardContent className="p-2">
+                <Card key={basket.id} className="group hover:shadow-lg transition-all bg-white border-2 border-rose-200 hover:border-rose-400 flex flex-col">
+                  <CardContent className="p-2 flex flex-col h-full">
                     <div className="relative mb-1.5 bg-gray-50 rounded-lg overflow-hidden">
                       <img 
                         src={basket.image || '/placeholder.jpg'} 
@@ -1421,10 +1443,10 @@ export default function HomePageRedesign() {
                       )}
                     </div>
 
-                    <h3 className="font-semibold text-xs line-clamp-2 mb-1">{basket.name}</h3>
+                    <h3 className="font-semibold text-xs line-clamp-2 mb-1 min-h-[32px]">{basket.name}</h3>
                     
                     {basket.description && (
-                      <p className="text-xs text-gray-600 line-clamp-2 mb-1.5">{basket.description}</p>
+                      <p className="text-xs text-gray-600 line-clamp-2 mb-1.5 min-h-[32px]">{basket.description}</p>
                     )}
                     
                     {basket.isBasket && (
@@ -1447,14 +1469,17 @@ export default function HomePageRedesign() {
                       </div>
                     </div>
 
-                    <Button 
-                      size="sm" 
-                      className="w-full bg-gradient-to-r from-rose-600 to-red-600 hover:from-rose-700 hover:to-red-700 text-white font-bold text-xs py-1 h-7"
-                      onClick={() => basket.isBasket ? handleAddBasketToCart(basket) : handleAddToCart(basket.id)}
-                    >
-                      <ShoppingCart className="h-3 w-3 mr-1" />
-                      Add
-                    </Button>
+                    {/* Push button to bottom */}
+                    <div className="mt-auto">
+                      <Button 
+                        size="sm" 
+                        className="w-full bg-gradient-to-r from-rose-600 to-red-600 hover:from-rose-700 hover:to-red-700 text-white font-bold text-xs py-1 h-7"
+                        onClick={() => basket.isBasket ? handleAddBasketToCart(basket) : handleAddToCart(basket.id)}
+                      >
+                        <ShoppingCart className="h-3 w-3 mr-1" />
+                        Add
+                      </Button>
+                    </div>
                   </CardContent>
                 </Card>
               );
