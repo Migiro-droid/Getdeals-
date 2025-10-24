@@ -839,11 +839,6 @@ export default function HomePageRedesign() {
                         alt={basket.name}
                         className="w-full h-full object-contain group-hover:scale-105 transition-transform duration-500"
                       />
-                      {index === 0 && (
-                        <Badge className="absolute top-2 left-2 bg-gradient-to-br from-red-600 to-red-700 text-white font-bold px-2 py-1 text-xs uppercase tracking-wider shadow-lg border border-red-500/20">
-                          🏆 #1 Best Seller
-                        </Badge>
-                      )}
                     </div>
 
                     {/* Content Section */}
@@ -920,11 +915,6 @@ export default function HomePageRedesign() {
                         alt={basket.name}
                         className="w-full h-full object-contain group-hover:scale-105 transition-transform duration-500"
                       />
-                      {index === 0 && (
-                        <Badge className="absolute top-2 left-2 bg-gradient-to-br from-red-600 to-red-700 text-white font-bold px-2 py-1 text-xs uppercase tracking-wider shadow-lg border border-red-500/20">
-                          🏆 #1 Best Seller
-                        </Badge>
-                      )}
                     </div>
 
                     {/* Content Section */}
@@ -1183,22 +1173,30 @@ export default function HomePageRedesign() {
               </div>
               
               {/* Pricing and Savings for Baskets */}
-              <div className="mt-4 grid grid-cols-2 gap-3">
-                <div className="p-4 bg-emerald-50 rounded-lg border border-emerald-200">
-                  <div className="text-xs text-emerald-600 font-semibold mb-1">Total Price</div>
-                  <div className="text-xl font-black text-emerald-700">
-                    KES {selectedBasket?.finalPrice?.toLocaleString() || '0'}
+              <div className="mt-4 flex items-center justify-between">
+                <div className="space-y-1">
+                  <div className="flex items-center gap-2">
+                    <span className="text-2xl font-bold">
+                      KES {(selectedBasket?.finalPrice ?? (selectedBasket as any)?.price ?? 0).toLocaleString()}
+                    </span>
+                    {selectedBasket && (
+                      (selectedBasket.totalValue ?? (selectedBasket as any).originalPrice ?? 0) > 
+                      (selectedBasket.finalPrice ?? (selectedBasket as any).price ?? 0)
+                    ) && (
+                      <span className="text-lg line-through text-muted-foreground">
+                        KES {(selectedBasket.totalValue ?? (selectedBasket as any).originalPrice ?? 0).toLocaleString()}
+                      </span>
+                    )}
                   </div>
+                  {selectedBasket && (
+                    (selectedBasket.totalValue ?? (selectedBasket as any).originalPrice ?? 0) > 
+                    (selectedBasket.finalPrice ?? (selectedBasket as any).price ?? 0)
+                  ) && (
+                    <Badge variant="destructive" className="text-sm">
+                      Save {Math.round((((selectedBasket.totalValue ?? (selectedBasket as any).originalPrice ?? 0) - (selectedBasket.finalPrice ?? (selectedBasket as any).price ?? 0)) / (selectedBasket.totalValue ?? (selectedBasket as any).originalPrice ?? 1)) * 100)}%
+                    </Badge>
+                  )}
                 </div>
-                
-                {selectedBasket && selectedBasket.totalValue > selectedBasket.finalPrice && (
-                  <div className="p-4 bg-rose-50 rounded-lg border border-rose-200">
-                    <div className="text-xs text-rose-600 font-semibold mb-1">You Save</div>
-                    <div className="text-xl font-black text-rose-700">
-                      KES {(selectedBasket.totalValue - selectedBasket.finalPrice).toLocaleString()}
-                    </div>
-                  </div>
-                )}
               </div>
                 </>
               ) : (
@@ -1211,22 +1209,32 @@ export default function HomePageRedesign() {
                       <div className="text-base text-gray-900">{selectedBasket?.description || 'No description available.'}</div>
                     </div>
                     
-                    <div className="grid grid-cols-2 gap-3">
-                      <div className="p-4 bg-emerald-50 rounded-lg border border-emerald-200">
-                        <div className="text-xs text-emerald-600 font-semibold mb-1">Price</div>
-                        <div className="text-xl font-black text-emerald-700">
-                          KES {selectedBasket?.finalPrice?.toLocaleString() || '0'}
+                    {/* Pricing for Single Products */}
+                    <div className="flex items-center justify-between">
+                      <div className="space-y-1">
+                        <div className="flex items-center gap-2">
+                          <span className="text-2xl font-bold">
+                            KES {(selectedBasket?.finalPrice ?? (selectedBasket as any)?.price ?? 0).toLocaleString()}
+                          </span>
+                          {selectedBasket && (
+                            (selectedBasket as any).totalValue ?? (selectedBasket as any).originalPrice ?? 0
+                          ) > (
+                            (selectedBasket as any).finalPrice ?? (selectedBasket as any).price ?? 0
+                          ) && (
+                            <span className="text-lg line-through text-muted-foreground">
+                              KES {((selectedBasket as any).totalValue ?? (selectedBasket as any).originalPrice ?? 0).toLocaleString()}
+                            </span>
+                          )}
                         </div>
+                        {selectedBasket && (
+                          ((selectedBasket as any).totalValue ?? (selectedBasket as any).originalPrice ?? 0) > 
+                          ((selectedBasket as any).finalPrice ?? (selectedBasket as any).price ?? 0)
+                        ) && (
+                          <Badge variant="destructive" className="text-sm">
+                            Save {Math.round(((((selectedBasket as any).totalValue ?? (selectedBasket as any).originalPrice ?? 0) - ((selectedBasket as any).finalPrice ?? (selectedBasket as any).price ?? 0)) / ((selectedBasket as any).totalValue ?? (selectedBasket as any).originalPrice ?? 1)) * 100)}%
+                          </Badge>
+                        )}
                       </div>
-                      
-                      {selectedBasket && (selectedBasket as any).totalValue > (selectedBasket as any).finalPrice && (
-                        <div className="p-4 bg-rose-50 rounded-lg border border-rose-200">
-                          <div className="text-xs text-rose-600 font-semibold mb-1">You Save</div>
-                          <div className="text-xl font-black text-rose-700">
-                            KES {((selectedBasket as any).totalValue - (selectedBasket as any).finalPrice).toLocaleString()}
-                          </div>
-                        </div>
-                      )}
                     </div>
                     
                     {selectedBasket?.badge && (

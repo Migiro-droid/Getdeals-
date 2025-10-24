@@ -79,7 +79,7 @@ export default function BlackFridayPage() {
           </p>
 
           <p className="text-base md:text-lg text-gray-400 max-w-2xl mx-auto">
-            🎉 The most anticipated shopping event of the year is coming! Get ready for amazing deals on thousands of products.
+             The most anticipated shopping event of the year is coming! Get ready for amazing deals on thousands of products.
           </p>
         </div>
 
@@ -244,7 +244,7 @@ export default function BlackFridayPage() {
             Be the first to know about Black Friday deals!
           </p>
           <p className="text-red-500 font-bold text-xs md:text-sm">
-            🔔 Mark your calendar • Set reminders • Tell your friends
+             Mark your calendar • Set reminders • Tell your friends
           </p>
         </div>
       </div>
