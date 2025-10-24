@@ -7,7 +7,7 @@ const SUPABASE_URL = process.env.VITE_SUPABASE_URL || 'https://fxyifnckgllxqbgge
 const SUPABASE_SERVICE_KEY = process.env.VITE_SUPABASE_SERVICE_ROLE_KEY || 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImZ4eWlmbmNrZ2xseHFiZ2dlZ3R3Iiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTc1NjI3Mzc2NSwiZXhwIjoyMDcxODQ5NzY1fQ.O37uiOPHKQoFOCUY4aor3wxYsYEUn10m0fH9h0uHoAU';
 
 if (SUPABASE_SERVICE_KEY === 'YOUR_SERVICE_ROLE_KEY_HERE') {
-  console.error('❌ Please set your SERVICE ROLE KEY:');
+  console.error(' Please set your SERVICE ROLE KEY:');
   console.error('   Get it from: https://supabase.com/dashboard/project/fxyifnckgllxqbggegtw/settings/api');
   console.error('   Look for: service_role key (NOT the anon key)');
   console.error('');
@@ -22,23 +22,23 @@ const supabase = createClient(SUPABASE_URL, SUPABASE_SERVICE_KEY);
 
 async function createAdminUser() {
   try {
-    console.log('🔐 Creating admin user for production...');
+    console.log(' Creating admin user for production...');
 
     // Check if admin user already exists
     const { data: existingUsers, error: checkError } = await supabase.auth.admin.listUsers();
 
     if (checkError) {
-      console.error('❌ Error checking existing users:', checkError);
+      console.error(' Error checking existing users:', checkError);
       return;
     }
 
     const existingAdmin = existingUsers.users.find(user => user.email === 'admin@getdeals.co.ke');
 
     if (existingAdmin) {
-      console.log('✅ Admin user already exists!');
-      console.log('📧 Email: admin@getdeals.co.ke');
-      console.log('🔑 Password: admin123456');
-      console.log('👑 Role: admin');
+      console.log('Admin user already exists!');
+      console.log('Email: admin@getdeals.co.ke');
+      console.log('Password: admin123456');
+      console.log('Role: admin');
 
       // Update the user metadata to ensure admin role
       const { error: updateError } = await supabase.auth.admin.updateUserById(existingAdmin.id, {
@@ -50,9 +50,9 @@ async function createAdminUser() {
       });
 
       if (updateError) {
-        console.error('⚠️  Could not update user metadata:', updateError);
+        console.error(' Could not update user metadata:', updateError);
       } else {
-        console.log('✅ Admin role confirmed');
+        console.log(' Admin role confirmed');
       }
 
       return;
@@ -71,15 +71,15 @@ async function createAdminUser() {
     });
 
     if (authError) {
-      console.error('❌ Auth creation error:', authError);
+      console.error(' Auth creation error:', authError);
       return;
     }
 
-    console.log('✅ Admin user created successfully!');
-    console.log('📧 Email: admin@getdeals.co.ke');
-    console.log('🔑 Password: admin123456');
-    console.log('👑 Role: admin');
-    console.log('🆔 User ID:', authData.user?.id);
+    console.log(' Admin user created successfully!');
+    console.log(' Email: admin@getdeals.co.ke');
+    console.log(' Password: admin123456');
+    console.log(' Role: admin');
+    console.log(' User ID:', authData.user?.id);
 
     // Try to create database profile
     try {
@@ -96,21 +96,21 @@ async function createAdminUser() {
         });
 
       if (profileError) {
-        console.log('⚠️  Could not create database profile:', profileError.message);
+        console.log('Could not create database profile:', profileError.message);
         console.log('This is normal if the profiles table doesn\'t exist yet');
       } else {
-        console.log('✅ Database profile created');
+        console.log(' Database profile created');
       }
     } catch (dbError) {
-      console.log('⚠️  Database profile creation skipped:', dbError.message);
+      console.log('  Database profile creation skipped:', dbError.message);
     }
 
     console.log('\n🚀 Admin user is ready! You can now sign in with:');
-    console.log('📧 admin@getdeals.co.ke');
-    console.log('🔑 admin123456');
+    console.log(' admin@getdeals.co.ke');
+    console.log(' admin123456');
 
   } catch (error) {
-    console.error('❌ Error creating admin user:', error);
+    console.error(' Error creating admin user:', error);
   }
 }
 

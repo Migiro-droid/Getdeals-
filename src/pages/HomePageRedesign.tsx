@@ -32,6 +32,68 @@ interface ShoppingBasket {
   isBasket?: boolean; // Track if it's a basket or single item
 }
 
+// Counter Component with animation
+interface CounterProps {
+  target: number;
+  suffix?: string;
+  duration?: number;
+  className?: string;
+}
+
+function Counter({ target, suffix = "", duration = 2000, className = "" }: CounterProps) {
+  const [count, setCount] = useState(0);
+  const [hasStarted, setHasStarted] = useState(false);
+
+  useEffect(() => {
+    if (!hasStarted) return;
+
+    const startTime = Date.now();
+    const interval = setInterval(() => {
+      const elapsed = Date.now() - startTime;
+      const progress = Math.min(elapsed / duration, 1);
+      
+      // Easing function for smooth animation
+      const easeOutQuad = 1 - Math.pow(1 - progress, 2);
+      const currentCount = Math.floor(easeOutQuad * target);
+      
+      setCount(currentCount);
+
+      if (progress === 1) {
+        clearInterval(interval);
+        setCount(target);
+      }
+    }, 16); // ~60fps
+
+    return () => clearInterval(interval);
+  }, [hasStarted, target, duration]);
+
+  useEffect(() => {
+    // Trigger animation when component mounts and becomes visible
+    const observer = new IntersectionObserver(
+      ([entry]) => {
+        if (entry.isIntersecting && !hasStarted) {
+          setHasStarted(true);
+          observer.disconnect();
+        }
+      },
+      { threshold: 0.1 }
+    );
+
+    const element = document.getElementById("counter-" + target);
+    if (element) {
+      observer.observe(element);
+    }
+
+    return () => observer.disconnect();
+  }, [hasStarted, target]);
+
+  return (
+    <span id={"counter-" + target} className={className}>
+      {count.toLocaleString()}{suffix}
+    </span>
+  );
+}
+
 export default function HomePageRedesign() {
   const { all } = useProducts();
   const { isAuthenticated } = useAuth();
@@ -39,12 +101,17 @@ export default function HomePageRedesign() {
   const { toast } = useToast();
   const { settings } = useAdmin();
 
-  // Hot Deals - products marked as isHotDeal
+  // Hot Deals - products marked as isHotDeal ONLY (no other promotional flags)
   const promotionalHotDeals = useMemo(() => {
     if (!all || all.length === 0) return [];
     
-    const filtered = all.filter(p => (p as any).isHotDeal === true);
-    console.log('🔥 Hot Deals filtered:', filtered.length, 'products with isHotDeal=true out of', all.length, 'total products');
+    const filtered = all.filter(p => 
+      (p as any).isHotDeal === true && 
+      (p as any).isNewArrival !== true && 
+      (p as any).isSpecialDeal !== true && 
+      (p as any).isTopBasket !== true
+    );
+    console.log('🔥 Hot Deals filtered:', filtered.length, 'products with ONLY isHotDeal=true out of', all.length, 'total products');
     
     return filtered
       .map(product => {
@@ -75,12 +142,17 @@ export default function HomePageRedesign() {
       .slice(0, 4);
   }, [all]);
 
-  // New Arrivals (by promotional tag) - products marked as isNewArrival
+  // New Arrivals - products marked as isNewArrival ONLY (no other promotional flags)
   const promotionalNewArrivals = useMemo(() => {
     if (!all || all.length === 0) return [];
     
     return all
-      .filter(p => (p as any).isNewArrival === true)
+      .filter(p => 
+        (p as any).isNewArrival === true && 
+        (p as any).isHotDeal !== true && 
+        (p as any).isSpecialDeal !== true && 
+        (p as any).isTopBasket !== true
+      )
       .map(product => {
         const savings = product.originalPrice ? product.originalPrice - product.price : 0;
         const itemCount = product.items?.length || 1;
@@ -103,12 +175,17 @@ export default function HomePageRedesign() {
       .slice(0, 4);
   }, [all]);
 
-  // Special Deals (by promotional tag) - products marked as isSpecialDeal
+  // Special Deals - products marked as isSpecialDeal ONLY (no other promotional flags)
   const promotionalSpecialDeals = useMemo(() => {
     if (!all || all.length === 0) return [];
     
     return all
-      .filter(p => (p as any).isSpecialDeal === true)
+      .filter(p => 
+        (p as any).isSpecialDeal === true && 
+        (p as any).isHotDeal !== true && 
+        (p as any).isNewArrival !== true && 
+        (p as any).isTopBasket !== true
+      )
       .map(product => {
         const savings = product.originalPrice ? product.originalPrice - product.price : 0;
         const itemCount = product.items?.length || 1;
@@ -198,15 +275,22 @@ export default function HomePageRedesign() {
       .slice(0, 8);
   }, [all]);
 
-  // Fetch basket products for Top Sellers
+  // Fetch basket products for Top Sellers - products marked as isTopBasket ONLY (no other promotional flags)
   const topSellerBaskets = useMemo(() => {
     if (!all || all.length === 0) return [];
     
-    // Filter for products that are baskets (contain multiple items)
-    const baskets = all.filter(p => p.items && p.items.length > 0);
+    // Filter for products that have isTopBasket flag and NO other promotional flags
+    const filteredBaskets = all.filter(p => 
+      (p as any).isTopBasket === true &&
+      (p as any).isHotDeal !== true &&
+      (p as any).isNewArrival !== true &&
+      (p as any).isSpecialDeal !== true
+    );
     
-    // Sort to prioritize Premium Shopper 2 and Budget Shopper 1
-    const sortedBaskets = baskets.sort((a, b) => {
+    console.log('🏆 Top Baskets filtered:', filteredBaskets.length, 'products with ONLY isTopBasket=true');
+    
+    // Sort to prioritize Premium Shopper 2 and Budget Shopper 1 (create new array to avoid mutation)
+    const sortedBaskets = [...filteredBaskets].sort((a, b) => {
       // Check if products contain "shopper" in their names
       const aIsShopper = a.name.toLowerCase().includes('shopper');
       const bIsShopper = b.name.toLowerCase().includes('shopper');
@@ -226,7 +310,7 @@ export default function HomePageRedesign() {
       return 0;
     });
     
-    return sortedBaskets.slice(0, 2);
+    return sortedBaskets.slice(0, 5);
   }, [all]);
 
   const newArrivals = useMemo(() => {
@@ -1117,6 +1201,19 @@ export default function HomePageRedesign() {
                       alt={product.name}
                       className="w-full h-auto aspect-square object-contain rounded-lg group-hover:scale-105 transition-transform"
                     />
+                    
+                    {/* View Items Overlay Icon */}
+                    <div className="absolute inset-0 bg-black/0 group-hover:bg-black/30 transition-all duration-300 flex items-center justify-center opacity-0 group-hover:opacity-100 rounded-lg">
+                      <Link to="/baskets">
+                        <Button
+                          size="icon"
+                          className="h-10 w-10 rounded-full bg-white hover:bg-white text-cyan-600 hover:text-cyan-700 shadow-lg transform scale-0 group-hover:scale-100 transition-transform duration-300"
+                        >
+                          <Eye className="h-5 w-5" />
+                        </Button>
+                      </Link>
+                    </div>
+                    
                     {/* NEW Badge - Top Left Corner */}
                     <div className="absolute top-1 left-1 bg-gradient-to-br from-red-600 to-red-700 text-white px-1.5 py-0.5 rounded-md font-bold text-xs uppercase tracking-wider shadow-lg border border-red-500/20">
                       NEW
@@ -1225,6 +1322,19 @@ export default function HomePageRedesign() {
                         alt={product.name}
                         className="w-full h-auto aspect-square object-contain rounded-lg group-hover:scale-105 transition-transform"
                       />
+                      
+                      {/* View Items Overlay Icon */}
+                      <div className="absolute inset-0 bg-black/0 group-hover:bg-black/30 transition-all duration-300 flex items-center justify-center opacity-0 group-hover:opacity-100 rounded-lg">
+                        <Link to="/baskets">
+                          <Button
+                            size="icon"
+                            className="h-10 w-10 rounded-full bg-white hover:bg-white text-rose-600 hover:text-rose-700 shadow-lg transform scale-0 group-hover:scale-100 transition-transform duration-300"
+                          >
+                            <Eye className="h-5 w-5" />
+                          </Button>
+                        </Link>
+                      </div>
+                      
                       {discount > 0 && (
                         <Badge className="absolute top-1 right-1 bg-gradient-to-r from-rose-600 to-red-600 text-white font-bold text-xs shadow-lg">
                           -{discount}%
@@ -1321,7 +1431,9 @@ export default function HomePageRedesign() {
               <div className="inline-flex items-center justify-center w-20 h-20 bg-purple-50 rounded-2xl mb-4 group-hover:bg-purple-100 transition-colors">
                 <Users className="h-10 w-10 text-purple-600" />
               </div>
-              <h3 className="text-lg font-bold text-gray-900 mb-2">100K+ Customers</h3>
+              <h3 className="text-lg font-bold text-gray-900 mb-2">
+                <Counter target={100000} suffix="K+" duration={2000} className="text-purple-600 font-bold" /> Customers
+              </h3>
               <p className="text-gray-600 text-sm leading-relaxed">
                 Trusted nationwide
               </p>

@@ -215,7 +215,7 @@ export const QuickMartAdminProducts: React.FC = () => {
       <div className="flex items-center justify-between mb-6 pb-4 border-b">
         <div>
           <div className="flex items-center gap-2 mb-1">
-            <h2 className="text-2xl font-bold">📦 Products Management</h2>
+            <h2 className="text-2xl font-bold">Products Management</h2>
           </div>
           <p className="text-sm text-gray-600">Add, edit, and manage your Quickmart product inventory</p>
         </div>

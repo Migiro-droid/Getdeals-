@@ -109,6 +109,8 @@ export const AdminProvider: React.FC<{ children: React.ReactNode }> = ({ childre
   const [settings, setSettings] = useState<SiteSettings>(() => {
     try {
       const raw = localStorage.getItem(LS_SETTINGS);
+      // Prioritize server data (localStorage) over hardcoded defaults
+      // This prevents development defaults from overriding production database on deployment
       return raw ? { ...defaultSettings, ...(JSON.parse(raw) as SiteSettings) } : defaultSettings;
     } catch {
       return defaultSettings;
@@ -228,10 +230,20 @@ export const AdminProvider: React.FC<{ children: React.ReactNode }> = ({ childre
     return null;
   });
 
-  const sessionRef = useRef<{ timer?: number | null; syncTimer?: NodeJS.Timeout }>({ timer: null, syncTimer: undefined });
+  const sessionRef = useRef<{ timer?: number | null; syncTimer?: NodeJS.Timeout; isInitialMount?: boolean }>({ 
+    timer: null, 
+    syncTimer: undefined,
+    isInitialMount: true // Track if this is the first mount
+  });
 
   // Sync settings to server (debounced to avoid too many requests)
   useEffect(() => {
+    // Skip sync on initial mount to prevent overwriting server data with hardcoded defaults
+    if (sessionRef.current.isInitialMount) {
+      sessionRef.current.isInitialMount = false;
+      return;
+    }
+
     // Save to localStorage immediately
     try { 
       localStorage.setItem(LS_SETTINGS, JSON.stringify(settings)); 

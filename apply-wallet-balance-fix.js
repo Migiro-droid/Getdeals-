@@ -102,7 +102,7 @@ END $$;
 `;
 
 async function applyWalletBalanceFix() {
-  console.log('🔧 Applying wallet balance calculation fix...');
+  console.log(' Applying wallet balance calculation fix...');
   console.log('===============================================');
   
   try {
@@ -113,10 +113,10 @@ async function applyWalletBalanceFix() {
     });
 
     if (functionsError) {
-      console.error('❌ Failed to create functions:', functionsError);
+      console.error(' Failed to create functions:', functionsError);
       return;
     }
-    console.log('✅ Balance calculation functions created');
+    console.log('Balance calculation functions created');
 
     // Step 2: Fix existing wallet balances
     console.log('2. Fixing existing wallet balances...');
@@ -125,10 +125,10 @@ async function applyWalletBalanceFix() {
     });
 
     if (fixError) {
-      console.error('❌ Failed to fix existing balances:', fixError);
+      console.error(' Failed to fix existing balances:', fixError);
       return;
     }
-    console.log('✅ Existing wallet balances fixed');
+    console.log('Existing wallet balances fixed');
 
     // Step 3: Verify the fix by checking some balances
     console.log('3. Verifying wallet balances...');
@@ -138,23 +138,23 @@ async function applyWalletBalanceFix() {
       .limit(10);
 
     if (verifyError) {
-      console.error('❌ Failed to verify balances:', verifyError);
+      console.error(' Failed to verify balances:', verifyError);
       return;
     }
 
-    console.log('📊 Sample wallet balances after fix:');
+    console.log(' Sample wallet balances after fix:');
     wallets?.forEach((wallet, index) => {
       console.log(`   ${index + 1}. User: ${wallet.user_id.slice(0, 8)}... - Balance: KES ${wallet.balance}`);
     });
 
     console.log('');
-    console.log('🎉 Wallet balance calculation fix applied successfully!');
-    console.log('✅ Only completed transactions are now counted toward balances');
-    console.log('✅ Failed and pending transactions are ignored');
-    console.log('✅ All existing balances have been recalculated');
+    console.log(' Wallet balance calculation fix applied successfully!');
+    console.log('Only completed transactions are now counted toward balances');
+    console.log(' Failed and pending transactions are ignored');
+    console.log(' All existing balances have been recalculated');
 
   } catch (error) {
-    console.error('❌ Migration failed:', error);
+    console.error(' Migration failed:', error);
   }
 }
 

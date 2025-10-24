@@ -47,6 +47,7 @@ import ResetPasswordPage from "./pages/ResetPasswordPage";
 import TermsOfServicePage from "./pages/TermsOfServicePage";
 import PrivacyPolicyPage from "./pages/PrivacyPolicyPage";
 import CookiePolicyPage from "./pages/CookiePolicyPage";
+import ReturnPolicyPage from "./pages/ReturnPolicyPage";
 import { AuthTestPage } from "./components/AuthTestPage";
 import QuickMartAdminDashboard from "./pages/quickmart/QuickMartAdminDashboard";
 import BuildYourBasket from "./pages/BuildYourBasket";
@@ -155,6 +156,7 @@ const App = () => {
               <Route path="/terms-of-service" element={<TermsOfServicePage />} />
               <Route path="/privacy-policy" element={<PrivacyPolicyPage />} />
               <Route path="/cookie-policy" element={<CookiePolicyPage />} />
+              <Route path="/return-policy" element={<ReturnPolicyPage />} />
               <Route path="/admin" element={<AdminGuard><AdminDashboard /></AdminGuard>} />
               <Route path="/admin/orders" element={<AdminGuard><AdminOrders /></AdminGuard>} />
               <Route path="/admin/users" element={<AdminGuard><AdminUsers /></AdminGuard>} />

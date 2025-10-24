@@ -88,17 +88,20 @@ export default function HowItWorksPage() {
     {
       name: "Mobile Money",
       description: "Pay instantly with M-Pesa or Airtel Money - Kenya's trusted mobile money services",
-      icon: Phone
+      icon: Phone,
+      features: ["Instant processing", "No additional fees", "Works offline"]
     },
     {
       name: "Card Payment",
       description: "Secure payments with Visa and Mastercard",
-      icon: CreditCard
+      icon: CreditCard,
+      features: ["Instant processing", "SSL encrypted", "International cards"]
     },
     {
       name: "Rukisha Wallet",
       description: "Use your Rukisha balance for seamless payments",
-      icon: Package
+      icon: Package,
+      features: ["Instant processing", "Earn rewards", "Quick checkout"]
     }
   ];
 
@@ -219,7 +222,7 @@ export default function HowItWorksPage() {
         </div>
 
         {/* Delivery Options */}
-        <div className="mb-20">
+        <div id="delivery-pickup" className="mb-20">
           <div className="text-center mb-12">
             <h2 className="text-3xl font-bold mb-4">Delivery & Pickup Options</h2>
             <p className="text-xl text-muted-foreground max-w-2xl mx-auto">
@@ -287,41 +290,118 @@ export default function HowItWorksPage() {
         </div>
 
         {/* Payment Methods */}
-        <div className="mb-20">
-          <div className="text-center mb-12">
-            <h2 className="text-3xl font-bold mb-4">Secure Payment Options</h2>
-            <p className="text-xl text-muted-foreground max-w-2xl mx-auto">
+        <div id="secure-payment" className="mb-20">
+          <div className="text-center mb-16">
+            <h2 className="text-4xl font-bold mb-4">Secure Payment Options</h2>
+            <p className="text-lg text-muted-foreground max-w-3xl mx-auto">
               Pay the way you prefer with our multiple secure payment options.
             </p>
           </div>
 
-          <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-6 mb-12">
+          {/* Payment Methods Grid */}
+          <div className="grid md:grid-cols-3 gap-8 mb-16">
             {paymentMethods.map((method, index) => (
-              <Card key={index} className="text-center hover:shadow-medium transition-shadow group">
-                <CardContent className="p-6">
-                  <div className="w-16 h-16 rounded-xl bg-gradient-to-br from-primary/10 to-primary/20 flex items-center justify-center mx-auto mb-4 group-hover:scale-110 transition-transform">
-                    <method.icon className="h-8 w-8 text-primary" />
+              <Card key={index} className="relative overflow-hidden border-0 bg-gradient-to-br from-white to-slate-50">
+                <CardContent className="p-8">
+                  <div className="mb-6">
+                    <div className="w-14 h-14 rounded-2xl bg-gradient-to-br from-primary to-primary/70 flex items-center justify-center transition-transform duration-300 shadow-lg">
+                      <method.icon className="h-7 w-7 text-white" />
+                    </div>
                   </div>
-                  <h3 className="font-semibold mb-2">{method.name}</h3>
-                  <p className="text-sm text-muted-foreground">{method.description}</p>
+                  <h3 className="text-xl font-bold mb-3 text-gray-900">{method.name}</h3>
+                  <p className="text-base text-muted-foreground leading-relaxed mb-6">{method.description}</p>
+                  <div className="space-y-3">
+                    {method.features.map((feature, idx) => (
+                      <div key={idx} className="flex items-center text-sm font-medium text-primary">
+                        <CheckCircle className="h-4 w-4 mr-2 flex-shrink-0" />
+                        {feature}
+                      </div>
+                    ))}
+                  </div>
                 </CardContent>
               </Card>
             ))}
           </div>
 
-          {/* Security badge */}
-          <div className="text-center">
-            <Card className="inline-block bg-green-50 border-green-200">
-              <CardContent className="p-4 flex items-center space-x-3">
-                <div className="w-10 h-10 rounded-full bg-green-100 flex items-center justify-center">
-                  <Shield className="h-5 w-5 text-green-600" />
-                </div>
-                <div className="text-left">
-                  <h4 className="font-semibold text-green-800">Secure & Protected</h4>
-                  <p className="text-sm text-green-600">Your payments are protected with bank-level security</p>
+          {/* Security & Trust Section */}
+          <div className="grid md:grid-cols-2 gap-8 mb-12">
+            {/* Security Badge */}
+            <Card className="bg-gradient-to-br from-green-50 to-emerald-50 border-green-200/50 shadow-lg">
+              <CardContent className="p-8">
+                <div className="flex items-start space-x-4">
+                  <div className="w-12 h-12 rounded-full bg-green-100 flex items-center justify-center flex-shrink-0">
+                    <Shield className="h-6 w-6 text-green-600" />
+                  </div>
+                  <div>
+                    <h4 className="font-bold text-green-900 text-lg mb-2">Bank-Level Security</h4>
+                    <p className="text-green-700/80">Your payments are protected with industry-leading encryption and fraud prevention systems.</p>
+                  </div>
                 </div>
               </CardContent>
             </Card>
+
+            {/* Trust Badge */}
+            <Card className="bg-gradient-to-br from-blue-50 to-cyan-50 border-blue-200/50 shadow-lg">
+              <CardContent className="p-8">
+                <div className="flex items-start space-x-4">
+                  <div className="w-12 h-12 rounded-full bg-blue-100 flex items-center justify-center flex-shrink-0">
+                    <CheckCircle className="h-6 w-6 text-blue-600" />
+                  </div>
+                  <div>
+                    <h4 className="font-bold text-blue-900 text-lg mb-2">Trusted by Thousands</h4>
+                    <p className="text-blue-700/80">Join thousands of satisfied customers who securely process millions of transactions daily.</p>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+          </div>
+
+          {/* Additional Trust Indicators - Redesigned */}
+          <div className="grid md:grid-cols-3 gap-6 mt-12">
+            {/* Payment Security Card */}
+            <div className="relative group">
+              <div className="absolute inset-0 bg-gradient-to-br from-emerald-500/20 to-teal-500/20 rounded-xl opacity-0 group-hover:opacity-100 transition-opacity duration-300 blur-md"></div>
+              <Card className="relative border border-emerald-200/30 bg-white hover:border-emerald-300/50 transition-all duration-300">
+                <CardContent className="p-6 text-center">
+                  <div className="inline-flex items-center justify-center w-16 h-16 rounded-full bg-gradient-to-br from-emerald-100 to-teal-100 mb-4">
+                    <Shield className="h-8 w-8 text-emerald-600" />
+                  </div>
+                  <p className="text-4xl font-bold text-emerald-600 mb-2">100%</p>
+                  <p className="text-sm font-medium text-gray-700">Payment Security</p>
+                  <p className="text-xs text-gray-500 mt-2">Bank-level encryption on all transactions</p>
+                </CardContent>
+              </Card>
+            </div>
+
+            {/* Transaction Support Card */}
+            <div className="relative group">
+              <div className="absolute inset-0 bg-gradient-to-br from-blue-500/20 to-cyan-500/20 rounded-xl opacity-0 group-hover:opacity-100 transition-opacity duration-300 blur-md"></div>
+              <Card className="relative border border-blue-200/30 bg-white hover:border-blue-300/50 transition-all duration-300">
+                <CardContent className="p-6 text-center">
+                  <div className="inline-flex items-center justify-center w-16 h-16 rounded-full bg-gradient-to-br from-blue-100 to-cyan-100 mb-4">
+                    <Clock className="h-8 w-8 text-blue-600" />
+                  </div>
+                  <p className="text-4xl font-bold text-blue-600 mb-2">24/7</p>
+                  <p className="text-sm font-medium text-gray-700">Transaction Support</p>
+                  <p className="text-xs text-gray-500 mt-2">Dedicated support whenever you need help</p>
+                </CardContent>
+              </Card>
+            </div>
+
+            {/* Payment Confirmation Card */}
+            <div className="relative group">
+              <div className="absolute inset-0 bg-gradient-to-br from-amber-500/20 to-orange-500/20 rounded-xl opacity-0 group-hover:opacity-100 transition-opacity duration-300 blur-md"></div>
+              <Card className="relative border border-amber-200/30 bg-white hover:border-amber-300/50 transition-all duration-300">
+                <CardContent className="p-6 text-center">
+                  <div className="inline-flex items-center justify-center w-16 h-16 rounded-full bg-gradient-to-br from-amber-100 to-orange-100 mb-4">
+                    <CheckCircle className="h-8 w-8 text-amber-600" />
+                  </div>
+                  <p className="text-4xl font-bold text-amber-600 mb-2">Instant</p>
+                  <p className="text-sm font-medium text-gray-700">Payment Confirmation</p>
+                  <p className="text-xs text-gray-500 mt-2">Real-time transaction notifications</p>
+                </CardContent>
+              </Card>
+            </div>
           </div>
         </div>
 

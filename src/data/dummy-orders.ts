@@ -1,0 +1,451 @@
+// Dummy orders data for testing QuickMart order arrangement features
+export interface DummyOrder {
+  id: string;
+  order_reference: string;
+  customer_name: string;
+  customer_email: string;
+  customer_phone: string;
+  branch: string;
+  status: "pending" | "confirmed" | "shipped" | "delivered" | "cancelled";
+  payment_method: string;
+  delivery_method: "speedy" | "pickup";
+  items_breakdown: Array<{
+    name: string;
+    quantity: number;
+    unit_price: number;
+  }>;
+  subtotal_kes: number;
+  delivery_fee_kes: number;
+  total_amount_kes: number;
+  created_at: string;
+  updated_at: string;
+}
+
+// Helper to generate IDs
+const generateId = (index: number) => `order_${Date.now()}_${index}`;
+
+// Create orders with realistic timestamps
+const now = new Date();
+const createDate = (hoursAgo: number) => {
+  const d = new Date(now.getTime() - hoursAgo * 60 * 60 * 1000);
+  return d.toISOString();
+};
+
+export const DUMMY_ORDERS: DummyOrder[] = [
+  // 🔴 URGENT PENDING ORDERS (Less than 2 hours)
+  {
+    id: generateId(1),
+    order_reference: "QM20250001",
+    customer_name: "John Mwangi",
+    customer_email: "john@example.com",
+    customer_phone: "+254722123456",
+    branch: "Nairobi CBD",
+    status: "pending",
+    payment_method: "M-Pesa",
+    delivery_method: "speedy",
+    items_breakdown: [
+      { name: "Fresh Bread", quantity: 2, unit_price: 150 },
+      { name: "Milk 1L", quantity: 1, unit_price: 120 },
+      { name: "Eggs (dozen)", quantity: 1, unit_price: 280 },
+    ],
+    subtotal_kes: 700,
+    delivery_fee_kes: 200,
+    total_amount_kes: 900,
+    created_at: createDate(0.5), // 30 minutes ago
+    updated_at: createDate(0.5),
+  },
+  {
+    id: generateId(2),
+    order_reference: "QM20250002",
+    customer_name: "Sarah Kipchoge",
+    customer_email: "sarah@example.com",
+    customer_phone: "+254733234567",
+    branch: "Westlands",
+    status: "pending",
+    payment_method: "Card",
+    delivery_method: "speedy",
+    items_breakdown: [
+      { name: "Butter", quantity: 2, unit_price: 450 },
+      { name: "Cheese", quantity: 1, unit_price: 650 },
+    ],
+    subtotal_kes: 1550,
+    delivery_fee_kes: 200,
+    total_amount_kes: 1750,
+    created_at: createDate(1), // 1 hour ago
+    updated_at: createDate(1),
+  },
+  {
+    id: generateId(3),
+    order_reference: "QM20250003",
+    customer_name: "Ali Hassan",
+    customer_email: "ali@example.com",
+    customer_phone: "+254741345678",
+    branch: "Kileleshwa",
+    status: "pending",
+    payment_method: "M-Pesa",
+    delivery_method: "pickup",
+    items_breakdown: [
+      { name: "Yogurt", quantity: 3, unit_price: 200 },
+      { name: "Fresh Bread", quantity: 1, unit_price: 150 },
+    ],
+    subtotal_kes: 750,
+    delivery_fee_kes: 0,
+    total_amount_kes: 750,
+    created_at: createDate(1.5),
+    updated_at: createDate(1.5),
+  },
+
+  // 🟡 CONFIRMED ORDERS (2-6 hours)
+  {
+    id: generateId(4),
+    order_reference: "QM20250004",
+    customer_name: "Jane Wanjiru",
+    customer_email: "jane@example.com",
+    customer_phone: "+254752456789",
+    branch: "Upper Hill",
+    status: "confirmed",
+    payment_method: "Card",
+    delivery_method: "speedy",
+    items_breakdown: [
+      { name: "Milk 1L", quantity: 2, unit_price: 120 },
+      { name: "Butter", quantity: 1, unit_price: 450 },
+      { name: "Eggs (dozen)", quantity: 2, unit_price: 280 },
+    ],
+    subtotal_kes: 1210,
+    delivery_fee_kes: 200,
+    total_amount_kes: 1410,
+    created_at: createDate(2),
+    updated_at: createDate(2),
+  },
+  {
+    id: generateId(5),
+    order_reference: "QM20250005",
+    customer_name: "Michael Ochieng",
+    customer_email: "michael@example.com",
+    customer_phone: "+254765567890",
+    branch: "Kilimani",
+    status: "confirmed",
+    payment_method: "M-Pesa",
+    delivery_method: "speedy",
+    items_breakdown: [
+      { name: "Fresh Bread", quantity: 3, unit_price: 150 },
+      { name: "Cheese", quantity: 1, unit_price: 650 },
+    ],
+    subtotal_kes: 1100,
+    delivery_fee_kes: 200,
+    total_amount_kes: 1300,
+    created_at: createDate(3),
+    updated_at: createDate(3),
+  },
+  {
+    id: generateId(6),
+    order_reference: "QM20250006",
+    customer_name: "David Kariuki",
+    customer_email: "david@example.com",
+    customer_phone: "+254723654321",
+    branch: "Nairobi CBD",
+    status: "confirmed",
+    payment_method: "Card",
+    delivery_method: "pickup",
+    items_breakdown: [
+      { name: "Yogurt", quantity: 2, unit_price: 200 },
+      { name: "Milk 1L", quantity: 1, unit_price: 120 },
+    ],
+    subtotal_kes: 520,
+    delivery_fee_kes: 0,
+    total_amount_kes: 520,
+    created_at: createDate(4),
+    updated_at: createDate(4),
+  },
+  {
+    id: generateId(7),
+    order_reference: "QM20250007",
+    customer_name: "Angela Muthoni",
+    customer_email: "angela@example.com",
+    customer_phone: "+254734567891",
+    branch: "Westlands",
+    status: "confirmed",
+    payment_method: "M-Pesa",
+    delivery_method: "speedy",
+    items_breakdown: [
+      { name: "Butter", quantity: 1, unit_price: 450 },
+      { name: "Eggs (dozen)", quantity: 1, unit_price: 280 },
+      { name: "Cheese", quantity: 1, unit_price: 650 },
+    ],
+    subtotal_kes: 1380,
+    delivery_fee_kes: 200,
+    total_amount_kes: 1580,
+    created_at: createDate(5),
+    updated_at: createDate(5),
+  },
+
+  // 📦 SHIPPED ORDERS (6-24 hours)
+  {
+    id: generateId(8),
+    order_reference: "QM20250008",
+    customer_name: "Peter Nyambura",
+    customer_email: "peter@example.com",
+    customer_phone: "+254745678902",
+    branch: "Kileleshwa",
+    status: "shipped",
+    payment_method: "Card",
+    delivery_method: "speedy",
+    items_breakdown: [
+      { name: "Fresh Bread", quantity: 1, unit_price: 150 },
+      { name: "Milk 1L", quantity: 2, unit_price: 120 },
+    ],
+    subtotal_kes: 390,
+    delivery_fee_kes: 200,
+    total_amount_kes: 590,
+    created_at: createDate(8),
+    updated_at: createDate(8),
+  },
+  {
+    id: generateId(9),
+    order_reference: "QM20250009",
+    customer_name: "Mary Kiplagat",
+    customer_email: "mary@example.com",
+    customer_phone: "+254756789013",
+    branch: "Upper Hill",
+    status: "shipped",
+    payment_method: "M-Pesa",
+    delivery_method: "speedy",
+    items_breakdown: [
+      { name: "Cheese", quantity: 1, unit_price: 650 },
+      { name: "Butter", quantity: 1, unit_price: 450 },
+      { name: "Yogurt", quantity: 1, unit_price: 200 },
+    ],
+    subtotal_kes: 1300,
+    delivery_fee_kes: 200,
+    total_amount_kes: 1500,
+    created_at: createDate(12),
+    updated_at: createDate(12),
+  },
+  {
+    id: generateId(10),
+    order_reference: "QM20250010",
+    customer_name: "Samuel Mwangi",
+    customer_email: "samuel@example.com",
+    customer_phone: "+254767890124",
+    branch: "Kilimani",
+    status: "shipped",
+    payment_method: "Card",
+    delivery_method: "pickup",
+    items_breakdown: [
+      { name: "Eggs (dozen)", quantity: 2, unit_price: 280 },
+      { name: "Fresh Bread", quantity: 1, unit_price: 150 },
+    ],
+    subtotal_kes: 710,
+    delivery_fee_kes: 0,
+    total_amount_kes: 710,
+    created_at: createDate(18),
+    updated_at: createDate(18),
+  },
+  {
+    id: generateId(11),
+    order_reference: "QM20250011",
+    customer_name: "Rachel Njoroge",
+    customer_email: "rachel@example.com",
+    customer_phone: "+254778901235",
+    branch: "Nairobi CBD",
+    status: "shipped",
+    payment_method: "M-Pesa",
+    delivery_method: "speedy",
+    items_breakdown: [
+      { name: "Milk 1L", quantity: 3, unit_price: 120 },
+      { name: "Butter", quantity: 1, unit_price: 450 },
+    ],
+    subtotal_kes: 810,
+    delivery_fee_kes: 200,
+    total_amount_kes: 1010,
+    created_at: createDate(20),
+    updated_at: createDate(20),
+  },
+
+  // ✅ DELIVERED ORDERS (1-3 days ago)
+  {
+    id: generateId(12),
+    order_reference: "QM20250012",
+    customer_name: "Thomas Kamau",
+    customer_email: "thomas@example.com",
+    customer_phone: "+254789012346",
+    branch: "Westlands",
+    status: "delivered",
+    payment_method: "Card",
+    delivery_method: "speedy",
+    items_breakdown: [
+      { name: "Cheese", quantity: 1, unit_price: 650 },
+      { name: "Yogurt", quantity: 2, unit_price: 200 },
+    ],
+    subtotal_kes: 1050,
+    delivery_fee_kes: 200,
+    total_amount_kes: 1250,
+    created_at: createDate(48),
+    updated_at: createDate(48),
+  },
+  {
+    id: generateId(13),
+    order_reference: "QM20250013",
+    customer_name: "Grace Otieno",
+    customer_email: "grace@example.com",
+    customer_phone: "+254790123457",
+    branch: "Kileleshwa",
+    status: "delivered",
+    payment_method: "M-Pesa",
+    delivery_method: "pickup",
+    items_breakdown: [
+      { name: "Fresh Bread", quantity: 2, unit_price: 150 },
+      { name: "Milk 1L", quantity: 1, unit_price: 120 },
+      { name: "Eggs (dozen)", quantity: 1, unit_price: 280 },
+    ],
+    subtotal_kes: 700,
+    delivery_fee_kes: 0,
+    total_amount_kes: 700,
+    created_at: createDate(56),
+    updated_at: createDate(56),
+  },
+  {
+    id: generateId(14),
+    order_reference: "QM20250014",
+    customer_name: "Joseph Kipchoge",
+    customer_email: "joseph@example.com",
+    customer_phone: "+254701234568",
+    branch: "Upper Hill",
+    status: "delivered",
+    payment_method: "Card",
+    delivery_method: "speedy",
+    items_breakdown: [
+      { name: "Butter", quantity: 2, unit_price: 450 },
+      { name: "Cheese", quantity: 1, unit_price: 650 },
+    ],
+    subtotal_kes: 1550,
+    delivery_fee_kes: 200,
+    total_amount_kes: 1750,
+    created_at: createDate(60),
+    updated_at: createDate(60),
+  },
+  {
+    id: generateId(15),
+    order_reference: "QM20250015",
+    customer_name: "Priscilla Muendo",
+    customer_email: "priscilla@example.com",
+    customer_phone: "+254712345679",
+    branch: "Kilimani",
+    status: "delivered",
+    payment_method: "M-Pesa",
+    delivery_method: "speedy",
+    items_breakdown: [
+      { name: "Yogurt", quantity: 3, unit_price: 200 },
+      { name: "Fresh Bread", quantity: 1, unit_price: 150 },
+    ],
+    subtotal_kes: 750,
+    delivery_fee_kes: 200,
+    total_amount_kes: 950,
+    created_at: createDate(72),
+    updated_at: createDate(72),
+  },
+
+  // ❌ CANCELLED ORDERS (Various times)
+  {
+    id: generateId(16),
+    order_reference: "QM20250016",
+    customer_name: "Charles Kariuki",
+    customer_email: "charles@example.com",
+    customer_phone: "+254723456790",
+    branch: "Nairobi CBD",
+    status: "cancelled",
+    payment_method: "Card",
+    delivery_method: "speedy",
+    items_breakdown: [
+      { name: "Eggs (dozen)", quantity: 1, unit_price: 280 },
+    ],
+    subtotal_kes: 280,
+    delivery_fee_kes: 200,
+    total_amount_kes: 480,
+    created_at: createDate(120),
+    updated_at: createDate(120),
+  },
+  {
+    id: generateId(17),
+    order_reference: "QM20250017",
+    customer_name: "Beatrice Kiplagat",
+    customer_email: "beatrice@example.com",
+    customer_phone: "+254734567801",
+    branch: "Westlands",
+    status: "cancelled",
+    payment_method: "M-Pesa",
+    delivery_method: "pickup",
+    items_breakdown: [
+      { name: "Milk 1L", quantity: 2, unit_price: 120 },
+      { name: "Fresh Bread", quantity: 1, unit_price: 150 },
+    ],
+    subtotal_kes: 390,
+    delivery_fee_kes: 0,
+    total_amount_kes: 390,
+    created_at: createDate(144),
+    updated_at: createDate(144),
+  },
+
+  // Additional orders for variety
+  {
+    id: generateId(18),
+    order_reference: "QM20250018",
+    customer_name: "Vincent Kiprop",
+    customer_email: "vincent@example.com",
+    customer_phone: "+254745678912",
+    branch: "Kileleshwa",
+    status: "pending",
+    payment_method: "Card",
+    delivery_method: "speedy",
+    items_breakdown: [
+      { name: "Butter", quantity: 1, unit_price: 450 },
+      { name: "Yogurt", quantity: 1, unit_price: 200 },
+    ],
+    subtotal_kes: 650,
+    delivery_fee_kes: 200,
+    total_amount_kes: 850,
+    created_at: createDate(0.25), // 15 minutes ago
+    updated_at: createDate(0.25),
+  },
+  {
+    id: generateId(19),
+    order_reference: "QM20250019",
+    customer_name: "Lydia Mwai",
+    customer_email: "lydia@example.com",
+    customer_phone: "+254756789023",
+    branch: "Upper Hill",
+    status: "confirmed",
+    payment_method: "M-Pesa",
+    delivery_method: "speedy",
+    items_breakdown: [
+      { name: "Fresh Bread", quantity: 2, unit_price: 150 },
+      { name: "Cheese", quantity: 1, unit_price: 650 },
+      { name: "Eggs (dozen)", quantity: 1, unit_price: 280 },
+    ],
+    subtotal_kes: 1230,
+    delivery_fee_kes: 200,
+    total_amount_kes: 1430,
+    created_at: createDate(6),
+    updated_at: createDate(6),
+  },
+  {
+    id: generateId(20),
+    order_reference: "QM20250020",
+    customer_name: "Solomon Kipchoge",
+    customer_email: "solomon@example.com",
+    customer_phone: "+254767890134",
+    branch: "Kilimani",
+    status: "shipped",
+    payment_method: "Card",
+    delivery_method: "pickup",
+    items_breakdown: [
+      { name: "Butter", quantity: 1, unit_price: 450 },
+      { name: "Milk 1L", quantity: 2, unit_price: 120 },
+    ],
+    subtotal_kes: 690,
+    delivery_fee_kes: 0,
+    total_amount_kes: 690,
+    created_at: createDate(14),
+    updated_at: createDate(14),
+  },
+];
