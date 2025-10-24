@@ -174,7 +174,6 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
   }
 }
 
-// Helper function to get M-Pesa access token
 async function getMpesaAccessToken(): Promise<string> {
   const consumerKey = process.env.MPESA_CONSUMER_KEY;
   const consumerSecret = process.env.MPESA_CONSUMER_SECRET;
@@ -211,7 +210,6 @@ async function getMpesaAccessToken(): Promise<string> {
   }
 }
 
-// Helper function to generate M-Pesa password
 function generateMpesaPassword() {
   const timestamp = new Date().toISOString().replace(/[^0-9]/g, '').slice(0, -3);
   const shortcode = process.env.MPESA_SHORTCODE || process.env.MPESA_BUSINESS_SHORT_CODE;

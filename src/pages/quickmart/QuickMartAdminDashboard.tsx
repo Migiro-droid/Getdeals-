@@ -248,19 +248,19 @@ export const QuickMartAdminDashboard: React.FC = () => {
                 value="orders"
                 className="data-[state=active]:bg-transparent data-[state=active]:border-b-2 data-[state=active]:border-blue-600 data-[state=active]:text-blue-600 rounded-none py-3 px-1 font-medium"
               >
-                📋 Orders
+                Orders
               </TabsTrigger>
               <TabsTrigger 
                 value="products"
                 className="data-[state=active]:bg-transparent data-[state=active]:border-b-2 data-[state=active]:border-blue-600 data-[state=active]:text-blue-600 rounded-none py-3 px-1 font-medium"
               >
-                📦 Products
+                Products
               </TabsTrigger>
               <TabsTrigger 
                 value="analytics"
                 className="data-[state=active]:bg-transparent data-[state=active]:border-b-2 data-[state=active]:border-blue-600 data-[state=active]:text-blue-600 rounded-none py-3 px-1 font-medium"
               >
-                📊 Analytics
+                Analytics
               </TabsTrigger>
             </TabsList>
           </div>

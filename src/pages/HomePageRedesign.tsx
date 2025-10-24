@@ -101,12 +101,17 @@ export default function HomePageRedesign() {
   const { toast } = useToast();
   const { settings } = useAdmin();
 
-  // Hot Deals - products marked as isHotDeal
+  // Hot Deals - products marked as isHotDeal ONLY (no other promotional flags)
   const promotionalHotDeals = useMemo(() => {
     if (!all || all.length === 0) return [];
     
-    const filtered = all.filter(p => (p as any).isHotDeal === true);
-    console.log('🔥 Hot Deals filtered:', filtered.length, 'products with isHotDeal=true out of', all.length, 'total products');
+    const filtered = all.filter(p => 
+      (p as any).isHotDeal === true && 
+      (p as any).isNewArrival !== true && 
+      (p as any).isSpecialDeal !== true && 
+      (p as any).isTopBasket !== true
+    );
+    console.log('🔥 Hot Deals filtered:', filtered.length, 'products with ONLY isHotDeal=true out of', all.length, 'total products');
     
     return filtered
       .map(product => {
@@ -137,12 +142,17 @@ export default function HomePageRedesign() {
       .slice(0, 4);
   }, [all]);
 
-  // New Arrivals (by promotional tag) - products marked as isNewArrival
+  // New Arrivals - products marked as isNewArrival ONLY (no other promotional flags)
   const promotionalNewArrivals = useMemo(() => {
     if (!all || all.length === 0) return [];
     
     return all
-      .filter(p => (p as any).isNewArrival === true)
+      .filter(p => 
+        (p as any).isNewArrival === true && 
+        (p as any).isHotDeal !== true && 
+        (p as any).isSpecialDeal !== true && 
+        (p as any).isTopBasket !== true
+      )
       .map(product => {
         const savings = product.originalPrice ? product.originalPrice - product.price : 0;
         const itemCount = product.items?.length || 1;
@@ -165,12 +175,17 @@ export default function HomePageRedesign() {
       .slice(0, 4);
   }, [all]);
 
-  // Special Deals (by promotional tag) - products marked as isSpecialDeal
+  // Special Deals - products marked as isSpecialDeal ONLY (no other promotional flags)
   const promotionalSpecialDeals = useMemo(() => {
     if (!all || all.length === 0) return [];
     
     return all
-      .filter(p => (p as any).isSpecialDeal === true)
+      .filter(p => 
+        (p as any).isSpecialDeal === true && 
+        (p as any).isHotDeal !== true && 
+        (p as any).isNewArrival !== true && 
+        (p as any).isTopBasket !== true
+      )
       .map(product => {
         const savings = product.originalPrice ? product.originalPrice - product.price : 0;
         const itemCount = product.items?.length || 1;
@@ -260,15 +275,22 @@ export default function HomePageRedesign() {
       .slice(0, 8);
   }, [all]);
 
-  // Fetch basket products for Top Sellers
+  // Fetch basket products for Top Sellers - products marked as isTopBasket ONLY (no other promotional flags)
   const topSellerBaskets = useMemo(() => {
     if (!all || all.length === 0) return [];
     
-    // Filter for products that are baskets (contain multiple items)
-    const baskets = all.filter(p => p.items && p.items.length > 0);
+    // Filter for products that have isTopBasket flag and NO other promotional flags
+    const filteredBaskets = all.filter(p => 
+      (p as any).isTopBasket === true &&
+      (p as any).isHotDeal !== true &&
+      (p as any).isNewArrival !== true &&
+      (p as any).isSpecialDeal !== true
+    );
     
-    // Sort to prioritize Premium Shopper 2 and Budget Shopper 1
-    const sortedBaskets = baskets.sort((a, b) => {
+    console.log('🏆 Top Baskets filtered:', filteredBaskets.length, 'products with ONLY isTopBasket=true');
+    
+    // Sort to prioritize Premium Shopper 2 and Budget Shopper 1 (create new array to avoid mutation)
+    const sortedBaskets = [...filteredBaskets].sort((a, b) => {
       // Check if products contain "shopper" in their names
       const aIsShopper = a.name.toLowerCase().includes('shopper');
       const bIsShopper = b.name.toLowerCase().includes('shopper');
@@ -292,9 +314,11 @@ export default function HomePageRedesign() {
   }, [all]);
 
   const newArrivals = useMemo(() => {
-    if (!baskets || baskets.length === 0) return [];
-    return baskets.slice(0, 8);
-  }, [baskets]);
+    if (!all || all.length === 0) return [];
+    return all
+      .filter(p => p.category !== 'alcohol' && p.category !== 'blackfriday')
+      .slice(0, 8);
+  }, [all]);
 
   const weeklyEssentials = useMemo(() => {
     if (!all || all.length === 0) return [];
@@ -305,11 +329,11 @@ export default function HomePageRedesign() {
   }, [all]);
 
   const specialDeals = useMemo(() => {
-    if (!baskets || baskets.length === 0) return [];
-    return baskets
-      .filter(b => b.finalPrice < b.totalValue)
+    if (!all || all.length === 0) return [];
+    return all
+      .filter(p => p.originalPrice && p.originalPrice > p.price)
       .slice(0, 8);
-  }, [baskets]);
+  }, [all]);
 
   const [blackFridayTimeLeft, setBlackFridayTimeLeft] = useState({ 
     days: 0, 
@@ -1168,76 +1192,66 @@ export default function HomePageRedesign() {
           </div>
 
           <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 xl:grid-cols-6 gap-2">
-            {newArrivals.map((basket) => (
-              <Card key={basket.id} className="group hover:shadow-lg transition-all border border-gray-200 hover:border-cyan-400 cursor-pointer">
-                <CardContent className="p-0">
-                  {/* Image with View Icon Overlay */}
-                  <div className="relative overflow-hidden bg-gray-50">
+            {newArrivals.map((product) => (
+              <Card key={product.id} className="group hover:shadow-xl transition-all border-2 hover:border-cyan-300 bg-white">
+                <CardContent className="p-2">
+                  <div className="relative mb-1.5">
                     <img 
-                      src={basket.image} 
-                      alt={basket.name}
-                      className="w-full h-32 object-contain group-hover:scale-105 transition-transform duration-500"
+                      src={product.image || '/placeholder.jpg'} 
+                      alt={product.name}
+                      className="w-full h-auto aspect-square object-contain rounded-lg group-hover:scale-105 transition-transform"
                     />
                     
                     {/* View Items Overlay Icon */}
-                    <div className="absolute inset-0 bg-black/0 group-hover:bg-black/30 transition-all duration-300 flex items-center justify-center opacity-0 group-hover:opacity-100">
-                      <Button
-                        size="icon"
-                        className="h-10 w-10 rounded-full bg-white hover:bg-white text-cyan-600 hover:text-cyan-700 shadow-lg transform scale-0 group-hover:scale-100 transition-transform duration-300"
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          openQuickViewModal(basket as any);
-                        }}
-                      >
-                        <Eye className="h-5 w-5" />
-                      </Button>
+                    <div className="absolute inset-0 bg-black/0 group-hover:bg-black/30 transition-all duration-300 flex items-center justify-center opacity-0 group-hover:opacity-100 rounded-lg">
+                      <Link to="/baskets">
+                        <Button
+                          size="icon"
+                          className="h-10 w-10 rounded-full bg-white hover:bg-white text-cyan-600 hover:text-cyan-700 shadow-lg transform scale-0 group-hover:scale-100 transition-transform duration-300"
+                        >
+                          <Eye className="h-5 w-5" />
+                        </Button>
+                      </Link>
                     </div>
-
-                    {/* NEW Badge */}
-                    <Badge className="absolute top-1 left-1 bg-gradient-to-br from-red-600 to-red-700 text-white font-bold px-2 py-0.5 text-xs uppercase tracking-wider shadow-lg border border-red-500/20">
-                      NEW
-                    </Badge>
-                  </div>
-
-                  {/* Content */}
-                  <div className="p-2 space-y-1.5">
-                    <h3 className="font-bold text-xs line-clamp-2">{basket.name}</h3>
                     
-                    {basket.description && (
-                      <p className="text-xs text-gray-600 line-clamp-2">{basket.description}</p>
-                    )}
-
-                    {/* Stats */}
-                    <div className="flex items-center gap-2 text-xs">
-                      <span className="flex items-center gap-0.5 text-gray-600">
-                        <Package className="h-3 w-3" />
-                        {basket.itemCount} items
-                      </span>
-                    </div>
-
-                    {/* Pricing */}
-                    <div className="space-y-1">
-                      <div className="flex items-baseline gap-1">
-                        <span className="text-sm font-black text-emerald-600">
-                          KES {basket.finalPrice.toLocaleString()}
-                        </span>
-                        <span className="text-xs text-gray-400 line-through">
-                          {(basket.totalValue / 1000).toFixed(0)}K
-                        </span>
-                      </div>
-                    </div>
-
-                    {/* Actions */}
-                    <div className="pt-1">
-                      <Button 
-                        className="w-full bg-gradient-to-r from-blue-600 to-cyan-600 hover:from-blue-700 hover:to-cyan-700 text-white font-bold shadow-md hover:shadow-lg transition-all text-xs py-1 h-7"
-                        onClick={() => handleAddBasketToCart(basket)}
-                      >
-                        <ShoppingCart className="h-3 w-3 mr-1" />
-                        Add
-                      </Button>
+                    {/* NEW Badge - Top Left Corner */}
+                    <div className="absolute top-1 left-1 bg-gradient-to-br from-red-600 to-red-700 text-white px-1.5 py-0.5 rounded-md font-bold text-xs uppercase tracking-wider shadow-lg border border-red-500/20">
+                      NEW
                     </div>
                   </div>
+
+                  <h3 className="font-semibold text-xs line-clamp-2 mb-1 min-h-[30px]">{product.name}</h3>
+                  
+                  {product.description && (
+                    <p className="text-xs text-gray-600 line-clamp-2 mb-1.5 min-h-[32px]">{product.description}</p>
+                  )}
+                  
+                  <div className="text-xs text-gray-500 mb-1.5 flex items-center gap-1">
+                    <div className="w-1 h-1 bg-emerald-500 rounded-full animate-pulse"></div>
+                    In Stock
+                  </div>
+
+                  <div className="flex flex-col gap-1 mb-1.5">
+                    <div className="flex items-baseline gap-1">
+                      <span className="text-sm font-black text-emerald-600">
+                        KES {product.price.toLocaleString()}
+                      </span>
+                      {product.originalPrice && (
+                        <span className="text-xs text-gray-400 line-through">
+                          {(product.originalPrice / 1000).toFixed(0)}K
+                        </span>
+                      )}
+                    </div>
+                  </div>
+
+                  <Button 
+                    size="sm" 
+                    className="w-full bg-gradient-to-r from-blue-600 to-cyan-600 hover:from-blue-700 hover:to-cyan-700 text-white font-bold shadow-md hover:shadow-lg transition-all text-xs py-1 h-7"
+                    onClick={() => handleAddToCart(product.id)}
+                  >
+                    <ShoppingCart className="h-3 w-3 mr-1" />
+                    Add
+                  </Button>
                 </CardContent>
               </Card>
             ))}
@@ -1294,82 +1308,72 @@ export default function HomePageRedesign() {
           </div>
 
           <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 xl:grid-cols-6 gap-2">
-            {specialDeals.map((basket) => {
-              const discount = basket.totalValue > basket.finalPrice 
-                ? Math.round(((basket.totalValue - basket.finalPrice) / basket.totalValue) * 100)
+            {specialDeals.map((product) => {
+              const discount = product.originalPrice 
+                ? Math.round(((product.originalPrice - product.price) / product.originalPrice) * 100)
                 : 0;
 
               return (
-                <Card key={basket.id} className="group hover:shadow-lg transition-all border border-gray-200 hover:border-rose-400 cursor-pointer">
-                  <CardContent className="p-0">
-                    {/* Image with View Icon Overlay */}
-                    <div className="relative overflow-hidden bg-gray-50">
+                <Card key={product.id} className="group hover:shadow-lg transition-all bg-white border-2 border-rose-200 hover:border-rose-400">
+                  <CardContent className="p-2">
+                    <div className="relative mb-1.5 bg-gray-50 rounded-lg overflow-hidden">
                       <img 
-                        src={basket.image} 
-                        alt={basket.name}
-                        className="w-full h-32 object-contain group-hover:scale-105 transition-transform duration-500"
+                        src={product.image || '/placeholder.jpg'} 
+                        alt={product.name}
+                        className="w-full h-auto aspect-square object-contain rounded-lg group-hover:scale-105 transition-transform"
                       />
                       
                       {/* View Items Overlay Icon */}
-                      <div className="absolute inset-0 bg-black/0 group-hover:bg-black/30 transition-all duration-300 flex items-center justify-center opacity-0 group-hover:opacity-100">
-                        <Button
-                          size="icon"
-                          className="h-10 w-10 rounded-full bg-white hover:bg-white text-rose-600 hover:text-rose-700 shadow-lg transform scale-0 group-hover:scale-100 transition-transform duration-300"
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            openQuickViewModal(basket as any);
-                          }}
-                        >
-                          <Eye className="h-5 w-5" />
-                        </Button>
+                      <div className="absolute inset-0 bg-black/0 group-hover:bg-black/30 transition-all duration-300 flex items-center justify-center opacity-0 group-hover:opacity-100 rounded-lg">
+                        <Link to="/baskets">
+                          <Button
+                            size="icon"
+                            className="h-10 w-10 rounded-full bg-white hover:bg-white text-rose-600 hover:text-rose-700 shadow-lg transform scale-0 group-hover:scale-100 transition-transform duration-300"
+                          >
+                            <Eye className="h-5 w-5" />
+                          </Button>
+                        </Link>
                       </div>
-
+                      
                       {discount > 0 && (
                         <Badge className="absolute top-1 right-1 bg-gradient-to-r from-rose-600 to-red-600 text-white font-bold text-xs shadow-lg">
                           -{discount}%
                         </Badge>
                       )}
-                    </div>
-
-                    {/* Content */}
-                    <div className="p-2 space-y-1.5">
-                      <h3 className="font-bold text-xs line-clamp-2">{basket.name}</h3>
-                      
-                      {basket.description && (
-                        <p className="text-xs text-gray-600 line-clamp-2">{basket.description}</p>
+                      {isAuthenticated && (
+                        <Badge className="absolute top-1 left-1 bg-gradient-to-r from-amber-400 to-yellow-400 text-gray-900 font-bold text-xs shadow-lg">
+                          Member
+                        </Badge>
                       )}
+                    </div>
 
-                      {/* Stats */}
-                      <div className="flex items-center gap-2 text-xs">
-                        <span className="flex items-center gap-0.5 text-gray-600">
-                          <Package className="h-3 w-3" />
-                          {basket.itemCount} items
+                    <h3 className="font-semibold text-xs line-clamp-2 mb-1">{product.name}</h3>
+                    
+                    {product.description && (
+                      <p className="text-xs text-gray-600 line-clamp-2 mb-1.5">{product.description}</p>
+                    )}
+                    
+                    <div className="space-y-0.5 mb-1.5">
+                      <div className="flex items-baseline gap-1">
+                        <span className="text-sm font-black text-gray-900">
+                          KES {product.price.toLocaleString()}
                         </span>
-                      </div>
-
-                      {/* Pricing */}
-                      <div className="space-y-1">
-                        <div className="flex items-baseline gap-1">
-                          <span className="text-sm font-black text-emerald-600">
-                            KES {basket.finalPrice.toLocaleString()}
-                          </span>
+                        {product.originalPrice && (
                           <span className="text-xs text-gray-400 line-through">
-                            {(basket.totalValue / 1000).toFixed(0)}K
+                            {(product.originalPrice / 1000).toFixed(0)}K
                           </span>
-                        </div>
-                      </div>
-
-                      {/* Actions */}
-                      <div className="pt-1">
-                        <Button 
-                          className="w-full bg-gradient-to-r from-rose-600 to-red-600 hover:from-rose-700 hover:to-red-700 text-white font-bold shadow-md hover:shadow-lg transition-all text-xs py-1 h-7"
-                          onClick={() => handleAddBasketToCart(basket)}
-                        >
-                          <ShoppingCart className="h-3 w-3 mr-1" />
-                          Add
-                        </Button>
+                        )}
                       </div>
                     </div>
+
+                    <Button 
+                      size="sm" 
+                      className="w-full bg-gradient-to-r from-rose-600 to-red-600 hover:from-rose-700 hover:to-red-700 text-white font-bold text-xs py-1 h-7"
+                      onClick={() => handleAddToCart(product.id)}
+                    >
+                      <ShoppingCart className="h-3 w-3 mr-1" />
+                      Add
+                    </Button>
                   </CardContent>
                 </Card>
               );

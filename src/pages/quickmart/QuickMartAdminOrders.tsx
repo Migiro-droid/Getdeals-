@@ -1,4 +1,4 @@
-import { useMemo, useState, useEffect } from "react";
+import React, { useMemo, useState, useEffect } from "react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
@@ -8,6 +8,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Circle, CheckCircle, Clock, Truck, Package, ChevronRight, MapPin, CreditCard, Calendar, RefreshCw } from "lucide-react";
 import { ScrollArea } from "@/components/ui/scroll-area";
+import { DUMMY_ORDERS } from "@/data/dummy-orders";
 
 interface QuickMartOrder {
   id: string;
@@ -30,15 +31,19 @@ interface QuickMartOrder {
 }
 
 type OrderStatus = "pending" | "confirmed" | "shipped" | "delivered" | "cancelled";
+type SortOption = "newest" | "oldest" | "total_desc" | "total_asc" | "priority" | "branch";
+type GroupByOption = "none" | "status" | "branch" | "date" | "delivery";
 
 export const QuickMartAdminOrders: React.FC = () => {
   const [orders, setOrders] = useState<QuickMartOrder[]>([]);
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState('');
   const [statusFilter, setStatusFilter] = useState<"all" | OrderStatus>("all");
-  const [sortBy, setSortBy] = useState<"newest" | "oldest" | "total_desc" | "total_asc">("newest");
+  const [sortBy, setSortBy] = useState<SortOption>("priority");
+  const [groupBy, setGroupBy] = useState<GroupByOption>("status");
   const [open, setOpen] = useState(false);
   const [active, setActive] = useState<QuickMartOrder | null>(null);
+  const [useDummyData, setUseDummyData] = useState(true); // Start with dummy data for testing
 
   const statuses: OrderStatus[] = ["pending", "confirmed", "shipped", "delivered", "cancelled"];
 
@@ -46,6 +51,21 @@ export const QuickMartAdminOrders: React.FC = () => {
   const fetchQuickMartOrders = async () => {
     setLoading(true);
     try {
+      if (useDummyData) {
+        // Use hardcoded dummy data for testing
+        console.log("✓ Using dummy orders for testing");
+        const mappedDummyOrders = DUMMY_ORDERS.map(order => ({
+          ...order,
+          id: order.id,
+          status: order.status as OrderStatus,
+          payment_status: "paid", // Add missing field
+          items: order.items_breakdown, // Map items_breakdown to items
+        }));
+        setOrders(mappedDummyOrders);
+        setLoading(false);
+        return;
+      }
+
       const params = new URLSearchParams({
         limit: '500',
         offset: '0',
@@ -80,23 +100,20 @@ export const QuickMartAdminOrders: React.FC = () => {
 
   useEffect(() => {
     fetchQuickMartOrders();
-  }, [statusFilter, search]);
+  }, [statusFilter, search, useDummyData]);
 
-  const counts = useMemo(() => {
-    const base = {
-      all: orders.length,
-      pending: 0,
-      confirmed: 0,
-      shipped: 0,
-      delivered: 0,
-      cancelled: 0,
-    } as Record<"all" | OrderStatus, number>;
-    for (const o of orders) {
-      const status = o.status.toLowerCase() as OrderStatus;
-      if (status in base) base[status]++;
-    }
-    return base;
-  }, [orders]);
+  // ============ HELPER FUNCTIONS (defined before useMemos) ============
+  
+  const statusLabel = (s: OrderStatus) => {
+    const labels: Record<OrderStatus, string> = {
+      pending: "Pending",
+      confirmed: "Confirmed",
+      shipped: "Shipped",
+      delivered: "Delivered",
+      cancelled: "Cancelled"
+    };
+    return labels[s];
+  };
 
   const statusPill = (s: string) => {
     const base = "inline-flex items-center px-2 py-0.5 rounded-full text-xs";
@@ -116,12 +133,87 @@ export const QuickMartAdminOrders: React.FC = () => {
     }
   };
 
-  const visible = useMemo(() => {
+  // Priority calculation: pending/confirmed orders that are older get higher priority
+  const getPriority = (order: QuickMartOrder) => {
+    const status = order.status.toLowerCase() as OrderStatus;
+    const ageMs = Date.now() - new Date(order.created_at).getTime();
+    const ageHours = ageMs / (1000 * 60 * 60);
+
+    // Priority scoring: lower = higher priority
+    let score = 0;
+    if (status === "pending") score = 0;
+    else if (status === "confirmed") score = 10;
+    else if (status === "shipped") score = 20;
+    else if (status === "delivered") score = 100;
+    else if (status === "cancelled") score = 200;
+
+    // Add age weight (older orders get lower score = higher priority)
+    score += Math.max(0, 30 - ageHours);
+    
+    return score;
+  };
+
+  // Get relative time (e.g., "2 hours ago", "today", "yesterday")
+  const getTimeGroup = (date: Date) => {
+    const now = new Date();
+    const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+    const yesterday = new Date(today);
+    yesterday.setDate(yesterday.getDate() - 1);
+    const weekAgo = new Date(today);
+    weekAgo.setDate(weekAgo.getDate() - 7);
+
+    const dateOnly = new Date(date.getFullYear(), date.getMonth(), date.getDate());
+
+    if (dateOnly.getTime() === today.getTime()) return "Today";
+    if (dateOnly.getTime() === yesterday.getTime()) return "Yesterday";
+    if (dateOnly >= weekAgo) return "This Week";
+    return "Older";
+  };
+
+  // ============ USEMEMOS ============
+
+  const counts = useMemo(() => {
+    const base = {
+      all: orders.length,
+      pending: 0,
+      confirmed: 0,
+      shipped: 0,
+      delivered: 0,
+      cancelled: 0,
+    } as Record<"all" | OrderStatus, number>;
+    for (const o of orders) {
+      const status = o.status.toLowerCase() as OrderStatus;
+      if (status in base) base[status]++;
+    }
+    return base;
+  }, [orders]);
+
+  // Group and sort logic
+  const grouped = useMemo(() => {
     let list = orders.slice();
+
+    // Apply status filter
     if (statusFilter !== "all") {
       list = list.filter((o) => o.status.toLowerCase() === statusFilter);
     }
+
+    // Apply search
+    if (search) {
+      const q = search.toLowerCase();
+      list = list.filter(
+        (o) =>
+          o.order_reference.toLowerCase().includes(q) ||
+          o.customer_name?.toLowerCase().includes(q) ||
+          o.customer_phone?.includes(q) ||
+          o.customer_email?.toLowerCase().includes(q)
+      );
+    }
+
+    // Sort by selected option
     switch (sortBy) {
+      case "priority":
+        list.sort((a, b) => getPriority(a) - getPriority(b));
+        break;
       case "oldest":
         list.sort((a, b) => new Date(a.created_at).getTime() - new Date(b.created_at).getTime());
         break;
@@ -131,11 +223,47 @@ export const QuickMartAdminOrders: React.FC = () => {
       case "total_asc":
         list.sort((a, b) => a.total_amount_kes - b.total_amount_kes);
         break;
-      default:
+      case "branch":
+        list.sort((a, b) => (a.branch || "").localeCompare(b.branch || ""));
+        break;
+      default: // newest
         list.sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime());
     }
-    return list;
-  }, [orders, statusFilter, sortBy]);
+
+    // Group by selected option
+    const groupMap: Record<string, QuickMartOrder[]> = {};
+
+    for (const order of list) {
+      let key = "All Orders";
+      switch (groupBy) {
+        case "status":
+          key = `${statusLabel(order.status.toLowerCase() as OrderStatus)}`;
+          break;
+        case "branch":
+          key = order.branch || "No Branch";
+          break;
+        case "date":
+          key = getTimeGroup(new Date(order.created_at));
+          break;
+        case "delivery":
+          key = order.delivery_method === "speedy" ? "Speedy Delivery" : "Store Pickup";
+          break;
+        case "none":
+        default:
+          key = "All Orders";
+      }
+
+      if (!groupMap[key]) groupMap[key] = [];
+      groupMap[key].push(order);
+    }
+
+    return groupMap;
+  }, [orders, statusFilter, search, sortBy, groupBy]);
+
+  // Flatten grouped data for rendering
+  const visible = useMemo(() => {
+    return Object.values(grouped).flat();
+  }, [grouped]);
 
   const setStatusForActive = async (next: OrderStatus) => {
     if (!active) return;
@@ -165,17 +293,6 @@ export const QuickMartAdminOrders: React.FC = () => {
 
   const statusSequence: OrderStatus[] = ["pending", "confirmed", "shipped", "delivered"];
   
-  const statusLabel = (s: OrderStatus) => {
-    const labels: Record<OrderStatus, string> = {
-      pending: "Pending",
-      confirmed: "Confirmed",
-      shipped: "Shipped",
-      delivered: "Delivered",
-      cancelled: "Cancelled"
-    };
-    return labels[s];
-  };
-
   const statusIcon = (s: OrderStatus) => {
     switch (s) {
       case "pending": return Circle;
@@ -187,113 +304,269 @@ export const QuickMartAdminOrders: React.FC = () => {
   };
 
   return (
-    <div className="space-y-6">
-      <div className="flex items-center justify-between mb-6 pb-4 border-b">
-        <div>
-          <div className="flex items-center gap-2 mb-1">
-            <h2 className="text-2xl font-bold">📋 Orders Management</h2>
+    <div className="min-h-screen bg-gradient-to-br from-slate-50 to-slate-100 p-6">
+      {/* HEADER SECTION */}
+      <div className="max-w-7xl mx-auto mb-8">
+        <div className="flex items-start justify-between mb-2">
+          <div>
+            <div className="flex items-center gap-3 mb-2">
+              <div className="p-3 bg-blue-100 rounded-lg">
+                <Package className="w-6 h-6 text-blue-600" />
+              </div>
+              <div>
+                <h1 className="text-4xl font-bold text-slate-900">Orders</h1>
+                <p className="text-slate-600 text-sm">Manage and track QuickMart orders</p>
+              </div>
+            </div>
           </div>
-          <p className="text-sm text-gray-600">View and manage all Quickmart orders in one place</p>
+          <div className="flex items-center gap-2">
+            <Badge variant={useDummyData ? "default" : "secondary"} className="text-xs">
+              {useDummyData ? "🧪 Test Data" : "📊 Live"}
+            </Badge>
+            <Button 
+              onClick={() => setUseDummyData(!useDummyData)} 
+              variant="outline" 
+              size="sm"
+              className="text-xs"
+            >
+              {useDummyData ? "Switch to Live" : "Use Test Data"}
+            </Button>
+            <Button onClick={fetchQuickMartOrders} variant="outline" size="sm">
+              <RefreshCw className="w-4 h-4" />
+            </Button>
+          </div>
         </div>
-        <Button onClick={fetchQuickMartOrders} variant="outline" size="sm">
-          <RefreshCw className="w-4 h-4 mr-2" />
-          Refresh
-        </Button>
+
+        {/* STATS CARDS */}
+        <div className="grid grid-cols-2 md:grid-cols-5 gap-4 mb-8">
+          <div className="bg-white rounded-lg p-4 border border-slate-200 shadow-sm">
+            <p className="text-slate-600 text-xs font-medium">Total</p>
+            <p className="text-2xl font-bold text-slate-900">{counts.all}</p>
+          </div>
+          <div className="bg-yellow-50 rounded-lg p-4 border border-yellow-200 shadow-sm">
+            <p className="text-yellow-700 text-xs font-medium">Pending</p>
+            <p className="text-2xl font-bold text-yellow-900">{counts.pending}</p>
+          </div>
+          <div className="bg-blue-50 rounded-lg p-4 border border-blue-200 shadow-sm">
+            <p className="text-blue-700 text-xs font-medium">Confirmed</p>
+            <p className="text-2xl font-bold text-blue-900">{counts.confirmed}</p>
+          </div>
+          <div className="bg-purple-50 rounded-lg p-4 border border-purple-200 shadow-sm">
+            <p className="text-purple-700 text-xs font-medium">Shipped</p>
+            <p className="text-2xl font-bold text-purple-900">{counts.shipped}</p>
+          </div>
+          <div className="bg-green-50 rounded-lg p-4 border border-green-200 shadow-sm">
+            <p className="text-green-700 text-xs font-medium">Delivered</p>
+            <p className="text-2xl font-bold text-green-900">{counts.delivered}</p>
+          </div>
+        </div>
+
+        {/* CONTROLS */}
+        <div className="bg-white rounded-lg p-4 border border-slate-200 shadow-sm">
+          <div className="space-y-4">
+            {/* Search */}
+            <div>
+              <Input
+                placeholder="Search by order #, customer, email, phone..."
+                value={search}
+                onChange={(e) => setSearch(e.target.value)}
+                className="bg-slate-50 border-slate-200"
+              />
+            </div>
+
+            {/* Filter and Sort */}
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+              {/* Status Buttons */}
+              <div className="md:col-span-1">
+                <label className="text-xs font-semibold text-slate-600 block mb-2">Status</label>
+                <div className="flex flex-wrap gap-2">
+                  {(["all", ...statuses] as const).map((s) => (
+                    <button
+                      key={s}
+                      onClick={() => setStatusFilter(s as any)}
+                      className={`px-3 py-1.5 rounded-full text-xs font-medium transition ${
+                        statusFilter === s 
+                          ? "bg-blue-600 text-white shadow-md" 
+                          : "bg-slate-100 text-slate-700 hover:bg-slate-200"
+                      }`}
+                    >
+                      {s === "all" ? "All" : statusLabel(s as OrderStatus)}
+                      <span className="ml-1 opacity-80">({(counts as any)[s]})</span>
+                    </button>
+                  ))}
+                </div>
+              </div>
+
+              {/* Sort */}
+              <div>
+                <label className="text-xs font-semibold text-slate-600 block mb-2">Sort By</label>
+                <Select value={sortBy} onValueChange={(v) => setSortBy(v as any)}>
+                  <SelectTrigger className="bg-slate-50 border-slate-200 text-sm">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="priority">Priority</SelectItem>
+                    <SelectItem value="newest">Newest</SelectItem>
+                    <SelectItem value="oldest">Oldest</SelectItem>
+                    <SelectItem value="total_desc">Highest Value</SelectItem>
+                    <SelectItem value="total_asc">Lowest Value</SelectItem>
+                    <SelectItem value="branch">Branch</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+
+              {/* Group */}
+              <div>
+                <label className="text-xs font-semibold text-slate-600 block mb-2">Group By</label>
+                <Select value={groupBy} onValueChange={(v) => setGroupBy(v as any)}>
+                  <SelectTrigger className="bg-slate-50 border-slate-200 text-sm">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="none">None</SelectItem>
+                    <SelectItem value="status">Status</SelectItem>
+                    <SelectItem value="branch">Branch</SelectItem>
+                    <SelectItem value="date">Date</SelectItem>
+                    <SelectItem value="delivery">Delivery</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+            </div>
+          </div>
+        </div>
       </div>
 
+      {/* LOADING STATE */}
       {loading && (
-        <Card>
-          <CardContent className="p-6 text-center">
-            <RefreshCw className="h-8 w-8 animate-spin mx-auto mb-2" />
-            <div>Loading orders...</div>
-          </CardContent>
-        </Card>
-      )}
-
-      {orders.length > 0 && !loading && (
-        <div className="flex flex-col gap-3 mb-6">
-          <div className="flex items-center justify-between gap-3 flex-wrap">
-            <div className="flex items-center gap-2 overflow-x-auto [-ms-overflow-style:none] [scrollbar-width:none]">
-              {(["all", ...statuses] as const).map((s) => (
-                <button
-                  key={s}
-                  onClick={() => setStatusFilter(s as any)}
-                  className={`text-sm px-3 py-1.5 rounded-full border transition whitespace-nowrap ${
-                    statusFilter === s ? "bg-primary text-primary-foreground border-primary" : "bg-background hover:bg-muted"
-                  }`}
-                >
-                  <span>{s === "all" ? "All" : statusLabel(s as OrderStatus)}</span>
-                  <span className="ml-2 text-xs opacity-80">{(counts as any)[s]}</span>
-                </button>
-              ))}
-            </div>
-            <div className="flex items-center gap-2">
-              <span className="text-sm text-muted-foreground">Sort</span>
-              <Select value={sortBy} onValueChange={(v) => setSortBy(v as any)}>
-                <SelectTrigger className="w-[160px]">
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="newest">Newest</SelectItem>
-                  <SelectItem value="oldest">Oldest</SelectItem>
-                  <SelectItem value="total_desc">Total: High → Low</SelectItem>
-                  <SelectItem value="total_asc">Total: Low → High</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
+        <div className="max-w-7xl mx-auto">
+          <div className="bg-white rounded-lg p-12 text-center shadow-sm">
+            <RefreshCw className="h-12 w-12 animate-spin mx-auto mb-4 text-blue-600" />
+            <p className="text-slate-600 font-medium">Loading orders...</p>
           </div>
         </div>
       )}
 
-      {orders.length === 0 ? (
-        <Card>
-          <CardContent className="p-6 text-center text-muted-foreground">
-            No orders yet.
-          </CardContent>
-        </Card>
-      ) : (
-        <Card>
-          <CardContent className="p-0">
-            <Table>
-              <TableHeader>
-                <TableRow>
-                  <TableHead>Order</TableHead>
-                  <TableHead>Date</TableHead>
-                  <TableHead>Customer</TableHead>
-                  <TableHead>Branch</TableHead>
-                  <TableHead className="text-right">Total</TableHead>
-                  <TableHead>Status</TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {visible.map((o) => {
-                  const d = new Date(o.created_at);
-                  const dateStr = d.toLocaleString(undefined, { month: "short", day: "numeric", hour: "2-digit", minute: "2-digit" });
+      {/* EMPTY STATE */}
+      {orders.length === 0 && !loading && (
+        <div className="max-w-7xl mx-auto">
+          <div className="bg-white rounded-lg p-12 text-center shadow-sm border border-slate-200">
+            <Package className="h-12 w-12 text-slate-300 mx-auto mb-4" />
+            <p className="text-slate-600 font-medium mb-2">No orders found</p>
+            <p className="text-slate-500 text-sm">Try adjusting your filters or check back later</p>
+          </div>
+        </div>
+      )}
+
+      {/* ORDERS DISPLAY */}
+      {!loading && orders.length > 0 && (
+        <div className="max-w-7xl mx-auto">
+          {Object.entries(grouped).map(([groupKey, groupOrders]) => (
+            <div key={groupKey} className="mb-8">
+              {/* GROUP HEADER */}
+              {groupBy !== "none" && (
+                <div className="mb-4 flex items-center gap-3">
+                  <h3 className="text-lg font-bold text-slate-900">{groupKey}</h3>
+                  <Badge variant="secondary" className="text-xs">
+                    {groupOrders.length} {groupOrders.length === 1 ? "order" : "orders"}
+                  </Badge>
+                </div>
+              )}
+
+              {/* MODERN CARDS GRID */}
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+                {groupOrders.map((order) => {
+                  const status = order.status.toLowerCase() as OrderStatus;
+                  const isPriority = status === "pending" || status === "confirmed";
+                  const d = new Date(order.created_at);
+                  const timeStr = d.toLocaleString(undefined, { 
+                    month: "short", 
+                    day: "numeric", 
+                    hour: "2-digit", 
+                    minute: "2-digit" 
+                  });
+                  const ageMs = Date.now() - d.getTime();
+                  const ageHours = ageMs / (1000 * 60 * 60);
+                  const ageStr = ageHours < 1 
+                    ? `${Math.round(ageMs / 60000)}m ago`
+                    : ageHours < 24
+                    ? `${Math.round(ageHours)}h ago`
+                    : `${Math.round(ageHours / 24)}d ago`;
+
+                  const statusConfig: Record<OrderStatus, { bg: string; text: string; icon: string }> = {
+                    pending: { bg: "bg-gradient-to-br from-yellow-50 to-yellow-100", text: "text-yellow-700", icon: "" },
+                    confirmed: { bg: "bg-gradient-to-br from-blue-50 to-blue-100", text: "text-blue-700", icon: "" },
+                    shipped: { bg: "bg-gradient-to-br from-purple-50 to-purple-100", text: "text-purple-700", icon: "" },
+                    delivered: { bg: "bg-gradient-to-br from-green-50 to-green-100", text: "text-green-700", icon: "" },
+                    cancelled: { bg: "bg-gradient-to-br from-red-50 to-red-100", text: "text-red-700", icon: "" },
+                  };
+
+                  const config = statusConfig[status];
+
                   return (
-                    <TableRow key={o.id} className="cursor-pointer" onClick={() => { setActive(o); setOpen(true); }}>
-                      <TableCell className="font-medium">{o.order_reference}</TableCell>
-                      <TableCell>{dateStr}</TableCell>
-                      <TableCell>
-                        {o.customer_name || o.customer_phone}
-                      </TableCell>
-                      <TableCell>{o.branch || 'N/A'}</TableCell>
-                      <TableCell className="text-right">KES {(o.total_amount_kes || 0).toLocaleString()}</TableCell>
-                      <TableCell>
-                        <span className={statusPill(o.status)}>{statusLabel(o.status.toLowerCase() as OrderStatus)}</span>
-                      </TableCell>
-                    </TableRow>
+                    <div
+                      key={order.id}
+                      onClick={() => { setActive(order); setOpen(true); }}
+                      className="group relative bg-white border border-slate-200 hover:border-slate-400 rounded-lg p-4 cursor-pointer hover:shadow-md transition-all duration-200"
+                    >
+                      {/* Header: Status + Time */}
+                      <div className="flex items-center justify-between mb-3 pb-3 border-b border-slate-100">
+                        <span className={`${config.text} font-semibold text-sm`}>
+                          {statusLabel(status)}
+                        </span>
+                        <span className="text-xs text-slate-500">{ageStr}</span>
+                      </div>
+
+                      {/* List Items */}
+                      <div className="space-y-2.5">
+                        {/* Order Reference */}
+                        <div className="flex justify-between items-center">
+                          <span className="text-xs text-slate-500">Order ID</span>
+                          <span className="text-sm font-mono text-slate-900">{order.order_reference || order.id?.slice(0, 8)}</span>
+                        </div>
+
+                        {/* Customer */}
+                        <div className="flex justify-between items-center">
+                          <span className="text-xs text-slate-500">Customer</span>
+                          <span className="text-sm font-semibold text-slate-900">{order.customer_name}</span>
+                        </div>
+
+                        {/* Phone */}
+                        <div className="flex justify-between items-center">
+                          <span className="text-xs text-slate-500">Phone</span>
+                          <span className="text-sm text-slate-700">{order.customer_phone}</span>
+                        </div>
+
+                        {/* Branch */}
+                        <div className="flex justify-between items-center">
+                          <span className="text-xs text-slate-500">Branch</span>
+                          <span className="text-sm text-slate-700">{order.branch || "N/A"}</span>
+                        </div>
+
+                        {/* Delivery */}
+                        <div className="flex justify-between items-center">
+                          <span className="text-xs text-slate-500">Delivery</span>
+                          <span className="text-sm text-slate-700 capitalize">{order.delivery_method}</span>
+                        </div>
+
+                        {/* Amount */}
+                        <div className="flex justify-between items-center pt-2 border-t border-slate-100">
+                          <span className="text-xs text-slate-500 font-medium">Total</span>
+                          <span className="text-lg font-bold text-slate-900">KES {(order.total_amount_kes || 0).toLocaleString()}</span>
+                        </div>
+                      </div>
+
+                      {/* Hover Arrow */}
+                      <ChevronRight className="absolute top-4 right-4 w-4 h-4 text-slate-400 opacity-0 group-hover:opacity-100 transition-opacity" />
+                    </div>
                   );
                 })}
-                {visible.length === 0 && (
-                  <TableRow>
-                    <TableCell colSpan={6} className="text-center text-muted-foreground">No matching orders.</TableCell>
-                  </TableRow>
-                )}
-              </TableBody>
-            </Table>
-          </CardContent>
-        </Card>
+              </div>
+            </div>
+          ))}
+        </div>
       )}
+
+      {/* ORDER DETAILS MODAL - keeping existing implementation */}
 
       <Dialog open={open} onOpenChange={(v) => { setOpen(v); if (!v) setActive(null); }}>
         <DialogContent className="max-w-2xl max-h-[90vh] p-0 pr-10 overflow-hidden flex flex-col">
