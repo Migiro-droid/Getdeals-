@@ -32,7 +32,7 @@ export class LetaTrackingService {
     listener: TrackingListener
   ): Promise<void> {
     try {
-      console.log(`📍 Starting real-time tracking for order: ${orderSlug}`);
+      console.log(` Starting real-time tracking for order: ${orderSlug}`);
 
       // Get domain for WebSocket connection
       const wsUrl = `wss://${this.domain}/ws/orders/${orderSlug}`;
@@ -41,7 +41,7 @@ export class LetaTrackingService {
       const ws = new WebSocket(wsUrl);
 
       ws.onopen = () => {
-        console.log(`✅ Connected to tracking for order: ${orderSlug}`);
+        console.log(`Connected to tracking for order: ${orderSlug}`);
       };
 
       ws.onmessage = (event) => {
@@ -58,7 +58,7 @@ export class LetaTrackingService {
             speed: data.speed ? parseFloat(data.speed) : undefined,
           };
 
-          console.log(`📍 Location update for ${orderSlug}:`, {
+          console.log(` Location update for ${orderSlug}:`, {
             lat: update.latitude,
             lng: update.longitude,
           });
@@ -75,7 +75,7 @@ export class LetaTrackingService {
 
       ws.onerror = (event) => {
         const error = new Error(`WebSocket error for order ${orderSlug}`);
-        console.error('❌ Tracking error:', error);
+        console.error(' Tracking error:', error);
         listener.onError(error);
       };
 
@@ -103,7 +103,7 @@ export class LetaTrackingService {
    * Stop tracking an order
    */
   public stopTracking(orderSlug: string): void {
-    console.log(`⏹️ Stopping tracking for order: ${orderSlug}`);
+    console.log(`⏹ Stopping tracking for order: ${orderSlug}`);
 
     const ws = this.connections.get(orderSlug);
     if (ws) {
@@ -114,11 +114,9 @@ export class LetaTrackingService {
     this.listeners.delete(orderSlug);
   }
 
-  /**
-   * Stop tracking all orders
-   */
+
   public stopAllTracking(): void {
-    console.log('⏹️ Stopping all tracking');
+    console.log(' Stopping all tracking');
 
     this.connections.forEach((ws) => {
       ws.close();
@@ -128,9 +126,7 @@ export class LetaTrackingService {
     this.listeners.clear();
   }
 
-  /**
-   * Add a listener to an existing tracking session
-   */
+
   public addListener(orderSlug: string, listener: TrackingListener): void {
     if (!this.listeners.has(orderSlug)) {
       this.listeners.set(orderSlug, []);
@@ -138,9 +134,6 @@ export class LetaTrackingService {
     this.listeners.get(orderSlug)!.push(listener);
   }
 
-  /**
-   * Remove a listener from a tracking session
-   */
   public removeListener(orderSlug: string, listener: TrackingListener): void {
     const listeners = this.listeners.get(orderSlug);
     if (listeners) {
@@ -151,24 +144,18 @@ export class LetaTrackingService {
     }
   }
 
-  /**
-   * Check if an order is being tracked
-   */
+
   public isTracking(orderSlug: string): boolean {
     return this.connections.has(orderSlug);
   }
 
-  /**
-   * Get all tracked orders
-   */
+
   public getTrackedOrders(): string[] {
     return Array.from(this.connections.keys());
   }
 }
 
-/**
- * Create a simple tracking update handler for frontend
- */
+
 export function createTrackingHandler() {
   const listeners: Map<string, (update: TrackingUpdate) => void> = new Map();
 

@@ -11,6 +11,49 @@ if (!supabaseUrl || !supabaseServiceKey) {
 
 
 const supabase = createClient(supabaseUrl, supabaseServiceKey);
+async function createLetaOrder(letaOrderPayload: any) {
+  try {
+    const letaApiUrl = process.env.VITE_LETA_API_URL || 'https://integrations.leta.ai';
+    const letaToken = process.env.LETA_API_TOKEN || process.env.VITE_LETA_TOKEN;
+
+    if (!letaToken) {
+      console.warn(' LETA_API_TOKEN not configured');
+      return { success: false, error: 'Leta token not configured' };
+    }
+
+    console.log(` Sending request to Leta API: ${letaApiUrl}/orders/add`);
+    console.log('Payload:', JSON.stringify(letaOrderPayload, null, 2));
+
+    const response = await fetch(`${letaApiUrl}/orders/add`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        Authorization: `Bearer ${letaToken}`,
+      },
+      body: JSON.stringify(letaOrderPayload),
+    });
+
+    const responseData = await response.json();
+
+    if (!response.ok) {
+      console.error(` Leta API error (${response.status}):`, responseData);
+      return {
+        success: false,
+        error: responseData.message || `Http error: ${response.status}`,
+        status: response.status,
+      };
+    }
+
+    console.log(`Leta order created successfully:`, responseData);
+    return { success: true, data: responseData };
+  } catch (error) {
+    console.error(' Error creating Leta order:', error);
+    return {
+      success: false,
+      error: error instanceof Error ? error.message : 'Unknown error',
+    };
+  }
+}
 
 interface OrderItem {
   id: string;
@@ -69,7 +112,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
 
     
     if (!orderData.payment_confirmed) {
-      console.warn('⚠️ Order creation attempted without payment confirmation');
+      console.warn(' Order creation attempted without payment confirmation');
       return res.status(400).json({
         success: false,
         error: 'Cannot create order without payment confirmation'
@@ -178,8 +221,69 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       console.log(' Payment linked to order');
     }
 
-    // Send order confirmation email for non-M-Pesa payments
-    // (M-Pesa sends emails via callback, wallet sends via checkout page)
+    //Create delivery ordeer
+    let letaOrderResult = null;
+    if (orderData.delivery_method === 'speedy' && orderData.delivery_address) {
+      console.log(`\n🚚 INITIATING LETA DELIVERY FOR ORDER: ${order.order_reference}`);
+      
+      //Leta order payload
+      const letaOrderPayload = {
+        reference: `GD-${order.order_reference}`,
+        customer: {
+          phone_number: orderData.customer_phone.replace(/\s+/g, ''),
+          email: orderData.customer_email,
+          name: orderData.customer_name,
+        },
+        depot_code: 'getdeals-nairobi',
+        dropoff: {
+          latitude: -1.2860273, 
+          longitude: 36.8079678,
+          name: typeof orderData.delivery_address === 'string'
+            ? orderData.delivery_address
+            : (orderData.delivery_address as any)?.address || 'Karen Green, Nairobi',
+        },
+        products: orderData.items.map((item: any) => ({
+          code: item.id,
+          quantity: item.quantity,
+          price: item.price,
+        })),
+        payment_method: 'prepaid',
+        special_instruction: `GetDeals Order #${order.order_reference}. Items: ${orderData.items.length}`,
+        cargo_description: orderData.items
+          .map((item: any) => `${item.quantity}x ${item.name}`)
+          .join(', '),
+      };
+
+      console.log('Leta order payload:', JSON.stringify(letaOrderPayload, null, 2));
+
+      letaOrderResult = await createLetaOrder(letaOrderPayload);
+
+      if (letaOrderResult.success && letaOrderResult.data) {
+        console.log(`LETA ORDER CREATED: ${letaOrderResult.data.id}`);
+
+        const { error: letaUpdateError } = await supabase
+          .from('orders')
+          .update({
+            leta_order_id: letaOrderResult.data.id,
+            leta_reference: letaOrderResult.data.reference,
+            leta_status: letaOrderResult.data.status || 'pending',
+            leta_tracking_url: letaOrderResult.data.tracking_url,
+          })
+          .eq('id', order.id);
+
+        if (letaUpdateError) {
+          console.error('Failed to update order with Leta info:', letaUpdateError);
+        } else {
+          console.log('Order updated with Leta tracking information');
+        }
+      } else {
+        console.error(`LETA ORDER CREATION FAILED:`, letaOrderResult.error);
+        console.warn('Order created in GetDeals but delivery in Leta failed - customer should be notified');
+      }
+    } else if (orderData.delivery_method === 'pickup') {
+      console.log(` Order ${order.order_reference} is PICKUP - No Leta delivery needed`);
+    }
+
     if (orderData.payment_method !== 'mobile-money' && orderData.payment_method !== 'wallet') {
       try {
         const baseUrl = process.env.FRONTEND_URL || 'https://getdeals.co.ke';
@@ -203,15 +307,15 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
                 ? orderData.delivery_address 
                 : (orderData.delivery_address as any)?.address || (orderData.delivery_address as any)?.pickup_location || 'Not specified',
               paymentMethod: orderData.payment_method,
-              createdAt: order.created_at
+              createdAt: order.created_at,
+              trackingUrl: letaOrderResult?.success ? letaOrderResult.data?.tracking_url : undefined
             }
           })
         });
         
-        console.log('✅ Order confirmation email sent');
+        console.log(' Order confirmation email sent');
       } catch (emailError) {
-        console.error('⚠️ Failed to send order confirmation email:', emailError);
-        // Don't fail the order if email fails
+        console.error(' Failed to send order confirmation email:', emailError);
       }
     }
     
@@ -225,7 +329,13 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
         created_at: order.created_at,
         items: orderData.items,
         payment_reference: order.payment_reference,
-        mpesa_receipt_number: orderData.mpesa_receipt_number ?? null
+        mpesa_receipt_number: orderData.mpesa_receipt_number ?? null,
+        ...(letaOrderResult?.success && letaOrderResult.data && {
+          leta_order_id: letaOrderResult.data.id,
+          leta_reference: letaOrderResult.data.reference,
+          tracking_url: letaOrderResult.data.tracking_url,
+          delivery_status: 'initiated'
+        })
       }
     });
 

@@ -13,6 +13,7 @@ import SMSService from './lib/sms.js';
 import EmailService from './lib/email.js';
 import ReceiptService from './lib/receipt.js';
 import NotificationService from './lib/notification.js';
+import { initializeLetaClient } from '../src/services/leta/client.ts';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -37,6 +38,19 @@ const smsService = new SMSService();
 const emailService = new EmailService();
 const receiptService = new ReceiptService();
 const notificationService = new NotificationService();
+
+// Initialize Leta Delivery Client
+try {
+  initializeLetaClient({
+    baseUrl: process.env.VITE_LETA_API_URL || 'https://integrations.leta.ai',
+    token: process.env.LETA_API_TOKEN || process.env.VITE_LETA_TOKEN,
+    timeout: 30000,
+    retries: 3,
+  });
+  console.log('✅ Leta Delivery Client Initialized');
+} catch (error) {
+  console.error('⚠️ Failed to initialize Leta client:', error.message);
+}
 
 app.use(cors());
 app.use(express.json());

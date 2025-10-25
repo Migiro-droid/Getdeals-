@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
-import { CreditCard, MapPin, Phone, User, Smartphone, DollarSign, Clock, Store, Navigation } from "lucide-react";
+import { CreditCard, MapPin, Phone, User, Smartphone, DollarSign, Clock, Store, Navigation, Loader, CheckCircle2 } from "lucide-react";
 import { Button } from "../components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "../components/ui/card";
 import { Input } from "../components/ui/input";
@@ -18,6 +18,7 @@ import { useWallet } from '../contexts/NewWalletContext';
 import { getApiBase } from '@/lib/api';
 import { PickupLocationService, type PickupLocation } from '../services/pickup-location';
 import { WalletPaymentService } from '../services/WalletPaymentService';
+import { getUserLocationWithAddress } from '../services/geolocation';
 
 export default function CheckoutPage() {
   const { items, total, clearCart } = useCart();
@@ -45,6 +46,11 @@ export default function CheckoutPage() {
   const [mobileMoneyProvider, setMobileMoneyProvider] = useState("mpesa");
   const [pickupLocations, setPickupLocations] = useState<PickupLocation[]>([]);
   const [loadingLocations, setLoadingLocations] = useState(false);
+  
+  // Geolocation states
+  const [isGettingLocation, setIsGettingLocation] = useState(false);
+  const [locationLatitude, setLocationLatitude] = useState<number | null>(null);
+  const [locationLongitude, setLocationLongitude] = useState<number | null>(null);
 
   useEffect(() => {
     loadPickupLocations();
@@ -193,6 +199,70 @@ export default function CheckoutPage() {
 
   const isLocationOpen = (location: PickupLocation) => {
     return PickupLocationService.isLocationOpen(location.operating_hours);
+  };
+
+  /**
+   * Get user's current location and update the address field
+   */
+  const handleGetLocation = async () => {
+    try {
+      setIsGettingLocation(true);
+      
+      const location = await getUserLocationWithAddress();
+      
+      // Update the address field with the formatted address
+      setAddress(location.address);
+      
+      // Store coordinates for Leta integration
+      setLocationLatitude(location.latitude);
+      setLocationLongitude(location.longitude);
+      
+      // Enhanced notification with better UX
+      toast({
+        title: "📍 Location Detected Successfully",
+        description: (
+          <div className="space-y-1 text-sm">
+            <p className="font-medium">{location.address}</p>
+            <p className="text-xs opacity-75">
+              Coordinates: {location.latitude.toFixed(4)}°, {location.longitude.toFixed(4)}°
+              {location.accuracy && ` • Accuracy: ±${Math.round(location.accuracy)}m`}
+            </p>
+          </div>
+        ),
+        duration: 4000,
+        className: "bg-green-50 border-green-200"
+      });
+    } catch (error) {
+      console.error('Geolocation error:', error);
+      
+      const errorMessage = error instanceof Error ? error.message : "Unable to detect your location";
+      const isPermissionError = errorMessage.includes('Permission denied');
+      
+      toast({
+        title: "⚠️ Location Detection Failed",
+        description: (
+          <div className="space-y-2 text-sm">
+            <p>{errorMessage}</p>
+            {isPermissionError && (
+              <div className="text-xs opacity-75 bg-amber-100/50 p-2 rounded">
+                <p className="font-medium mb-1">How to enable location:</p>
+                <ul className="list-disc list-inside space-y-0.5">
+                  <li>Chrome: Click the lock icon in address bar → Site settings</li>
+                  <li>Firefox: Settings → Privacy → Permissions → Location</li>
+                  <li>Safari: Preferences → Privacy → Location Services</li>
+                </ul>
+              </div>
+            )}
+            <p className="mt-1">You can still enter your address manually.</p>
+          </div>
+        ),
+        variant: "destructive",
+        duration: 6000,
+        className: "bg-red-50 border-red-200"
+      });
+    } finally {
+      setIsGettingLocation(false);
+    }
   };
 
   const formatPhoneNumber = (phone: string) => {
@@ -373,43 +443,22 @@ export default function CheckoutPage() {
           phone: orderData.mpesaPhone || phone,
           email,
           address: orderData.deliveryAddress,
-          pickupLocation: orderData.deliveryMethod === 'pickup' ? selectedPickupLocationData?.name || pickupLocation : undefined,
-          pickupLocationDetails: orderData.deliveryMethod === 'pickup' ? selectedPickupLocationData : undefined,
         },
-        status: 'confirmed' as const, // Orders are confirmed since payment is done
       };
-
-      createOrderContext(orderForContext);
-
-      return { 
-        success: true, 
-        order: {
-          id: result.order.id,
-          order_reference: result.order.order_reference,
-          ...result.order
-        }
+      return {
+        success: true,
+        order: result.order
       };
     } catch (error) {
       console.error(' Order creation error:', error);
-      return { 
-        success: false, 
-        error: error instanceof Error ? error.message : 'Order creation failed' 
+      return {
+        success: false,
+        error: error instanceof Error ? error.message : 'Failed to create order'
       };
     }
   };
 
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-
-    if (!auth.isAuthenticated) {
-      toast({
-        variant: 'destructive',
-        title: 'Authentication Error',
-        description: 'You must be logged in to place an order.',
-      });
-      return;
-    }
-
+  const handleCheckout = async () => {
     if (items.length === 0) {
       toast({
         variant: 'destructive',
@@ -792,7 +841,7 @@ export default function CheckoutPage() {
           </div>
         </div>
         
-        <form onSubmit={handleSubmit} className="grid lg:grid-cols-3 gap-8">
+        <form onSubmit={(e) => { e.preventDefault(); handleCheckout(); }} className="grid lg:grid-cols-3 gap-8">
           <div className="lg:col-span-2 space-y-6">
             <Card>
               <CardHeader>
@@ -970,15 +1019,52 @@ export default function CheckoutPage() {
                 )}
 
                 {deliveryMethod === "speedy" && (
-                  <div className="mt-4">
-                    <Label htmlFor="address">Delivery Address</Label>
+                  <div className="mt-4 space-y-3">
+                    <div className="flex items-center justify-between">
+                      <Label htmlFor="address">Delivery Address</Label>
+                      <Button
+                        type="button"
+                        variant={address && locationLatitude ? "default" : "outline"}
+                        size="sm"
+                        onClick={handleGetLocation}
+                        disabled={isGettingLocation}
+                        className={`flex items-center gap-2 transition-all ${
+                          address && locationLatitude
+                            ? "bg-green-600 hover:bg-green-700 text-white"
+                            : ""
+                        }`}
+                      >
+                        {isGettingLocation ? (
+                          <>
+                            <Loader className="h-4 w-4 animate-spin" />
+                            Detecting Location...
+                          </>
+                        ) : address && locationLatitude ? (
+                          <>
+                            <CheckCircle2 className="h-4 w-4" />
+                            Location Set
+                          </>
+                        ) : (
+                          <>
+                            <MapPin className="h-4 w-4" />
+                            Use My Location
+                          </>
+                        )}
+                      </Button>
+                    </div>
                     <Input
                       id="address"
                       value={address}
                       onChange={(e) => setAddress(e.target.value)}
-                      placeholder="Enter your full address"
+                      placeholder="Enter your full address or click 'Use My Location'"
+                      className={address && locationLatitude ? "border-green-300 bg-green-50/30" : ""}
                       required
                     />
+                    {locationLatitude && locationLongitude && (
+                      <div className="text-xs text-gray-500 bg-blue-50 p-2 rounded">
+                        📍 Location: {locationLatitude.toFixed(4)}, {locationLongitude.toFixed(4)}
+                      </div>
+                    )}
                   </div>
                 )}
               </CardContent>
