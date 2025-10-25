@@ -449,7 +449,8 @@ export default function CheckoutPage() {
       };
       return {
         success: true,
-        order: result.order
+        order: result.order,
+        deliveryWarning: result.deliveryWarning as string | undefined,
       };
     } catch (error) {
       console.error(' Order creation error:', error);
@@ -598,6 +599,14 @@ export default function CheckoutPage() {
                     title: "Payment Successful! ",
                     description: `Your order has been confirmed! Receipt: ${statusResult.mpesaReceiptNumber || 'N/A'}`,
                   });
+                  if (orderResult.deliveryWarning) {
+                    toast({
+                      title: 'Delivery Pending',
+                      description: orderResult.deliveryWarning,
+                      className: 'bg-amber-50 border-amber-200 text-amber-900',
+                      duration: 6000,
+                    });
+                  }
                   clearCart();
                   setTimeout(() => {
                     navigate(`/account?tab=orders&orderId=${orderResult.order.id}`);
@@ -771,6 +780,14 @@ export default function CheckoutPage() {
             description: `Payment of KES ${finalTotal.toLocaleString()} processed via your wallet. Transaction ID: ${walletResult.transaction_id}. You've earned KES ${cashback} cashback!`,
             duration: 8000,
           });
+          if (orderResult.deliveryWarning) {
+            toast({
+              title: 'Delivery Pending',
+              description: orderResult.deliveryWarning,
+              className: 'bg-amber-50 border-amber-200 text-amber-900',
+              duration: 6000,
+            });
+          }
 
           clearCart();
           setTimeout(() => {
@@ -796,6 +813,14 @@ export default function CheckoutPage() {
             title: "Order Placed Successfully!",
             description: "You will receive confirmation details shortly.",
           });
+          if (orderResult.deliveryWarning) {
+            toast({
+              title: 'Delivery Pending',
+              description: orderResult.deliveryWarning,
+              className: 'bg-amber-50 border-amber-200 text-amber-900',
+              duration: 6000,
+            });
+          }
 
           clearCart();
           setTimeout(() => {
