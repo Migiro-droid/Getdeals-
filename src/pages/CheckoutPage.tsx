@@ -342,9 +342,10 @@ export default function CheckoutPage() {
       const response = await fetch(`${mpesaServiceUrl}/api/payments/mpesa/status/${checkoutRequestId}`);
 
       const responseText = await response.text();
-      console.log(' Payment status response text:', responseText);
+      console.log('✅ Payment status response text:', responseText);
 
       if (!responseText) {
+        console.error('❌ Empty response from payment status server');
         throw new Error('Empty response from server');
       }
 
@@ -352,11 +353,12 @@ export default function CheckoutPage() {
       try {
         result = JSON.parse(responseText);
       } catch (jsonError) {
-        console.error('JSON parsing error:', jsonError);
+        console.error('❌ JSON parsing error:', jsonError);
         throw new Error(`Invalid JSON response: ${responseText.substring(0, 100)}`);
       }
 
-      console.log(' Payment status parsed result:', result);
+      console.log('📊 Payment status parsed result:', result);
+      console.log('💰 Payment confirmed?:', result.paymentConfirmed);
 
       if (response.ok) {
         return result;
@@ -364,8 +366,8 @@ export default function CheckoutPage() {
         throw new Error(result.error || 'Failed to check payment status');
       }
     } catch (error) {
-      console.error('Payment status check error:', error);
-      return { success: false, error: error instanceof Error ? error.message : 'Status check failed' };
+      console.error('❌ Payment status check error:', error);
+      return { success: false, paymentConfirmed: false, error: error instanceof Error ? error.message : 'Status check failed' };
     }
   };
 
@@ -565,10 +567,11 @@ export default function CheckoutPage() {
             console.log(' Payment status result:', statusResult);
 
             // Payment successful - NOW create the order
-            if (statusResult.success && statusResult.paymentConfirmed) {
+            // Check if payment is confirmed - paymentConfirmed must be true (not just truthy)
+            if (statusResult && statusResult.paymentConfirmed === true) {
               if (!paymentConfirmed) {
                 paymentConfirmed = true;
-                console.log(' Payment confirmed! Creating order...');
+                console.log('✅ Payment confirmed! Creating order...');
                 
                 // Step 3: Create order ONLY after payment is confirmed
                 const orderData = {
@@ -613,7 +616,7 @@ export default function CheckoutPage() {
             }
             
             // Payment explicitly failed
-            else if (statusResult.success && statusResult.paymentConfirmed === false && (
+            else if (statusResult && statusResult.paymentConfirmed === false && (
               statusResult.resultCode === '1032' || // User cancelled
               statusResult.resultCode === '1037' || // Payment timeout
               statusResult.resultCode === '1' ||    // Insufficient funds

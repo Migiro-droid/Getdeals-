@@ -76,23 +76,28 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
         }
       }
 
+      // ✅ Return paymentConfirmed based on ResultCode
+      const paymentConfirmed = isPaymentSuccessful;
+
+      console.log(`📤 Returning payment confirmed: ${paymentConfirmed}, ResultCode: ${mpesaResult.ResultCode || mpesaResult.resultCode}`);
+
       return res.status(200).json({
         success: true,
+        paymentConfirmed: paymentConfirmed,
         resultCode: mpesaResult.ResultCode || mpesaResult.resultCode,
         resultDesc: mpesaResult.ResultDesc || mpesaResult.resultDesc,
         mpesaReceiptNumber: mpesaResult.mpesaReceiptNumber || mpesaResult.MpesaReceiptNumber,
         transactionDate: mpesaResult.TransactionDate,
         amount: payment?.amount ? payment.amount / 100 : undefined,
-        paymentConfirmed: isPaymentSuccessful,
         source: 'mpesa-api'
       });
     } else {
       return res.status(200).json({
         success: false,
+        paymentConfirmed: false,
         resultCode: '1',
         resultDesc: 'Payment status unknown - M-Pesa query failed',
         error: mpesaResult.error,
-        paymentConfirmed: false,
         source: 'error'
       });
     }
