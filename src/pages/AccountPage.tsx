@@ -18,6 +18,8 @@ import { ProfilePictureUpload } from "@/components/ProfilePictureUpload";
 import { useAuth } from "@/contexts/AuthContext";
 import { useToast } from "@/hooks/use-toast";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import { OrderDeliveryTracking } from "@/components/OrderDeliveryTracking";
+import { createClient } from "@supabase/supabase-js";
 
 export default function AccountPage() {
   const [isEditing, setIsEditing] = useState(false);
@@ -42,6 +44,10 @@ export default function AccountPage() {
   const [twoFAOpen, setTwoFAOpen] = useState(false);
   const [twoFACode, setTwoFACode] = useState("");
   const [qrImage, setQrImage] = useState<string | null>(null);
+  
+  // Database orders state
+  const [databaseOrders, setDatabaseOrders] = useState<any[]>([]);
+  const [loadingOrders, setLoadingOrders] = useState(false);
   
   // Placeholder 2FA function (to be implemented)
   const verifyTwoFactor = async (code: string) => {
@@ -80,6 +86,45 @@ export default function AccountPage() {
       if (o) setActive(o);
     }
   }, [orderToHighlight, orders]);
+
+  // Fetch orders from Supabase database
+  useEffect(() => {
+    if (!user) return;
+
+    const fetchDatabaseOrders = async () => {
+      try {
+        setLoadingOrders(true);
+        const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
+        const supabaseKey = import.meta.env.VITE_SUPABASE_ANON_KEY;
+
+        if (!supabaseUrl || !supabaseKey) {
+          console.error('Supabase credentials not configured');
+          return;
+        }
+
+        const supabase = createClient(supabaseUrl, supabaseKey);
+
+        const { data, error } = await supabase
+          .from('orders')
+          .select('*')
+          .eq('user_id', user.id)
+          .order('created_at', { ascending: false });
+
+        if (error) {
+          console.error('Error fetching orders from Supabase:', error);
+          return;
+        }
+
+        setDatabaseOrders(data || []);
+      } catch (err) {
+        console.error('Failed to fetch database orders:', err);
+      } finally {
+        setLoadingOrders(false);
+      }
+    };
+
+    fetchDatabaseOrders();
+  }, [user]);
 
   return (
     <>
@@ -239,43 +284,113 @@ export default function AccountPage() {
 
               {/* Orders Tab */}
               <TabsContent value="orders">
-                <Card>
-                  <CardHeader>
-                    <CardTitle className="flex items-center">
-                      <Package className="h-5 w-5 mr-2" />
-                      Order History
-                    </CardTitle>
-                  </CardHeader>
-                  <CardContent>
-                    {orders.length === 0 ? (
-                      <div className="text-sm text-muted-foreground">No orders yet.</div>
-                    ) : (
-                      <div className="space-y-4">
-                        {orders.map((o) => (
-                          <div key={o.id} className={`border rounded-lg p-4 ${orderToHighlight === o.id ? 'ring-2 ring-primary' : ''}`}>
-                            <div className="flex items-center justify-between mb-2">
-                              <div>
-                                <h4 className="font-semibold">{o.id}</h4>
-                                <p className="text-sm text-muted-foreground">{new Date(o.date).toLocaleString()}</p>
+                <div className="space-y-6">
+                  <Card>
+                    <CardHeader>
+                      <CardTitle className="flex items-center">
+                        <Package className="h-5 w-5 mr-2" />
+                        Order History
+                      </CardTitle>
+                    </CardHeader>
+                    <CardContent>
+                      {loadingOrders ? (
+                        <div className="text-sm text-muted-foreground">Loading orders...</div>
+                      ) : databaseOrders.length === 0 && orders.length === 0 ? (
+                        <div className="text-sm text-muted-foreground">No orders yet.</div>
+                      ) : (
+                        <div className="space-y-6">
+                          {/* Database Orders (Recent) */}
+                          {databaseOrders.length > 0 && (
+                            <div>
+                              <h3 className="font-semibold mb-4 text-sm text-gray-600">Recent Orders</h3>
+                              <div className="space-y-4">
+                                {databaseOrders.map((o: any) => (
+                                  <div key={o.id} className="border rounded-lg p-4">
+                                    <div className="flex items-center justify-between mb-3">
+                                      <div>
+                                        <h4 className="font-semibold">{o.order_reference}</h4>
+                                        <p className="text-sm text-muted-foreground">{new Date(o.created_at).toLocaleString()}</p>
+                                      </div>
+                                      <Badge className={`${
+                                        o.status === 'delivered' ? 'bg-emerald-100 text-emerald-800' :
+                                        o.status === 'pending' ? 'bg-yellow-100 text-yellow-800' :
+                                        o.status === 'confirmed' ? 'bg-blue-100 text-blue-800' :
+                                        o.status === 'shipped' ? 'bg-purple-100 text-purple-800' :
+                                        'bg-red-100 text-red-800'
+                                      }`}>
+                                        {o.status ? o.status.replace(/_/g, ' ').replace(/^./, (c: string) => c.toUpperCase()) : 'Pending'}
+                                      </Badge>
+                                    </div>
+                                    
+                                    {/* Delivery Tracking for Speedy Orders */}
+                                    {o.delivery_method === 'speedy' && (
+                                      <div className="mb-4 border-t pt-4">
+                                        <OrderDeliveryTracking
+                                          orderId={o.id}
+                                          letaOrderId={o.leta_order_id}
+                                          trackingUrl={o.leta_tracking_url}
+                                          deliveryStatus={o.leta_status}
+                                          riderName={o.rider_name}
+                                          riderPhone={o.rider_phone}
+                                          deliveryAddress={o.delivery_address}
+                                          estimatedDeliveryTime={o.estimated_delivery_time}
+                                        />
+                                      </div>
+                                    )}
+                                    
+                                    <div className="flex items-center justify-between">
+                                      <div>
+                                        {o.items && Array.isArray(o.items) && (
+                                          <p className="text-sm text-muted-foreground">
+                                            {o.items.map((i: any) => `${i.name || i.product_name} × ${i.quantity}`).join(', ')}
+                                          </p>
+                                        )}
+                                        <p className="font-medium">KES {(o.total_amount || 0).toLocaleString()}</p>
+                                      </div>
+                                      <Button variant="outline" size="sm" onClick={() => setActive(o as any)}>
+                                        View Details
+                                      </Button>
+                                    </div>
+                                  </div>
+                                ))}
                               </div>
-                              <span className={statusPill(o.status)}>{statusLabel(o.status)}</span>
                             </div>
-                            <div className="flex items-center justify-between">
-                              <div>
-                                <p className="text-sm text-muted-foreground">{o.items.map(i => `${i.name} × ${i.quantity}`).join(', ')}</p>
-                                <p className="font-medium">KES {o.total.toLocaleString()}</p>
-                              </div>
-                              <div className="flex items-center gap-2">
-                                <Button variant="outline" size="sm" onClick={() => setActive(o)}>View Details</Button>
-                                <Button variant="destructive" size="sm" onClick={() => deleteOrder(o.id)}>Delete</Button>
+                          )}
+
+                          {/* LocalStorage Orders (Legacy) */}
+                          {orders.length > 0 && (
+                            <div>
+                              <h3 className="font-semibold mb-4 text-sm text-gray-600">Previous Orders</h3>
+                              <div className="space-y-4">
+                                {orders.map((o) => (
+                                  <div key={o.id} className={`border rounded-lg p-4 ${orderToHighlight === o.id ? 'ring-2 ring-primary' : ''}`}>
+                                    <div className="flex items-center justify-between mb-2">
+                                      <div>
+                                        <h4 className="font-semibold">{o.id}</h4>
+                                        <p className="text-sm text-muted-foreground">{new Date(o.date).toLocaleString()}</p>
+                                      </div>
+                                      <span className={statusPill(o.status)}>{statusLabel(o.status)}</span>
+                                    </div>
+                                    <div className="flex items-center justify-between">
+                                      <div>
+                                        <p className="text-sm text-muted-foreground">{o.items.map(i => `${i.name} × ${i.quantity}`).join(', ')}</p>
+                                        <p className="font-medium">KES {o.total.toLocaleString()}</p>
+                                      </div>
+                                      <div className="flex items-center gap-2">
+                                        <Button variant="outline" size="sm" onClick={() => setActive(o)}>View Details</Button>
+                                        <Button variant="destructive" size="sm" onClick={() => deleteOrder(o.id)}>Delete</Button>
+                                      </div>
+                                    </div>
+                                  </div>
+                                ))}
                               </div>
                             </div>
-                          </div>
-                        ))}
-                      </div>
-                    )}
-                  </CardContent>
-                </Card>
+                          )}
+                        </div>
+                      )}
+                    </CardContent>
+                  </Card>
+                </div>
               </TabsContent>
 
               {/* Addresses Tab */}
