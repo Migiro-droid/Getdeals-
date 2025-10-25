@@ -219,7 +219,7 @@ export default function AccountPage() {
     };
 
     fetchDatabaseOrders();
-  }, [user, orderToHighlight]);
+  }, [user, orderToHighlight, defaultTab]);
 
   return (
     <>
