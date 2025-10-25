@@ -8,7 +8,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
 import { Switch } from "@/components/ui/switch";
-import { useOrders, type Order, type OrderStatus } from "@/contexts/OrdersContext";
+import type { Order, OrderStatus } from "@/contexts/OrdersContext";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
 import { useLocation } from "react-router-dom";
 import { useAccount, type Address } from "@/contexts/AccountContext";
@@ -21,10 +21,24 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { DeliveryProgressBar } from "@/components/DeliveryProgressBar";
 import { createClient } from "@supabase/supabase-js";
 
+type DashboardOrder = Order & {
+  order_reference: string;
+  total_amount: number;
+  delivery_method: string;
+  delivery_address?: string | null;
+  delivery_address_raw?: unknown;
+  payment_reference?: string | null;
+  mpesa_receipt_number?: string | null;
+  leta_status?: string | null;
+  leta_tracking_url?: string | null;
+  rider_name?: string | null;
+  rider_phone?: string | null;
+  estimated_delivery_time?: string | null;
+};
+
 export default function AccountPage() {
   const [isEditing, setIsEditing] = useState(false);
-  const { orders, deleteOrder } = useOrders();
-  const [active, setActive] = useState<Order | null>(null);
+  const [active, setActive] = useState<DashboardOrder | null>(null);
   const location = useLocation();
   const { toast } = useToast();
   const { profile, setProfile, notifications, setNotifications, addresses, addAddress, updateAddress, removeAddress, setDefaultAddress } = useAccount();
@@ -46,7 +60,7 @@ export default function AccountPage() {
   const [qrImage, setQrImage] = useState<string | null>(null);
   
   // Database orders state
-  const [databaseOrders, setDatabaseOrders] = useState<any[]>([]);
+  const [databaseOrders, setDatabaseOrders] = useState<DashboardOrder[]>([]);
   const [loadingOrders, setLoadingOrders] = useState(false);
   
   // Placeholder 2FA function (to be implemented)
@@ -68,6 +82,7 @@ export default function AccountPage() {
     }, 0);
   const urlParams = new URLSearchParams(location.search);
   const defaultTab = urlParams.get("tab") || (location.state as any)?.tab || "profile";
+  const queryOrderId = urlParams.get("orderId") ?? undefined;
   const statusPill = (s: OrderStatus) => {
     const map: Record<OrderStatus, string> = {
       delivered: "bg-emerald-100 text-emerald-800",
@@ -79,13 +94,13 @@ export default function AccountPage() {
     return `inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs ${map[s]}`;
   };
   const statusLabel = (s: OrderStatus) => s.replace(/_/g, " ").replace(/^./, c => c.toUpperCase());
-  const orderToHighlight = (location.state as any)?.orderId as string | undefined;
+  const orderToHighlight = (queryOrderId as string | undefined) ?? (location.state as any)?.orderId;
   useEffect(() => {
-    if (orderToHighlight && orders.length) {
-      const o = orders.find(o => o.id === orderToHighlight);
-      if (o) setActive(o);
+    if (orderToHighlight && databaseOrders.length) {
+      const matched = databaseOrders.find(o => o.id === orderToHighlight);
+      if (matched) setActive(matched);
     }
-  }, [orderToHighlight, orders]);
+  }, [orderToHighlight, databaseOrders]);
 
   // Fetch orders from Supabase database
   useEffect(() => {
@@ -115,8 +130,87 @@ export default function AccountPage() {
           return;
         }
 
-        console.log('✅ Orders fetched from database:', data?.length || 0, 'orders');
-        setDatabaseOrders(data || []);
+        const normalizedOrders: DashboardOrder[] = (data ?? []).map((row: any) => {
+          const rawItems = Array.isArray(row.order_items) ? row.order_items : [];
+          const items = rawItems.map((item: any, index: number) => {
+            const priceCents = typeof item.price === 'number' ? item.price : 0;
+            return {
+              id: item.product_id?.toString() ?? item.id?.toString() ?? `item-${index}`,
+              name: item.product_name ?? item.name ?? 'Item',
+              price: priceCents / 100,
+              quantity: item.quantity ?? 1,
+              image: item.image ?? undefined,
+            };
+          });
+
+          const subtotal = typeof row.subtotal === 'number' ? row.subtotal / 100 : row.subtotal ?? 0;
+          const deliveryFee = typeof row.delivery_fee === 'number' ? row.delivery_fee / 100 : row.delivery_fee ?? 0;
+          const totalAmount = typeof row.total_amount === 'number' ? row.total_amount / 100 : row.total_amount ?? 0;
+
+          const nameParts = (row.customer_name ?? '').trim().split(/\s+/).filter(Boolean);
+          const firstName = nameParts.shift() ?? row.customer_name ?? 'Customer';
+          const lastName = nameParts.join(' ');
+
+          const deliveryAddressRaw = (typeof row.delivery_address === 'object' && row.delivery_address !== null)
+            ? (row.delivery_address as Record<string, any>)
+            : row.delivery_address
+              ? { address: row.delivery_address } as Record<string, any>
+              : null;
+
+          const paymentMethodValue = (row.payment_method ?? '').toString().toLowerCase();
+          const paymentMethod: Order['paymentMethod'] = (() => {
+            switch (paymentMethodValue) {
+              case 'wallet':
+                return 'wallet';
+              case 'cash':
+                return 'cash';
+              case 'card':
+              case 'credit-card':
+              case 'debit-card':
+                return 'card';
+              case 'mobile_money':
+              case 'mobile-money':
+              case 'mpesa':
+              default:
+                return 'mpesa';
+            }
+          })();
+
+          return {
+            id: row.id,
+            order_reference: row.order_reference ?? row.id,
+            delivery_method: row.delivery_method ?? 'pickup',
+            deliveryMethod: row.delivery_method === 'speedy' ? 'speedy' : 'pickup',
+            delivery_address: deliveryAddressRaw?.address ?? deliveryAddressRaw?.pickup_location ?? null,
+            delivery_address_raw: deliveryAddressRaw,
+            date: row.created_at ?? new Date().toISOString(),
+            status: (row.status ?? 'pending') as OrderStatus,
+            items,
+            subtotal,
+            deliveryFee,
+            total: totalAmount,
+            total_amount: totalAmount,
+            paymentMethod,
+            payment_reference: row.payment_reference ?? null,
+            mpesa_receipt_number: row.mpesa_receipt_number ?? null,
+            leta_status: row.leta_status ?? null,
+            leta_tracking_url: row.leta_tracking_url ?? null,
+            rider_name: row.rider_name ?? null,
+            rider_phone: row.rider_phone ?? null,
+            estimated_delivery_time: row.estimated_delivery_time ?? null,
+            customer: {
+              firstName,
+              lastName,
+              phone: row.customer_phone ?? '',
+              email: row.customer_email ?? '',
+              address: deliveryAddressRaw?.address ?? undefined,
+              pickupLocation: deliveryAddressRaw?.pickup_location ?? undefined,
+            },
+            note: row.notes ?? undefined,
+          } satisfies DashboardOrder;
+        });
+
+        setDatabaseOrders(normalizedOrders);
       } catch (err) {
         console.error('Failed to fetch database orders:', err);
       } finally {
@@ -125,48 +219,7 @@ export default function AccountPage() {
     };
 
     fetchDatabaseOrders();
-  }, [user]);
-
-  // Re-fetch orders when Orders tab is visited
-  useEffect(() => {
-    if (defaultTab === 'orders' && user) {
-      console.log('📋 Orders tab loaded - refreshing order data...');
-      const refetchOrders = async () => {
-        try {
-          setLoadingOrders(true);
-          const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
-          const supabaseKey = import.meta.env.VITE_SUPABASE_ANON_KEY;
-
-          if (!supabaseUrl || !supabaseKey) {
-            console.error('Supabase credentials not configured');
-            return;
-          }
-
-          const supabase = createClient(supabaseUrl, supabaseKey);
-
-          const { data, error } = await supabase
-            .from('orders')
-            .select('*')
-            .eq('user_id', user.id)
-            .order('created_at', { ascending: false });
-
-          if (error) {
-            console.error('Error refetching orders from Supabase:', error);
-            return;
-          }
-
-          console.log('✅ Orders refreshed:', data?.length || 0, 'orders');
-          setDatabaseOrders(data || []);
-        } catch (err) {
-          console.error('Failed to refetch database orders:', err);
-        } finally {
-          setLoadingOrders(false);
-        }
-      };
-      
-      refetchOrders();
-    }
-  }, [defaultTab, user]);
+  }, [user, orderToHighlight]);
 
   return (
     <>
@@ -350,7 +403,7 @@ export default function AccountPage() {
                         Your Orders
                       </h2>
                       <div className="space-y-6">
-                        {databaseOrders.map((o: any) => (
+                        {databaseOrders.map((o) => (
                           <div key={o.id}>
                             {/* Delivery Progress Bar for Speedy Orders */}
                             {o.delivery_method === 'speedy' && (
@@ -426,7 +479,7 @@ export default function AccountPage() {
                                   </div>
                                 )}
 
-                                <Button variant="outline" size="sm" className="w-full" onClick={() => setActive(o as any)}>
+                                <Button variant="outline" size="sm" className="w-full" onClick={() => setActive(o)}>
                                   View Full Details
                                 </Button>
                               </CardContent>
@@ -802,15 +855,22 @@ export default function AccountPage() {
   );
 }
 
-function OrderDetailsModal({ order, onClose }: { order: Order | null; onClose: () => void }) {
+function OrderDetailsModal({ order, onClose }: { order: DashboardOrder | null; onClose: () => void }) {
   if (!order) return null;
+  const orderReference = order.order_reference ?? order.id;
+  const createdAt = order.date ? new Date(order.date) : null;
+  const pickupLocation = order.customer.pickupLocation ?? order.delivery_address ?? 'Store Pickup';
   return (
     <Dialog open={!!order} onOpenChange={(open) => { if (!open) onClose(); }}>
       <DialogContent className="sm:max-w-3xl max-h-[90vh] overflow-y-auto pr-10">
         <DialogHeader>
           <DialogTitle className="flex items-center justify-between pr-6">
-            <span>Order {order.id}</span>
-            <span className="inline-flex items-center gap-2 text-sm text-muted-foreground"><CalendarClock className="h-4 w-4" /> {new Date(order.date).toLocaleString()}</span>
+            <span>Order {orderReference}</span>
+            {createdAt && (
+              <span className="inline-flex items-center gap-2 text-sm text-muted-foreground">
+                <CalendarClock className="h-4 w-4" /> {createdAt.toLocaleString()}
+              </span>
+            )}
           </DialogTitle>
         </DialogHeader>
 
@@ -872,12 +932,18 @@ function OrderDetailsModal({ order, onClose }: { order: Order | null; onClose: (
               <div className="mt-2 text-sm space-y-1">
                 <div>Delivery Method: <span className="font-medium capitalize">{order.deliveryMethod === 'speedy' ? 'Speedy Drop' : 'Pickup'}</span></div>
                 {order.deliveryMethod === 'speedy' ? (
-                  <div>Address: <span className="text-muted-foreground">{order.customer.address}</span></div>
+                  <div>Address: <span className="text-muted-foreground">{order.customer.address ?? order.delivery_address ?? '—'}</span></div>
                 ) : (
-                  <div>Pickup Location: <span className="text-muted-foreground">{order.customer.pickupLocation}</span></div>
+                  <div>Pickup Location: <span className="text-muted-foreground">{pickupLocation}</span></div>
                 )}
                 <div>Payment Method: <span className="font-medium capitalize">{order.paymentMethod}</span></div>
                 {order.note && (<div>Note: <span className="text-muted-foreground">{order.note}</span></div>)}
+                {order.payment_reference && (
+                  <div>Payment Reference: <span className="text-muted-foreground">{order.payment_reference}</span></div>
+                )}
+                {order.mpesa_receipt_number && (
+                  <div>Receipt: <span className="text-muted-foreground">{order.mpesa_receipt_number}</span></div>
+                )}
               </div>
             </div>
           </div>
