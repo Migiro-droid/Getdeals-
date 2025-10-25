@@ -83,6 +83,8 @@ export default function AccountPage() {
   const urlParams = new URLSearchParams(location.search);
   const defaultTab = urlParams.get("tab") || (location.state as any)?.tab || "profile";
   const queryOrderId = urlParams.get("orderId") ?? undefined;
+  
+  console.log('[AccountPage] Page loaded with params:', { queryOrderId, defaultTab, userId: user?.id });
   const statusPill = (s: OrderStatus) => {
     const map: Record<OrderStatus, string> = {
       delivered: "bg-emerald-100 text-emerald-800",
@@ -97,8 +99,14 @@ export default function AccountPage() {
   const orderToHighlight = (queryOrderId as string | undefined) ?? (location.state as any)?.orderId;
   useEffect(() => {
     if (orderToHighlight && databaseOrders.length) {
+      console.log(`[AccountPage] Looking for order: ${orderToHighlight}`);
       const matched = databaseOrders.find(o => o.id === orderToHighlight);
-      if (matched) setActive(matched);
+      if (matched) {
+        console.log('[AccountPage] Found order, setting active:', matched);
+        setActive(matched);
+      } else {
+        console.warn(`[AccountPage] Order not found. Available IDs: ${databaseOrders.map(o => o.id).join(', ')}`);
+      }
     }
   }, [orderToHighlight, databaseOrders]);
 
@@ -130,6 +138,9 @@ export default function AccountPage() {
           return;
         }
 
+        console.log(`[AccountPage] Fetched ${(data ?? []).length} orders for user ${user.id}`);
+        console.log('[AccountPage] Order IDs:', (data ?? []).map(o => o.id));
+        
         const normalizedOrders: DashboardOrder[] = (data ?? []).map((row: any) => {
           // Handle order_items stored in the orders table (JSONB column with full item objects)
           let items: any[] = [];
