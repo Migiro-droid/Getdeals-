@@ -131,8 +131,18 @@ export default function AccountPage() {
         }
 
         const normalizedOrders: DashboardOrder[] = (data ?? []).map((row: any) => {
-          const rawItems = Array.isArray(row.order_items) ? row.order_items : [];
-          const items = rawItems.map((item: any, index: number) => {
+          // Handle order_items stored in the orders table (JSONB column with full item objects)
+          let items: any[] = [];
+          
+          if (row.order_items) {
+            if (Array.isArray(row.order_items)) {
+              items = row.order_items;
+            } else if (typeof row.order_items === 'object') {
+              items = [row.order_items];
+            }
+          }
+          
+          const normalizedItems = items.map((item: any, index: number) => {
             const priceCents = typeof item.price === 'number' ? item.price : 0;
             return {
               id: item.product_id?.toString() ?? item.id?.toString() ?? `item-${index}`,
@@ -429,7 +439,7 @@ export default function AccountPage() {
                                       Order #{o.order_reference}
                                     </h3>
                                     <p className="text-sm text-muted-foreground">
-                                      {new Date(o.created_at).toLocaleString()}
+                                      {new Date(o.date).toLocaleString()}
                                     </p>
                                   </div>
                                   <Badge className={`${
