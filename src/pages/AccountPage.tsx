@@ -110,36 +110,32 @@ export default function AccountPage() {
     }
   }, [orderToHighlight, databaseOrders]);
 
-  // Fetch orders from Supabase database
+  // Fetch orders from Supabase database via API
   useEffect(() => {
     if (!user) return;
 
     const fetchDatabaseOrders = async () => {
       try {
         setLoadingOrders(true);
-        const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
-        const supabaseKey = import.meta.env.VITE_SUPABASE_ANON_KEY;
-
-        if (!supabaseUrl || !supabaseKey) {
-          console.error('Supabase credentials not configured');
+        
+        console.log(`[AccountPage] Fetching orders for user ${user.id} via API...`);
+        
+        const response = await fetch(`/api/orders/get-user-orders?userId=${user.id}`);
+        if (!response.ok) {
+          console.error('Error fetching orders from API:', response.statusText);
           return;
         }
 
-        const supabase = createClient(supabaseUrl, supabaseKey);
-
-        const { data, error } = await supabase
-          .from('orders')
-          .select('*')
-          .eq('user_id', user.id)
-          .order('created_at', { ascending: false });
-
-        if (error) {
-          console.error('Error fetching orders from Supabase:', error);
+        const result = await response.json();
+        
+        if (!result.success) {
+          console.error('API returned error:', result.error);
           return;
         }
 
-        console.log(`[AccountPage] Fetched ${(data ?? []).length} orders for user ${user.id}`);
-        console.log('[AccountPage] Order IDs:', (data ?? []).map(o => o.id));
+        const data = result.orders ?? [];
+        console.log(`[AccountPage] Fetched ${data.length} orders for user ${user.id}`);
+        console.log('[AccountPage] Order IDs:', data.map((o: any) => o.id));
         
         const normalizedOrders: DashboardOrder[] = (data ?? []).map((row: any) => {
           // Handle order_items stored in the orders table (JSONB column with full item objects)
@@ -240,7 +236,7 @@ export default function AccountPage() {
     };
 
     fetchDatabaseOrders();
-  }, [user, orderToHighlight, defaultTab]);
+  }, [user, defaultTab]);
 
   return (
     <>
