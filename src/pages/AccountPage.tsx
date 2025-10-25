@@ -56,9 +56,9 @@ export default function AccountPage() {
     return { ok: false, error: '2FA not yet implemented' };
   };
 
-  // Calculate real user stats from orders
-  const totalOrders = orders.length;
-  const totalSaved = orders
+  // Calculate real user stats from DATABASE orders only
+  const totalOrders = databaseOrders.length;
+  const totalSaved = databaseOrders
     .filter(order => order.status === 'delivered')
     .reduce((sum, order) => {
       // Calculate savings based on subtotal vs total difference (excluding delivery fee)
@@ -115,6 +115,7 @@ export default function AccountPage() {
           return;
         }
 
+        console.log('✅ Orders fetched from database:', data?.length || 0, 'orders');
         setDatabaseOrders(data || []);
       } catch (err) {
         console.error('Failed to fetch database orders:', err);
@@ -125,6 +126,47 @@ export default function AccountPage() {
 
     fetchDatabaseOrders();
   }, [user]);
+
+  // Re-fetch orders when Orders tab is visited
+  useEffect(() => {
+    if (defaultTab === 'orders' && user) {
+      console.log('📋 Orders tab loaded - refreshing order data...');
+      const refetchOrders = async () => {
+        try {
+          setLoadingOrders(true);
+          const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
+          const supabaseKey = import.meta.env.VITE_SUPABASE_ANON_KEY;
+
+          if (!supabaseUrl || !supabaseKey) {
+            console.error('Supabase credentials not configured');
+            return;
+          }
+
+          const supabase = createClient(supabaseUrl, supabaseKey);
+
+          const { data, error } = await supabase
+            .from('orders')
+            .select('*')
+            .eq('user_id', user.id)
+            .order('created_at', { ascending: false });
+
+          if (error) {
+            console.error('Error refetching orders from Supabase:', error);
+            return;
+          }
+
+          console.log('✅ Orders refreshed:', data?.length || 0, 'orders');
+          setDatabaseOrders(data || []);
+        } catch (err) {
+          console.error('Failed to refetch database orders:', err);
+        } finally {
+          setLoadingOrders(false);
+        }
+      };
+      
+      refetchOrders();
+    }
+  }, [defaultTab, user]);
 
   return (
     <>
@@ -291,7 +333,7 @@ export default function AccountPage() {
                         <div className="text-sm text-muted-foreground">Loading your orders...</div>
                       </CardContent>
                     </Card>
-                  ) : databaseOrders.length === 0 && orders.length === 0 ? (
+                  ) : databaseOrders.length === 0 ? (
                     <Card>
                       <CardContent className="p-8 text-center">
                         <Package className="h-12 w-12 text-muted-foreground mx-auto mb-3 opacity-50" />
@@ -302,135 +344,97 @@ export default function AccountPage() {
                       </CardContent>
                     </Card>
                   ) : (
-                    <>
-                      {/* Database Orders (Recent) */}
-                      {databaseOrders.length > 0 && (
-                        <div>
-                          <h2 className="text-2xl font-bold mb-4 flex items-center gap-2">
-                            <Truck className="h-6 w-6" />
-                            Active & Recent Orders
-                          </h2>
-                          <div className="space-y-6">
-                            {databaseOrders.map((o: any) => (
-                              <div key={o.id}>
-                                {/* Delivery Progress Bar for Speedy Orders */}
-                                {o.delivery_method === 'speedy' && (
-                                  <div className="mb-4">
-                                    <DeliveryProgressBar
-                                      orderId={o.id}
-                                      deliveryStatus={o.leta_status || 'pending'}
-                                      riderName={o.rider_name}
-                                      riderPhone={o.rider_phone}
-                                      deliveryAddress={o.delivery_address}
-                                      estimatedDeliveryTime={o.estimated_delivery_time}
-                                      trackingUrl={o.leta_tracking_url}
-                                    />
+                    <div>
+                      <h2 className="text-2xl font-bold mb-4 flex items-center gap-2">
+                        <Truck className="h-6 w-6" />
+                        Your Orders
+                      </h2>
+                      <div className="space-y-6">
+                        {databaseOrders.map((o: any) => (
+                          <div key={o.id}>
+                            {/* Delivery Progress Bar for Speedy Orders */}
+                            {o.delivery_method === 'speedy' && (
+                              <div className="mb-4">
+                                <DeliveryProgressBar
+                                  orderId={o.id}
+                                  deliveryStatus={o.leta_status || 'pending'}
+                                  riderName={o.rider_name}
+                                  riderPhone={o.rider_phone}
+                                  deliveryAddress={o.delivery_address}
+                                  estimatedDeliveryTime={o.estimated_delivery_time}
+                                  trackingUrl={o.leta_tracking_url}
+                                />
+                              </div>
+                            )}
+
+                            {/* Order Details Card */}
+                            <Card>
+                              <CardContent className="p-4">
+                                <div className="flex items-center justify-between mb-3">
+                                  <div>
+                                    <h3 className="font-bold text-lg">
+                                      Order #{o.order_reference}
+                                    </h3>
+                                    <p className="text-sm text-muted-foreground">
+                                      {new Date(o.created_at).toLocaleString()}
+                                    </p>
+                                  </div>
+                                  <Badge className={`${
+                                    o.status === 'delivered' ? 'bg-emerald-100 text-emerald-800' :
+                                    o.status === 'pending' ? 'bg-yellow-100 text-yellow-800' :
+                                    o.status === 'confirmed' ? 'bg-blue-100 text-blue-800' :
+                                    o.status === 'shipped' ? 'bg-purple-100 text-purple-800' :
+                                    'bg-red-100 text-red-800'
+                                  }`}>
+                                    {o.status ? o.status.replace(/_/g, ' ').replace(/^./, (c: string) => c.toUpperCase()) : 'Pending'}
+                                  </Badge>
+                                </div>
+
+                                <Separator className="my-3" />
+
+                                <div className="grid grid-cols-2 gap-4 mb-3">
+                                  <div>
+                                    <p className="text-xs font-semibold text-gray-600 mb-1">Items</p>
+                                    {o.items && Array.isArray(o.items) ? (
+                                      <ul className="text-sm space-y-1">
+                                        {o.items.map((item: any, idx: number) => (
+                                          <li key={idx} className="text-gray-700">
+                                            {item.name || item.product_name} ×{item.quantity}
+                                          </li>
+                                        ))}
+                                      </ul>
+                                    ) : (
+                                      <p className="text-sm text-gray-500">No items</p>
+                                    )}
+                                  </div>
+                                  <div>
+                                    <p className="text-xs font-semibold text-gray-600 mb-1">Delivery Method</p>
+                                    <p className="text-sm font-medium">
+                                      {o.delivery_method === 'speedy' ? '🚚 Speedy' : '🏪 Pickup'}
+                                    </p>
+                                    <p className="text-xs font-semibold text-gray-600 mb-1 mt-2">Total</p>
+                                    <p className="text-lg font-bold text-green-600">
+                                      KES {(o.total_amount || 0).toLocaleString()}
+                                    </p>
+                                  </div>
+                                </div>
+
+                                {o.delivery_method === 'speedy' && o.delivery_address && (
+                                  <div className="mb-3 p-2 bg-blue-50 rounded text-sm text-gray-700 flex items-start gap-2">
+                                    <MapPin className="h-4 w-4 mt-0.5 flex-shrink-0 text-blue-600" />
+                                    <span>{o.delivery_address}</span>
                                   </div>
                                 )}
 
-                                {/* Order Details Card */}
-                                <Card>
-                                  <CardContent className="p-4">
-                                    <div className="flex items-center justify-between mb-3">
-                                      <div>
-                                        <h3 className="font-bold text-lg">
-                                          Order #{o.order_reference}
-                                        </h3>
-                                        <p className="text-sm text-muted-foreground">
-                                          {new Date(o.created_at).toLocaleString()}
-                                        </p>
-                                      </div>
-                                      <Badge className={`${
-                                        o.status === 'delivered' ? 'bg-emerald-100 text-emerald-800' :
-                                        o.status === 'pending' ? 'bg-yellow-100 text-yellow-800' :
-                                        o.status === 'confirmed' ? 'bg-blue-100 text-blue-800' :
-                                        o.status === 'shipped' ? 'bg-purple-100 text-purple-800' :
-                                        'bg-red-100 text-red-800'
-                                      }`}>
-                                        {o.status ? o.status.replace(/_/g, ' ').replace(/^./, (c: string) => c.toUpperCase()) : 'Pending'}
-                                      </Badge>
-                                    </div>
-
-                                    <Separator className="my-3" />
-
-                                    <div className="grid grid-cols-2 gap-4 mb-3">
-                                      <div>
-                                        <p className="text-xs font-semibold text-gray-600 mb-1">Items</p>
-                                        {o.items && Array.isArray(o.items) ? (
-                                          <ul className="text-sm space-y-1">
-                                            {o.items.map((item: any, idx: number) => (
-                                              <li key={idx} className="text-gray-700">
-                                                {item.name || item.product_name} ×{item.quantity}
-                                              </li>
-                                            ))}
-                                          </ul>
-                                        ) : (
-                                          <p className="text-sm text-gray-500">No items</p>
-                                        )}
-                                      </div>
-                                      <div>
-                                        <p className="text-xs font-semibold text-gray-600 mb-1">Delivery Method</p>
-                                        <p className="text-sm font-medium">
-                                          {o.delivery_method === 'speedy' ? '🚚 Speedy' : '🏪 Pickup'}
-                                        </p>
-                                        <p className="text-xs font-semibold text-gray-600 mb-1 mt-2">Total</p>
-                                        <p className="text-lg font-bold text-green-600">
-                                          KES {(o.total_amount || 0).toLocaleString()}
-                                        </p>
-                                      </div>
-                                    </div>
-
-                                    {o.delivery_method === 'speedy' && o.delivery_address && (
-                                      <div className="mb-3 p-2 bg-blue-50 rounded text-sm text-gray-700 flex items-start gap-2">
-                                        <MapPin className="h-4 w-4 mt-0.5 flex-shrink-0 text-blue-600" />
-                                        <span>{o.delivery_address}</span>
-                                      </div>
-                                    )}
-
-                                    <Button variant="outline" size="sm" className="w-full" onClick={() => setActive(o as any)}>
-                                      View Full Details
-                                    </Button>
-                                  </CardContent>
-                                </Card>
-                              </div>
-                            ))}
+                                <Button variant="outline" size="sm" className="w-full" onClick={() => setActive(o as any)}>
+                                  View Full Details
+                                </Button>
+                              </CardContent>
+                            </Card>
                           </div>
-                        </div>
-                      )}
-
-                      {/* LocalStorage Orders (Legacy) */}
-                      {orders.length > 0 && (
-                        <div>
-                          <h2 className="text-2xl font-bold mb-4">Previous Orders</h2>
-                          <div className="space-y-4">
-                            {orders.map((o) => (
-                              <Card key={o.id} className={orderToHighlight === o.id ? 'ring-2 ring-primary' : ''}>
-                                <CardContent className="p-4">
-                                  <div className="flex items-center justify-between mb-2">
-                                    <div>
-                                      <h3 className="font-semibold text-lg">{o.id}</h3>
-                                      <p className="text-sm text-muted-foreground">{new Date(o.date).toLocaleString()}</p>
-                                    </div>
-                                    <span className={statusPill(o.status)}>{statusLabel(o.status)}</span>
-                                  </div>
-                                  <Separator className="my-2" />
-                                  <div className="flex items-center justify-between">
-                                    <div>
-                                      <p className="text-sm text-muted-foreground">{o.items.map(i => `${i.name} × ${i.quantity}`).join(', ')}</p>
-                                      <p className="font-medium">KES {o.total.toLocaleString()}</p>
-                                    </div>
-                                    <div className="flex items-center gap-2">
-                                      <Button variant="outline" size="sm" onClick={() => setActive(o)}>View</Button>
-                                      <Button variant="destructive" size="sm" onClick={() => deleteOrder(o.id)}>Delete</Button>
-                                    </div>
-                                  </div>
-                                </CardContent>
-                              </Card>
-                            ))}
-                          </div>
-                        </div>
-                      )}
-                    </>
+                        ))}
+                      </div>
+                    </div>
                   )}
                 </div>
               </TabsContent>
