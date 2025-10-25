@@ -376,7 +376,7 @@ export default function CheckoutPage() {
       }
 
       const subtotal = orderData.items.reduce((sum: number, item: any) => sum + (item.price * item.quantity), 0);
-      const deliveryFee = orderData.deliveryMethod === 'speedy' ? 300 : 0;
+      const deliveryFee = 0; // Free delivery for now
       const totalAmount = subtotal + deliveryFee;
 
       const dbOrderData = {
@@ -814,9 +814,9 @@ export default function CheckoutPage() {
   };
 
   // Calculate delivery fee and final total based on selected delivery method
-  // CRITICAL: Delivery fee (KES 300) only applies to 'speedy' delivery, NOT pickup
-  const deliveryFee = deliveryMethod === "speedy" ? 300 : 0;
-  const finalTotal = total + deliveryFee; // Customer pays: subtotal + delivery (if speedy)
+  // CRITICAL: Free delivery for all methods
+  const deliveryFee = 0; // Free delivery for now
+  const finalTotal = total + deliveryFee; // Customer pays: subtotal only
 
   return (
     <div className="min-h-screen py-8">
