@@ -92,25 +92,56 @@ export function OrderDeliveryTracking({
   const [currentStatus, setCurrentStatus] = useState<TrackingStatus>(
     (deliveryStatus as TrackingStatus) || 'pending'
   );
+  const [retryCount, setRetryCount] = useState(0);
+  const maxRetries = 3;
 
   const config = statusConfig[currentStatus];
 
+  // Fetch tracking with retry logic
+  const fetchTrackingWithRetry = async (attempt = 0): Promise<boolean> => {
+    try {
+      setIsLoading(true);
+      const response = await fetch(`/api/orders/${orderId}/tracking`);
+      
+      if (response.status === 404 && attempt < maxRetries) {
+        // Order might not be fully synced yet, retry with exponential backoff
+        const delayMs = Math.pow(2, attempt) * 500; // 500ms, 1s, 2s
+        console.warn(`⚠️ Order not found (attempt ${attempt + 1}/${maxRetries}), retrying in ${delayMs}ms...`);
+        setRetryCount(attempt + 1);
+        
+        await new Promise(resolve => setTimeout(resolve, delayMs));
+        return fetchTrackingWithRetry(attempt + 1);
+      }
+
+      const data = await response.json();
+
+      if (!response.ok) {
+        console.error(`❌ Failed to fetch tracking (status: ${response.status}):`, data);
+        return false;
+      }
+
+      if (data.success && data.tracking) {
+        setCurrentStatus(data.tracking.status);
+        setRetryCount(0); // Reset retry count on success
+        return true;
+      }
+
+      return false;
+    } catch (error) {
+      console.error('❌ Failed to fetch tracking info:', error);
+      return false;
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
   // Auto-refresh tracking data every 30 seconds
   useEffect(() => {
-    const interval = setInterval(async () => {
-      try {
-        setIsLoading(true);
-        const response = await fetch(`/api/orders/${orderId}/tracking`);
-        const data = await response.json();
+    // Fetch immediately on mount
+    fetchTrackingWithRetry();
 
-        if (data.success && data.tracking) {
-          setCurrentStatus(data.tracking.status);
-        }
-      } catch (error) {
-        console.error('Failed to fetch tracking info:', error);
-      } finally {
-        setIsLoading(false);
-      }
+    const interval = setInterval(() => {
+      fetchTrackingWithRetry();
     }, 30000); // 30 seconds
 
     return () => clearInterval(interval);

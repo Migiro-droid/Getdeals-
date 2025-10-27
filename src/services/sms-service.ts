@@ -1,14 +1,4 @@
-/**
- * SMS Service for GetDeals Kenya
- * Uses Africa's Talking API for SMS notifications
- * 
- * SMS notifications include:
- * - Order confirmation
- * - Payment confirmation
- * - Order status updates (processing, ready, delivered)
- * - OTP/2FA codes
- * - Delivery notifications
- */
+
 
 interface SMSConfig {
   apiKey: string;

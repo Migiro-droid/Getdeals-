@@ -650,7 +650,7 @@ export default function HomePageRedesign() {
                   </div>
                 </div>
                 
-                {/* Animated Background Elements */}
+                {}
                 <div className="absolute top-4 right-4 text-white/10 text-[120px] font-black transform rotate-12 group-hover:rotate-0 transition-transform">
                   %
                 </div>
@@ -658,7 +658,7 @@ export default function HomePageRedesign() {
               </Link>
               ) : (
               <div className="relative overflow-hidden rounded-2xl shadow-lg bg-gradient-to-br from-gray-900 via-gray-800 to-gray-900 p-8 group hover:shadow-xl transition-all block border border-gray-700 min-h-[340px] flex items-center justify-center">
-                {/* Subtle Dots Pattern */}
+                {}
                 <div className="absolute inset-0 opacity-5">
                   <div className="absolute inset-0 bg-repeat" style={{
                     backgroundImage: 'radial-gradient(circle, rgba(255,255,255,.5) 1px, transparent 1px)',
@@ -666,7 +666,7 @@ export default function HomePageRedesign() {
                   }}></div>
                 </div>
 
-                {/* Top Gradient Line */}
+                {}
                 <div className="absolute left-0 top-0 w-full h-1 bg-gradient-to-r from-gray-600 via-gray-500 to-gray-600"></div>
 
                 <div className="relative z-10 space-y-4 text-center w-full">
@@ -697,41 +697,49 @@ export default function HomePageRedesign() {
               </div>
               )}
 
-              {/* New Arrivals Card - Image-Based */}
-              <a
-                href="#new-arrivals-section"
-                onClick={(e) => {
-                  e.preventDefault();
-                  const section = document.getElementById('new-arrivals-section');
-                  section?.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
-                }}
-                className="relative overflow-hidden rounded-2xl shadow-lg group cursor-pointer hover:shadow-2xl transition-all block"
-              >
-                <div className="relative h-[240px]">
-                  <img 
-                    src="https://images.unsplash.com/photo-1542838132-92c53300491e?w=600&h=400&fit=crop"
-                    alt="New Arrivals"
-                    className="w-full h-full object-cover transform group-hover:scale-110 transition-transform duration-700"
-                  />
-                  <div className="absolute inset-0 bg-gradient-to-t from-black via-black/50 to-transparent"></div>
-                  
-                  <div className="absolute inset-0 flex flex-col justify-end p-6 text-white">
-                    <div className="inline-flex items-center gap-2 bg-cyan-500 px-4 py-2 rounded-full w-fit mb-3 animate-pulse">
-                      <Sparkles className="h-4 w-4" />
-                      <span className="text-xs font-black uppercase">New Arrivals</span>
+              {/* Customers Trust Card - Stylish Stats Display */}
+              <div className="relative overflow-hidden rounded-2xl shadow-lg group cursor-pointer hover:shadow-2xl transition-all block bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900 border border-slate-700">
+                {/* Animated background elements */}
+                <div className="absolute inset-0 opacity-30">
+                  <div className="absolute top-0 right-0 w-40 h-40 bg-blue-500 rounded-full blur-3xl opacity-20 animate-pulse"></div>
+                  <div className="absolute bottom-0 left-0 w-40 h-40 bg-cyan-500 rounded-full blur-3xl opacity-20 animate-pulse delay-1000"></div>
+                </div>
+                
+                <div className="relative h-[240px] flex flex-col justify-center items-center p-6 text-center">
+                  {/* Main Stats */}
+                  <div className="space-y-4">
+                    {/* Number with animation */}
+                    <div className="relative">
+                      <div className="text-sm font-semibold text-cyan-400 uppercase tracking-widest mb-2 animate-pulse">
+                        🌟 Trusted by millions
+                      </div>
+                      <h3 className="text-5xl font-black text-white mb-2">
+                        <span className="text-transparent bg-clip-text bg-gradient-to-r from-cyan-400 via-blue-400 to-cyan-300">
+                          100,000+
+                        </span>
+                      </h3>
+                      <p className="text-xl font-bold text-white">Customers</p>
                     </div>
-                    <h3 className="text-3xl font-black mb-2 leading-tight">
-                      Fresh<br />Products Daily
-                    </h3>
-                    <p className="text-sm font-semibold text-white/90 mb-3">
-                      Discover the latest additions to our collection
+                    
+                    {/* Subheading */}
+                    <div className="space-y-2">
+                      <p className="text-base font-semibold text-gray-200">
+                        Trusted Nationwide
+                      </p>
+                      <div className="flex items-center justify-center gap-2">
+                        <div className="h-1 w-12 bg-gradient-to-r from-cyan-500 to-transparent rounded-full"></div>
+                        <Trophy className="h-5 w-5 text-amber-400" />
+                        <div className="h-1 w-12 bg-gradient-to-l from-cyan-500 to-transparent rounded-full"></div>
+                      </div>
+                    </div>
+                    
+                    {/* Testimonial hint */}
+                    <p className="text-xs text-gray-400 italic">
+                      "Your favorite shopping partner across Kenya"
                     </p>
-                    <div className="flex items-center gap-2 font-bold group-hover:gap-3 transition-all">
-                      Explore Now <ChevronRight className="h-5 w-5" />
-                    </div>
                   </div>
                 </div>
-              </a>
+              </div>
             </div>
           </div>
 

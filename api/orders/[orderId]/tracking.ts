@@ -19,12 +19,71 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     const orderId = req.query.orderId as string;
 
     if (!orderId) {
+      console.warn('⚠️ No order ID provided in request');
       return res.status(400).json({ success: false, error: 'Order ID required' });
     }
 
     console.log(`📍 Fetching tracking info for order: ${orderId}`);
+    console.log(`🔍 Using Supabase URL: ${supabaseUrl}`);
 
-    // Fetch order with delivery info
+    // First, try to fetch the order to verify it exists
+    const { data: orders, error: listError } = await supabase
+      .from('orders')
+      .select('id, order_reference, status')
+      .eq('id', orderId)
+      .limit(1);
+
+    if (listError) {
+      // Detect RLS policy issues
+      const isRLSError = 
+        listError.code === 'PGRST116' ||
+        listError.code === '42501' ||
+        listError.message?.includes('permission denied') ||
+        listError.message?.includes('row-level security') ||
+        listError.message?.includes('policy');
+
+      if (isRLSError) {
+        console.error('🔒 RLS POLICY BLOCKING ACCESS!');
+        console.error('The RLS policy on the orders table is blocking service role access');
+        console.error('Solution: Apply the migration 20251027_fix_rls_policies_for_tracking.sql');
+        console.error('Details:', {
+          code: listError.code,
+          message: listError.message,
+          details: listError.details,
+          hint: listError.hint
+        });
+        
+        return res.status(403).json({
+          success: false,
+          error: 'RLS Policy Blocking Access',
+          hint: 'Database RLS policies need to be configured. Please apply the RLS migration.',
+          code: 'RLS_POLICY_ERROR',
+          details: process.env.NODE_ENV === 'development' ? listError.message : undefined
+        });
+      }
+
+      console.error('❌ Error listing orders:', {
+        code: listError.code,
+        message: listError.message,
+        details: listError.details,
+        hint: listError.hint
+      });
+      return res.status(500).json({
+        success: false,
+        error: 'Failed to query orders',
+        details: listError.message
+      });
+    }
+
+    if (!orders || orders.length === 0) {
+      console.warn(`⚠️ No order found with ID: ${orderId}`);
+      console.log(`📊 This could indicate: order doesn't exist, RLS policy blocks access, or DB replication lag`);
+      return res.status(404).json({ success: false, error: 'Order not found' });
+    }
+
+    console.log(`✓ Order found: ${orders[0].order_reference}`);
+
+    // Now fetch the full order with delivery info
     const { data: order, error } = await supabase
       .from('orders')
       .select(
@@ -51,8 +110,47 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       .eq('id', orderId)
       .single();
 
-    if (error || !order) {
-      console.error('Order not found:', error);
+    if (error) {
+      // Detect RLS policy issues
+      const isRLSError = 
+        error.code === 'PGRST116' ||
+        error.code === '42501' ||
+        error.message?.includes('permission denied') ||
+        error.message?.includes('row-level security') ||
+        error.message?.includes('policy');
+
+      if (isRLSError) {
+        console.error('🔒 RLS POLICY BLOCKING DETAILED FETCH!');
+        console.error('Solution: Apply the migration 20251027_fix_rls_policies_for_tracking.sql');
+        console.error('Details:', {
+          code: error.code,
+          message: error.message,
+          details: error.details
+        });
+        
+        return res.status(403).json({
+          success: false,
+          error: 'RLS Policy Blocking Access',
+          code: 'RLS_POLICY_ERROR',
+          hint: 'Database RLS policies need to be configured.'
+        });
+      }
+
+      console.error('❌ Error fetching order details:', {
+        code: error.code,
+        message: error.message,
+        details: error.details,
+        hint: error.hint
+      });
+      return res.status(500).json({
+        success: false,
+        error: 'Failed to fetch order',
+        details: error.message
+      });
+    }
+
+    if (!order) {
+      console.error('❌ Order returned null despite existence check');
       return res.status(404).json({ success: false, error: 'Order not found' });
     }
 
@@ -104,13 +202,19 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
 
     return res.status(200).json({
       success: true,
-      tracking,
+      tracking: tracking,
+      message: `Tracking info for order ${order.order_reference}`
     });
   } catch (error) {
-    console.error('Error fetching tracking:', error);
+    console.error('❌ Error fetching tracking:', error);
+    const errorMessage = error instanceof Error ? error.message : 'Internal server error';
+    const errorStack = error instanceof Error ? error.stack : undefined;
+    console.error('Error stack:', errorStack);
+    
     return res.status(500).json({
       success: false,
-      error: error instanceof Error ? error.message : 'Internal server error',
+      error: errorMessage,
+      details: process.env.NODE_ENV === 'development' ? errorStack : undefined
     });
   }
 }
