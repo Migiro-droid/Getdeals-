@@ -1,46 +1,46 @@
 {
-  "timestamp": "2025-10-28T19:07:53.099Z",
+  "timestamp": "2025-10-29T08:51:40.025Z",
   "apiUrl": "https://integrations.leta.ai",
   "summary": {
     "total": 8,
-    "successful": 8,
-    "failed": 0
+    "successful": 0,
+    "failed": 8
   },
   "results": {
-    "successful": [
+    "successful": [],
+    "failed": [
       {
         "code": "QUICK_NAIROBI_WESTLANDS",
-        "depotId": "unknown"
+        "error": "Unknown error"
       },
       {
         "code": "QUICK_NAIROBI_ROYSAMBU",
-        "depotId": "unknown"
+        "error": "Unknown error"
       },
       {
         "code": "QUICK_NAIROBI_LAVINGTON",
-        "depotId": "unknown"
+        "error": "Unknown error"
       },
       {
         "code": "QUICK_NAIROBI_THINDIUGA",
-        "depotId": "unknown"
+        "error": "Unknown error"
       },
       {
         "code": "QUICK_NAIROBI_MOMBASA_ROAD",
-        "depotId": "unknown"
+        "error": "Unknown error"
       },
       {
         "code": "QUICK_NAIROBI_KAREN",
-        "depotId": "unknown"
+        "error": "Unknown error"
       },
       {
         "code": "QUICK_NAIROBI_CBD",
-        "depotId": "unknown"
+        "error": "Unknown error"
       },
       {
         "code": "QUICK_NAIROBI_EASTLANDS",
-        "depotId": "unknown"
+        "error": "Unknown error"
       }
-    ],
-    "failed": []
+    ]
   }
 }

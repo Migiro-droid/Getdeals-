@@ -4,6 +4,10 @@ import fetch from 'node-fetch';
 import fs from 'fs';
 import path from 'path';
 import { fileURLToPath } from 'url';
+import dotenv from 'dotenv';
+
+// Load environment variables from .env file
+dotenv.config({ path: path.join(path.dirname(fileURLToPath(import.meta.url)), '..', '.env') });
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -121,10 +125,12 @@ async function registerDepot(outlet, token, apiUrl, maxRetries = 3) {
         console.log(`✅ Success: ${outlet.code} (ID: ${depotId})`);
         return { success: true, depotId };
       } else {
-        lastError = data.message || data.error || 'Unknown error';
+        lastError = data.message || data.error || `HTTP ${response.status}: ${response.statusText}`;
         console.warn(
           `⚠️  Attempt ${attempt} failed: ${outlet.code} - ${lastError}`
         );
+        // Log response for debugging
+        console.debug(`     Response: ${JSON.stringify(data).substring(0, 200)}`);
       }
     } catch (error) {
       lastError = error.message || 'Unknown error';

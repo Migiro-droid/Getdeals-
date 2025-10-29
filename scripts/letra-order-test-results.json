@@ -1,0 +1,35 @@
+{
+  "timestamp": "2025-10-29T08:57:23.394Z",
+  "configuration": {
+    "valid": true,
+    "errors": []
+  },
+  "tests": {
+    "depotVerification": {
+      "passed": false,
+      "message": "Error: No valid endpoint found. Last error: HTTP 404: Not Found",
+      "depotId": null
+    },
+    "orderCreation": {
+      "passed": false,
+      "message": "Error: HTTP 400: {\"status_code\":400,\"detail\":\"You must pass one of the following fields:  drop_off, dropoff_address\"}",
+      "orderId": null
+    },
+    "orderTracking": {
+      "passed": false,
+      "message": "",
+      "trackingUrl": null
+    },
+    "orderStatusPolling": {
+      "passed": false,
+      "message": "",
+      "finalStatus": null
+    }
+  },
+  "summary": {
+    "totalTests": 4,
+    "passedTests": 0,
+    "failedTests": 4,
+    "overallStatus": "❌ TESTS FAILED"
+  }
+}

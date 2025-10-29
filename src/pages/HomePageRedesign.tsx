@@ -101,6 +101,12 @@ export default function HomePageRedesign() {
   const { toast } = useToast();
   const { settings } = useAdmin();
 
+  // Define which baskets are sold out
+  const soldOutBasketNames = new Set([
+    "Smart Family Saver ( Ujanja ni Kusave)",
+    "Budget stretch (Kaa steady)"
+  ]);
+
   // Hot Deals - products marked as isHotDeal ONLY (no other promotional flags)
   const promotionalHotDeals = useMemo(() => {
     if (!all || all.length === 0) return [];
@@ -456,6 +462,23 @@ export default function HomePageRedesign() {
   const handleAddToCart = (productId: string) => {
     const product = all?.find(p => p.id === productId);
     if (product) {
+      // Check if product/basket is sold out - show modal instead
+      if (soldOutBasketNames.has(product.name)) {
+        openQuickViewModal(topSellerBaskets.find(b => b.id === productId) || {
+          id: productId,
+          name: product.name,
+          description: product.description || '',
+          image: product.image,
+          items: product.items?.map(item => ({ productId: item, quantity: 1 })) || [],
+          totalValue: product.originalPrice || product.price,
+          savings: (product.originalPrice || 0) - product.price,
+          finalPrice: product.price,
+          itemCount: product.items?.length || 1,
+          isBasket: (product.items?.length || 0) > 0
+        });
+        return;
+      }
+      
       addItem(product);
       toast({
         title: "Added to cart",
@@ -854,6 +877,14 @@ export default function HomePageRedesign() {
                         alt={basket.name}
                         className="w-full h-full object-contain group-hover:scale-105 transition-transform duration-500"
                       />
+                      {/* Sold Out Badge */}
+                      {soldOutBasketNames.has(basket.name) && (
+                        <div className="absolute top-2 left-2">
+                          <div className="bg-gradient-to-r from-red-500 to-red-600 text-white text-xs py-1.5 px-2.5 font-bold rounded-md shadow-lg">
+                            Sold Out
+                          </div>
+                        </div>
+                      )}
                     </div>
 
                     {/* Content Section */}

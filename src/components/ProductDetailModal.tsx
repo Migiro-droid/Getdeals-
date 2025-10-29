@@ -2,7 +2,7 @@ import { useState } from "react";
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { ShoppingCart, X } from "lucide-react";
+import { ShoppingCart, X, AlertCircle, Package } from "lucide-react";
 import type { Product } from "@/data/products";
 import { useCart } from "@/contexts/CartContext";
 import { useProducts } from "@/contexts/ProductsContext";
@@ -13,25 +13,29 @@ interface ProductDetailModalProps {
   product: Product | null;
   open: boolean;
   onOpenChange: (open: boolean) => void;
+  soldOut?: boolean;
 }
 
 
-export function ProductDetailModal({ product, open, onOpenChange }: ProductDetailModalProps) {
+export function ProductDetailModal({ product, open, onOpenChange, soldOut }: ProductDetailModalProps) {
   const { addItem } = useCart();
   const { version, all } = useProducts();
   const { isAuthenticated } = useAuth();
   const [showAuthDialog, setShowAuthDialog] = useState(false);
   const withVersion = (url: string) => {
     if (!url) return url;
-  if (url.startsWith("http://") || url.startsWith("https://")) return url;
-  const ensured = url.startsWith("/") ? url : `/${url}`;
-  return `${ensured}${ensured.includes('?') ? '&' : '?'}v=${version}`;
+    if (url.startsWith("http://") || url.startsWith("https://")) return url;
+    const ensured = url.startsWith("/") ? url : `/${url}`;
+    return `${ensured}${ensured.includes('?') ? '&' : '?'}v=${version}`;
   };
 
   if (!product) return null;
 
   const liveFromStore = all.find(p => p.id === product.id);
   const live = { ...liveFromStore, ...product } as Product;
+
+  // Check if item is sold out
+  const isSoldOut = soldOut || product.soldOut;
 
   const discount = live.originalPrice 
     ? Math.round(((live.originalPrice - live.price) / live.originalPrice) * 100)
@@ -48,6 +52,101 @@ export function ProductDetailModal({ product, open, onOpenChange }: ProductDetai
     nameOnlyItems: nameOnlyItems,
     itemsLength: live.items?.length,
   });
+
+  // SOLD OUT MODAL CONTENT
+  if (isSoldOut) {
+    return (
+      <Dialog open={open} onOpenChange={onOpenChange}>
+        <DialogContent className="max-w-md">
+          <DialogHeader className="text-center">
+            <div className="mx-auto mb-4 p-4 rounded-full bg-red-100 w-fit">
+              <AlertCircle className="h-8 w-8 text-red-600" />
+            </div>
+            <DialogTitle className="text-2xl font-bold text-gray-900">Temporarily Unavailable</DialogTitle>
+            <DialogDescription className="text-base text-gray-600 mt-2">
+              {live.name}
+            </DialogDescription>
+          </DialogHeader>
+
+          <div className="space-y-6 py-4">
+            {/* Main message */}
+            <div className="text-center space-y-2">
+              <p className="text-gray-700 font-medium">
+                We're sorry! This item is currently sold out.
+              </p>
+              <p className="text-gray-500 text-sm leading-relaxed">
+                Due to high demand and customer popularity, this basket is temporarily unavailable. Don't worry – we're working hard to restock it!
+              </p>
+            </div>
+
+            {/* Product info box */}
+            <div className="bg-gradient-to-br from-gray-50 to-gray-100 p-4 rounded-lg border border-gray-200">
+              <div className="flex items-center gap-3 mb-3">
+                <Package className="h-5 w-5 text-gray-600" />
+                <span className="font-semibold text-gray-900">{live.name}</span>
+              </div>
+              <div className="flex justify-between items-baseline">
+                <span className="text-2xl font-bold text-gray-900">KES {live.price.toLocaleString()}</span>
+                {live.originalPrice && (
+                  <span className="text-sm line-through text-gray-500">
+                    KES {live.originalPrice.toLocaleString()}
+                  </span>
+                )}
+              </div>
+              {discount > 0 && (
+                <div className="mt-2">
+                  <Badge variant="destructive" className="bg-red-100 text-red-700 border-red-300">
+                    Save {discount}%
+                  </Badge>
+                </div>
+              )}
+            </div>
+
+            {/* What to do next */}
+            <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
+              <h4 className="font-semibold text-blue-900 mb-2">What's next?</h4>
+              <ul className="text-sm text-blue-800 space-y-1">
+                <li className="flex items-start gap-2">
+                  <span className="text-blue-600 font-bold mt-0.5">✓</span>
+                  <span>Check back soon for restocking</span>
+                </li>
+                <li className="flex items-start gap-2">
+                  <span className="text-blue-600 font-bold mt-0.5">✓</span>
+                  <span>Explore similar baskets on our Baskets page</span>
+                </li>
+                <li className="flex items-start gap-2">
+                  <span className="text-blue-600 font-bold mt-0.5">✓</span>
+                  <span>Browse other great deals and collections</span>
+                </li>
+              </ul>
+            </div>
+          </div>
+
+          <div className="flex gap-3 pt-4 border-t">
+            <Button 
+              variant="outline" 
+              size="lg"
+              onClick={() => onOpenChange(false)}
+              className="flex-1"
+            >
+              Continue Shopping
+            </Button>
+            <Button 
+              size="lg"
+              className="flex-1 bg-gradient-to-r from-blue-600 to-blue-700 hover:from-blue-700 hover:to-blue-800"
+              onClick={() => {
+                onOpenChange(false);
+                // Optionally navigate to baskets page
+                window.location.href = '/baskets';
+              }}
+            >
+              View All Baskets
+            </Button>
+          </div>
+        </DialogContent>
+      </Dialog>
+    );
+  }
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
@@ -69,7 +168,7 @@ export function ProductDetailModal({ product, open, onOpenChange }: ProductDetai
                 loading="lazy"
                 decoding="async"
                 className="max-w-full max-h-full object-contain"
-                onError={(e) => { (e.currentTarget as HTMLImageElement).src = `/placeholder.svg?v=${version}`; }}
+                onError={(e) => { (e.currentTarget as HTMLImageElement).src = `https://images.unsplash.com/photo-1542838132-92c53300491e?w=500`; }}
               />
             </div>
             <div className="flex items-center justify-between">
@@ -115,7 +214,7 @@ export function ProductDetailModal({ product, open, onOpenChange }: ProductDetai
                                 loading="lazy"
                                 decoding="async"
                                 className="max-w-full max-h-full object-contain"
-                                onError={(e) => { (e.currentTarget as HTMLImageElement).src = `/placeholder.svg?v=${version}`; }}
+                                onError={(e) => { (e.currentTarget as HTMLImageElement).src = `https://images.unsplash.com/photo-1542838132-92c53300491e?w=500`; }}
                               />
                             </div>
                             <div className="flex-1 min-w-0 pt-1">

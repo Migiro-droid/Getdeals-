@@ -121,9 +121,7 @@ function createDepotPayload(outlet: QuickmartOutlet): DepotPayload {
   };
 }
 
-/**
- * Register a single depot with retry logic
- */
+
 async function registerDepot(
   outlet: QuickmartOutlet,
   token: string,
@@ -153,12 +151,12 @@ async function registerDepot(
 
       if (response.data.status_code === 200 || response.data.success) {
         const depotId = response.data.data?.id || 'unknown';
-        console.log(`✅ Success: ${outlet.code} (ID: ${depotId})`);
+        console.log(` Success: ${outlet.code} (ID: ${depotId})`);
         return { success: true, depotId };
       } else {
         lastError = response.data.message || response.data.error || 'Unknown error';
         console.warn(
-          `⚠️  Attempt ${attempt} failed: ${outlet.code} - ${lastError}`
+          ` Attempt ${attempt} failed: ${outlet.code} - ${lastError}`
         );
       }
     } catch (error: any) {
@@ -167,31 +165,28 @@ async function registerDepot(
 
       if (error.response) {
         console.error(
-          `❌ Attempt ${attempt} error: ${outlet.code} - Status ${error.response.status}`
+          ` Attempt ${attempt} error: ${outlet.code} - Status ${error.response.status}`
         );
         console.error(`Response:`, JSON.stringify(errorDetails, null, 2));
       } else {
-        console.error(`❌ Attempt ${attempt} error: ${outlet.code} - ${lastError}`);
+        console.error(` Attempt ${attempt} error: ${outlet.code} - ${lastError}`);
       }
 
-      // Wait before retry (exponential backoff)
       if (attempt < maxRetries) {
         const waitTime = 1000 * attempt;
-        console.log(`⏳ Waiting ${waitTime}ms before retry...`);
+        console.log(` Waiting ${waitTime}ms before retry...`);
         await new Promise((resolve) => setTimeout(resolve, waitTime));
       }
     }
   }
 
   console.error(
-    `❌ Failed after ${maxRetries} attempts: ${outlet.code} - ${lastError}`
+    ` Failed after ${maxRetries} attempts: ${outlet.code} - ${lastError}`
   );
   return { success: false, error: lastError };
 }
 
-/**
- * Main function to register all depots
- */
+
 async function registerAllDepots() {
   const token = process.env.LETA_API_TOKEN;
   const apiUrl = process.env.VITE_LETA_API_URL || 'https://integrations.leta.ai';
