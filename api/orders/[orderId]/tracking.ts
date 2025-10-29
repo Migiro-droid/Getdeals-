@@ -16,34 +16,38 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
   }
 
   try {
+    // In Vercel functions with dynamic routes, the parameter is in req.query with the bracket name
+    // File: [orderId]/tracking.ts -> Parameter: req.query.orderId
+    let orderId = req.query.orderId as string;
+
     // Debug: Log all available parameters
-    console.log('[TRACKING] Full request object:', {
-      query: req.query,
-      params: (req as any).params,
-      url: req.url,
-      path: req.url?.split('?')[0],
+    console.log('[TRACKING] Parameter extraction attempt:', {
+      'req.query.orderId': req.query.orderId,
+      'req.params?.orderId': (req as any).params?.orderId,
+      'req.url': req.url,
+      'typeof orderId': typeof orderId,
+      'orderId value': orderId,
     });
 
-    // Handle Vercel dynamic routes - the parameter name matches the file name [orderId]
-    const orderId = (req.query.orderId as string) || 
-                    ((req as any).params?.orderId as string) ||
-                    (req.url?.split('orders/')[1]?.split('/')[0]);
+    // If orderId is an array (Vercel sometimes does this), take the first element
+    if (Array.isArray(orderId)) {
+      console.log('[TRACKING] orderId was array, extracting first element');
+      orderId = orderId[0];
+    }
 
-    if (!orderId) {
-      console.error('[TRACKING] No order ID provided - all extraction methods failed');
-      console.log('[TRACKING] Request query:', req.query);
-      console.log('[TRACKING] Request URL:', req.url);
+    if (!orderId || orderId.trim() === '') {
+      console.error('[TRACKING] No valid order ID extracted from parameters');
       return res.status(400).json({ 
         success: false, 
         error: 'Order ID required',
         debug: {
-          query: req.query,
+          received: req.query.orderId,
           url: req.url,
         }
       });
     }
 
-    console.log(`[TRACKING] Fetching tracking info for order: ${orderId}`);
+    console.log(`[TRACKING] Looking up order with ID: ${orderId}`);
 
     // Fetch order with delivery info
     const { data: order, error } = await supabase
