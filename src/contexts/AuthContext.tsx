@@ -269,7 +269,6 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     try {
       console.log('Attempting sign up for:', email, 'with name:', name, 'organization:', organization, 'organizationNumber:', organizationNumber);
       
-      // Determine the redirect URL based on environment
       const baseUrl = import.meta.env.PROD 
         ? 'https://getdeals.co.ke' 
         : window.location.origin;
@@ -294,7 +293,6 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
       console.log('Sign up successful:', data);
       if (data.user) {
-        // Send welcome email notification
         try {
           await fetch('/api/email/send', {
             method: 'POST',
@@ -310,7 +308,6 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
             })
           });
 
-          // Add contact to Brevo mailing list
           await fetch('/api/email/add-contact', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
@@ -328,9 +325,9 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
             })
           });
 
-          console.log('📧 Welcome email and contact addition initiated');
+          console.log(' Welcome email and contact addition initiated');
         } catch (emailError) {
-          console.error('❌ Failed to send welcome email:', emailError);
+          console.error('Failed to send welcome email:', emailError);
           // Don't fail registration because of email issues
         }
 
@@ -340,6 +337,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
             ? `Welcome to GetDeals Kenya, ${name}! Check your email for welcome information.`
             : "Please check your email to verify your account and for welcome information.",
         });
+        return; // Success - exit without throwing
       }
     } catch (error) {
       const errorMessage = error instanceof Error ? error.message : 'Registration failed';
@@ -349,7 +347,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         description: errorMessage,
         variant: "destructive",
       });
-      throw error;
+      throw error; // Only throw on actual errors
     } finally {
       setLoading(false);
     }
@@ -389,28 +387,28 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         return { ok: false, error: 'No user email found' };
       }
 
-      console.log('🔐 Verifying current password...');
+      console.log('Verifying current password...');
       const { error: verifyError } = await supabase.auth.signInWithPassword({
         email: user.email,
         password: currentPassword
       });
 
       if (verifyError) {
-        console.error('❌ Current password verification failed:', verifyError);
+        console.error(' Current password verification failed:', verifyError);
         return { ok: false, error: 'Current password is incorrect' };
       }
 
-      console.log('✅ Current password verified, updating to new password...');
+      console.log('Current password verified, updating to new password...');
 
       // Now update to the new password
       const { error } = await auth.updatePassword(newPassword);
 
       if (error) {
-        console.error('❌ Password update failed:', error);
+        console.error(' Password update failed:', error);
         return { ok: false, error: error.message };
       }
 
-      console.log('✅ Password updated successfully');
+      console.log(' Password updated successfully');
 
       toast({
         title: "Password Changed",
@@ -419,7 +417,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
       return { ok: true };
     } catch (error) {
-      console.error('❌ Password change error:', error);
+      console.error(' Password change error:', error);
       const errorMessage = error instanceof Error ? error.message : 'Password change failed';
       return { ok: false, error: errorMessage };
     }
@@ -427,18 +425,18 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
   const updatePasswordAfterReset = async (newPassword: string) => {
     try {
-      console.log('🔐 Updating password after reset...');
+      console.log(' Updating password after reset...');
 
       // This is used when user is already authenticated via password reset link
       // No need to verify current password
       const { error } = await auth.updatePassword(newPassword);
 
       if (error) {
-        console.error('❌ Password update failed:', error);
+        console.error(' Password update failed:', error);
         return { ok: false, error: error.message };
       }
 
-      console.log('✅ Password updated successfully');
+      console.log(' Password updated successfully');
 
       toast({
         title: "Password Updated",
@@ -447,7 +445,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
       return { ok: true };
     } catch (error) {
-      console.error('❌ Password update error:', error);
+      console.error(' Password update error:', error);
       const errorMessage = error instanceof Error ? error.message : 'Password update failed';
       return { ok: false, error: errorMessage };
     }
@@ -455,7 +453,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
   const resetPassword = async (email: string) => {
     try {
-      console.log('🔄 Starting password reset for:', email);
+      console.log(' Starting password reset for:', email);
       
       // Determine the redirect URL based on environment
       const baseUrl = import.meta.env.PROD 
@@ -463,8 +461,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         : window.location.origin;
       
       const redirectUrl = `${baseUrl}/auth/reset-password`;
-      console.log('📍 Using redirect URL:', redirectUrl);
-      console.log('🌍 Environment:', { 
+      console.log(' Using redirect URL:', redirectUrl);
+      console.log(' Environment:', { 
         isProd: import.meta.env.PROD, 
         mode: import.meta.env.MODE,
         origin: window.location.origin 
@@ -475,11 +473,11 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       });
 
       if (error) {
-        console.error('❌ Password reset error:', error);
+        console.error(' Password reset error:', error);
         return { ok: false, error: error.message };
       }
 
-      console.log('✅ Password reset request successful');
+      console.log(' Password reset request successful');
       toast({
         title: "Password Reset Email Sent",
         description: "Check your email for password reset instructions.",
@@ -488,7 +486,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       return { ok: true };
     } catch (error) {
       const errorMessage = error instanceof Error ? error.message : 'Password reset failed';
-      console.error('🚨 Password reset exception:', error);
+      console.error(' Password reset exception:', error);
       return { ok: false, error: errorMessage };
     }
   };

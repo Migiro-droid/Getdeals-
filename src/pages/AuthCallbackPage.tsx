@@ -4,7 +4,6 @@ import { useToast } from "@/hooks/use-toast";
 import { supabase } from "../../lib/supabase";
 import { useAuth } from "@/contexts/AuthContext";
 import { OrganizationSetupModal } from "@/components/OrganizationSetupModal";
-import { PostSignupChecklist } from "@/components/PostSignupChecklist";
 
 export default function AuthCallbackPage() {
   const navigate = useNavigate();
@@ -12,7 +11,6 @@ export default function AuthCallbackPage() {
   const { user } = useAuth();
   const [isProcessing, setIsProcessing] = useState(true);
   const [showOrgSetup, setShowOrgSetup] = useState(false);
-  const [showPreferences, setShowPreferences] = useState(false);
   const [userInfo, setUserInfo] = useState<{ email: string; isOAuthUser: boolean } | null>(null);
 
   useEffect(() => {
@@ -21,21 +19,17 @@ export default function AuthCallbackPage() {
         console.log('Processing auth callback...');
         console.log('Current URL:', window.location.href);
         
-        // Check if we have hash fragments (implicit flow) or query parameters (PKCE flow)
         const hash = window.location.hash;
         const searchParams = new URLSearchParams(window.location.search);
         
         if (hash && hash.includes('access_token')) {
           console.log('Processing hash fragment authentication (implicit flow)...');
-          // Let Supabase handle the hash fragment automatically
-          await new Promise(resolve => setTimeout(resolve, 2000)); // Wait for Supabase to process
+          await new Promise(resolve => setTimeout(resolve, 2000)); 
         } else if (searchParams.has('code')) {
           console.log('Processing PKCE code exchange...');
-          // Supabase will automatically exchange the code for a session
-          await new Promise(resolve => setTimeout(resolve, 2000)); // Wait for code exchange
+          await new Promise(resolve => setTimeout(resolve, 2000)); 
         }
         
-        // Handle the auth callback session - retry a few times if needed
         let data, error;
         let retries = 3;
         
@@ -45,11 +39,11 @@ export default function AuthCallbackPage() {
           error = result.error;
           
           if (data.session) {
-            console.log('✅ Session established successfully');
+            console.log(' Session established successfully');
             break;
           }
           
-          console.log(`⏳ No session yet, retrying... (${retries} attempts left)`);
+          console.log(` No session yet, retrying... (${retries} attempts left)`);
           await new Promise(resolve => setTimeout(resolve, 1000));
           retries--;
         }
@@ -62,25 +56,20 @@ export default function AuthCallbackPage() {
         if (data.session) {
           console.log('OAuth session established:', data.session.user.email);
           
-          // Clear the hash fragment from URL
           if (window.location.hash) {
             window.history.replaceState(null, '', window.location.pathname);
           }
           
-          // Wait a moment for the AuthContext to sync
           await new Promise(resolve => setTimeout(resolve, 1000));
           
-          // Check if this is an OAuth user (Google/Facebook login)
           const isOAuthUser = data.session.user.app_metadata?.provider === 'google' || 
                              data.session.user.app_metadata?.provider === 'facebook';
           
-          // Check if user has organization details
           const hasOrganizationDetails = data.session.user.user_metadata?.organization !== undefined;
           
           console.log('OAuth user:', isOAuthUser, 'Has org details:', hasOrganizationDetails);
           
           if (isOAuthUser && !hasOrganizationDetails) {
-            // Show organization setup modal for OAuth users without org details
             setUserInfo({
               email: data.session.user.email!,
               isOAuthUser: true
@@ -109,11 +98,8 @@ export default function AuthCallbackPage() {
               localStorage.removeItem('pendingSignup');
               localStorage.removeItem('tempUserEmail');
               
-              setShowPreferences(true);
-              toast({
-                title: "Welcome back! 🎉",
-                description: "Let's personalize your shopping experience."
-              });
+              // Skip preferences - just redirect to home
+              navigate('/', { replace: true });
             } else {
               // User has both org details and preferences, redirect to home
               toast({
@@ -140,12 +126,8 @@ export default function AuthCallbackPage() {
               localStorage.removeItem('pendingSignup');
               localStorage.removeItem('tempUserEmail');
               
-              // New user who just confirmed email - show preferences
-              setShowPreferences(true);
-              toast({
-                title: "Email confirmed! 🎉",
-                description: "Welcome to GetDeals! Let's personalize your experience."
-              });
+              // Skip preferences - just redirect
+              navigate('/', { replace: true });
             } else {
               // Returning user - just redirect
               toast({
@@ -183,25 +165,16 @@ export default function AuthCallbackPage() {
 
   // If user is already authenticated and no setup flows are active, redirect immediately
   useEffect(() => {
-    if (user && !isProcessing && !showOrgSetup && !showPreferences) {
+    if (user && !isProcessing && !showOrgSetup) {
       console.log('User already authenticated, redirecting...');
       navigate('/', { replace: true });
     }
-  }, [user, navigate, isProcessing, showOrgSetup, showPreferences]);
+  }, [user, navigate, isProcessing, showOrgSetup]);
 
   const handleOrganizationSetupComplete = () => {
     setShowOrgSetup(false);
-    setShowPreferences(true);
     toast({
-      title: "Setup complete! 🎉",
-      description: "Now let's personalize your shopping experience."
-    });
-  };
-
-  const handlePreferencesComplete = () => {
-    setShowPreferences(false);
-    toast({
-      title: "All set! 🎉",
+      title: "Setup complete! ",
       description: "Welcome to GetDeals Kenya. You're ready to start shopping!"
     });
     navigate('/', { replace: true });
@@ -226,12 +199,6 @@ export default function AuthCallbackPage() {
           userEmail={userInfo.email}
         />
       )}
-
-      {/* Preferences Setup for OAuth users */}
-      <PostSignupChecklist
-        open={showPreferences}
-        onComplete={handlePreferencesComplete}
-      />
     </>
   );
 }
