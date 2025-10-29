@@ -135,23 +135,13 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       .insert({
         user_id: orderData.user_id,
         order_reference: orderReference,
-        customer_email: orderData.customer_email,
-        customer_name: orderData.customer_name,
-        customer_phone: orderData.customer_phone,
-        items: orderData.items,
         subtotal: Math.round(orderData.subtotal * 100), 
         delivery_fee: Math.round(orderData.delivery_fee * 100),
-        total_amount: Math.round(orderData.total_amount * 100), // Changed from 'total' to 'total_amount'
+        total: Math.round(orderData.total_amount * 100), // Use 'total' column name, not 'total_amount'
         delivery_method: orderData.delivery_method,
-        delivery_address: orderData.delivery_method === 'speedy' && orderData.delivery_address 
-          ? { address: orderData.delivery_address }
-          : orderData.delivery_method === 'pickup' && orderData.pickup_location
-          ? { pickup_location: orderData.pickup_location }
-          : null,
         payment_method: orderData.payment_method,
-        payment_reference: orderData.payment_reference,
         payment_status: 'completed',
-        status: 'confirmed', 
+        status: 'confirmed',
         notes: `M-Pesa Receipt: ${orderData.mpesa_receipt_number || 'N/A'}, Checkout: ${orderData.checkout_request_id || 'N/A'}`,
         created_at: new Date().toISOString(),
         updated_at: new Date().toISOString()

@@ -49,7 +49,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
 
     console.log(`[TRACKING] Looking up order with ID: ${orderId}`);
 
-    // Fetch order with delivery info
+    // Fetch order with delivery info - only select columns that actually exist in the schema
     const { data: order, error } = await supabase
       .from('orders')
       .select(
@@ -58,17 +58,10 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
         order_reference,
         status,
         delivery_method,
-        delivery_address,
-        leta_order_id,
-        leta_reference,
-        leta_status,
-        leta_tracking_url,
-        rider_name,
-        rider_phone,
-        rider_latitude,
-        rider_longitude,
-        delivery_otp,
-        last_location_update,
+        payment_status,
+        total,
+        subtotal,
+        delivery_fee,
         created_at,
         updated_at
       `
@@ -109,46 +102,16 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
 
     console.log(`[TRACKING] Order found. Status: ${order.status}, Method: ${order.delivery_method}`);
 
-    // Build tracking response
+    // Build tracking response with available data
     const tracking = {
       orderId: order.id,
       orderReference: order.order_reference,
       status: order.status,
       deliveryMethod: order.delivery_method,
-      trackingUrl: order.leta_tracking_url,
-      
-      // For delivery orders
-      ...(order.delivery_method === 'speedy' && {
-        deliveryAddress:
-          typeof order.delivery_address === 'string'
-            ? order.delivery_address
-            : (order.delivery_address as any)?.address || 'Delivery Location',
-        letaOrderId: order.leta_order_id,
-        letaReference: order.leta_reference,
-        letaStatus: order.leta_status,
-        
-        // Rider info
-        ...(order.rider_name && {
-          rider: {
-            name: order.rider_name,
-            phone: order.rider_phone,
-            latitude: order.rider_latitude,
-            longitude: order.rider_longitude,
-          },
-        }),
-        
-        deliveryOtp: order.delivery_otp,
-        lastUpdate: order.last_location_update,
-      }),
-      
-      // For pickup orders
-      ...(order.delivery_method === 'pickup' && {
-        pickupLocation:
-          typeof order.delivery_address === 'string'
-            ? order.delivery_address
-            : (order.delivery_address as any)?.pickup_location || 'Pickup Location',
-      }),
-      
+      paymentStatus: order.payment_status,
+      total: typeof order.total === 'number' ? order.total / 100 : 0, // Convert from cents to KES
+      subtotal: typeof order.subtotal === 'number' ? order.subtotal / 100 : 0,
+      deliveryFee: typeof order.delivery_fee === 'number' ? order.delivery_fee / 100 : 0,
       createdAt: order.created_at,
       updatedAt: order.updated_at,
     };
