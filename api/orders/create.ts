@@ -169,7 +169,29 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       });
     }
 
-    console.log('Order created successfully:', order.id);
+    console.log('[CREATE] Order created successfully:', {
+      orderId: order.id,
+      orderReference: order.order_reference,
+      status: order.status,
+      deliveryMethod: order.delivery_method,
+      totalAmount: order.total_amount
+    });
+
+    // Verify order can be queried immediately
+    const { data: verifyOrder, error: verifyError } = await supabase
+      .from('orders')
+      .select('id')
+      .eq('id', order.id)
+      .single();
+
+    if (verifyError || !verifyOrder) {
+      console.error('[CREATE] WARNING: Order could not be verified immediately after insert:', {
+        error: verifyError,
+        orderId: order.id
+      });
+    } else {
+      console.log('[CREATE] Order verified in database immediately after insert');
+    }
 
     
     const orderItems = orderData.items.map(item => ({
