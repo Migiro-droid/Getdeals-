@@ -342,9 +342,10 @@ export default function CheckoutPage() {
       const response = await fetch(`${mpesaServiceUrl}/api/payments/mpesa/status/${checkoutRequestId}`);
 
       const responseText = await response.text();
-      console.log(' Payment status response text:', responseText);
+      console.log('✅ Payment status response text:', responseText);
 
       if (!responseText) {
+        console.error('❌ Empty response from payment status server');
         throw new Error('Empty response from server');
       }
 
@@ -352,11 +353,12 @@ export default function CheckoutPage() {
       try {
         result = JSON.parse(responseText);
       } catch (jsonError) {
-        console.error('JSON parsing error:', jsonError);
+        console.error('❌ JSON parsing error:', jsonError);
         throw new Error(`Invalid JSON response: ${responseText.substring(0, 100)}`);
       }
 
-      console.log(' Payment status parsed result:', result);
+      console.log('📊 Payment status parsed result:', result);
+      console.log('💰 Payment confirmed?:', result.paymentConfirmed);
 
       if (response.ok) {
         return result;
@@ -364,8 +366,8 @@ export default function CheckoutPage() {
         throw new Error(result.error || 'Failed to check payment status');
       }
     } catch (error) {
-      console.error('Payment status check error:', error);
-      return { success: false, error: error instanceof Error ? error.message : 'Status check failed' };
+      console.error('❌ Payment status check error:', error);
+      return { success: false, paymentConfirmed: false, error: error instanceof Error ? error.message : 'Status check failed' };
     }
   };
 
@@ -376,7 +378,7 @@ export default function CheckoutPage() {
       }
 
       const subtotal = orderData.items.reduce((sum: number, item: any) => sum + (item.price * item.quantity), 0);
-      const deliveryFee = orderData.deliveryMethod === 'speedy' ? 300 : 0;
+      const deliveryFee = 0; // Free delivery for now
       const totalAmount = subtotal + deliveryFee;
 
       const dbOrderData = {
@@ -447,7 +449,8 @@ export default function CheckoutPage() {
       };
       return {
         success: true,
-        order: result.order
+        order: result.order,
+        deliveryWarning: result.deliveryWarning as string | undefined,
       };
     } catch (error) {
       console.error(' Order creation error:', error);
@@ -565,10 +568,11 @@ export default function CheckoutPage() {
             console.log(' Payment status result:', statusResult);
 
             // Payment successful - NOW create the order
-            if (statusResult.success && statusResult.paymentConfirmed) {
+            // Check if payment is confirmed - paymentConfirmed must be true (not just truthy)
+            if (statusResult && statusResult.paymentConfirmed === true) {
               if (!paymentConfirmed) {
                 paymentConfirmed = true;
-                console.log(' Payment confirmed! Creating order...');
+                console.log('✅ Payment confirmed! Creating order...');
                 
                 // Step 3: Create order ONLY after payment is confirmed
                 const orderData = {
@@ -595,6 +599,14 @@ export default function CheckoutPage() {
                     title: "Payment Successful! ",
                     description: `Your order has been confirmed! Receipt: ${statusResult.mpesaReceiptNumber || 'N/A'}`,
                   });
+                  if (orderResult.deliveryWarning) {
+                    toast({
+                      title: 'Delivery Pending',
+                      description: orderResult.deliveryWarning,
+                      className: 'bg-amber-50 border-amber-200 text-amber-900',
+                      duration: 6000,
+                    });
+                  }
                   clearCart();
                   setTimeout(() => {
                     navigate(`/account?tab=orders&orderId=${orderResult.order.id}`);
@@ -613,7 +625,7 @@ export default function CheckoutPage() {
             }
             
             // Payment explicitly failed
-            else if (statusResult.success && statusResult.paymentConfirmed === false && (
+            else if (statusResult && statusResult.paymentConfirmed === false && (
               statusResult.resultCode === '1032' || // User cancelled
               statusResult.resultCode === '1037' || // Payment timeout
               statusResult.resultCode === '1' ||    // Insufficient funds
@@ -768,6 +780,14 @@ export default function CheckoutPage() {
             description: `Payment of KES ${finalTotal.toLocaleString()} processed via your wallet. Transaction ID: ${walletResult.transaction_id}. You've earned KES ${cashback} cashback!`,
             duration: 8000,
           });
+          if (orderResult.deliveryWarning) {
+            toast({
+              title: 'Delivery Pending',
+              description: orderResult.deliveryWarning,
+              className: 'bg-amber-50 border-amber-200 text-amber-900',
+              duration: 6000,
+            });
+          }
 
           clearCart();
           setTimeout(() => {
@@ -793,6 +813,14 @@ export default function CheckoutPage() {
             title: "Order Placed Successfully!",
             description: "You will receive confirmation details shortly.",
           });
+          if (orderResult.deliveryWarning) {
+            toast({
+              title: 'Delivery Pending',
+              description: orderResult.deliveryWarning,
+              className: 'bg-amber-50 border-amber-200 text-amber-900',
+              duration: 6000,
+            });
+          }
 
           clearCart();
           setTimeout(() => {
@@ -814,9 +842,9 @@ export default function CheckoutPage() {
   };
 
   // Calculate delivery fee and final total based on selected delivery method
-  // CRITICAL: Delivery fee (KES 300) only applies to 'speedy' delivery, NOT pickup
-  const deliveryFee = deliveryMethod === "speedy" ? 300 : 0;
-  const finalTotal = total + deliveryFee; // Customer pays: subtotal + delivery (if speedy)
+  // CRITICAL: Free delivery for all methods
+  const deliveryFee = 0; // Free delivery for now
+  const finalTotal = total + deliveryFee; // Customer pays: subtotal only
 
   return (
     <div className="min-h-screen py-8">

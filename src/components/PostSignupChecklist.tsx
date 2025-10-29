@@ -98,8 +98,38 @@ export function PostSignupChecklist({ open, onComplete }: PostSignupChecklistPro
     frequency: string;
   }>>({});
   const [loading, setLoading] = useState(false);
+  const [emailVerified, setEmailVerified] = useState(false);
   const { user, updateProfile } = useAuth();
   const { toast } = useToast();
+
+  // Check if user's email is verified
+  useEffect(() => {
+    const checkEmailVerification = async () => {
+      if (!user?.id) return;
+      
+      try {
+        const { data: { user: supabaseUser } } = await supabase.auth.getUser();
+        const isVerified = !!supabaseUser?.email_confirmed_at;
+        setEmailVerified(isVerified);
+        
+        // If modal is open but email is not verified, show a message and close
+        if (open && !isVerified) {
+          toast({
+            title: "Email verification required",
+            description: "Please verify your email address first. Check your inbox for the confirmation link.",
+            variant: "default",
+          });
+          onComplete();
+        }
+      } catch (error) {
+        console.error('Error checking email verification:', error);
+      }
+    };
+
+    if (open) {
+      checkEmailVerification();
+    }
+  }, [user?.id, open, toast, onComplete]);
 
   // Wait for user to be available
   useEffect(() => {
@@ -117,16 +147,15 @@ export function PostSignupChecklist({ open, onComplete }: PostSignupChecklistPro
     }
   }, [user?.id, open, toast]);
 
-  // Don't show checklist if user has already completed onboarding (but allow OAuth users)
+  // Don't show checklist if user has already completed onboarding
   if (user?.onboardingCompleted && open) {
-    // Check if this is being explicitly shown (e.g., for OAuth users)
-    const isExplicitlyShown = new URLSearchParams(window.location.search).has('showPreferences') || 
-                             window.location.pathname.includes('/auth/callback');
-    
-    if (!isExplicitlyShown) {
-      onComplete();
-      return null;
-    }
+    onComplete();
+    return null;
+  }
+
+  // Don't show checklist if email is not verified (unless OAuth user with verified email)
+  if (!emailVerified && open) {
+    return null;
   }
 
   const handleCategoryToggle = (categoryId: string) => {

@@ -8,7 +8,6 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Circle, CheckCircle, Clock, Truck, Package, ChevronRight, MapPin, CreditCard, Calendar, RefreshCw } from "lucide-react";
 import { ScrollArea } from "@/components/ui/scroll-area";
-import { DUMMY_ORDERS } from "@/data/dummy-orders";
 
 interface QuickMartOrder {
   id: string;
@@ -43,29 +42,57 @@ export const QuickMartAdminOrders: React.FC = () => {
   const [groupBy, setGroupBy] = useState<GroupByOption>("status");
   const [open, setOpen] = useState(false);
   const [active, setActive] = useState<QuickMartOrder | null>(null);
-  const [useDummyData, setUseDummyData] = useState(true); // Start with dummy data for testing
 
   const statuses: OrderStatus[] = ["pending", "confirmed", "shipped", "delivered", "cancelled"];
+
+  // Helper function to get product images
+  const getProductImage = (productName: string, existingImage?: string) => {
+    if (existingImage && !existingImage.includes('placeholder') && !existingImage.startsWith('src/')) {
+      return existingImage;
+    }
+    
+    const imageMap: Record<string, string> = {
+      'milk': '/src/assets/products/milk.jpg',
+      'milk 1l': '/src/assets/products/milk.jpg',
+      'bread': '/src/assets/products/bread.jpg',
+      'fresh bread': '/src/assets/products/bread.jpg',
+      'butter': '/src/assets/products/butter.jpg',
+      'eggs': '/src/assets/products/eggs.jpg',
+      'eggs (dozen)': '/src/assets/products/eggs.jpg',
+      'cheese': '/src/assets/products/cheese.jpg',
+      'yogurt': '/src/assets/products/yogurt.jpg',
+      'rice': '/src/assets/products/rice.jpg',
+      'flour': '/src/assets/products/flour.jpg',
+      'wheat flour': '/src/assets/products/flour.jpg',
+      'sugar': '/src/assets/products/sugar.jpg',
+      'cooking oil': '/src/assets/products/oil.jpg',
+      'oil': '/src/assets/products/oil.jpg',
+      'essential basket': '/src/assets/essential-basket.jpg',
+      'family basket': '/src/assets/family-basket.jpg',
+    };
+    
+    const exactMatch = imageMap[productName.toLowerCase()];
+    if (exactMatch) return exactMatch;
+    
+    const lowerName = productName.toLowerCase();
+    if (lowerName.includes('milk')) return '/src/assets/products/milk.jpg';
+    if (lowerName.includes('bread')) return '/src/assets/products/bread.jpg';
+    if (lowerName.includes('butter')) return '/src/assets/products/butter.jpg';
+    if (lowerName.includes('egg')) return '/src/assets/products/eggs.jpg';
+    if (lowerName.includes('cheese')) return '/src/assets/products/cheese.jpg';
+    if (lowerName.includes('yogurt')) return '/src/assets/products/yogurt.jpg';
+    if (lowerName.includes('rice')) return '/src/assets/products/rice.jpg';
+    if (lowerName.includes('flour')) return '/src/assets/products/flour.jpg';
+    if (lowerName.includes('sugar')) return '/src/assets/products/sugar.jpg';
+    if (lowerName.includes('oil')) return '/src/assets/products/oil.jpg';
+    
+    return '/src/assets/essential-basket.jpg';
+  };
 
   // Fetch Quickmart-specific orders from database
   const fetchQuickMartOrders = async () => {
     setLoading(true);
     try {
-      if (useDummyData) {
-        // Use hardcoded dummy data for testing
-        console.log("✓ Using dummy orders for testing");
-        const mappedDummyOrders = DUMMY_ORDERS.map(order => ({
-          ...order,
-          id: order.id,
-          status: order.status as OrderStatus,
-          payment_status: "paid", // Add missing field
-          items: order.items_breakdown, // Map items_breakdown to items
-        }));
-        setOrders(mappedDummyOrders);
-        setLoading(false);
-        return;
-      }
-
       const params = new URLSearchParams({
         limit: '500',
         offset: '0',
@@ -100,7 +127,7 @@ export const QuickMartAdminOrders: React.FC = () => {
 
   useEffect(() => {
     fetchQuickMartOrders();
-  }, [statusFilter, search, useDummyData]);
+  }, [statusFilter, search]);
 
   // ============ HELPER FUNCTIONS (defined before useMemos) ============
   
@@ -320,17 +347,6 @@ export const QuickMartAdminOrders: React.FC = () => {
             </div>
           </div>
           <div className="flex items-center gap-2">
-            <Badge variant={useDummyData ? "default" : "secondary"} className="text-xs">
-              {useDummyData ? "🧪 Test Data" : "📊 Live"}
-            </Badge>
-            <Button 
-              onClick={() => setUseDummyData(!useDummyData)} 
-              variant="outline" 
-              size="sm"
-              className="text-xs"
-            >
-              {useDummyData ? "Switch to Live" : "Use Test Data"}
-            </Button>
             <Button onClick={fetchQuickMartOrders} variant="outline" size="sm">
               <RefreshCw className="w-4 h-4" />
             </Button>
@@ -665,7 +681,20 @@ export const QuickMartAdminOrders: React.FC = () => {
                       <TableBody>
                         {active.items.map((it) => (
                           <TableRow key={`${it.id}-${it.name}`}>
-                            <TableCell>{it.name}</TableCell>
+                            <TableCell>
+                              <div className="flex items-center gap-3 min-w-0">
+                                <img 
+                                  src={getProductImage(it.name, it.image)} 
+                                  alt={it.name} 
+                                  className="h-10 w-10 rounded object-contain bg-muted flex-shrink-0"
+                                  onError={(e) => {
+                                    const target = e.target as HTMLImageElement;
+                                    target.src = '/src/assets/essential-basket.jpg';
+                                  }}
+                                />
+                                <div className="truncate max-w-[280px]" title={it.name}>{it.name}</div>
+                              </div>
+                            </TableCell>
                             <TableCell className="text-right">{it.quantity}</TableCell>
                             <TableCell className="text-right">KES {(it.price || 0).toLocaleString()}</TableCell>
                             <TableCell className="text-right">KES {((it.price || 0) * (it.quantity || 0)).toLocaleString()}</TableCell>

@@ -120,7 +120,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     }
 
    
-    const orderReference = `ORD-${Date.now()}-${Math.random().toString(36).slice(2, 6).toUpperCase()}`;
+  const orderReference = `ORD-${Date.now()}-${Math.random().toString(36).slice(2, 6).toUpperCase()}`;
 
     console.log(' Creating order:', {
       orderReference,
@@ -221,8 +221,9 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       console.log(' Payment linked to order');
     }
 
-    //Create delivery ordeer
+    //Create delivery order
     let letaOrderResult = null;
+    let deliveryWarning: string | null = null;
     if (orderData.delivery_method === 'speedy' && orderData.delivery_address) {
       console.log(`\n🚚 INITIATING LETA DELIVERY FOR ORDER: ${order.order_reference}`);
       
@@ -273,12 +274,14 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
 
         if (letaUpdateError) {
           console.error('Failed to update order with Leta info:', letaUpdateError);
+          deliveryWarning = 'Delivery partner assigned but tracking link is pending. Our team will update you shortly.';
         } else {
           console.log('Order updated with Leta tracking information');
         }
       } else {
         console.error(`LETA ORDER CREATION FAILED:`, letaOrderResult.error);
         console.warn('Order created in GetDeals but delivery in Leta failed - customer should be notified');
+        deliveryWarning = 'We confirmed your order but could not start delivery automatically. A rider will be assigned manually.';
       }
     } else if (orderData.delivery_method === 'pickup') {
       console.log(` Order ${order.order_reference} is PICKUP - No Leta delivery needed`);
@@ -321,10 +324,13 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     
     return res.status(201).json({
       success: true,
+      ...(deliveryWarning && { deliveryWarning }),
       order: {
         id: order.id,
         order_reference: order.order_reference,
-        total_amount: order.total / 100, 
+        total_amount: typeof order.total_amount === 'number'
+          ? order.total_amount / 100
+          : orderData.total_amount,
         status: order.status,
         created_at: order.created_at,
         items: orderData.items,

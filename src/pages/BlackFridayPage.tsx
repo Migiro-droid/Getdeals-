@@ -79,7 +79,7 @@ export default function BlackFridayPage() {
           </p>
 
           <p className="text-base md:text-lg text-gray-400 max-w-2xl mx-auto">
-            🎉 The most anticipated shopping event of the year is coming! Get ready for amazing deals on thousands of products.
+             The most anticipated shopping event of the year is coming! Get ready for amazing deals on thousands of products.
           </p>
         </div>
 
@@ -244,7 +244,7 @@ export default function BlackFridayPage() {
             Be the first to know about Black Friday deals!
           </p>
           <p className="text-red-500 font-bold text-xs md:text-sm">
-            🔔 Mark your calendar • Set reminders • Tell your friends
+             Mark your calendar • Set reminders • Tell your friends
           </p>
         </div>
       </div>
@@ -252,10 +252,10 @@ export default function BlackFridayPage() {
       {/* Floating Badges */}
       <div className="fixed top-4 right-4 z-20 space-y-2 md:space-y-3">
         <div className="bg-gradient-to-r from-red-900 to-red-950 text-red-300 px-3 py-1.5 rounded-full font-bold text-xs md:text-sm shadow-lg animate-bounce border border-red-700">
-          🔥 UP TO 70% OFF
+           UP TO 70% OFF
         </div>
         <div className="bg-gradient-to-r from-red-800 to-red-900 text-red-200 px-3 py-1.5 rounded-full font-bold text-xs md:text-sm shadow-lg animate-bounce border border-red-700" style={{ animationDelay: '0.2s' }}>
-          ⚡ LIMITED TIME
+           LIMITED TIME
         </div>
       </div>
 

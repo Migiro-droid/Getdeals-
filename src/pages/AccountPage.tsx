@@ -8,7 +8,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
 import { Switch } from "@/components/ui/switch";
-import { useOrders, type Order, type OrderStatus } from "@/contexts/OrdersContext";
+import type { Order, OrderStatus } from "@/contexts/OrdersContext";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
 import { useLocation } from "react-router-dom";
 import { useAccount, type Address } from "@/contexts/AccountContext";
@@ -18,11 +18,27 @@ import { ProfilePictureUpload } from "@/components/ProfilePictureUpload";
 import { useAuth } from "@/contexts/AuthContext";
 import { useToast } from "@/hooks/use-toast";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import { DeliveryProgressBar } from "@/components/DeliveryProgressBar";
+import { createClient } from "@supabase/supabase-js";
+
+type DashboardOrder = Order & {
+  order_reference: string;
+  total_amount: number;
+  delivery_method: string;
+  delivery_address?: string | null;
+  delivery_address_raw?: unknown;
+  payment_reference?: string | null;
+  mpesa_receipt_number?: string | null;
+  leta_status?: string | null;
+  leta_tracking_url?: string | null;
+  rider_name?: string | null;
+  rider_phone?: string | null;
+  estimated_delivery_time?: string | null;
+};
 
 export default function AccountPage() {
   const [isEditing, setIsEditing] = useState(false);
-  const { orders, deleteOrder } = useOrders();
-  const [active, setActive] = useState<Order | null>(null);
+  const [active, setActive] = useState<DashboardOrder | null>(null);
   const location = useLocation();
   const { toast } = useToast();
   const { profile, setProfile, notifications, setNotifications, addresses, addAddress, updateAddress, removeAddress, setDefaultAddress } = useAccount();
@@ -43,6 +59,10 @@ export default function AccountPage() {
   const [twoFACode, setTwoFACode] = useState("");
   const [qrImage, setQrImage] = useState<string | null>(null);
   
+  // Database orders state
+  const [databaseOrders, setDatabaseOrders] = useState<DashboardOrder[]>([]);
+  const [loadingOrders, setLoadingOrders] = useState(false);
+  
   // Placeholder 2FA function (to be implemented)
   const verifyTwoFactor = async (code: string) => {
     // TODO: Implement actual 2FA verification
@@ -50,9 +70,9 @@ export default function AccountPage() {
     return { ok: false, error: '2FA not yet implemented' };
   };
 
-  // Calculate real user stats from orders
-  const totalOrders = orders.length;
-  const totalSaved = orders
+  // Calculate real user stats from DATABASE orders only
+  const totalOrders = databaseOrders.length;
+  const totalSaved = databaseOrders
     .filter(order => order.status === 'delivered')
     .reduce((sum, order) => {
       // Calculate savings based on subtotal vs total difference (excluding delivery fee)
@@ -62,6 +82,9 @@ export default function AccountPage() {
     }, 0);
   const urlParams = new URLSearchParams(location.search);
   const defaultTab = urlParams.get("tab") || (location.state as any)?.tab || "profile";
+  const queryOrderId = urlParams.get("orderId") ?? undefined;
+  
+  console.log('[AccountPage] Page loaded with params:', { queryOrderId, defaultTab, userId: user?.id });
   const statusPill = (s: OrderStatus) => {
     const map: Record<OrderStatus, string> = {
       delivered: "bg-emerald-100 text-emerald-800",
@@ -73,13 +96,147 @@ export default function AccountPage() {
     return `inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs ${map[s]}`;
   };
   const statusLabel = (s: OrderStatus) => s.replace(/_/g, " ").replace(/^./, c => c.toUpperCase());
-  const orderToHighlight = (location.state as any)?.orderId as string | undefined;
+  const orderToHighlight = (queryOrderId as string | undefined) ?? (location.state as any)?.orderId;
   useEffect(() => {
-    if (orderToHighlight && orders.length) {
-      const o = orders.find(o => o.id === orderToHighlight);
-      if (o) setActive(o);
+    if (orderToHighlight && databaseOrders.length) {
+      console.log(`[AccountPage] Looking for order: ${orderToHighlight}`);
+      const matched = databaseOrders.find(o => o.id === orderToHighlight);
+      if (matched) {
+        console.log('[AccountPage] Found order, setting active:', matched);
+        setActive(matched);
+      } else {
+        console.warn(`[AccountPage] Order not found. Available IDs: ${databaseOrders.map(o => o.id).join(', ')}`);
+      }
     }
-  }, [orderToHighlight, orders]);
+  }, [orderToHighlight, databaseOrders]);
+
+  // Fetch orders from Supabase database via API
+  useEffect(() => {
+    if (!user) return;
+
+    const fetchDatabaseOrders = async () => {
+      try {
+        setLoadingOrders(true);
+        
+        console.log(`[AccountPage] Fetching orders for user ${user.id} via API...`);
+        
+        const response = await fetch(`/api/orders/get-user-orders?userId=${user.id}`);
+        if (!response.ok) {
+          console.error('Error fetching orders from API:', response.statusText);
+          return;
+        }
+
+        const result = await response.json();
+        
+        if (!result.success) {
+          console.error('API returned error:', result.error);
+          return;
+        }
+
+        const data = result.orders ?? [];
+        console.log(`[AccountPage] Fetched ${data.length} orders for user ${user.id}`);
+        console.log('[AccountPage] Order IDs:', data.map((o: any) => o.id));
+        
+        const normalizedOrders: DashboardOrder[] = (data ?? []).map((row: any) => {
+          // Handle order_items stored in the orders table (JSONB column with full item objects)
+          let items: any[] = [];
+          
+          if (row.order_items) {
+            if (Array.isArray(row.order_items)) {
+              items = row.order_items;
+            } else if (typeof row.order_items === 'object') {
+              items = [row.order_items];
+            }
+          }
+          
+          const normalizedItems = items.map((item: any, index: number) => {
+            const priceCents = typeof item.price === 'number' ? item.price : 0;
+            return {
+              id: item.product_id?.toString() ?? item.id?.toString() ?? `item-${index}`,
+              name: item.product_name ?? item.name ?? 'Item',
+              price: priceCents / 100,
+              quantity: item.quantity ?? 1,
+              image: item.image ?? undefined,
+            };
+          });
+
+          const subtotal = typeof row.subtotal === 'number' ? row.subtotal / 100 : row.subtotal ?? 0;
+          const deliveryFee = typeof row.delivery_fee === 'number' ? row.delivery_fee / 100 : row.delivery_fee ?? 0;
+          const totalAmount = typeof row.total_amount === 'number' ? row.total_amount / 100 : row.total_amount ?? 0;
+
+          const nameParts = (row.customer_name ?? '').trim().split(/\s+/).filter(Boolean);
+          const firstName = nameParts.shift() ?? row.customer_name ?? 'Customer';
+          const lastName = nameParts.join(' ');
+
+          const deliveryAddressRaw = (typeof row.delivery_address === 'object' && row.delivery_address !== null)
+            ? (row.delivery_address as Record<string, any>)
+            : row.delivery_address
+              ? { address: row.delivery_address } as Record<string, any>
+              : null;
+
+          const paymentMethodValue = (row.payment_method ?? '').toString().toLowerCase();
+          const paymentMethod: Order['paymentMethod'] = (() => {
+            switch (paymentMethodValue) {
+              case 'wallet':
+                return 'wallet';
+              case 'cash':
+                return 'cash';
+              case 'card':
+              case 'credit-card':
+              case 'debit-card':
+                return 'card';
+              case 'mobile_money':
+              case 'mobile-money':
+              case 'mpesa':
+              default:
+                return 'mpesa';
+            }
+          })();
+
+          return {
+            id: row.id,
+            order_reference: row.order_reference ?? row.id,
+            delivery_method: row.delivery_method ?? 'pickup',
+            deliveryMethod: row.delivery_method === 'speedy' ? 'speedy' : 'pickup',
+            delivery_address: deliveryAddressRaw?.address ?? deliveryAddressRaw?.pickup_location ?? null,
+            delivery_address_raw: deliveryAddressRaw,
+            date: row.created_at ?? new Date().toISOString(),
+            status: (row.status ?? 'pending') as OrderStatus,
+            items,
+            subtotal,
+            deliveryFee,
+            total: totalAmount,
+            total_amount: totalAmount,
+            paymentMethod,
+            payment_reference: row.payment_reference ?? null,
+            mpesa_receipt_number: row.mpesa_receipt_number ?? null,
+            leta_status: row.leta_status ?? null,
+            leta_tracking_url: row.leta_tracking_url ?? null,
+            rider_name: row.rider_name ?? null,
+            rider_phone: row.rider_phone ?? null,
+            estimated_delivery_time: row.estimated_delivery_time ?? null,
+            customer: {
+              firstName,
+              lastName,
+              phone: row.customer_phone ?? '',
+              email: row.customer_email ?? '',
+              address: deliveryAddressRaw?.address ?? undefined,
+              pickupLocation: deliveryAddressRaw?.pickup_location ?? undefined,
+            },
+            note: row.notes ?? undefined,
+          } satisfies DashboardOrder;
+        });
+
+        setDatabaseOrders(normalizedOrders);
+      } catch (err) {
+        console.error('Failed to fetch database orders:', err);
+      } finally {
+        setLoadingOrders(false);
+      }
+    };
+
+    fetchDatabaseOrders();
+  }, [user, defaultTab]);
 
   return (
     <>
@@ -239,43 +396,117 @@ export default function AccountPage() {
 
               {/* Orders Tab */}
               <TabsContent value="orders">
-                <Card>
-                  <CardHeader>
-                    <CardTitle className="flex items-center">
-                      <Package className="h-5 w-5 mr-2" />
-                      Order History
-                    </CardTitle>
-                  </CardHeader>
-                  <CardContent>
-                    {orders.length === 0 ? (
-                      <div className="text-sm text-muted-foreground">No orders yet.</div>
-                    ) : (
-                      <div className="space-y-4">
-                        {orders.map((o) => (
-                          <div key={o.id} className={`border rounded-lg p-4 ${orderToHighlight === o.id ? 'ring-2 ring-primary' : ''}`}>
-                            <div className="flex items-center justify-between mb-2">
-                              <div>
-                                <h4 className="font-semibold">{o.id}</h4>
-                                <p className="text-sm text-muted-foreground">{new Date(o.date).toLocaleString()}</p>
+                <div className="space-y-6">
+                  {loadingOrders ? (
+                    <Card>
+                      <CardContent className="p-8 text-center">
+                        <div className="text-sm text-muted-foreground">Loading your orders...</div>
+                      </CardContent>
+                    </Card>
+                  ) : databaseOrders.length === 0 ? (
+                    <Card>
+                      <CardContent className="p-8 text-center">
+                        <Package className="h-12 w-12 text-muted-foreground mx-auto mb-3 opacity-50" />
+                        <h3 className="font-semibold text-lg mb-2">No Orders Yet</h3>
+                        <p className="text-muted-foreground text-sm">
+                          Start shopping to see your orders here!
+                        </p>
+                      </CardContent>
+                    </Card>
+                  ) : (
+                    <div>
+                      <h2 className="text-2xl font-bold mb-4 flex items-center gap-2">
+                        <Truck className="h-6 w-6" />
+                        Your Orders
+                      </h2>
+                      <div className="space-y-6">
+                        {databaseOrders.map((o) => (
+                          <div key={o.id}>
+                            {/* Delivery Progress Bar for Speedy Orders */}
+                            {o.delivery_method === 'speedy' && (
+                              <div className="mb-4">
+                                <DeliveryProgressBar
+                                  orderId={o.id}
+                                  deliveryStatus={o.leta_status || 'pending'}
+                                  riderName={o.rider_name}
+                                  riderPhone={o.rider_phone}
+                                  deliveryAddress={o.delivery_address}
+                                  estimatedDeliveryTime={o.estimated_delivery_time}
+                                  trackingUrl={o.leta_tracking_url}
+                                />
                               </div>
-                              <span className={statusPill(o.status)}>{statusLabel(o.status)}</span>
-                            </div>
-                            <div className="flex items-center justify-between">
-                              <div>
-                                <p className="text-sm text-muted-foreground">{o.items.map(i => `${i.name} × ${i.quantity}`).join(', ')}</p>
-                                <p className="font-medium">KES {o.total.toLocaleString()}</p>
-                              </div>
-                              <div className="flex items-center gap-2">
-                                <Button variant="outline" size="sm" onClick={() => setActive(o)}>View Details</Button>
-                                <Button variant="destructive" size="sm" onClick={() => deleteOrder(o.id)}>Delete</Button>
-                              </div>
-                            </div>
+                            )}
+
+                            {/* Order Details Card */}
+                            <Card>
+                              <CardContent className="p-4">
+                                <div className="flex items-center justify-between mb-3">
+                                  <div>
+                                    <h3 className="font-bold text-lg">
+                                      Order #{o.order_reference}
+                                    </h3>
+                                    <p className="text-sm text-muted-foreground">
+                                      {new Date(o.date).toLocaleString()}
+                                    </p>
+                                  </div>
+                                  <Badge className={`${
+                                    o.status === 'delivered' ? 'bg-emerald-100 text-emerald-800' :
+                                    o.status === 'pending' ? 'bg-yellow-100 text-yellow-800' :
+                                    o.status === 'confirmed' ? 'bg-blue-100 text-blue-800' :
+                                    o.status === 'shipped' ? 'bg-purple-100 text-purple-800' :
+                                    'bg-red-100 text-red-800'
+                                  }`}>
+                                    {o.status ? o.status.replace(/_/g, ' ').replace(/^./, (c: string) => c.toUpperCase()) : 'Pending'}
+                                  </Badge>
+                                </div>
+
+                                <Separator className="my-3" />
+
+                                <div className="grid grid-cols-2 gap-4 mb-3">
+                                  <div>
+                                    <p className="text-xs font-semibold text-gray-600 mb-1">Items</p>
+                                    {o.items && Array.isArray(o.items) ? (
+                                      <ul className="text-sm space-y-1">
+                                        {o.items.map((item: any, idx: number) => (
+                                          <li key={idx} className="text-gray-700">
+                                            {item.name || item.product_name} ×{item.quantity}
+                                          </li>
+                                        ))}
+                                      </ul>
+                                    ) : (
+                                      <p className="text-sm text-gray-500">No items</p>
+                                    )}
+                                  </div>
+                                  <div>
+                                    <p className="text-xs font-semibold text-gray-600 mb-1">Delivery Method</p>
+                                    <p className="text-sm font-medium">
+                                      {o.delivery_method === 'speedy' ? '🚚 Speedy' : '🏪 Pickup'}
+                                    </p>
+                                    <p className="text-xs font-semibold text-gray-600 mb-1 mt-2">Total</p>
+                                    <p className="text-lg font-bold text-green-600">
+                                      KES {(o.total_amount || 0).toLocaleString()}
+                                    </p>
+                                  </div>
+                                </div>
+
+                                {o.delivery_method === 'speedy' && o.delivery_address && (
+                                  <div className="mb-3 p-2 bg-blue-50 rounded text-sm text-gray-700 flex items-start gap-2">
+                                    <MapPin className="h-4 w-4 mt-0.5 flex-shrink-0 text-blue-600" />
+                                    <span>{o.delivery_address}</span>
+                                  </div>
+                                )}
+
+                                <Button variant="outline" size="sm" className="w-full" onClick={() => setActive(o)}>
+                                  View Full Details
+                                </Button>
+                              </CardContent>
+                            </Card>
                           </div>
                         ))}
                       </div>
-                    )}
-                  </CardContent>
-                </Card>
+                    </div>
+                  )}
+                </div>
               </TabsContent>
 
               {/* Addresses Tab */}
@@ -641,15 +872,22 @@ export default function AccountPage() {
   );
 }
 
-function OrderDetailsModal({ order, onClose }: { order: Order | null; onClose: () => void }) {
+function OrderDetailsModal({ order, onClose }: { order: DashboardOrder | null; onClose: () => void }) {
   if (!order) return null;
+  const orderReference = order.order_reference ?? order.id;
+  const createdAt = order.date ? new Date(order.date) : null;
+  const pickupLocation = order.customer.pickupLocation ?? order.delivery_address ?? 'Store Pickup';
   return (
     <Dialog open={!!order} onOpenChange={(open) => { if (!open) onClose(); }}>
       <DialogContent className="sm:max-w-3xl max-h-[90vh] overflow-y-auto pr-10">
         <DialogHeader>
           <DialogTitle className="flex items-center justify-between pr-6">
-            <span>Order {order.id}</span>
-            <span className="inline-flex items-center gap-2 text-sm text-muted-foreground"><CalendarClock className="h-4 w-4" /> {new Date(order.date).toLocaleString()}</span>
+            <span>Order {orderReference}</span>
+            {createdAt && (
+              <span className="inline-flex items-center gap-2 text-sm text-muted-foreground">
+                <CalendarClock className="h-4 w-4" /> {createdAt.toLocaleString()}
+              </span>
+            )}
           </DialogTitle>
         </DialogHeader>
 
@@ -711,12 +949,18 @@ function OrderDetailsModal({ order, onClose }: { order: Order | null; onClose: (
               <div className="mt-2 text-sm space-y-1">
                 <div>Delivery Method: <span className="font-medium capitalize">{order.deliveryMethod === 'speedy' ? 'Speedy Drop' : 'Pickup'}</span></div>
                 {order.deliveryMethod === 'speedy' ? (
-                  <div>Address: <span className="text-muted-foreground">{order.customer.address}</span></div>
+                  <div>Address: <span className="text-muted-foreground">{order.customer.address ?? order.delivery_address ?? '—'}</span></div>
                 ) : (
-                  <div>Pickup Location: <span className="text-muted-foreground">{order.customer.pickupLocation}</span></div>
+                  <div>Pickup Location: <span className="text-muted-foreground">{pickupLocation}</span></div>
                 )}
                 <div>Payment Method: <span className="font-medium capitalize">{order.paymentMethod}</span></div>
                 {order.note && (<div>Note: <span className="text-muted-foreground">{order.note}</span></div>)}
+                {order.payment_reference && (
+                  <div>Payment Reference: <span className="text-muted-foreground">{order.payment_reference}</span></div>
+                )}
+                {order.mpesa_receipt_number && (
+                  <div>Receipt: <span className="text-muted-foreground">{order.mpesa_receipt_number}</span></div>
+                )}
               </div>
             </div>
           </div>
