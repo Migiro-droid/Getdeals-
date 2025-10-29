@@ -697,18 +697,33 @@ export default function HomePageRedesign() {
                   <div className="absolute inset-0 bg-gradient-to-t from-black via-black/50 to-transparent"></div>
                   
                   <div className="absolute inset-0 flex flex-col justify-end p-6 text-white">
-                    <div className="inline-flex items-center gap-2 bg-cyan-500 px-4 py-2 rounded-full w-fit mb-3 animate-pulse">
-                      <Sparkles className="h-4 w-4" />
-                      <span className="text-xs font-black uppercase">New Arrivals</span>
+                    <div className="inline-flex items-center gap-2 bg-white/10 backdrop-blur-sm px-4 py-2 rounded-full w-fit mb-3 mt-8">
+                      <Users className="h-4 w-4 text-white" />
+                      <span className="text-xs font-black uppercase">Trusted by</span>
                     </div>
-                    <h3 className="text-3xl font-black mb-2 leading-tight">
-                      Fresh<br />Products Daily
-                    </h3>
-                    <p className="text-sm font-semibold text-white/90 mb-3">
-                      Discover the latest additions to our collection
-                    </p>
-                    <div className="flex items-center gap-2 font-bold group-hover:gap-3 transition-all">
-                      Explore Now <ChevronRight className="h-5 w-5" />
+
+                    <div className="mb-2">
+                      <div className="flex items-end gap-3">
+                        <h3 className="text-4xl md:text-5xl font-extrabold leading-tight tracking-tight">
+                          <span className="inline-block mr-2 text-4xl md:text-5xl font-extrabold">100,000K+</span>
+                        </h3>
+                        <span className="text-sm md:text-base text-white/90 font-semibold">happy customers</span>
+                      </div>
+                      <p className="mt-2 text-sm text-white/90 max-w-lg">
+                        Millions of orders processed with care — high-quality groceries delivered fast. Join our growing community and save on every shop.
+                      </p>
+                    </div>
+
+                    <div className="flex items-center gap-3 mt-4">
+                      {/* Primary - clear visible CTA (direct Link to ensure visibility) */}
+                      <Link to="/auth?tab=signup" className="inline-flex items-center bg-blue-600 text-white px-4 py-2 rounded-md font-semibold shadow hover:bg-blue-700">
+                        Get Started
+                      </Link>
+
+                      {/* Secondary - direct Link styled for dark overlay so text is visible */}
+                      <Link to="/how-it-works" className="inline-flex items-center border border-white/30 text-white px-4 py-2 rounded-md hover:bg-white/10">
+                        How it works
+                      </Link>
                     </div>
                   </div>
                 </div>

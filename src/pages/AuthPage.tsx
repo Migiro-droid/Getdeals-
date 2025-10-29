@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Link, useNavigate } from 'react-router-dom';
+import { Link, useNavigate, useSearchParams } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -94,6 +94,10 @@ export default function AuthPage() {
     }
   };
 
+  const [searchParams] = useSearchParams();
+
+  const defaultTab = searchParams.get('tab') === 'signup' ? 'signup' : 'signin';
+
   return (
     <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-primary/5 via-background to-primary/10 p-4">
       <div className="w-full max-w-md">
@@ -126,7 +130,7 @@ export default function AuthPage() {
             <p className="text-muted-foreground text-sm mt-2">Sign in to your account or create a new one</p>
           </CardHeader>
           <CardContent>
-            <Tabs defaultValue="signin" className="w-full">
+            <Tabs defaultValue={defaultTab} className="w-full">
               <TabsList className="grid w-full grid-cols-2">
                 <TabsTrigger value="signin" className="flex items-center gap-2">
                   <LogIn className="h-4 w-4" />

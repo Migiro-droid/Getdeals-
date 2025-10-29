@@ -8,7 +8,6 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Mail, Lock, User, Phone, Eye, EyeOff, Building2 } from "lucide-react";
 import { useAuth } from "@/contexts/AuthContext";
 import { useToast } from "@/components/ui/use-toast";
-import { PostSignupChecklist } from "./PostSignupChecklist";
 
 interface AuthModalsProps {
   open: boolean;
@@ -22,7 +21,6 @@ export function AuthModals({ open, onOpenChange, defaultTab = "signin" }: AuthMo
   const [showSignUpPassword, setShowSignUpPassword] = useState(false);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [showChecklist, setShowChecklist] = useState(false);
   const [showForgotPassword, setShowForgotPassword] = useState(false);
   const [forgotPasswordEmail, setForgotPasswordEmail] = useState("");
   const { signIn, signUp, resetPassword, signInWithOAuth, user } = useAuth();
@@ -35,7 +33,6 @@ export function AuthModals({ open, onOpenChange, defaultTab = "signin" }: AuthMo
       setLoading(false);
       setShowSignInPassword(false);
       setShowSignUpPassword(false);
-      setShowChecklist(false);
       setShowForgotPassword(false);
       setForgotPasswordEmail("");
     }
@@ -81,18 +78,11 @@ export function AuthModals({ open, onOpenChange, defaultTab = "signin" }: AuthMo
     try {
       await signUp(name, phone, email, password, organization, organizationId);
       toast({ title: "Account created", description: "Welcome to GetDeals! A welcome SMS has been sent to your phone." });
-      // Show checklist for new users (onboardingCompleted will be false by default)
-      setShowChecklist(true);
     } catch (err: any) {
       setError(err?.message || 'Failed to sign up');
     } finally {
       setLoading(false);
     }
-  };
-
-  const handleChecklistComplete = () => {
-    setShowChecklist(false);
-    onOpenChange(false);
   };
 
   const handleForgotPassword = async (e: React.FormEvent) => {
@@ -407,11 +397,6 @@ export function AuthModals({ open, onOpenChange, defaultTab = "signin" }: AuthMo
           )}
         </DialogContent>
       </Dialog>
-
-      <PostSignupChecklist
-        open={showChecklist}
-        onComplete={handleChecklistComplete}
-      />
     </>
   );
 }
