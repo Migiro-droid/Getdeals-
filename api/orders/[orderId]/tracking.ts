@@ -82,6 +82,19 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
         orderId,
         errorDetails: error
       });
+
+      // Try a simpler query to see if the order exists at all
+      const { data: simpleCheck, error: simpleError } = await supabase
+        .from('orders')
+        .select('id, order_reference')
+        .eq('id', orderId);
+
+      console.error('[TRACKING] Simple check result:', {
+        found: (simpleCheck && simpleCheck.length > 0),
+        count: simpleCheck?.length || 0,
+        simpleError: simpleError?.message
+      });
+
       return res.status(404).json({ 
         success: false, 
         error: 'Order not found', 
@@ -89,6 +102,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
         debug: {
           queryUsed: orderId,
           errorMessage: error?.message || error,
+          simpleCheckFound: simpleCheck && simpleCheck.length > 0,
         }
       });
     }
