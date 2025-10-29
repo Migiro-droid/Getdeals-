@@ -138,7 +138,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
         customer_email: orderData.customer_email,
         customer_name: orderData.customer_name,
         customer_phone: orderData.customer_phone,
-        order_items: orderData.items,
+        items: orderData.items,
         subtotal: Math.round(orderData.subtotal * 100), 
         delivery_fee: Math.round(orderData.delivery_fee * 100),
         total_amount: Math.round(orderData.total_amount * 100), // Changed from 'total' to 'total_amount'
