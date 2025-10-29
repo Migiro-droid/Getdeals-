@@ -1,6 +1,6 @@
 /**
- * Delivery Progress Bar Component - Premium Design
- * Modern, sleek real-time delivery tracking with smooth animations
+ * Delivery Progress Bar Component - Ultra Premium Modern Design
+ * Real-time delivery tracking with stunning animations and UX
  */
 
 import { useEffect, useState } from 'react';
@@ -16,6 +16,10 @@ import {
   Package,
   Navigation,
   ChevronRight,
+  Loader2,
+  Zap,
+  MessageCircle,
+  Share2,
 } from 'lucide-react';
 
 interface DeliveryProgressBarProps {
@@ -135,6 +139,7 @@ export function DeliveryProgressBar({
   const [currentStatus, setCurrentStatus] = useState<TrackingStatus>(
     (deliveryStatus as TrackingStatus) || 'pending'
   );
+  const [showContactOptions, setShowContactOptions] = useState(false);
 
   const config = statusConfig[currentStatus];
 
@@ -171,42 +176,66 @@ export function DeliveryProgressBar({
   const progressPercentage = ((currentStageIndex + 1) / stages.length) * 100;
 
   return (
-    <Card className="overflow-hidden border-0 shadow-md hover:shadow-lg transition-shadow duration-300">
+    <Card className="overflow-hidden border-0 shadow-xl hover:shadow-2xl transition-shadow duration-300 bg-white">
       <CardContent className="p-0">
-        {/* Header with gradient background */}
-        <div className={`bg-gradient-to-r ${config.gradientFrom} ${config.gradientTo} p-6 text-white`}>
-          <div className="flex items-center justify-between">
+        {/* Premium Header with animated gradient background */}
+        <div className={`bg-gradient-to-r ${config.gradientFrom} ${config.gradientTo} p-6 text-white relative overflow-hidden`}>
+          {/* Animated background elements */}
+          <div className="absolute inset-0 opacity-10">
+            <div className="absolute top-0 right-0 w-40 h-40 rounded-full blur-2xl animate-pulse" 
+              style={{ background: 'rgba(255,255,255,0.1)' }} 
+            />
+            <div className="absolute bottom-0 left-0 w-32 h-32 rounded-full blur-2xl animate-pulse delay-700" 
+              style={{ background: 'rgba(255,255,255,0.05)' }} 
+            />
+          </div>
+
+          <div className="flex items-center justify-between relative z-10">
             <div className="flex items-center gap-4">
-              <div className="p-3 bg-white/20 backdrop-blur-sm rounded-full">
+              <div className={`p-3 bg-white/20 backdrop-blur-md rounded-full ring-2 ring-white/30 ${isLoading ? 'animate-spin' : ''}`}>
                 {config.icon}
               </div>
               <div>
                 <h3 className="font-bold text-lg leading-tight">{config.label}</h3>
                 {isLoading && (
-                  <p className="text-xs text-white/70 mt-1">Updating location...</p>
+                  <p className="text-xs text-white/70 mt-1 flex items-center gap-1">
+                    <Loader2 className="h-3 w-3 animate-spin" />
+                    Updating location...
+                  </p>
                 )}
               </div>
             </div>
-            <Badge className="bg-white/20 text-white border-0 hover:bg-white/30">
-              Live
-            </Badge>
+            <div className="flex items-center gap-2">
+              {currentStatus === 'in_transit' && (
+                <Badge className="bg-white/30 text-white border-white/50 hover:bg-white/40 gap-1">
+                  <Zap className="h-3 w-3" />
+                  Live
+                </Badge>
+              )}
+              {currentStatus === 'delivered' && (
+                <Badge className="bg-white/30 text-white border-white/50 hover:bg-white/40">
+                  Completed
+                </Badge>
+              )}
+            </div>
           </div>
         </div>
 
         <div className="p-6 space-y-6">
-          {/* Enhanced Progress Timeline */}
-          <div className="space-y-4">
+          {/* Enhanced Progress Timeline with smooth animations */}
+          <div className="space-y-6">
+            {/* Timeline visualization */}
             <div className="relative">
-              {/* Background progress bar */}
-              <div className="absolute top-1/2 left-0 right-0 h-1 bg-gradient-to-r from-gray-200 to-gray-200 -translate-y-1/2" />
+              {/* Background progress bar with gradient */}
+              <div className="absolute top-1/2 left-0 right-0 h-2 bg-gradient-to-r from-gray-100 to-gray-200 -translate-y-1/2 rounded-full" />
               
-              {/* Animated progress bar */}
+              {/* Animated progress bar overlay */}
               <div
-                className={`absolute top-1/2 left-0 h-1 bg-gradient-to-r ${config.gradientFrom} ${config.gradientTo} -translate-y-1/2 transition-all duration-700`}
+                className={`absolute top-1/2 left-0 h-2 bg-gradient-to-r ${config.gradientFrom} ${config.gradientTo} -translate-y-1/2 rounded-full transition-all duration-700 shadow-lg`}
                 style={{ width: `${progressPercentage}%` }}
               />
 
-              {/* Stage dots and labels */}
+              {/* Stage dots with improved styling */}
               <div className="flex justify-between relative">
                 {stages.map((stage, idx) => {
                   const isActive = idx <= currentStageIndex;
@@ -217,28 +246,37 @@ export function DeliveryProgressBar({
                       key={stage}
                       className="flex flex-col items-center"
                     >
+                      {/* Animated connecting line */}
+                      {idx < stages.length - 1 && (
+                        <div className={`absolute top-3 left-1/2 w-1/2 h-1 transition-all duration-500 ${isActive ? `bg-gradient-to-r ${statusConfig[stage].dotColor.replace('bg-', '')} opacity-100` : 'bg-gray-200 opacity-50'}`} />
+                      )}
+
+                      {/* Dot with enhanced styling */}
                       <div
-                        className={`relative w-6 h-6 rounded-full border-4 transition-all duration-500 ${
+                        className={`relative w-8 h-8 rounded-full border-4 transition-all duration-500 flex items-center justify-center ${
                           isActive
-                            ? `${statusConfig[stage].dotColor} border-white shadow-md ${isCurrentStage ? 'ring-4 ring-offset-2 ring-offset-white scale-125' : ''}`
-                            : 'bg-gray-300 border-white'
+                            ? `${statusConfig[stage].dotColor} border-white shadow-lg ${isCurrentStage ? 'ring-4 ring-offset-2 ring-offset-white scale-125' : 'scale-110'}`
+                            : 'bg-gray-300 border-gray-300 scale-90'
                         }`}
                       >
                         {isCurrentStage && (
-                          <div className="absolute inset-0 rounded-full animate-pulse opacity-50" 
+                          <div className="absolute inset-1 rounded-full animate-pulse opacity-75" 
                             style={{
                               background: statusConfig[stage].dotColor.replace('bg-', ''),
                             }}
                           />
                         )}
+                        {isActive && !isCurrentStage && (
+                          <CheckCircle2 className="h-4 w-4 text-white" />
+                        )}
                       </div>
-                      <span className={`text-xs font-semibold mt-3 text-center w-14 leading-tight transition-colors ${
-                        isActive ? 'text-gray-900' : 'text-gray-400'
+                      <span className={`text-xs font-bold mt-3 text-center w-16 leading-tight transition-all duration-300 ${
+                        isActive ? `${config.textColor} scale-100` : 'text-gray-400 scale-90'
                       }`}>
-                        {stage === 'in_transit' ? 'Transit' : 
+                        {stage === 'in_transit' ? 'In Transit' : 
                          stage === 'pending' ? 'Placed' :
                          stage === 'assigned' ? 'Assigned' :
-                         stage === 'arriving' ? 'Arriving' : 'Done'}
+                         stage === 'arriving' ? 'Arriving' : 'Delivered'}
                       </span>
                     </div>
                   );
@@ -247,16 +285,18 @@ export function DeliveryProgressBar({
             </div>
           </div>
 
-          {/* Delivery Details Card */}
+          {/* Delivery Details Card with enhanced styling */}
           {(riderName || deliveryAddress || estimatedDeliveryTime) && (
-            <div className={`rounded-xl p-4 border ${config.borderColor} ${config.bgColor} space-y-4`}>
+            <div className={`rounded-2xl p-5 border-2 ${config.borderColor} ${config.bgColor} space-y-4 backdrop-blur-sm`}>
               {/* Delivery Address */}
               {deliveryAddress && (
                 <div className="flex items-start gap-3 pb-3 border-b border-gray-200/50">
-                  <MapPin className={`h-5 w-5 mt-0.5 flex-shrink-0 ${config.textColor}`} />
+                  <div className={`p-2 rounded-lg ${config.bgColor} ${config.textColor}`}>
+                    <MapPin className="h-5 w-5" />
+                  </div>
                   <div className="flex-1">
-                    <p className="text-xs font-semibold text-gray-500 uppercase tracking-wide">Delivery Address</p>
-                    <p className={`text-sm font-medium mt-1 ${config.textColor}`}>{deliveryAddress}</p>
+                    <p className="text-xs font-bold text-gray-500 uppercase tracking-wider mb-1">Delivery Address</p>
+                    <p className={`text-sm font-semibold ${config.textColor} leading-snug`}>{deliveryAddress}</p>
                   </div>
                 </div>
               )}
@@ -264,92 +304,109 @@ export function DeliveryProgressBar({
               {/* Estimated Time */}
               {estimatedDeliveryTime && (
                 <div className="flex items-start gap-3 pb-3 border-b border-gray-200/50">
-                  <Clock className={`h-5 w-5 mt-0.5 flex-shrink-0 ${config.textColor}`} />
+                  <div className={`p-2 rounded-lg ${config.bgColor} ${config.textColor}`}>
+                    <Clock className="h-5 w-5" />
+                  </div>
                   <div className="flex-1">
-                    <p className="text-xs font-semibold text-gray-500 uppercase tracking-wide">Est. Arrival</p>
-                    <p className={`text-sm font-medium mt-1 ${config.textColor}`}>{estimatedDeliveryTime}</p>
+                    <p className="text-xs font-bold text-gray-500 uppercase tracking-wider mb-1">Est. Arrival</p>
+                    <p className={`text-sm font-semibold ${config.textColor}`}>{estimatedDeliveryTime}</p>
                   </div>
                 </div>
               )}
 
-              {/* Rider Info with Call Button */}
+              {/* Rider Info with enhanced actions */}
               {riderName && (
-                <div className="flex items-center justify-between">
+                <div className="flex items-center justify-between pt-1">
                   <div className="flex items-start gap-3 flex-1">
-                    <div className="h-10 w-10 rounded-full bg-gradient-to-br from-blue-400 to-blue-600 flex items-center justify-center flex-shrink-0">
-                      <Truck className="h-5 w-5 text-white" />
+                    <div className={`h-12 w-12 rounded-full bg-gradient-to-br from-blue-400 to-blue-600 flex items-center justify-center flex-shrink-0 shadow-md`}>
+                      <Truck className="h-6 w-6 text-white" />
                     </div>
                     <div>
-                      <p className="text-xs font-semibold text-gray-500 uppercase tracking-wide">Your Rider</p>
-                      <p className={`text-sm font-bold mt-1 ${config.textColor}`}>{riderName}</p>
+                      <p className="text-xs font-bold text-gray-500 uppercase tracking-wider">Your Rider</p>
+                      <p className={`text-base font-bold mt-1 ${config.textColor}`}>{riderName}</p>
                     </div>
                   </div>
                   {riderPhone && (
-                    <a
-                      href={`tel:${riderPhone}`}
-                      className={`inline-flex items-center gap-2 px-4 py-2 bg-gradient-to-r from-green-500 to-emerald-600 text-white rounded-lg hover:from-green-600 hover:to-emerald-700 transition-all font-semibold text-sm shadow-md hover:shadow-lg transform hover:scale-105`}
-                    >
-                      <Phone className="h-4 w-4" />
-                      Call
-                    </a>
+                    <div className="flex gap-2">
+                      <button
+                        onClick={() => setShowContactOptions(!showContactOptions)}
+                        className={`inline-flex items-center gap-2 px-3 py-2 bg-gradient-to-r from-blue-500 to-blue-600 text-white rounded-lg hover:from-blue-600 hover:to-blue-700 transition-all font-semibold text-sm shadow-md hover:shadow-lg transform hover:scale-105`}
+                      >
+                        <MessageCircle className="h-4 w-4" />
+                        <span className="hidden sm:inline">Chat</span>
+                      </button>
+                      <a
+                        href={`tel:${riderPhone}`}
+                        className={`inline-flex items-center gap-2 px-3 py-2 bg-gradient-to-r from-green-500 to-emerald-600 text-white rounded-lg hover:from-green-600 hover:to-emerald-700 transition-all font-semibold text-sm shadow-md hover:shadow-lg transform hover:scale-105`}
+                      >
+                        <Phone className="h-4 w-4" />
+                        <span className="hidden sm:inline">Call</span>
+                      </a>
+                    </div>
                   )}
                 </div>
               )}
             </div>
           )}
 
-          {/* Live Tracking Button */}
+          {/* Live Tracking Button - Enhanced CTA */}
           {trackingUrl && currentStatus !== 'delivered' && (
             <a
               href={trackingUrl}
               target="_blank"
               rel="noopener noreferrer"
-              className={`w-full inline-flex items-center justify-center gap-2 px-4 py-3 bg-gradient-to-r ${config.gradientFrom} ${config.gradientTo} text-white rounded-lg hover:shadow-lg transition-all font-semibold text-sm group`}
+              className={`w-full inline-flex items-center justify-center gap-2 px-5 py-4 bg-gradient-to-r ${config.gradientFrom} ${config.gradientTo} text-white rounded-xl hover:shadow-xl transition-all font-bold text-base group shadow-lg transform hover:scale-[1.02]`}
             >
-              <Navigation className="h-4 w-4 transform -rotate-45 group-hover:rotate-0 transition-transform" />
-              Real-Time Tracking
-              <ChevronRight className="h-4 w-4 group-hover:translate-x-1 transition-transform" />
+              <Navigation className="h-5 w-5 transform -rotate-45 group-hover:rotate-12 transition-transform" />
+              View Real-Time Tracking
+              <ChevronRight className="h-5 w-5 group-hover:translate-x-1 transition-transform" />
             </a>
           )}
 
-          {/* Status Messages */}
+          {/* Status Messages - Improved Design */}
           {currentStatus === 'delivered' && (
-            <div className="p-4 bg-gradient-to-r from-emerald-50 to-teal-50 border border-emerald-200 rounded-xl flex items-start gap-3">
-              <CheckCircle2 className="h-5 w-5 text-emerald-600 flex-shrink-0 mt-0.5" />
+            <div className="p-5 bg-gradient-to-br from-emerald-50 to-teal-50 border-2 border-emerald-200 rounded-xl flex items-start gap-3 shadow-sm">
+              <div className="p-2 bg-emerald-100 rounded-lg flex-shrink-0">
+                <CheckCircle2 className="h-5 w-5 text-emerald-600" />
+              </div>
               <div>
-                <p className="font-semibold text-emerald-900 text-sm">
-                  Delivered Successfully! 🎉
+                <p className="font-bold text-emerald-900 text-sm">
+                  Delivered Successfully!
                 </p>
-                <p className="text-emerald-700 text-xs mt-1">
-                  Thank you for your purchase. We hope you enjoy your order!
+                <p className="text-emerald-700 text-xs mt-1 leading-relaxed">
+                  Thank you for your purchase. We hope you enjoy your order! Leave a review to help other shoppers.
                 </p>
               </div>
             </div>
           )}
 
           {currentStatus === 'failed' && (
-            <div className="p-4 bg-gradient-to-r from-red-50 to-rose-50 border border-red-200 rounded-xl flex items-start gap-3">
-              <AlertCircle className="h-5 w-5 text-red-600 flex-shrink-0 mt-0.5" />
+            <div className="p-5 bg-gradient-to-br from-red-50 to-rose-50 border-2 border-red-200 rounded-xl flex items-start gap-3 shadow-sm">
+              <div className="p-2 bg-red-100 rounded-lg flex-shrink-0">
+                <AlertCircle className="h-5 w-5 text-red-600" />
+              </div>
               <div>
-                <p className="font-semibold text-red-900 text-sm">
+                <p className="font-bold text-red-900 text-sm">
                   Delivery Issue
                 </p>
-                <p className="text-red-700 text-xs mt-1">
-                  There was an issue with your delivery. Please contact support for assistance.
+                <p className="text-red-700 text-xs mt-1 leading-relaxed">
+                  There was an issue with your delivery. Our support team will contact you shortly to reschedule.
                 </p>
               </div>
             </div>
           )}
 
           {currentStatus === 'cancelled' && (
-            <div className="p-4 bg-gradient-to-r from-gray-50 to-slate-50 border border-gray-200 rounded-xl flex items-start gap-3">
-              <AlertCircle className="h-5 w-5 text-gray-600 flex-shrink-0 mt-0.5" />
+            <div className="p-5 bg-gradient-to-br from-gray-50 to-slate-50 border-2 border-gray-200 rounded-xl flex items-start gap-3 shadow-sm">
+              <div className="p-2 bg-gray-100 rounded-lg flex-shrink-0">
+                <AlertCircle className="h-5 w-5 text-gray-600" />
+              </div>
               <div>
-                <p className="font-semibold text-gray-900 text-sm">
+                <p className="font-bold text-gray-900 text-sm">
                   Order Cancelled
                 </p>
-                <p className="text-gray-700 text-xs mt-1">
-                  Your delivery order has been cancelled. Contact support if you need help.
+                <p className="text-gray-700 text-xs mt-1 leading-relaxed">
+                  Your delivery has been cancelled. Contact support if you'd like to place a new order.
                 </p>
               </div>
             </div>

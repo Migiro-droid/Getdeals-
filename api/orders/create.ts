@@ -221,70 +221,98 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       console.log(' Payment linked to order');
     }
 
-    //Create delivery order
+    // Create delivery order with Leta
     let letaOrderResult = null;
     let deliveryWarning: string | null = null;
+    
     if (orderData.delivery_method === 'speedy' && orderData.delivery_address) {
-      console.log(`\n🚚 INITIATING LETA DELIVERY FOR ORDER: ${order.order_reference}`);
+      console.log(`[LETA] Initiating delivery for order: ${order.order_reference}`);
       
-      //Leta order payload
+      // Get active depot from database
+      const { data: depotData, error: depotError } = await supabase
+        .from('depots')
+        .select('code, latitude, longitude')
+        .eq('is_active', true)
+        .limit(1)
+        .single();
+
+      if (depotError || !depotData) {
+        console.warn('[LETA] No active depot found, using default fallback');
+      }
+
+      const depot = depotData || {
+        code: 'getdeals-nairobi',
+        latitude: -1.2860273,
+        longitude: 36.8079678
+      };
+
+      // Parse delivery address - could be string or object
+      let deliveryAddressName = 'Delivery Location';
+      if (typeof orderData.delivery_address === 'string') {
+        deliveryAddressName = orderData.delivery_address;
+      } else if (typeof orderData.delivery_address === 'object' && orderData.delivery_address !== null && 'address' in orderData.delivery_address) {
+        deliveryAddressName = (orderData.delivery_address as any).address;
+      }
+
+      // Build Leta order payload with proper structure
       const letaOrderPayload = {
         reference: `GD-${order.order_reference}`,
         customer: {
           phone_number: orderData.customer_phone.replace(/\s+/g, ''),
           email: orderData.customer_email,
-          name: orderData.customer_name,
+          name: orderData.customer_name || 'Customer',
         },
-        depot_code: 'getdeals-nairobi',
+        depot_code: depot.code,
         dropoff: {
-          latitude: -1.2860273, 
-          longitude: 36.8079678,
-          name: typeof orderData.delivery_address === 'string'
-            ? orderData.delivery_address
-            : (orderData.delivery_address as any)?.address || 'Karen Green, Nairobi',
+          latitude: '-1.2860273', // String format per Leta API spec
+          longitude: '36.8079678', // String format per Leta API spec
+          name: deliveryAddressName,
         },
         products: orderData.items.map((item: any) => ({
           code: item.id,
           quantity: item.quantity,
           price: item.price,
         })),
-        payment_method: 'prepaid',
-        special_instruction: `GetDeals Order #${order.order_reference}. Items: ${orderData.items.length}`,
+        payment_method: 'postpaid', // Changed to postpaid for GetDeals orders
+        special_instruction: `GetDeals Order #${order.order_reference}. Items: ${orderData.items.length}. Payment: ${orderData.payment_method}`,
         cargo_description: orderData.items
           .map((item: any) => `${item.quantity}x ${item.name}`)
           .join(', '),
       };
 
-      console.log('Leta order payload:', JSON.stringify(letaOrderPayload, null, 2));
+      console.log('[LETA] Order payload:', JSON.stringify(letaOrderPayload, null, 2));
 
       letaOrderResult = await createLetaOrder(letaOrderPayload);
 
       if (letaOrderResult.success && letaOrderResult.data) {
-        console.log(`LETA ORDER CREATED: ${letaOrderResult.data.id}`);
+        console.log(`[LETA] Order created successfully. ID: ${letaOrderResult.data.id}`);
 
+        // Update GetDeals order with Leta tracking info
         const { error: letaUpdateError } = await supabase
           .from('orders')
           .update({
             leta_order_id: letaOrderResult.data.id,
             leta_reference: letaOrderResult.data.reference,
             leta_status: letaOrderResult.data.status || 'pending',
-            leta_tracking_url: letaOrderResult.data.tracking_url,
+            leta_tracking_url: letaOrderResult.data.tracking_url || `https://tracking.leta.ai/${letaOrderResult.data.id}`,
           })
           .eq('id', order.id);
 
         if (letaUpdateError) {
-          console.error('Failed to update order with Leta info:', letaUpdateError);
-          deliveryWarning = 'Delivery partner assigned but tracking link is pending. Our team will update you shortly.';
+          console.error('[LETA] Failed to link tracking to order:', letaUpdateError);
+          deliveryWarning = 'Order confirmed! Tracking link will be updated within 5 minutes.';
         } else {
-          console.log('Order updated with Leta tracking information');
+          console.log('[LETA] Order successfully linked with tracking');
         }
       } else {
-        console.error(`LETA ORDER CREATION FAILED:`, letaOrderResult.error);
-        console.warn('Order created in GetDeals but delivery in Leta failed - customer should be notified');
-        deliveryWarning = 'We confirmed your order but could not start delivery automatically. A rider will be assigned manually.';
+        console.error(`[LETA] Order creation failed:`, letaOrderResult.error);
+        console.warn('[LETA] GetDeals order created but delivery pending');
+        deliveryWarning = 'Your order is confirmed. Delivery assignment in progress - a rider will be assigned shortly.';
       }
     } else if (orderData.delivery_method === 'pickup') {
-      console.log(` Order ${order.order_reference} is PICKUP - No Leta delivery needed`);
+      console.log(`[PICKUP] Order ${order.order_reference} is pickup - no delivery integration needed`);
+    } else {
+      console.log(`[ORDER] Order ${order.order_reference} created - delivery method: ${orderData.delivery_method}`);
     }
 
     if (orderData.payment_method !== 'mobile-money' && orderData.payment_method !== 'wallet') {
