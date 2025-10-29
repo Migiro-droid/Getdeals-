@@ -16,13 +16,34 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
   }
 
   try {
-    const orderId = req.query.orderId as string;
+    // Debug: Log all available parameters
+    console.log('[TRACKING] Full request object:', {
+      query: req.query,
+      params: (req as any).params,
+      url: req.url,
+      path: req.url?.split('?')[0],
+    });
+
+    // Handle Vercel dynamic routes - the parameter name matches the file name [orderId]
+    const orderId = (req.query.orderId as string) || 
+                    ((req as any).params?.orderId as string) ||
+                    (req.url?.split('orders/')[1]?.split('/')[0]);
 
     if (!orderId) {
-      return res.status(400).json({ success: false, error: 'Order ID required' });
+      console.error('[TRACKING] No order ID provided - all extraction methods failed');
+      console.log('[TRACKING] Request query:', req.query);
+      console.log('[TRACKING] Request URL:', req.url);
+      return res.status(400).json({ 
+        success: false, 
+        error: 'Order ID required',
+        debug: {
+          query: req.query,
+          url: req.url,
+        }
+      });
     }
 
-    console.log(`📍 Fetching tracking info for order: ${orderId}`);
+    console.log(`[TRACKING] Fetching tracking info for order: ${orderId}`);
 
     // Fetch order with delivery info
     const { data: order, error } = await supabase
@@ -52,9 +73,23 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       .single();
 
     if (error || !order) {
-      console.error('Order not found:', error);
-      return res.status(404).json({ success: false, error: 'Order not found' });
+      console.error('[TRACKING] Order lookup failed:', { 
+        error: error?.message || error, 
+        orderId,
+        errorDetails: error
+      });
+      return res.status(404).json({ 
+        success: false, 
+        error: 'Order not found', 
+        orderId,
+        debug: {
+          queryUsed: orderId,
+          errorMessage: error?.message || error,
+        }
+      });
     }
+
+    console.log(`[TRACKING] Order found. Status: ${order.status}, Method: ${order.delivery_method}`);
 
     // Build tracking response
     const tracking = {
@@ -100,14 +135,14 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       updatedAt: order.updated_at,
     };
 
-    console.log('✅ Tracking info:', tracking);
+    console.log('[TRACKING] Tracking info response ready');
 
     return res.status(200).json({
       success: true,
       tracking,
     });
   } catch (error) {
-    console.error('Error fetching tracking:', error);
+    console.error('[TRACKING] Error fetching tracking:', error);
     return res.status(500).json({
       success: false,
       error: error instanceof Error ? error.message : 'Internal server error',
