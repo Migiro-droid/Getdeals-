@@ -130,28 +130,50 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       items_count: orderData.items.length
     });
 
+    // Build minimal order object with only required/essential fields
+    const orderPayload: any = {
+      user_id: orderData.user_id,
+      order_reference: orderReference,
+      status: 'confirmed',
+      payment_status: 'completed',
+    };
+
+    // Add numeric fields - ensure they're proper NUMERIC type
+    if (orderData.total_amount) {
+      orderPayload.total = Number(orderData.total_amount);
+    }
+    if (orderData.subtotal) {
+      orderPayload.subtotal = Number(orderData.subtotal);
+    }
+    if (orderData.delivery_fee !== undefined) {
+      orderPayload.delivery_fee = Number(orderData.delivery_fee);
+    }
+
+    // Add optional fields
+    if (orderData.delivery_method) {
+      orderPayload.delivery_method = orderData.delivery_method;
+    }
+    if (orderData.payment_method) {
+      orderPayload.payment_method = orderData.payment_method;
+    }
+
+    // Add notes with payment info
+    const mpesaReceipt = orderData.mpesa_receipt_number || 'N/A';
+    const checkoutId = orderData.checkout_request_id || 'N/A';
+    orderPayload.notes = `M-Pesa Receipt: ${mpesaReceipt}, Checkout: ${checkoutId}`;
+
+    console.log('[CREATE] Order payload:', JSON.stringify(orderPayload, null, 2));
+
     const { data: order, error: orderError } = await supabase
       .from('orders')
-      .insert({
-        user_id: orderData.user_id,
-        order_reference: orderReference,
-        subtotal: Math.round(orderData.subtotal * 100), 
-        delivery_fee: Math.round(orderData.delivery_fee * 100),
-        total: Math.round(orderData.total_amount * 100), // Use 'total' column name, not 'total_amount'
-        delivery_method: orderData.delivery_method,
-        payment_method: orderData.payment_method,
-        payment_status: 'completed',
-        status: 'confirmed',
-        notes: `M-Pesa Receipt: ${orderData.mpesa_receipt_number || 'N/A'}, Checkout: ${orderData.checkout_request_id || 'N/A'}`,
-        created_at: new Date().toISOString(),
-        updated_at: new Date().toISOString()
-      })
+      .insert(orderPayload)
       .select()
       .single();
 
     if (orderError) {
       console.error(' Error creating order:', orderError);
       console.error('Full error details:', JSON.stringify(orderError, null, 2));
+      console.error('Order payload that failed:', JSON.stringify(orderPayload, null, 2));
       return res.status(500).json({
         success: false,
         error: 'Failed to create order in database',
