@@ -1,35 +1,52 @@
 {
-  "timestamp": "2025-10-29T08:57:23.394Z",
+  "timestamp": "2025-10-29T10:29:11.179Z",
   "configuration": {
     "valid": true,
     "errors": []
   },
   "tests": {
-    "depotVerification": {
-      "passed": false,
-      "message": "Error: No valid endpoint found. Last error: HTTP 404: Not Found",
-      "depotId": null
-    },
     "orderCreation": {
-      "passed": false,
-      "message": "Error: HTTP 400: {\"status_code\":400,\"detail\":\"You must pass one of the following fields:  drop_off, dropoff_address\"}",
-      "orderId": null
+      "passed": true,
+      "message": "Order created: 5454475",
+      "orderId": 5454475,
+      "reference": "TEST-1761733751215"
     },
-    "orderTracking": {
+    "orderUpdate": {
+      "passed": true,
+      "message": "Order updated successfully",
+      "updated": true
+    },
+    "shippingRatesCalculation": {
+      "passed": false,
+      "message": "Error: HTTP 400: {\"status_code\":400,\"detail\":{\"distance\":2379,\"price\":0,\"detail\":\"No rates found for the given distance\"}}",
+      "rate": null
+    },
+    "driverAvailability": {
+      "passed": false,
+      "message": "Error: HTTP 400: {\"status_code\":400,\"detail\":\"No available drivers\"}",
+      "available": false
+    },
+    "orderCancellation": {
+      "passed": true,
+      "message": "Order cancelled successfully",
+      "cancelled": true
+    },
+    "depotCreation": {
+      "passed": true,
+      "message": "Depot created: TEST-DEPOT-1761733768492",
+      "depotId": 3293,
+      "depotCode": "TEST-DEPOT-1761733768492"
+    },
+    "depotUpdate": {
       "passed": false,
       "message": "",
-      "trackingUrl": null
-    },
-    "orderStatusPolling": {
-      "passed": false,
-      "message": "",
-      "finalStatus": null
+      "updated": false
     }
   },
   "summary": {
-    "totalTests": 4,
-    "passedTests": 0,
-    "failedTests": 4,
-    "overallStatus": "❌ TESTS FAILED"
+    "totalTests": 7,
+    "passedTests": 4,
+    "failedTests": 3,
+    "overallStatus": "[WARNING] PARTIAL SUCCESS"
   }
 }
