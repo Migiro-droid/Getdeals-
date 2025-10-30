@@ -1,7 +1,8 @@
-It is corny. # Schema Mismatch Fix - Order Creation & Tracking
+# Database Schema Fix - Order Creation Issues
 
-## Problem
-After payment completion, order creation was failing with error:
+## Problems Encountered
+
+### Error 1: "Could not find the 'items' column"
 ```json
 {
   "success": false,
@@ -10,8 +11,21 @@ After payment completion, order creation was failing with error:
 }
 ```
 
-## Root Cause
-The order creation endpoint (`api/orders/create.ts`) was trying to insert data into columns that don't exist in the actual Supabase schema:
+### Error 2: "Could not find the 'total' column"
+```json
+{
+  "success": false,
+  "error": "Failed to create order in database",
+  "details": "Could not find the 'total' column of 'orders' in the schema cache"
+}
+```
+
+## Root Causes
+
+1. **Non-existent columns in insert statement**: Code was trying to insert into columns that don't exist in the schema
+2. **Wrong column names**: Used `total_amount` instead of `total`
+3. **Order items stored separately**: Should be in `order_items` table, not in orders table
+4. **Schema cache issues**: Supabase returning "column not found" for columns that exist
 
 ### Columns Attempted to Insert (❌ WRONG)
 ```typescript

@@ -20,15 +20,12 @@ export default function BasketsPage() {
   const [searchParams] = useSearchParams();
   const { all } = useProducts();
 
-  // Show ONLY baskets (items with multiple products in them)
-  // A basket has multiple items in the items array
+
   const basketsOnly = all.filter(p => {
     const items = Array.isArray(p.items) ? p.items : [];
-    // Show products that have 2 or more items (actual baskets)
     return items.length >= 2;
   });
 
-  // Identify the 3 available baskets by name (all others are sold out)
   const availableBasketNames = new Set([
     "Smart familia Saver",
     "Kikapu sawa", 
@@ -37,7 +34,6 @@ export default function BasketsPage() {
 
   const categories = Array.from(new Set(basketsOnly.map(p => p.category))).filter(Boolean);
 
-  // Initialize filter from URL query parameter
   useEffect(() => {
     const categoryParam = searchParams.get('category');
     const searchParam = searchParams.get('search');
@@ -49,7 +45,6 @@ export default function BasketsPage() {
     }
   }, [searchParams]);
 
-  // Apply filter and search
   const visible = useMemo(() => {
     let filtered = basketsOnly.filter(p => filter === 'all' ? true : p.category === filter);
 

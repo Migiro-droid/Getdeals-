@@ -1,11 +1,11 @@
-import { useMemo, useState } from "react";
+import { useMemo, useState, useEffect } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { ChartContainer, ChartTooltip, ChartTooltipContent } from "@/components/ui/chart";
 import { Line, LineChart, XAxis, YAxis, CartesianGrid, Bar, BarChart, PieChart, Pie, Cell } from "recharts";
-import { useOrders, OrderStatus } from "@/contexts/OrdersContext";
+import { useOrders, OrderStatus, Order } from "@/contexts/OrdersContext";
 import { useProducts } from "@/contexts/ProductsContext";
 import { useAdmin } from "@/contexts/AdminContext";
 import { Link } from "react-router-dom";
@@ -16,6 +16,52 @@ export default function AdminDashboard() {
   const { settings, logout } = useAdmin();
   const { all: products } = useProducts();
   const [range, setRange] = useState<"7d" | "30d" | "all">("7d");
+  const [loadingOrders, setLoadingOrders] = useState(true);
+
+  // Fetch real orders from database on component mount
+  useEffect(() => {
+    const fetchRecentOrders = async () => {
+      try {
+        setLoadingOrders(true);
+        const response = await fetch('/api/orders/list?limit=100&offset=0');
+        const data = await response.json();
+        
+        if (data.success && data.orders && Array.isArray(data.orders)) {
+          // Transform database orders to match Order interface
+          const transformedOrders: Order[] = data.orders.map((dbOrder: any) => ({
+            id: dbOrder.id,
+            date: dbOrder.created_at || new Date().toISOString(),
+            items: dbOrder.order_items || dbOrder.items || [],
+            subtotal: dbOrder.subtotal_kes || dbOrder.subtotal || 0,
+            deliveryFee: dbOrder.delivery_fee_kes || dbOrder.delivery_fee || 0,
+            total: dbOrder.total_amount_kes || dbOrder.total || 0,
+            deliveryMethod: (dbOrder.delivery_method === 'speedy' ? 'speedy' : 'pickup') as "pickup" | "speedy",
+            paymentMethod: (dbOrder.payment_method || 'mpesa') as "mpesa" | "card" | "wallet" | "cash",
+            customer: {
+              firstName: dbOrder.customer_name?.split(' ')[0] || 'Customer',
+              lastName: dbOrder.customer_name?.split(' ').slice(1).join(' ') || '',
+              phone: dbOrder.customer_phone || '',
+              email: dbOrder.customer_email || '',
+              address: dbOrder.delivery_address,
+              pickupLocation: dbOrder.pickup_location
+            },
+            status: (dbOrder.status || 'pending') as OrderStatus
+          }));
+          
+          // Seed orders into context (these are real database orders)
+          if (transformedOrders.length > 0) {
+            seedOrders(transformedOrders, false);
+          }
+        }
+      } catch (error) {
+        console.error('Error fetching orders:', error);
+      } finally {
+        setLoadingOrders(false);
+      }
+    };
+
+    fetchRecentOrders();
+  }, []);
 
   const fmtCurrency = (n: number) => `KES ${n.toLocaleString()}`;
 
