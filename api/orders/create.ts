@@ -130,23 +130,27 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       items_count: orderData.items.length
     });
 
-    // Build minimal order object with only required/essential fields
+    // Build order object matching the actual Supabase schema
     const orderPayload: any = {
       user_id: orderData.user_id,
       order_reference: orderReference,
+      customer_email: orderData.customer_email,
+      customer_name: orderData.customer_name,
+      customer_phone: orderData.customer_phone,
+      order_items: orderData.items, // Store items as JSONB
       status: 'confirmed',
       payment_status: 'completed',
     };
 
-    // Add numeric fields - ensure they're proper NUMERIC type
+    // Add numeric fields - ensure they're proper INTEGER type (stored in cents)
     if (orderData.total_amount) {
-      orderPayload.total = Number(orderData.total_amount);
+      orderPayload.total_amount = Math.round(Number(orderData.total_amount) * 100); // Convert to cents
     }
     if (orderData.subtotal) {
-      orderPayload.subtotal = Number(orderData.subtotal);
+      orderPayload.subtotal = Math.round(Number(orderData.subtotal) * 100);
     }
     if (orderData.delivery_fee !== undefined) {
-      orderPayload.delivery_fee = Number(orderData.delivery_fee);
+      orderPayload.delivery_fee = Math.round(Number(orderData.delivery_fee) * 100);
     }
 
     // Add optional fields
@@ -155,6 +159,21 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     }
     if (orderData.payment_method) {
       orderPayload.payment_method = orderData.payment_method;
+    }
+
+    // Add delivery address as JSONB
+    if (orderData.delivery_address) {
+      orderPayload.delivery_address = JSON.stringify({
+        address: orderData.delivery_address
+      });
+    }
+    if (orderData.pickup_location) {
+      orderPayload.pickup_location = orderData.pickup_location;
+    }
+
+    // Add payment reference if available
+    if (orderData.payment_reference) {
+      orderPayload.payment_reference = orderData.payment_reference;
     }
 
     // Add notes with payment info

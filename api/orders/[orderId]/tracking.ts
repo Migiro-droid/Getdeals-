@@ -49,7 +49,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
 
     console.log(`[TRACKING] Looking up order with ID: ${orderId}`);
 
-    // Fetch order with delivery info - only select columns that actually exist in the schema
+    // Fetch order with delivery info - select columns that exist in the schema
     const { data: order, error } = await supabase
       .from('orders')
       .select(
@@ -59,9 +59,16 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
         status,
         delivery_method,
         payment_status,
-        total,
+        total_amount,
         subtotal,
         delivery_fee,
+        customer_name,
+        customer_email,
+        customer_phone,
+        delivery_address,
+        pickup_location,
+        payment_method,
+        order_items,
         created_at,
         updated_at
       `
@@ -109,9 +116,19 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       status: order.status,
       deliveryMethod: order.delivery_method,
       paymentStatus: order.payment_status,
-      total: typeof order.total === 'number' ? order.total / 100 : 0, // Convert from cents to KES
+      total: typeof order.total_amount === 'number' ? order.total_amount / 100 : 0, // Convert from cents to KES
       subtotal: typeof order.subtotal === 'number' ? order.subtotal / 100 : 0,
       deliveryFee: typeof order.delivery_fee === 'number' ? order.delivery_fee / 100 : 0,
+      customer: {
+        name: order.customer_name,
+        email: order.customer_email,
+        phone: order.customer_phone,
+      },
+      delivery: {
+        address: typeof order.delivery_address === 'string' ? order.delivery_address : (order.delivery_address as any)?.address,
+        pickupLocation: order.pickup_location,
+      },
+      items: order.order_items,
       createdAt: order.created_at,
       updatedAt: order.updated_at,
     };
