@@ -1,4 +1,3 @@
-// tracking.ts - Real-time order tracking with WebSocket
 
 export interface TrackingUpdate {
   orderId: string;
@@ -24,9 +23,6 @@ export class LetaTrackingService {
     this.domain = domain;
   }
 
-  /**
-   * Start tracking an order in real-time
-   */
   public async startTracking(
     orderSlug: string,
     listener: TrackingListener
@@ -34,10 +30,8 @@ export class LetaTrackingService {
     try {
       console.log(` Starting real-time tracking for order: ${orderSlug}`);
 
-      // Get domain for WebSocket connection
       const wsUrl = `wss://${this.domain}/ws/orders/${orderSlug}`;
 
-      // Create WebSocket connection
       const ws = new WebSocket(wsUrl);
 
       ws.onopen = () => {
@@ -48,7 +42,6 @@ export class LetaTrackingService {
         try {
           const data = JSON.parse(event.data);
 
-          // Parse tracking update
           const update: TrackingUpdate = {
             orderId: orderSlug,
             latitude: parseFloat(data.latitude),
@@ -63,7 +56,6 @@ export class LetaTrackingService {
             lng: update.longitude,
           });
 
-          // Notify all listeners
           const orderListeners = this.listeners.get(orderSlug) || [];
           orderListeners.forEach(l => l.onUpdate(update));
           listener.onUpdate(update);
@@ -80,15 +72,13 @@ export class LetaTrackingService {
       };
 
       ws.onclose = () => {
-        console.log(`🔌 Tracking disconnected for order: ${orderSlug}`);
+        console.log(`Tracking disconnected for order: ${orderSlug}`);
         this.connections.delete(orderSlug);
         listener.onDisconnect();
       };
 
-      // Store connection
       this.connections.set(orderSlug, ws);
 
-      // Add listener
       if (!this.listeners.has(orderSlug)) {
         this.listeners.set(orderSlug, []);
       }
@@ -99,11 +89,8 @@ export class LetaTrackingService {
     }
   }
 
-  /**
-   * Stop tracking an order
-   */
   public stopTracking(orderSlug: string): void {
-    console.log(`⏹ Stopping tracking for order: ${orderSlug}`);
+    console.log(` Stopping tracking for order: ${orderSlug}`);
 
     const ws = this.connections.get(orderSlug);
     if (ws) {

@@ -18,7 +18,6 @@ export default function AdminDashboard() {
   const [range, setRange] = useState<"7d" | "30d" | "all">("7d");
   const [loadingOrders, setLoadingOrders] = useState(true);
 
-  // Fetch real orders from database on component mount
   useEffect(() => {
     const fetchRecentOrders = async () => {
       try {
@@ -27,7 +26,6 @@ export default function AdminDashboard() {
         const data = await response.json();
         
         if (data.success && data.orders && Array.isArray(data.orders)) {
-          // Transform database orders to match Order interface
           const transformedOrders: Order[] = data.orders.map((dbOrder: any) => ({
             id: dbOrder.id,
             date: dbOrder.created_at || new Date().toISOString(),
@@ -48,7 +46,6 @@ export default function AdminDashboard() {
             status: (dbOrder.status || 'pending') as OrderStatus
           }));
           
-          // Seed orders into context (these are real database orders)
           if (transformedOrders.length > 0) {
             seedOrders(transformedOrders, false);
           }
@@ -65,7 +62,6 @@ export default function AdminDashboard() {
 
   const fmtCurrency = (n: number) => `KES ${n.toLocaleString()}`;
 
-  // Date helpers
   const now = new Date();
   const rangeDays = range === "7d" ? 7 : range === "30d" ? 30 : 30; // cap chart to 30 days for "all"
   const startDate = useMemo(() => {
@@ -80,7 +76,6 @@ export default function AdminDashboard() {
     return orders.filter((o) => new Date(o.date) >= startDate);
   }, [orders, startDate, range]);
 
-  // KPIs
   const revenueInRange = useMemo(() => ordersInRange.reduce((s, o) => s + o.total, 0), [ordersInRange]);
   const aov = useMemo(() => (ordersInRange.length ? revenueInRange / ordersInRange.length : 0), [revenueInRange, ordersInRange]);
   const deliveredRate = useMemo(() => {
@@ -89,7 +84,6 @@ export default function AdminDashboard() {
     return Math.round((delivered / total) * 100);
   }, [ordersInRange]);
 
-  // Trend vs previous period
   const prevRevenue = useMemo(() => {
     const startPrev = new Date(startDate);
     const endPrev = new Date(startDate);
@@ -117,7 +111,7 @@ export default function AdminDashboard() {
     const prods = products.length > 0 ? products : [];
     const out: any[] = [];
     const today = new Date();
-    for (let d = 0; d < 30; d++) { // last 30 days
+    for (let d = 0; d < 30; d++) {
       const day = new Date(today);
       day.setDate(day.getDate() - d);
       const ordersCount = rand(0, 4);
@@ -154,14 +148,12 @@ export default function AdminDashboard() {
         });
       }
     }
-    // bias some delivered
     out.forEach((o) => {
       if (Math.random() < 0.55) o.status = "delivered";
     });
     return out;
   };
 
-  // Chart data: daily revenue for last N days
   const dailyData = useMemo(() => {
     const days: { label: string; value: number }[] = [];
     const map: Record<string, number> = {};
@@ -193,12 +185,12 @@ export default function AdminDashboard() {
     "cancelled",
   ];
   const statusColors: Record<OrderStatus, string> = {
-    pending: "#F59E0B",         // amber-500
-    confirmed: "#3B82F6",       // blue-500
-    preparing: "#A855F7",       // purple-500
-    out_for_delivery: "#F59E0B", // amber-500 (same family)
-    delivered: "#22C55E",       // green-500
-    cancelled: "#F43F5E",       // rose-500
+    pending: "#F59E0B",         
+    confirmed: "#3B82F6",       
+    preparing: "#A855F7",       
+    out_for_delivery: "#F59E0B", 
+    delivered: "#22C55E",       
+    cancelled: "#F43F5E",       
   };
   const statusDistribution = useMemo(() => {
     const total = Object.values(metrics.byStatus).reduce((a, b) => a + b, 0);
