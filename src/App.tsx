@@ -17,6 +17,7 @@ import { AuthProvider, useAuth } from "./contexts/AuthContext";
 import { AccountProvider } from "./contexts/AccountContext";
 import { UserProfileProvider } from "./contexts/UserProfileContext";
 import { Footer } from "@/components/Footer";
+import { initializeLetaClient } from "@/services/leta";
 import HomePage from "./pages/HomePage";
 import HomePageRedesign from "./pages/HomePageRedesign";
 import BlackFridayPage from "./pages/BlackFridayPage";
@@ -53,6 +54,26 @@ import QuickMartAdminDashboard from "./pages/quickmart/QuickMartAdminDashboard";
 import BuildYourBasket from "./pages/BuildYourBasket";
 import ConsumerInsightsPage from "./pages/ConsumerInsightsPage";
 import WhoWeServe from "./pages/WhoWeServe";
+
+// Initialize Leta Client on app startup
+const letaApiUrl = import.meta.env.VITE_LETA_API_URL || 'https://integrations.leta.ai';
+const letaToken = import.meta.env.VITE_LETA_TOKEN;
+
+if (letaToken) {
+  try {
+    initializeLetaClient({
+      baseUrl: letaApiUrl,
+      token: letaToken,
+      timeout: 30000,
+      retries: 3
+    });
+    console.log('[App] ✅ Leta client initialized successfully');
+  } catch (error) {
+    console.error('[App] ❌ Failed to initialize Leta client:', error);
+  }
+} else {
+  console.warn('[App] ⚠️ Leta token not found in environment variables');
+}
 
 const queryClient = new QueryClient();
 
