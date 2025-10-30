@@ -34,12 +34,34 @@ interface DeliveryProgressBarProps {
 
 type TrackingStatus =
   | 'pending'
+  | 'confirmed'
   | 'assigned'
   | 'in_transit'
   | 'arriving'
+  | 'shipped'
   | 'delivered'
   | 'failed'
   | 'cancelled';
+
+// Map database order status to tracking status for display
+const mapOrderStatusToTrackingStatus = (status: string): TrackingStatus => {
+  const statusMap: Record<string, TrackingStatus> = {
+    pending: 'pending',
+    confirmed: 'confirmed',
+    assigned: 'assigned',
+    in_transit: 'in_transit',
+    arriving: 'arriving',
+    shipped: 'shipped',
+    delivered: 'delivered',
+    failed: 'failed',
+    cancelled: 'cancelled',
+    // Default mappings for any other status
+    'order_placed': 'pending',
+    'preparing': 'confirmed',
+    'out_for_delivery': 'in_transit',
+  };
+  return (statusMap[status] || 'pending') as TrackingStatus;
+};
 
 const statusConfig: Record<
   TrackingStatus,
@@ -63,6 +85,16 @@ const statusConfig: Record<
     borderColor: 'border-slate-200',
     icon: <Package className="h-5 w-5" />,
     dotColor: 'bg-slate-400',
+  },
+  confirmed: {
+    label: 'Order Confirmed',
+    gradientFrom: 'from-cyan-400',
+    gradientTo: 'to-blue-500',
+    bgColor: 'bg-cyan-50',
+    textColor: 'text-cyan-700',
+    borderColor: 'border-cyan-200',
+    icon: <CheckCircle2 className="h-5 w-5" />,
+    dotColor: 'bg-cyan-500',
   },
   assigned: {
     label: 'Driver Assigned',
@@ -93,6 +125,16 @@ const statusConfig: Record<
     borderColor: 'border-purple-200',
     icon: <Clock className="h-5 w-5" />,
     dotColor: 'bg-purple-500',
+  },
+  shipped: {
+    label: 'Shipped',
+    gradientFrom: 'from-indigo-400',
+    gradientTo: 'to-purple-500',
+    bgColor: 'bg-indigo-50',
+    textColor: 'text-indigo-700',
+    borderColor: 'border-indigo-200',
+    icon: <Truck className="h-5 w-5" />,
+    dotColor: 'bg-indigo-500',
   },
   delivered: {
     label: 'Delivered',
@@ -137,7 +179,7 @@ export function DeliveryProgressBar({
 }: DeliveryProgressBarProps) {
   const [isLoading, setIsLoading] = useState(false);
   const [currentStatus, setCurrentStatus] = useState<TrackingStatus>(
-    (deliveryStatus as TrackingStatus) || 'pending'
+    mapOrderStatusToTrackingStatus(deliveryStatus || 'pending')
   );
   const [showContactOptions, setShowContactOptions] = useState(false);
 
@@ -152,7 +194,7 @@ export function DeliveryProgressBar({
         const data = await response.json();
 
         if (data.success && data.tracking) {
-          setCurrentStatus(data.tracking.status);
+          setCurrentStatus(mapOrderStatusToTrackingStatus(data.tracking.status));
         }
       } catch (error) {
         console.error('Failed to fetch tracking info:', error);
@@ -164,9 +206,10 @@ export function DeliveryProgressBar({
     return () => clearInterval(interval);
   }, [orderId]);
 
-  // Progress bar stages
+  // Progress bar stages - updated to include confirmed and shipped
   const stages: TrackingStatus[] = [
     'pending',
+    'confirmed',
     'assigned',
     'in_transit',
     'arriving',
@@ -175,108 +218,130 @@ export function DeliveryProgressBar({
   const currentStageIndex = stages.indexOf(currentStatus);
   const progressPercentage = ((currentStageIndex + 1) / stages.length) * 100;
 
+
   return (
-    <Card className="overflow-hidden border-0 shadow-xl hover:shadow-2xl transition-shadow duration-300 bg-white">
+    <Card className="overflow-hidden border-0 shadow-2xl bg-white group hover:shadow-3xl transition-all duration-500">
       <CardContent className="p-0">
-        {/* Premium Header with animated gradient background */}
-        <div className={`bg-gradient-to-r ${config.gradientFrom} ${config.gradientTo} p-6 text-white relative overflow-hidden`}>
-          {/* Animated background elements */}
-          <div className="absolute inset-0 opacity-10">
-            <div className="absolute top-0 right-0 w-40 h-40 rounded-full blur-2xl animate-pulse" 
-              style={{ background: 'rgba(255,255,255,0.1)' }} 
+        {/* Premium Animated Header with gradient background and glassmorphism */}
+        <div className={`bg-gradient-to-br ${config.gradientFrom} ${config.gradientTo} p-8 text-white relative overflow-hidden`}>
+          {/* Enhanced animated background with multiple layers */}
+          <div className="absolute inset-0 overflow-hidden">
+            <div className="absolute top-0 right-0 w-96 h-96 rounded-full blur-3xl animate-pulse" 
+              style={{ background: 'rgba(255,255,255,0.15)', animationDuration: '4s' }} 
             />
-            <div className="absolute bottom-0 left-0 w-32 h-32 rounded-full blur-2xl animate-pulse delay-700" 
-              style={{ background: 'rgba(255,255,255,0.05)' }} 
+            <div className="absolute bottom-0 left-0 w-80 h-80 rounded-full blur-3xl animate-pulse" 
+              style={{ background: 'rgba(255,255,255,0.1)', animationDuration: '6s', animationDelay: '1s' }} 
+            />
+            <div className="absolute top-1/2 left-1/2 w-64 h-64 rounded-full blur-3xl animate-pulse" 
+              style={{ background: 'rgba(255,255,255,0.08)', animationDuration: '5s', animationDelay: '2s' }} 
             />
           </div>
 
           <div className="flex items-center justify-between relative z-10">
             <div className="flex items-center gap-4">
-              <div className={`p-3 bg-white/20 backdrop-blur-md rounded-full ring-2 ring-white/30 ${isLoading ? 'animate-spin' : ''}`}>
-                {config.icon}
+              {/* Animated icon container with glassmorphism */}
+              <div className={`p-4 bg-white/15 backdrop-blur-xl rounded-2xl ring-2 ring-white/30 ${isLoading ? 'animate-bounce' : 'group-hover:scale-110'} transition-transform duration-300`}>
+                <div className="text-white text-2xl">
+                  {config.icon}
+                </div>
               </div>
               <div>
-                <h3 className="font-bold text-lg leading-tight">{config.label}</h3>
+                <div className="flex items-center gap-2">
+                  <h3 className="font-black text-2xl leading-tight tracking-tight">{config.label}</h3>
+                  {currentStatus === 'in_transit' && (
+                    <div className="relative flex h-3 w-3">
+                      <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-white/80 opacity-75"></span>
+                      <span className="relative inline-flex rounded-full h-3 w-3 bg-white"></span>
+                    </div>
+                  )}
+                </div>
                 {isLoading && (
-                  <p className="text-xs text-white/70 mt-1 flex items-center gap-1">
-                    <Loader2 className="h-3 w-3 animate-spin" />
-                    Updating location...
+                  <p className="text-sm text-white/70 mt-2 flex items-center gap-2 font-medium">
+                    <Loader2 className="h-4 w-4 animate-spin" />
+                    Updating real-time location...
                   </p>
                 )}
               </div>
             </div>
-            <div className="flex items-center gap-2">
+            <div className="flex items-center gap-2 flex-col sm:flex-row">
               {currentStatus === 'in_transit' && (
-                <Badge className="bg-white/30 text-white border-white/50 hover:bg-white/40 gap-1">
-                  <Zap className="h-3 w-3" />
-                  Live
+                <Badge className="bg-white/25 text-white border-white/50 hover:bg-white/40 gap-1.5 px-3 py-1.5 backdrop-blur-sm font-semibold">
+                  <Zap className="h-4 w-4 animate-pulse" />
+                  Live Tracking
                 </Badge>
               )}
               {currentStatus === 'delivered' && (
-                <Badge className="bg-white/30 text-white border-white/50 hover:bg-white/40">
-                  Completed
+                <Badge className="bg-white/25 text-white border-white/50 hover:bg-white/40 px-3 py-1.5 backdrop-blur-sm font-semibold">
+                  ✓ Completed
+                </Badge>
+              )}
+              {currentStatus === 'confirmed' && (
+                <Badge className="bg-white/25 text-white border-white/50 hover:bg-white/40 px-3 py-1.5 backdrop-blur-sm font-semibold">
+                  Processing
                 </Badge>
               )}
             </div>
           </div>
         </div>
 
-        <div className="p-6 space-y-6">
-          {/* Enhanced Progress Timeline with smooth animations */}
-          <div className="space-y-6">
-            {/* Timeline visualization */}
-            <div className="relative">
-              {/* Background progress bar with gradient */}
-              <div className="absolute top-1/2 left-0 right-0 h-2 bg-gradient-to-r from-gray-100 to-gray-200 -translate-y-1/2 rounded-full" />
+        <div className="p-8 space-y-8">
+          {/* Enhanced Progress Timeline with premium design */}
+          <div className="space-y-8">
+            {/* Timeline visualization with enhanced styling */}
+            <div className="relative px-2">
+              {/* Background progress bar with blur effect */}
+              <div className="absolute top-1/2 left-0 right-0 h-3 bg-gradient-to-r from-gray-100 via-gray-200 to-gray-100 -translate-y-1/2 rounded-full shadow-sm" />
               
-              {/* Animated progress bar overlay */}
+              {/* Animated progress bar overlay with glow */}
               <div
-                className={`absolute top-1/2 left-0 h-2 bg-gradient-to-r ${config.gradientFrom} ${config.gradientTo} -translate-y-1/2 rounded-full transition-all duration-700 shadow-lg`}
-                style={{ width: `${progressPercentage}%` }}
+                className={`absolute top-1/2 left-0 h-3 bg-gradient-to-r ${config.gradientFrom} ${config.gradientTo} -translate-y-1/2 rounded-full transition-all duration-700 shadow-2xl`}
+                style={{ 
+                  width: `${progressPercentage}%`,
+                  boxShadow: `0 0 20px currentColor`
+                }}
               />
 
-              {/* Stage dots with improved styling */}
-              <div className="flex justify-between relative">
+              {/* Stage dots with premium styling */}
+              <div className="flex justify-between relative z-10">
                 {stages.map((stage, idx) => {
                   const isActive = idx <= currentStageIndex;
                   const isCurrentStage = idx === currentStageIndex;
+                  const stageConfig = statusConfig[stage];
                   
                   return (
                     <div
                       key={stage}
                       className="flex flex-col items-center"
                     >
-                      {/* Animated connecting line */}
-                      {idx < stages.length - 1 && (
-                        <div className={`absolute top-3 left-1/2 w-1/2 h-1 transition-all duration-500 ${isActive ? `bg-gradient-to-r ${statusConfig[stage].dotColor.replace('bg-', '')} opacity-100` : 'bg-gray-200 opacity-50'}`} />
-                      )}
-
-                      {/* Dot with enhanced styling */}
+                      {/* Dot with premium glassmorphism */}
                       <div
-                        className={`relative w-8 h-8 rounded-full border-4 transition-all duration-500 flex items-center justify-center ${
+                        className={`relative w-10 h-10 rounded-full border-4 transition-all duration-500 flex items-center justify-center font-bold text-white shadow-lg transform ${
                           isActive
-                            ? `${statusConfig[stage].dotColor} border-white shadow-lg ${isCurrentStage ? 'ring-4 ring-offset-2 ring-offset-white scale-125' : 'scale-110'}`
-                            : 'bg-gray-300 border-gray-300 scale-90'
+                            ? `${stageConfig.dotColor} border-white shadow-2xl ${isCurrentStage ? 'ring-4 ring-offset-3 ring-offset-white scale-125 animate-pulse' : 'scale-110'}`
+                            : 'bg-gradient-to-br from-gray-200 to-gray-300 border-gray-300 scale-90 opacity-75'
                         }`}
                       >
-                        {isCurrentStage && (
-                          <div className="absolute inset-1 rounded-full animate-pulse opacity-75" 
-                            style={{
-                              background: statusConfig[stage].dotColor.replace('bg-', ''),
-                            }}
-                          />
-                        )}
                         {isActive && !isCurrentStage && (
-                          <CheckCircle2 className="h-4 w-4 text-white" />
+                          <CheckCircle2 className="h-6 w-6 text-white" />
+                        )}
+                        {isCurrentStage && (
+                          <div className="absolute inset-0 rounded-full animate-spin" style={{
+                            background: `conic-gradient(${stageConfig.dotColor.replace('bg-', '')}, transparent)`,
+                            opacity: 0.3,
+                          }} />
                         )}
                       </div>
-                      <span className={`text-xs font-bold mt-3 text-center w-16 leading-tight transition-all duration-300 ${
-                        isActive ? `${config.textColor} scale-100` : 'text-gray-400 scale-90'
+                      
+                      {/* Enhanced label with typography */}
+                      <span className={`text-xs font-bold mt-4 text-center w-24 leading-tight transition-all duration-300 tracking-wide uppercase ${
+                        isActive ? `${config.textColor} scale-100 opacity-100` : 'text-gray-400 scale-90 opacity-60'
                       }`}>
                         {stage === 'in_transit' ? 'In Transit' : 
-                         stage === 'pending' ? 'Placed' :
-                         stage === 'assigned' ? 'Assigned' :
-                         stage === 'arriving' ? 'Arriving' : 'Delivered'}
+                         stage === 'pending' ? 'Order Placed' :
+                         stage === 'confirmed' ? 'Confirmed' :
+                         stage === 'assigned' ? 'Driver Assigned' :
+                         stage === 'arriving' ? 'Arriving Soon' :
+                         stage === 'shipped' ? 'Shipped' : 'Delivered'}
                       </span>
                     </div>
                   );
@@ -285,61 +350,61 @@ export function DeliveryProgressBar({
             </div>
           </div>
 
-          {/* Delivery Details Card with enhanced styling */}
+          {/* Delivery Details with premium card design */}
           {(riderName || deliveryAddress || estimatedDeliveryTime) && (
-            <div className={`rounded-2xl p-5 border-2 ${config.borderColor} ${config.bgColor} space-y-4 backdrop-blur-sm`}>
+            <div className={`rounded-3xl p-6 border-2 ${config.borderColor} ${config.bgColor} space-y-5 backdrop-blur-xl shadow-lg hover:shadow-xl transition-shadow duration-300`}>
               {/* Delivery Address */}
               {deliveryAddress && (
-                <div className="flex items-start gap-3 pb-3 border-b border-gray-200/50">
-                  <div className={`p-2 rounded-lg ${config.bgColor} ${config.textColor}`}>
-                    <MapPin className="h-5 w-5" />
+                <div className="flex items-start gap-4 pb-4 border-b-2 border-gray-200/40">
+                  <div className={`p-3 rounded-2xl ${config.bgColor} ${config.textColor} flex-shrink-0 shadow-md`}>
+                    <MapPin className="h-6 w-6" />
                   </div>
                   <div className="flex-1">
-                    <p className="text-xs font-bold text-gray-500 uppercase tracking-wider mb-1">Delivery Address</p>
-                    <p className={`text-sm font-semibold ${config.textColor} leading-snug`}>{deliveryAddress}</p>
+                    <p className="text-xs font-bold text-gray-500 uppercase tracking-widest mb-1.5">📍 Delivery Address</p>
+                    <p className={`text-base font-bold ${config.textColor} leading-snug`}>{deliveryAddress}</p>
                   </div>
                 </div>
               )}
 
               {/* Estimated Time */}
               {estimatedDeliveryTime && (
-                <div className="flex items-start gap-3 pb-3 border-b border-gray-200/50">
-                  <div className={`p-2 rounded-lg ${config.bgColor} ${config.textColor}`}>
-                    <Clock className="h-5 w-5" />
+                <div className="flex items-start gap-4 pb-4 border-b-2 border-gray-200/40">
+                  <div className={`p-3 rounded-2xl ${config.bgColor} ${config.textColor} flex-shrink-0 shadow-md`}>
+                    <Clock className="h-6 w-6" />
                   </div>
                   <div className="flex-1">
-                    <p className="text-xs font-bold text-gray-500 uppercase tracking-wider mb-1">Est. Arrival</p>
-                    <p className={`text-sm font-semibold ${config.textColor}`}>{estimatedDeliveryTime}</p>
+                    <p className="text-xs font-bold text-gray-500 uppercase tracking-widest mb-1.5">⏱️ Estimated Arrival</p>
+                    <p className={`text-base font-bold ${config.textColor}`}>{estimatedDeliveryTime}</p>
                   </div>
                 </div>
               )}
 
-              {/* Rider Info with enhanced actions */}
+              {/* Rider Info with premium actions */}
               {riderName && (
-                <div className="flex items-center justify-between pt-1">
-                  <div className="flex items-start gap-3 flex-1">
-                    <div className={`h-12 w-12 rounded-full bg-gradient-to-br from-blue-400 to-blue-600 flex items-center justify-center flex-shrink-0 shadow-md`}>
-                      <Truck className="h-6 w-6 text-white" />
+                <div className="flex items-center justify-between pt-2 gap-4">
+                  <div className="flex items-start gap-4 flex-1">
+                    <div className={`h-14 w-14 rounded-2xl bg-gradient-to-br ${config.gradientFrom} ${config.gradientTo} flex items-center justify-center flex-shrink-0 shadow-lg text-white`}>
+                      <Truck className="h-7 w-7" />
                     </div>
                     <div>
-                      <p className="text-xs font-bold text-gray-500 uppercase tracking-wider">Your Rider</p>
-                      <p className={`text-base font-bold mt-1 ${config.textColor}`}>{riderName}</p>
+                      <p className="text-xs font-bold text-gray-500 uppercase tracking-widest">👤 Your Rider</p>
+                      <p className={`text-lg font-bold mt-1.5 ${config.textColor}`}>{riderName}</p>
                     </div>
                   </div>
                   {riderPhone && (
-                    <div className="flex gap-2">
+                    <div className="flex gap-2 flex-col sm:flex-row">
                       <button
                         onClick={() => setShowContactOptions(!showContactOptions)}
-                        className={`inline-flex items-center gap-2 px-3 py-2 bg-gradient-to-r from-blue-500 to-blue-600 text-white rounded-lg hover:from-blue-600 hover:to-blue-700 transition-all font-semibold text-sm shadow-md hover:shadow-lg transform hover:scale-105`}
+                        className={`inline-flex items-center justify-center gap-2 px-4 py-2.5 bg-gradient-to-r from-blue-500 via-blue-600 to-blue-700 text-white rounded-xl hover:from-blue-600 hover:via-blue-700 hover:to-blue-800 transition-all font-bold text-sm shadow-lg hover:shadow-xl transform hover:scale-110 active:scale-95`}
                       >
-                        <MessageCircle className="h-4 w-4" />
-                        <span className="hidden sm:inline">Chat</span>
+                        <MessageCircle className="h-5 w-5" />
+                        <span className="hidden sm:inline">Message</span>
                       </button>
                       <a
                         href={`tel:${riderPhone}`}
-                        className={`inline-flex items-center gap-2 px-3 py-2 bg-gradient-to-r from-green-500 to-emerald-600 text-white rounded-lg hover:from-green-600 hover:to-emerald-700 transition-all font-semibold text-sm shadow-md hover:shadow-lg transform hover:scale-105`}
+                        className={`inline-flex items-center justify-center gap-2 px-4 py-2.5 bg-gradient-to-r from-emerald-500 via-green-600 to-emerald-700 text-white rounded-xl hover:from-emerald-600 hover:via-green-700 hover:to-emerald-800 transition-all font-bold text-sm shadow-lg hover:shadow-xl transform hover:scale-110 active:scale-95`}
                       >
-                        <Phone className="h-4 w-4" />
+                        <Phone className="h-5 w-5" />
                         <span className="hidden sm:inline">Call</span>
                       </a>
                     </div>
@@ -349,64 +414,81 @@ export function DeliveryProgressBar({
             </div>
           )}
 
-          {/* Live Tracking Button - Enhanced CTA */}
+          {/* Live Tracking Button - Premium CTA */}
           {trackingUrl && currentStatus !== 'delivered' && (
             <a
               href={trackingUrl}
               target="_blank"
               rel="noopener noreferrer"
-              className={`w-full inline-flex items-center justify-center gap-2 px-5 py-4 bg-gradient-to-r ${config.gradientFrom} ${config.gradientTo} text-white rounded-xl hover:shadow-xl transition-all font-bold text-base group shadow-lg transform hover:scale-[1.02]`}
+              className={`w-full inline-flex items-center justify-center gap-3 px-6 py-4 bg-gradient-to-r ${config.gradientFrom} ${config.gradientTo} text-white rounded-2xl hover:shadow-2xl transition-all font-bold text-lg group shadow-xl transform hover:scale-105 active:scale-95 overflow-hidden relative`}
             >
-              <Navigation className="h-5 w-5 transform -rotate-45 group-hover:rotate-12 transition-transform" />
-              View Real-Time Tracking
-              <ChevronRight className="h-5 w-5 group-hover:translate-x-1 transition-transform" />
+              <span className="absolute inset-0 bg-white/20 translate-x-full group-hover:translate-x-0 transition-transform duration-500" />
+              <Navigation className="h-6 w-6 transform -rotate-45 group-hover:rotate-0 transition-transform duration-300 relative z-10" />
+              <span className="relative z-10">View Real-Time Tracking</span>
+              <ChevronRight className="h-6 w-6 group-hover:translate-x-2 transition-transform duration-300 relative z-10" />
             </a>
           )}
 
-          {/* Status Messages - Improved Design */}
+          {/* Status Messages - Premium Design */}
           {currentStatus === 'delivered' && (
-            <div className="p-5 bg-gradient-to-br from-emerald-50 to-teal-50 border-2 border-emerald-200 rounded-xl flex items-start gap-3 shadow-sm">
-              <div className="p-2 bg-emerald-100 rounded-lg flex-shrink-0">
-                <CheckCircle2 className="h-5 w-5 text-emerald-600" />
+            <div className="p-6 bg-gradient-to-br from-emerald-50 via-teal-50 to-cyan-50 border-2 border-emerald-200 rounded-2xl flex items-start gap-4 shadow-md hover:shadow-lg transition-shadow">
+              <div className="p-3 bg-gradient-to-br from-emerald-100 to-teal-100 rounded-xl flex-shrink-0 shadow-sm">
+                <CheckCircle2 className="h-6 w-6 text-emerald-600" />
               </div>
               <div>
-                <p className="font-bold text-emerald-900 text-sm">
-                  Delivered Successfully!
+                <p className="font-black text-emerald-900 text-base">
+                  🎉 Delivered Successfully!
                 </p>
-                <p className="text-emerald-700 text-xs mt-1 leading-relaxed">
-                  Thank you for your purchase. We hope you enjoy your order! Leave a review to help other shoppers.
+                <p className="text-emerald-700 text-sm mt-2 leading-relaxed font-medium">
+                  Your order has arrived! We hope you enjoy your purchase. Don't forget to leave a review to help other shoppers make great choices.
                 </p>
               </div>
             </div>
           )}
 
           {currentStatus === 'failed' && (
-            <div className="p-5 bg-gradient-to-br from-red-50 to-rose-50 border-2 border-red-200 rounded-xl flex items-start gap-3 shadow-sm">
-              <div className="p-2 bg-red-100 rounded-lg flex-shrink-0">
-                <AlertCircle className="h-5 w-5 text-red-600" />
+            <div className="p-6 bg-gradient-to-br from-red-50 via-rose-50 to-pink-50 border-2 border-red-200 rounded-2xl flex items-start gap-4 shadow-md hover:shadow-lg transition-shadow">
+              <div className="p-3 bg-gradient-to-br from-red-100 to-rose-100 rounded-xl flex-shrink-0 shadow-sm">
+                <AlertCircle className="h-6 w-6 text-red-600" />
               </div>
               <div>
-                <p className="font-bold text-red-900 text-sm">
-                  Delivery Issue
+                <p className="font-black text-red-900 text-base">
+                  ⚠️ Delivery Issue
                 </p>
-                <p className="text-red-700 text-xs mt-1 leading-relaxed">
-                  There was an issue with your delivery. Our support team will contact you shortly to reschedule.
+                <p className="text-red-700 text-sm mt-2 leading-relaxed font-medium">
+                  There was an issue with your delivery. Our support team will contact you shortly to reschedule. Contact support if you need immediate assistance.
                 </p>
               </div>
             </div>
           )}
 
           {currentStatus === 'cancelled' && (
-            <div className="p-5 bg-gradient-to-br from-gray-50 to-slate-50 border-2 border-gray-200 rounded-xl flex items-start gap-3 shadow-sm">
-              <div className="p-2 bg-gray-100 rounded-lg flex-shrink-0">
-                <AlertCircle className="h-5 w-5 text-gray-600" />
+            <div className="p-6 bg-gradient-to-br from-gray-50 via-slate-50 to-zinc-50 border-2 border-gray-300 rounded-2xl flex items-start gap-4 shadow-md hover:shadow-lg transition-shadow">
+              <div className="p-3 bg-gradient-to-br from-gray-100 to-slate-100 rounded-xl flex-shrink-0 shadow-sm">
+                <AlertCircle className="h-6 w-6 text-gray-600" />
               </div>
               <div>
-                <p className="font-bold text-gray-900 text-sm">
-                  Order Cancelled
+                <p className="font-black text-gray-900 text-base">
+                  ❌ Order Cancelled
                 </p>
-                <p className="text-gray-700 text-xs mt-1 leading-relaxed">
-                  Your delivery has been cancelled. Contact support if you'd like to place a new order.
+                <p className="text-gray-700 text-sm mt-2 leading-relaxed font-medium">
+                  Your delivery has been cancelled. If you'd like to place a new order, we're just a few clicks away. Contact support if you have questions.
+                </p>
+              </div>
+            </div>
+          )}
+
+          {currentStatus === 'confirmed' && (
+            <div className="p-6 bg-gradient-to-br from-blue-50 via-cyan-50 to-indigo-50 border-2 border-blue-200 rounded-2xl flex items-start gap-4 shadow-md hover:shadow-lg transition-shadow">
+              <div className="p-3 bg-gradient-to-br from-blue-100 to-cyan-100 rounded-xl flex-shrink-0 shadow-sm animate-pulse">
+                <CheckCircle2 className="h-6 w-6 text-blue-600" />
+              </div>
+              <div>
+                <p className="font-black text-blue-900 text-base">
+                  ✓ Order Confirmed
+                </p>
+                <p className="text-blue-700 text-sm mt-2 leading-relaxed font-medium">
+                  Your order has been confirmed and is being prepared for delivery. You'll receive an update once it ships.
                 </p>
               </div>
             </div>
@@ -416,5 +498,3 @@ export function DeliveryProgressBar({
     </Card>
   );
 }
-
-export default DeliveryProgressBar;
