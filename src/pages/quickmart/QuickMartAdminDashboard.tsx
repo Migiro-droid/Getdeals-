@@ -8,10 +8,11 @@ import { LogOut, Shield, Loader2, Eye, EyeOff } from 'lucide-react';
 import { QuickMartAdminOrders } from './QuickMartAdminOrders';
 import { QuickMartAdminProducts } from './QuickMartAdminProducts';
 import { QuickMartAdminAnalytics } from './QuickMartAdminAnalytics';
+import { QuickMartCheckout } from './QuickMartCheckout';
 
 export const QuickMartAdminDashboard: React.FC = () => {
   const { user, isAuthenticated, signOut, signIn } = useAuth();
-  const [activeTab, setActiveTab] = useState('orders');
+  const [activeTab, setActiveTab] = useState('checkout');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [loading, setLoading] = useState(false);
@@ -243,7 +244,13 @@ export const QuickMartAdminDashboard: React.FC = () => {
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
           <div className="mb-6 flex items-center gap-4 border-b">
-            <TabsList className="grid w-full max-w-md grid-cols-3 bg-transparent p-0 h-auto">
+            <TabsList className="grid w-full max-w-2xl grid-cols-4 bg-transparent p-0 h-auto">
+              <TabsTrigger 
+                value="checkout"
+                className="data-[state=active]:bg-transparent data-[state=active]:border-b-2 data-[state=active]:border-blue-600 data-[state=active]:text-blue-600 rounded-none py-3 px-1 font-medium"
+              >
+                Checkout
+              </TabsTrigger>
               <TabsTrigger 
                 value="orders"
                 className="data-[state=active]:bg-transparent data-[state=active]:border-b-2 data-[state=active]:border-blue-600 data-[state=active]:text-blue-600 rounded-none py-3 px-1 font-medium"
@@ -264,6 +271,10 @@ export const QuickMartAdminDashboard: React.FC = () => {
               </TabsTrigger>
             </TabsList>
           </div>
+
+          <TabsContent value="checkout" className="space-y-6">
+            <QuickMartCheckout />
+          </TabsContent>
 
           <TabsContent value="orders" className="space-y-6">
             <Card>

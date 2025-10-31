@@ -805,17 +805,18 @@ app.get('/api/orders/list', async (req, res) => {
       });
     }
 
-    // Get statistics
-    const { data: stats } = await supabase
+    // Get statistics for ALL statuses
+    const { data: allOrders, error: statsError } = await supabase
       .from('orders')
-      .select('status, payment_status, total');
+      .select('status');
 
     const statistics = {
       total_orders: count || 0,
-      pending_orders: stats?.filter(o => o.status === 'pending').length || 0,
-      completed_orders: stats?.filter(o => o.status === 'completed').length || 0,
-      total_revenue: stats?.reduce((sum, o) => sum + (o.total || 0), 0) || 0,
-      pending_payments: stats?.filter(o => o.payment_status === 'pending').length || 0
+      pending: allOrders?.filter(o => o.status === 'pending').length || 0,
+      confirmed: allOrders?.filter(o => o.status === 'confirmed').length || 0,
+      shipped: allOrders?.filter(o => o.status === 'shipped').length || 0,
+      delivered: allOrders?.filter(o => o.status === 'delivered').length || 0,
+      cancelled: allOrders?.filter(o => o.status === 'cancelled').length || 0
     };
 
     res.json({
