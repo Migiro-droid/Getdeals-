@@ -42,6 +42,14 @@ export const QuickMartAdminOrders: React.FC = () => {
   const [groupBy, setGroupBy] = useState<GroupByOption>("status");
   const [open, setOpen] = useState(false);
   const [active, setActive] = useState<QuickMartOrder | null>(null);
+  const [statusCounts, setStatusCounts] = useState<Record<"all" | OrderStatus, number>>({
+    all: 0,
+    pending: 0,
+    confirmed: 0,
+    shipped: 0,
+    delivered: 0,
+    cancelled: 0,
+  });
 
   const statuses: OrderStatus[] = ["pending", "confirmed", "shipped", "delivered", "cancelled"];
 
@@ -96,7 +104,7 @@ export const QuickMartAdminOrders: React.FC = () => {
       const params = new URLSearchParams({
         limit: '500',
         offset: '0',
-        ...(statusFilter !== 'all' && { status: statusFilter.toUpperCase() }),
+        ...(statusFilter !== 'all' && { status: statusFilter }),
         ...(search && { search })
       });
 
@@ -113,6 +121,20 @@ export const QuickMartAdminOrders: React.FC = () => {
         console.log(`✓ Fetched ${fetchedOrders.length} orders from database`);
         console.log('First few orders:', fetchedOrders.slice(0, 2));
         setOrders(fetchedOrders);
+        
+        // Update status counts from API statistics
+        if (data.statistics) {
+          const stats = data.statistics;
+          setStatusCounts({
+            all: stats.total_orders || 0,
+            pending: stats.pending || 0,
+            confirmed: stats.confirmed || 0,
+            shipped: stats.shipped || 0,
+            delivered: stats.delivered || 0,
+            cancelled: stats.cancelled || 0,
+          });
+          console.log('Updated status counts:', stats);
+        }
       } else {
         console.error('❌ Failed to fetch orders:', data.error);
         setOrders([]);
@@ -200,20 +222,9 @@ export const QuickMartAdminOrders: React.FC = () => {
   // ============ USEMEMOS ============
 
   const counts = useMemo(() => {
-    const base = {
-      all: orders.length,
-      pending: 0,
-      confirmed: 0,
-      shipped: 0,
-      delivered: 0,
-      cancelled: 0,
-    } as Record<"all" | OrderStatus, number>;
-    for (const o of orders) {
-      const status = o.status.toLowerCase() as OrderStatus;
-      if (status in base) base[status]++;
-    }
-    return base;
-  }, [orders]);
+    // Use the statusCounts from API, which always shows totals across all filters
+    return statusCounts;
+  }, [statusCounts]);
 
   // Group and sort logic
   const grouped = useMemo(() => {
