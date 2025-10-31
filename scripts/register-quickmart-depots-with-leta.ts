@@ -1,3 +1,4 @@
+import 'dotenv/config';
 import axios, { AxiosError } from 'axios';
 
 interface QuickmartOutlet {
@@ -95,6 +96,20 @@ const QUICKMART_OUTLETS: QuickmartOutlet[] = [
     latitude: -1.2500,
     longitude: 36.8833,
     address: 'Eastlands Mall, Juja Road, Nairobi, Kenya'
+  },
+  {
+    name: 'Quickmart Kilimani',
+    code: 'QUICK_NAIROBI_KILIMANI',
+    latitude: -1.3032,
+    longitude: 36.7784,
+    address: 'Kilimani Centre, Ngong Road, Nairobi, Kenya'
+  },
+  {
+    name: 'Quickmart Ruaka',
+    code: 'QUICK_NAIROBI_RUAKA',
+    latitude: -1.2508,
+    longitude: 36.9003,
+    address: 'Ruaka Shopping Centre, Kiambu Road, Nairobi, Kenya'
   }
 ];
 
@@ -188,12 +203,12 @@ async function registerDepot(
 
 
 async function registerAllDepots() {
-  const token = process.env.LETA_API_TOKEN;
+  const token = process.env.VITE_LETA_TOKEN || process.env.LETA_API_TOKEN;
   const apiUrl = process.env.VITE_LETA_API_URL || 'https://integrations.leta.ai';
 
   if (!token) {
-    console.error('❌ Error: LETA_API_TOKEN environment variable is not set');
-    console.error('Please set LETA_API_TOKEN in your .env file');
+    console.error('❌ Error: VITE_LETA_TOKEN or LETA_API_TOKEN environment variable is not set');
+    console.error('Please set VITE_LETA_TOKEN in your .env file');
     process.exit(1);
   }
 

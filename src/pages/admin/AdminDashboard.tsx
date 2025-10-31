@@ -18,7 +18,7 @@ export default function AdminDashboard() {
   const { orders, metrics } = useOrders();
   const { settings, logout, role, user } = useAdmin();
   const navigate = useNavigate();
-  const [range, setRange] = useState<"7d" | "30d" | "all">("7d");
+  const [range, setRange] = useState<"7d" | "30d" | "90d" | "ytd" | "all">("7d");
   const [customerModalOpen, setCustomerModalOpen] = useState(false);
 
   // Hide any lingering demo orders from admin analytics/views (extra safety)
@@ -27,6 +27,12 @@ export default function AdminDashboard() {
     return o.demoSeed === true || o.id.startsWith("DEMO-") || email.endsWith("@example.com");
   };
   const safeOrders = useMemo(() => orders.filter(o => !isDemoOrder(o)), [orders]);
+  
+  // Memoize revenue orders to prevent chart flickering
+  const revenueOrders = useMemo(() => 
+    safeOrders.map(o => ({ date: o.date, total: o.total })), 
+    [safeOrders]
+  );
 
   // User display component
   const UserDisplay = () => {
@@ -518,7 +524,7 @@ export default function AdminDashboard() {
           <div className="grid lg:grid-cols-3 gap-6">
             {/* Revenue Trend - Takes 2 columns */}
             <div className="lg:col-span-2">
-              <AdvancedRevenueTrend initialRange={range} orders={safeOrders.map(o => ({ date: o.date, total: o.total }))} />
+              <AdvancedRevenueTrend initialRange={range === 'all' ? 'total' : range as any} orders={revenueOrders} />
             </div>
 
             {/* Order Pipeline - Takes 1 column */}
