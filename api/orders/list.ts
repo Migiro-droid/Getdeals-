@@ -46,9 +46,10 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
         const deliveryFee = order.delivery_fee_kes || order.delivery_fee || 0;
         
 
-        const totalKes = total >= 10 ? total / 100 : total;
-        const subtotalKes = subtotal >= 10 ? subtotal / 100 : subtotal;
-        const deliveryFeeKes = deliveryFee >= 10 ? deliveryFee / 100 : deliveryFee;
+        // Always divide by 100 - all amounts are stored in cents in the database
+        const totalKes = Number(total) / 100;
+        const subtotalKes = Number(subtotal) / 100;
+        const deliveryFeeKes = Number(deliveryFee) / 100;
         
         return {
           ...order,

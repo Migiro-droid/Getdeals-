@@ -37,9 +37,9 @@ export default function AdminDashboard() {
             id: dbOrder.order_reference || dbOrder.id,
             date: dbOrder.created_at || new Date().toISOString(),
             items: dbOrder.order_items || [],
-            subtotal: (dbOrder.subtotal_kes || dbOrder.subtotal || 0) / 100, // Convert from cents
-            deliveryFee: (dbOrder.delivery_fee_kes || dbOrder.delivery_fee || 0) / 100,
-            total: (dbOrder.total_amount_kes || dbOrder.total_amount || 0) / 100,
+            subtotal: dbOrder.subtotal_kes || 0, // Already converted from cents by API
+            deliveryFee: dbOrder.delivery_fee_kes || 0,
+            total: dbOrder.total_amount_kes || 0,
             deliveryMethod: (dbOrder.delivery_method || 'pickup') === 'speedy' ? 'speedy' : 'pickup',
             paymentMethod: (dbOrder.payment_method || 'mpesa').toLowerCase() as any,
             customer: {
@@ -443,9 +443,14 @@ export default function AdminDashboard() {
   const todayKey = new Date().toISOString().slice(0, 10);
   const todayOrders = useMemo(() => safeOrders.filter((o) => o.date.slice(0, 10) === todayKey), [safeOrders, todayKey]);
   const todayCounts = useMemo(() => {
-    const c: Record<string, number> = { pending: 0, shipped: 0, cancelled: 0 };
+    const c: Record<string, number> = { pending: 0, shipped: 0, out_for_delivery: 0, cancelled: 0, confirmed: 0, delivered: 0 };
     for (const o of todayOrders) {
-      if (o.status in c) c[o.status]++;
+      if (o.status === 'shipped') c.shipped++;
+      else if (o.status === 'pending') c.pending++;
+      else if (o.status === 'cancelled') c.cancelled++;
+      else if (o.status === 'out_for_delivery') c.out_for_delivery++;
+      else if (o.status === 'confirmed') c.confirmed++;
+      else if (o.status === 'delivered') c.delivered++;
     }
     return c;
   }, [todayOrders]);
