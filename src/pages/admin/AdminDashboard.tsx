@@ -1,4 +1,4 @@
-import { useMemo, useState, useCallback, useRef } from "react";
+import { useMemo, useState, useCallback, useRef, useEffect } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -15,11 +15,54 @@ import { Link, useNavigate } from "react-router-dom";
 import { ShoppingBag, AlertTriangle, Truck, Clock, FileDown, User, Shield, Crown, MapPin, Phone, LogOut } from "lucide-react";
 
 export default function AdminDashboard() {
-  const { orders, metrics } = useOrders();
+  const { metrics } = useOrders();
   const { settings, logout, role, user } = useAdmin();
   const navigate = useNavigate();
   const [range, setRange] = useState<"7d" | "30d" | "90d" | "ytd" | "all">("7d");
   const [customerModalOpen, setCustomerModalOpen] = useState(false);
+  const [orders, setOrders] = useState<Order[]>([]);
+  const [loadingOrders, setLoadingOrders] = useState(true);
+
+  // Fetch orders from database API instead of context
+  useEffect(() => {
+    const fetchOrders = async () => {
+      try {
+        setLoadingOrders(true);
+        const response = await fetch('/api/orders/list?limit=1000&offset=0');
+        const data = await response.json();
+
+        if (data.success && Array.isArray(data.orders)) {
+          // Transform database orders to UI format
+          const transformed: Order[] = data.orders.map((dbOrder: any) => ({
+            id: dbOrder.order_reference || dbOrder.id,
+            date: dbOrder.created_at || new Date().toISOString(),
+            items: dbOrder.order_items || [],
+            subtotal: (dbOrder.subtotal_kes || dbOrder.subtotal || 0) / 100, // Convert from cents
+            deliveryFee: (dbOrder.delivery_fee_kes || dbOrder.delivery_fee || 0) / 100,
+            total: (dbOrder.total_amount_kes || dbOrder.total_amount || 0) / 100,
+            deliveryMethod: (dbOrder.delivery_method || 'pickup') === 'speedy' ? 'speedy' : 'pickup',
+            paymentMethod: (dbOrder.payment_method || 'mpesa').toLowerCase() as any,
+            customer: {
+              firstName: dbOrder.customer_name?.split(' ')[0] || '',
+              lastName: dbOrder.customer_name?.split(' ').slice(1).join(' ') || '',
+              phone: dbOrder.customer_phone || '',
+              email: dbOrder.customer_email || '',
+              address: typeof dbOrder.delivery_address === 'string' ? dbOrder.delivery_address : dbOrder.delivery_address?.address,
+              pickupLocation: dbOrder.pickup_location
+            },
+            status: (dbOrder.status || 'pending').toLowerCase() as OrderStatus,
+          }));
+          setOrders(transformed);
+        }
+      } catch (error) {
+        console.error('Error fetching orders:', error);
+      } finally {
+        setLoadingOrders(false);
+      }
+    };
+
+    fetchOrders();
+  }, []);
 
   // Hide any lingering demo orders from admin analytics/views (extra safety)
   const isDemoOrder = (o: Order) => {
