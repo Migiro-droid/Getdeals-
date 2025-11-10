@@ -1,14 +1,12 @@
 import { VercelRequest, VercelResponse } from '@vercel/node';
 import { createClient } from '@supabase/supabase-js';
 
-// Initialize Supabase client with service role key for admin operations
 const supabase = createClient(
   process.env.SUPABASE_URL!,
   process.env.SUPABASE_SERVICE_ROLE_KEY!
 );
 
 export default async function handler(req: VercelRequest, res: VercelResponse) {
-  // Only allow POST requests
   if (req.method !== 'POST') {
     return res.status(405).json({ 
       success: false, 
@@ -19,7 +17,6 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
   try {
     console.log('🔧 Starting stuck transactions fix...');
 
-    // Find pending transactions older than 5 minutes (likely stuck)
     const fiveMinutesAgo = new Date(Date.now() - 5 * 60 * 1000).toISOString();
     
     const { data: stuckTransactions, error: queryError } = await supabase
@@ -52,12 +49,10 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     let processedCount = 0;
     let errors = [];
 
-    // Process each stuck transaction
     for (const transaction of stuckTransactions) {
       try {
         console.log(` Processing transaction ${transaction.transaction_id}...`);
 
-        // Update transaction status to completed
         const { error: updateError } = await supabase
           .from('wallet_transactions')
           .update({
@@ -77,16 +72,14 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
           continue;
         }
 
-        // Update wallet balance using safe increment
         const { error: balanceError } = await supabase.rpc('safe_increment_wallet_balance', {
           p_user_id: transaction.user_id,
-          p_amount: 0 // Trigger recalculation
+          p_amount: 0 
         });
 
         if (balanceError) {
           console.error(` Failed to update wallet balance for transaction ${transaction.id}:`, balanceError);
           
-          // Revert transaction status if balance update failed
           await supabase
             .from('wallet_transactions')
             .update({ 
@@ -102,7 +95,6 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
           continue;
         }
 
-        // Send real-time notification
         try {
           await supabase
             .channel('wallet-updates')
@@ -118,7 +110,6 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
             });
         } catch (notifyError) {
           console.warn(` Failed to send notification for ${transaction.id}:`, notifyError);
-          // Don't fail the whole operation for notification failures
         }
 
         processedCount++;

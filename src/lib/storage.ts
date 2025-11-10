@@ -1,4 +1,3 @@
-// Browser-safe storage utilities
 export const storage = {
   getItem(key: string): string | null {
     if (typeof window === 'undefined' || typeof localStorage === 'undefined') {

@@ -1,7 +1,4 @@
-/**
- * SMS Send API Endpoint
- * Handles sending SMS notifications through Africa's Talking API
- */
+// SMS Send API Endpoint through Africas Talking
 
 import { VercelRequest, VercelResponse } from '@vercel/node';
 import SMSService from '../../src/services/sms-service';
@@ -39,7 +36,6 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
   try {
     const { type, phoneNumber, data }: SMSRequestBody = req.body;
 
-    // Validate required fields
     if (!type || !phoneNumber) {
       return res.status(400).json({
         success: false,
@@ -47,9 +43,8 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       });
     }
 
-    // Check if SMS service is configured
     if (!SMSService.isConfigured()) {
-      console.warn('⚠️ SMS service not configured');
+      console.warn(' SMS service not configured');
       return res.status(503).json({
         success: false,
         error: 'SMS service is not configured. Set SMS_API_KEY and SMS_USERNAME in environment variables.'
@@ -58,7 +53,6 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
 
     let result;
 
-    // Route to appropriate SMS sending method
     switch (type) {
       case 'order-confirmation':
         if (!data.orderNumber || !data.total || data.itemCount === undefined) {
@@ -159,7 +153,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     });
 
   } catch (error) {
-    console.error('❌ SMS API Error:', error);
+    console.error(' SMS API Error:', error);
     return res.status(500).json({
       success: false,
       error: error instanceof Error ? error.message : 'Internal server error',

@@ -18,7 +18,6 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
   try {
     const { limit = '50', offset = '0', status, search } = req.query;
 
-    // Try using the view first, fall back to direct query if view doesn't exist
     let query = supabase
       .from('orders_with_details')
       .select('*')
@@ -40,16 +39,12 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
 
     let { data: orders, error: ordersError } = await query;
 
-    // Normalize data format for both view and direct queries
     const normalizeOrders = (ordersList: any[]) => {
       return ordersList.map((order: any) => {
-        // Handle different possible field names and formats
         const total = order.total_amount_kes || order.total_amount || order.total || 0;
         const subtotal = order.subtotal_kes || order.subtotal || 0;
         const deliveryFee = order.delivery_fee_kes || order.delivery_fee || 0;
         
-        // Database stores amounts in cents, so divide by 100 to get KES
-        // Only skip conversion if value is already very small (< 10, likely already in KES)
         const totalKes = total >= 10 ? total / 100 : total;
         const subtotalKes = subtotal >= 10 ? subtotal / 100 : subtotal;
         const deliveryFeeKes = deliveryFee >= 10 ? deliveryFee / 100 : deliveryFee;
@@ -66,7 +61,6 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       });
     };
 
-    // If view doesn't exist, fall back to direct orders table query
     if (ordersError && ordersError.message?.includes('orders_with_details')) {
       console.log('View not found, using direct orders query...');
       
@@ -89,12 +83,10 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       orders = result.data;
       ordersError = result.error;
 
-      // Transform data to match expected format
       if (orders && !ordersError) {
         orders = normalizeOrders(orders);
       }
     } else if (orders && !ordersError) {
-      // Also normalize orders from the view
       orders = normalizeOrders(orders);
     }
 

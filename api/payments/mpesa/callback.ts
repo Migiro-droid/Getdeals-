@@ -125,23 +125,16 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
           sender_name: senderName || null,
           processed_at: new Date().toISOString(),
           updated_at: new Date().toISOString(),
-          // Ensure amount is stored if not already
-          // NOTE: M-Pesa already provides amount in cents, do not multiply by 100 again
-          ...(amount && { amount: amount }), // amount is already in cents
-          // Ensure phone number is stored if not already
+          ...(amount && { amount: amount }), 
           ...(phoneNumber && { phone_number: phoneNumber })
         })
         .eq('transaction_id', checkoutRequestId);
 
       if (updatePaymentError) {
-        console.error('❌ Error updating payment record:', updatePaymentError);
+        console.error(' Error updating payment record:', updatePaymentError);
       } else {
-        console.log('✅ Payment record updated successfully');
+        console.log(' Payment record updated successfully');
       }
-
-      // TODO: Add comprehensive transaction logging once schema is fixed
-
-      // Get the payment record to find the associated order
       const { data: payment, error: getPaymentError } = await supabase
         .from('payments')
         .select('order_id, amount')
@@ -151,7 +144,6 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       if (getPaymentError) {
         console.error('Error fetching payment record:', getPaymentError);
       } else if (payment?.order_id) {
-        // Update order status to confirmed
         const { error: updateOrderError } = await supabase
           .from('orders')
           .update({
@@ -164,11 +156,9 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
         if (updateOrderError) {
           console.error('Error updating order status:', updateOrderError);
         } else {
-          console.log('✅ Order status updated to CONFIRMED');
+          console.log(' Order status updated to CONFIRMED');
           
-          // Send email and SMS notifications for successful payment (with retry logic)
           try {
-            // Get order and customer details for email
             const { data: orderDetails } = await supabase
               .from('orders')
               .select(`
@@ -185,8 +175,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
               const baseUrl = process.env.FRONTEND_URL || 'https://getdeals.co.ke';
               const amountInKES = Math.round(amount / 100) || Math.round(orderDetails.total_amount / 100);
               
-              // Send payment confirmation email with RETRY LOGIC (HIGH PRIORITY)
-              // This ensures customers always receive payment confirmation
+
               await fetch(`${baseUrl}/api/email/delivery`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
@@ -194,7 +183,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
                   action: 'send',
                   type: 'payment-confirmation',
                   recipientEmail: orderDetails.customer_email,
-                  priority: 'high', // High priority = faster retries
+                  priority: 'high', 
                   data: {
                     customerName: orderDetails.customer_name || 'Valued Customer',
                     transactionId: mpesaReceiptNumber,
@@ -206,7 +195,6 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
                 })
               }).catch(err => console.error('Payment confirmation email error:', err));
 
-              // Send payment confirmation SMS to customer
               if (phoneNumber) {
                 await sendSMSNotification(phoneNumber, 'payment-confirmation', {
                   amount: amountInKES,
@@ -216,8 +204,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
                 }).catch(err => console.error('SMS error:', err));
               }
 
-              // Send order confirmation email with RETRY LOGIC (HIGH PRIORITY)
-              // This is CRITICAL - customers must receive their order receipt
+
               await fetch(`${baseUrl}/api/email/delivery`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
@@ -225,11 +212,11 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
                   action: 'send',
                   type: 'order-confirmation',
                   recipientEmail: orderDetails.customer_email,
-                  priority: 'high', // High priority = faster retries
+                  priority: 'high', 
                   data: {
                     customerName: orderDetails.customer_name || 'Valued Customer',
                     orderNumber: orderDetails.order_reference || `ORD-${orderDetails.id}`,
-                    total: (orderDetails.total_amount / 100) || 0, // Convert from cents
+                    total: (orderDetails.total_amount / 100) || 0, 
                     items: orderDetails.items || [],
                     deliveryAddress: orderDetails.delivery_address || 'Address not provided',
                     paymentMethod: 'M-Pesa',
@@ -238,27 +225,21 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
                 })
               }).catch(err => console.error('Order confirmation email error:', err));
 
-              console.log('📧 Email notifications queued with retry logic for successful payment');
+              console.log(' Email notifications queued with retry logic for successful payment');
             }
           } catch (emailError) {
-            console.error('❌ Error preparing email notifications:', emailError);
-            // Don't fail the callback because of email issues - they'll retry via delivery service
+            console.error(' Error preparing email notifications:', emailError);
           }
         }
-
-        // TODO: Update inventory if needed
-        // TODO: Trigger any post-payment workflows
       }
 
     } else {
-      // Payment failed
       console.log('Payment failed:', {
         resultCode,
         resultDesc,
         checkoutRequestId
       });
 
-      // Update payment record as failed
       const { error: updatePaymentError } = await supabase
         .from('payments')
         .update({
@@ -273,7 +254,6 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
         console.error(' Error updating failed payment record:', updatePaymentError);
       }
 
-      // Get the payment record to find the associated order
       const { data: payment } = await supabase
         .from('payments')
         .select('order_id')
@@ -281,7 +261,6 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
         .single();
 
       if (payment?.order_id) {
-        // Update order status to payment failed
         await supabase
           .from('orders')
           .update({
@@ -295,7 +274,6 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       }
     }
 
-    // Always respond with success to M-Pesa to prevent retries
     res.status(200).json({ 
       success: true,
       message: 'Callback processed successfully' 
@@ -304,7 +282,6 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
   } catch (error) {
     console.error(' Error processing M-Pesa callback:', error);
     
-    // Still respond with success to M-Pesa to avoid retries
     res.status(200).json({ 
       success: true,
       message: 'Callback received but processing failed' 

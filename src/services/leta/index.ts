@@ -1,7 +1,3 @@
-/**
- * Leta Services Index
- * Exports all Leta service modules
- */
 
 export { LetaClient, initializeLetaClient, getLetaClient } from "./client";
 export { letaOrdersService } from "./orders";

@@ -5,10 +5,8 @@ declare global {
   var prisma: PrismaClient | undefined;
 }
 
-// Prisma client for database operations
 export const prisma = globalThis.prisma || new PrismaClient();
 
-// Export Supabase clients
 export { supabase, supabaseAdmin };
 
 if (process.env.NODE_ENV === 'development') {
@@ -49,7 +47,6 @@ export interface Product {
   createdAt?: string;
 }
 
-// Product operations
 export async function getProducts(): Promise<Product[]> {
   try {
     const products = await prisma.product.findMany({
@@ -151,7 +148,6 @@ export async function deleteProduct(id: string): Promise<boolean> {
   }
 }
 
-// User operations
 export async function getUsers(): Promise<User[]> {
   try {
     const users = await prisma.user.findMany({
@@ -172,7 +168,6 @@ export async function getUsers(): Promise<User[]> {
   }
 }
 
-// Order operations
 export async function getOrders(): Promise<Order[]> {
   try {
     const orders = await prisma.order.findMany({
@@ -209,10 +204,8 @@ export async function getOrders(): Promise<Order[]> {
   }
 }
 
-// Seed data function for migration
 export async function seedDatabase() {
   console.log('🌱 Seeding database...');
   
-  // Add your seed data here or call this function with products parameter
-  console.log('✅ Database seeding function ready!');
+  console.log(' Database seeding function ready!');
 }

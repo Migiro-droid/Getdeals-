@@ -1,4 +1,3 @@
-// Simple fallback database for browser environment with localStorage persistence
 import { storage } from './storage';
 
 export interface User {
@@ -14,7 +13,6 @@ export interface User {
   createdAt: Date;
 }
 
-// Default admin user
 const defaultUsers: User[] = [
   {
     id: '1',
@@ -24,19 +22,17 @@ const defaultUsers: User[] = [
     role: 'admin',
     firstName: 'GetDeals',
     lastName: 'Admin',
-    password: 'YWRtaW4xMjNzYWx0MTIz', // admin123 hashed
+    password: 'YWRtaW4xMjNzYWx0MTIz', 
     isVerified: true,
     createdAt: new Date()
   }
 ];
 
-// Get users from localStorage or use defaults
 function getStoredUsers(): User[] {
   try {
     const stored = storage.getItem('getdeals_users');
     if (stored) {
       const parsed = JSON.parse(stored);
-      // Convert date strings back to Date objects
       return parsed.map((user: any) => ({
         ...user,
         createdAt: new Date(user.createdAt)
@@ -48,7 +44,6 @@ function getStoredUsers(): User[] {
   return [...defaultUsers];
 }
 
-// Save users to localStorage
 function saveUsers(users: User[]) {
   try {
     storage.setItem('getdeals_users', JSON.stringify(users));
@@ -65,7 +60,6 @@ export const fallbackDB = {
   async createUser(data: any): Promise<User> {
     const users = getStoredUsers();
     
-    // Check for existing email
     if (users.find(u => u.email === data.email)) {
       throw new Error('An account with this email already exists');
     }
@@ -97,7 +91,6 @@ export const fallbackDB = {
       throw new Error('User not found');
     }
     
-    // Update user
     users[userIndex] = { ...users[userIndex], ...updates };
     saveUsers(users);
     

@@ -1,7 +1,6 @@
 import { VercelRequest, VercelResponse } from '@vercel/node';
 import { createClient } from '@supabase/supabase-js';
 
-// Initialize Supabase client
 const supabase = createClient(
   process.env.SUPABASE_URL!,
   process.env.SUPABASE_SERVICE_ROLE_KEY!
@@ -20,7 +19,6 @@ interface RukishaCallback {
 }
 
 export default async function handler(req: VercelRequest, res: VercelResponse) {
-  // Handle OPTIONS for CORS preflight
   if (req.method === 'OPTIONS') {
     return res.status(200).json({ 
       success: true,
@@ -28,7 +26,6 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     });
   }
 
-  // Handle GET for webhook URL validation (Rukisha may ping the endpoint)
   if (req.method === 'GET') {
     return res.status(200).json({ 
       success: true,
@@ -38,7 +35,6 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     });
   }
 
-  // Only allow POST requests for actual callbacks
   if (req.method !== 'POST') {
     return res.status(405).json({ 
       success: false, 
@@ -47,23 +43,20 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
   }
 
   try {
-    console.log('📞 Rukisha webhook received');
-    console.log('📦 Request headers:', JSON.stringify(req.headers));
-    console.log('📦 Request body:', JSON.stringify(req.body));
+    console.log(' Rukisha webhook received');
+    console.log(' Request headers:', JSON.stringify(req.headers));
+    console.log(' Request body:', JSON.stringify(req.body));
     
     const rawData = req.body;
     
-    // Validate request body exists
     if (!rawData || typeof rawData !== 'object') {
-      console.error('❌ Invalid request body - not an object');
+      console.error(' Invalid request body - not an object');
       return res.status(400).json({ 
         success: false, 
         error: 'Invalid request body. Expected JSON object.' 
       });
     }
 
-    // Rukisha sends data in this format:
-    // { success: true, status: "COMPLETE", reference: "...", mpesa_code: "...", data: { ... } }
     let callbackData: any;
     let reference: string;
     let status: string;
@@ -72,8 +65,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     let amount: number;
 
     if (rawData.data && rawData.reference) {
-      // New Rukisha format
-      console.log('✅ Detected new Rukisha format');
+      console.log(' Detected new Rukisha format');
       callbackData = rawData.data;
       reference = rawData.reference;
       status = rawData.status;
@@ -81,8 +73,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       phone = callbackData.phone;
       amount = callbackData.amount;
     } else if (rawData.TransactionID) {
-      // Old format (for backward compatibility)
-      console.log('✅ Detected old format');
+      console.log(' Detected old format');
       callbackData = rawData;
       reference = callbackData.Reference;
       status = callbackData.Status;
@@ -90,8 +81,8 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       phone = callbackData.Phone;
       amount = callbackData.Amount;
     } else {
-      console.error('❌ Invalid callback data - unknown format');
-      console.error('   Received fields:', Object.keys(rawData));
+      console.error('Invalid callback data - unknown format');
+      console.error('Received fields:', Object.keys(rawData));
       return res.status(400).json({ 
         success: false, 
         error: 'Invalid callback data format.',
@@ -101,7 +92,6 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
 
     console.log('📋 Parsed data:', { reference, status, mpesaCode, phone, amount });
 
-    // Find the transaction by reference
     let transaction;
     
     if (reference) {
@@ -112,7 +102,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
         .single();
       
       if (error) {
-        console.error('❌ Transaction not found by reference:', reference);
+        console.error('Transaction not found by reference:', reference);
         return res.status(404).json({ 
           success: false, 
           error: 'Transaction not found',
@@ -122,16 +112,15 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       
       transaction = data;
     } else {
-      console.error('❌ No reference provided');
+      console.error(' No reference provided');
       return res.status(400).json({ 
         success: false, 
         error: 'No transaction reference provided' 
       });
     }
 
-    console.log('✅ Found transaction:', transaction.id);
+    console.log(' Found transaction:', transaction.id);
 
-    // Map Rukisha status to our status
     let transactionStatus: string;
     if (status === 'COMPLETE' || status === 'completed') {
       transactionStatus = 'completed';
@@ -141,14 +130,12 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       transactionStatus = 'pending';
     }
 
-    // Update transaction status
     const updateData: any = {
       status: transactionStatus,
       updated_at: new Date().toISOString(),
       completed_at: transactionStatus === 'completed' ? new Date().toISOString() : null,
     };
 
-    // Add M-Pesa receipt number if available
     if (mpesaCode) {
       updateData.transaction_id = mpesaCode;
     }
@@ -159,33 +146,30 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       .eq('id', transaction.id);
 
     if (updateError) {
-      console.error('❌ Failed to update transaction:', updateError);
+      console.error(' Failed to update transaction:', updateError);
       return res.status(500).json({ 
         success: false, 
         error: 'Failed to update transaction' 
       });
     }
 
-    console.log('✅ Transaction updated successfully');
+    console.log(' Transaction updated successfully');
 
-    // If payment successful, update wallet balance
     if (transactionStatus === 'completed' && transaction.type === 'deposit') {
       const depositAmount = amount || transaction.amount;
       
-      console.log('💰 Processing successful deposit:', { 
+      console.log(' Processing successful deposit:', { 
         userId: transaction.user_id, 
         amount: depositAmount 
       });
 
-      // Recalculate wallet balance from completed transactions only
       const { error: walletError } = await supabase.rpc('safe_increment_wallet_balance', {
         p_user_id: transaction.user_id,
-        p_amount: 0 // Just trigger recalculation since transaction is already marked completed
+        p_amount: 0 
       });
 
       if (walletError) {
         console.error(' Failed to update wallet balance:', walletError);
-        // Continue anyway - transaction status is updated
       } else {
         console.log(' Wallet balance updated successfully');
       }

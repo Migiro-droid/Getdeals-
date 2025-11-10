@@ -8,7 +8,6 @@ const PORT = process.env.PORT || 4000;
 app.use(cors());
 app.use(express.json());
 
-// Simple product validation
 function validateProductInput(data) {
   const errors = [];
   
@@ -47,7 +46,6 @@ function validateProductInput(data) {
   };
 }
 
-// Products API
 app.get('/api/products', (req, res) => {
   try {
     const products = JSONDatabase.getAllProducts();
@@ -82,7 +80,6 @@ app.patch('/api/products/:id', (req, res) => {
     const { id } = req.params;
     const patch = req.body || {};
     
-    // Partial validation
     const allowed = ['name', 'price', 'originalPrice', 'image', 'discount', 'items', 'itemsDetail', 'category', 'description'];
     const updates = {};
     
@@ -139,12 +136,10 @@ app.delete('/api/products/:id', (req, res) => {
   }
 });
 
-// Health check
 app.get('/api/health', (req, res) => {
   res.json({ status: 'ok', message: 'GetDeals Kenya API is running' });
 });
 
-// Stats endpoint
 app.get('/api/stats', (req, res) => {
   try {
     const stats = JSONDatabase.getStats();
@@ -156,7 +151,7 @@ app.get('/api/stats', (req, res) => {
 });
 
 app.listen(PORT, () => {
-  console.log(`🚀 GetDeals Kenya API server running on http://localhost:${PORT}`);
-  console.log(`📊 Stats available at http://localhost:${PORT}/api/stats`);
-  console.log(`❤️  Health check at http://localhost:${PORT}/api/health`);
+  console.log(`GetDeals Kenya API server running on http://localhost:${PORT}`);
+  console.log(`Stats available at http://localhost:${PORT}/api/stats`);
+  console.log(`Health check at http://localhost:${PORT}/api/health`);
 });

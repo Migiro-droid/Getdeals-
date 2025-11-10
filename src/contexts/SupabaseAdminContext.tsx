@@ -35,8 +35,6 @@ export function SupabaseAdminProvider({ children }: { children: React.ReactNode 
   const fetchSettings = useCallback(async () => {
     try {
       setLoading(true);
-      // For now, just use default settings since the settings table structure doesn't match
-      // TODO: Implement proper settings management later
       console.log('Using default admin settings');
     } catch (error) {
       console.error('Error fetching admin settings:', error);
@@ -51,8 +49,6 @@ export function SupabaseAdminProvider({ children }: { children: React.ReactNode 
 
   const updateSettings = useCallback(async (updates: Partial<AdminSettings>) => {
     try {
-      // For now, just update local state since the settings table structure doesn't match
-      // TODO: Implement proper settings persistence later
       setSettings(prev => ({ ...prev, ...updates }));
       
       toast({

@@ -19,14 +19,13 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     const orderId = req.query.orderId as string;
 
     if (!orderId) {
-      console.warn('⚠️ No order ID provided in request');
+      console.warn(' No order ID provided in request');
       return res.status(400).json({ success: false, error: 'Order ID required' });
     }
 
-    console.log(`📍 Fetching tracking info for order: ${orderId}`);
-    console.log(`🔍 Using Supabase URL: ${supabaseUrl}`);
+    console.log(`Fetching tracking info for order: ${orderId}`);
+    console.log(`Using Supabase URL: ${supabaseUrl}`);
 
-    // First, try to fetch the order to verify it exists
     const { data: orders, error: listError } = await supabase
       .from('orders')
       .select('id, order_reference, status')
@@ -34,7 +33,6 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       .limit(1);
 
     if (listError) {
-      // Detect RLS policy issues
       const isRLSError = 
         listError.code === 'PGRST116' ||
         listError.code === '42501' ||
@@ -43,7 +41,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
         listError.message?.includes('policy');
 
       if (isRLSError) {
-        console.error('🔒 RLS POLICY BLOCKING ACCESS!');
+        console.error('RLS POLICY BLOCKING ACCESS!');
         console.error('The RLS policy on the orders table is blocking service role access');
         console.error('Solution: Apply the migration 20251027_fix_rls_policies_for_tracking.sql');
         console.error('Details:', {
@@ -62,7 +60,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
         });
       }
 
-      console.error('❌ Error listing orders:', {
+      console.error(' Error listing orders:', {
         code: listError.code,
         message: listError.message,
         details: listError.details,
@@ -76,14 +74,13 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     }
 
     if (!orders || orders.length === 0) {
-      console.warn(`⚠️ No order found with ID: ${orderId}`);
-      console.log(`📊 This could indicate: order doesn't exist, RLS policy blocks access, or DB replication lag`);
+      console.warn(`No order found with ID: ${orderId}`);
+      console.log(`This could indicate: order doesn't exist, RLS policy blocks access, or DB replication lag`);
       return res.status(404).json({ success: false, error: 'Order not found' });
     }
 
     console.log(`✓ Order found: ${orders[0].order_reference}`);
 
-    // Now fetch the full order with delivery info
     const { data: order, error } = await supabase
       .from('orders')
       .select(
@@ -111,7 +108,6 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       .single();
 
     if (error) {
-      // Detect RLS policy issues
       const isRLSError = 
         error.code === 'PGRST116' ||
         error.code === '42501' ||
@@ -120,7 +116,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
         error.message?.includes('policy');
 
       if (isRLSError) {
-        console.error('🔒 RLS POLICY BLOCKING DETAILED FETCH!');
+        console.error('RLS POLICY BLOCKING DETAILED FETCH!');
         console.error('Solution: Apply the migration 20251027_fix_rls_policies_for_tracking.sql');
         console.error('Details:', {
           code: error.code,
@@ -136,7 +132,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
         });
       }
 
-      console.error('❌ Error fetching order details:', {
+      console.error(' Error fetching order details:', {
         code: error.code,
         message: error.message,
         details: error.details,
@@ -150,11 +146,10 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     }
 
     if (!order) {
-      console.error('❌ Order returned null despite existence check');
+      console.error(' Order returned null despite existence check');
       return res.status(404).json({ success: false, error: 'Order not found' });
     }
 
-    // Build tracking response
     const tracking = {
       orderId: order.id,
       orderReference: order.order_reference,
@@ -162,7 +157,6 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       deliveryMethod: order.delivery_method,
       trackingUrl: order.leta_tracking_url,
       
-      // For delivery orders
       ...(order.delivery_method === 'speedy' && {
         deliveryAddress:
           typeof order.delivery_address === 'string'
@@ -172,7 +166,6 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
         letaReference: order.leta_reference,
         letaStatus: order.leta_status,
         
-        // Rider info
         ...(order.rider_name && {
           rider: {
             name: order.rider_name,
@@ -186,7 +179,6 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
         lastUpdate: order.last_location_update,
       }),
       
-      // For pickup orders
       ...(order.delivery_method === 'pickup' && {
         pickupLocation:
           typeof order.delivery_address === 'string'
@@ -198,7 +190,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       updatedAt: order.updated_at,
     };
 
-    console.log('✅ Tracking info:', tracking);
+    console.log(' Tracking info:', tracking);
 
     return res.status(200).json({
       success: true,
@@ -206,7 +198,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       message: `Tracking info for order ${order.order_reference}`
     });
   } catch (error) {
-    console.error('❌ Error fetching tracking:', error);
+    console.error('Error fetching tracking:', error);
     const errorMessage = error instanceof Error ? error.message : 'Internal server error';
     const errorStack = error instanceof Error ? error.stack : undefined;
     console.error('Error stack:', errorStack);

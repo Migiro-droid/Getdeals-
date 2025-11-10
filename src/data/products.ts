@@ -17,7 +17,6 @@ export interface Product {
 }
 
 export const products: Product[] = [
-  // Essential Baskets
   {
     id: "essential-basket",
     name: "Essential Basket",
@@ -183,7 +182,6 @@ export const products: Product[] = [
     description: "Bulk buy essentials for bigger savings"
   },
 
-  // Alcohol deals (placeholder images)
   {
     id: "beer-pack",
     name: "Beer Pack (6x500ml)",

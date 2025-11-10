@@ -54,13 +54,8 @@ const defaultSettings: SiteSettings = {
   ],
 };
 
-/**
- * GET /api/admin/settings - Fetch current site settings
- * Public endpoint - anyone can read settings
- */
 async function getSettings(): Promise<SiteSettings> {
   try {
-    // Try to fetch from database
     const { data, error } = await supabase
       .from('site_settings')
       .select('settings')
@@ -73,7 +68,6 @@ async function getSettings(): Promise<SiteSettings> {
     }
 
     if (data && data.settings) {
-      // Merge with defaults to ensure all fields exist
       return { ...defaultSettings, ...data.settings };
     }
 
@@ -84,17 +78,13 @@ async function getSettings(): Promise<SiteSettings> {
   }
 }
 
-/**
- * POST /api/admin/settings - Update site settings
- * Protected endpoint - requires admin authentication
- */
+
 async function updateSettings(
   req: VercelRequest,
   res: VercelResponse,
   updates: Partial<SiteSettings>
 ): Promise<SiteSettings> {
   try {
-    // Verify admin authentication
     const authHeader = req.headers.authorization;
     if (!authHeader || !authHeader.startsWith('Bearer ')) {
       throw new Error('Missing or invalid authorization');
@@ -103,18 +93,14 @@ async function updateSettings(
     const adminPin = process.env.VITE_ADMIN_PIN || '1234';
     const token = authHeader.substring(7);
 
-    // Simple token validation (you should use proper JWT in production)
     if (token !== `admin_${adminPin}`) {
       throw new Error('Invalid admin credentials');
     }
 
-    // Fetch current settings
     const current = await getSettings();
 
-    // Merge updates
     const updated = { ...current, ...updates };
 
-    // Upsert to database
     const { error } = await supabase
       .from('site_settings')
       .upsert(
@@ -157,11 +143,9 @@ export default async function handler(
 
   try {
     if (req.method === 'GET') {
-      // Fetch settings
       const settings = await getSettings();
       res.status(200).json({ data: settings, error: null });
     } else if (req.method === 'POST' || req.method === 'PUT') {
-      // Update settings
       const updates = req.body as Partial<SiteSettings>;
       const updated = await updateSettings(req, res, updates);
       res.status(200).json({ data: updated, error: null });

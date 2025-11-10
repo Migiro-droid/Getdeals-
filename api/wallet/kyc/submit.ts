@@ -10,7 +10,6 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
   try {
     const { fullName, idNumber, phoneNumber, email, kraPin, idType }: WalletKycSubmission = req.body;
 
-    // Validate required fields
     if (!fullName || !idNumber || !phoneNumber || !email || !kraPin || !idType) {
       return res.status(400).json({ 
         error: 'All fields are required',
@@ -18,7 +17,6 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       });
     }
 
-    // Validate KRA PIN format (personal PINs start with 'A')
     const kraPinRegex = /^A\d{9}[A-Z]$/i;
     if (!kraPinRegex.test(kraPin)) {
       return res.status(400).json({ 
@@ -26,21 +24,18 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       });
     }
 
-    // Validate ID type
     if (!['national_id', 'passport'].includes(idType)) {
       return res.status(400).json({ 
         error: 'Invalid ID type. Must be either national_id or passport' 
       });
     }
 
-    // Validate National ID format (8 digits) or passport format
     if (idType === 'national_id' && !/^\d{8}$/.test(idNumber)) {
       return res.status(400).json({ 
         error: 'Invalid National ID format. Must be 8 digits' 
       });
     }
 
-    // Validate phone number format
     const phoneRegex = /^(\+254|0)[17]\d{8}$/;
     if (!phoneRegex.test(phoneNumber.replace(/\s/g, ''))) {
       return res.status(400).json({ 
@@ -48,7 +43,6 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       });
     }
 
-    // Validate email format
     const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
     if (!emailRegex.test(email)) {
       return res.status(400).json({ 
@@ -56,7 +50,6 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       });
     }
 
-    // Get user ID from auth header (you'll need to implement auth middleware)
     const authHeader = req.headers.authorization;
     if (!authHeader || !authHeader.startsWith('Bearer ')) {
       return res.status(401).json({ error: 'Authorization required' });
@@ -69,14 +62,13 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       return res.status(401).json({ error: 'Invalid authorization token' });
     }
 
-    // Check if user already has KYC data
     const { data: existingKyc, error: checkError } = await supabase
       .from('wallet_kyc')
       .select('id, status')
       .eq('user_id', user.id)
       .single();
 
-    if (checkError && checkError.code !== 'PGRST116') { // PGRST116 = no rows returned
+    if (checkError && checkError.code !== 'PGRST116') {
       console.error('Error checking existing KYC:', checkError);
       return res.status(500).json({ error: 'Database error' });
     }
@@ -93,7 +85,6 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       }
     }
 
-    // Insert or update KYC data with verified status for immediate wallet access
     const kycData = {
       user_id: user.id,
       full_name: fullName,
@@ -102,7 +93,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       email: email,
       kra_pin: kraPin.toUpperCase(),
       id_type: idType,
-      status: 'verified', // Auto-verify for immediate wallet access
+      status: 'verified', 
       verified_at: new Date().toISOString()
     };
 
@@ -124,7 +115,6 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       return res.status(500).json({ error: 'Failed to save KYC data' });
     }
 
-    // Log the KYC submission for audit purposes
     console.log(`KYC submitted for user ${user.id}:`, {
       fullName,
       idType,
@@ -133,10 +123,6 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       timestamp: new Date().toISOString()
     });
 
-    // In production, you might want to:
-    // 1. Send notification to admin for manual verification
-    // 2. Integrate with automated KYC verification service
-    // 3. Send confirmation email/SMS to user
 
     return res.status(201).json({
       success: true,

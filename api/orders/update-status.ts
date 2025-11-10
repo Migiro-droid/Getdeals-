@@ -10,7 +10,6 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
   }
 
   try {
-    // Initialize Supabase client with environment variables check
     const supabaseUrl = process.env.VITE_SUPABASE_URL;
     const supabaseServiceKey = process.env.VITE_SUPABASE_SERVICE_ROLE_KEY;
 
@@ -40,8 +39,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
 
     console.log('Updating order status:', { orderId, status });
 
-    // Validate status - must match database constraint in supabase-schema.sql
-    // CHECK (status IN ('pending', 'confirmed', 'shipped', 'delivered', 'cancelled'))
+
     const validStatuses = ['pending', 'confirmed', 'shipped', 'delivered', 'cancelled'];
     const lowerStatus = status.toLowerCase();
     
@@ -52,7 +50,6 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       });
     }
 
-    // Update the order status in the database
     const { data, error } = await supabase
       .from('orders')
       .update({ 

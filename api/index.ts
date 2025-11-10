@@ -1,7 +1,4 @@
 import { VercelRequest, VercelResponse } from '@vercel/node';
-// Using Supabase-backed DB helpers from ../lib/db (server-side service role)
-
-// Validate product input
 function validateProductInput(data: any) {
   const errors: string[] = [];
   
@@ -51,7 +48,6 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
   const path = url?.split('?')[0] || '';
 
   try {
-    // Health check
     if (method === 'GET' && path === '/api/health') {
       return res.status(200).json({ 
         status: 'ok', 
@@ -61,14 +57,12 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       });
     }
 
-    // Database seeding endpoint
     if (method === 'POST' && path === '/api/seed') {
       const { seedDatabase } = await import('../lib/db');
       await seedDatabase();
       return res.status(200).json({ message: 'Database seeded successfully' });
     }
 
-    // Individual product operations (handled by api/products/[id].ts)
     if (path.startsWith('/api/products/')) {
       const { getProducts, updateProduct, deleteProduct } = await import('../lib/db');
       const productId = path.split('/')[3];
@@ -99,29 +93,24 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       }
     }
 
-    // Users endpoints
     if (path === '/api/users' && method === 'GET') {
       const { getUsers } = await import('../lib/db');
       const users = await getUsers();
       return res.status(200).json(users);
     }
 
-    // Orders endpoints  
     if (path === '/api/orders' && method === 'GET') {
       const { getOrders } = await import('../lib/db');
       const orders = await getOrders();
       return res.status(200).json(orders);
     }
 
-    // M-Pesa payment endpoints - Basic implementation for demo
     if (path === '/api/payments/mpesa/stk-push' && method === 'POST') {
       try {
-        // For demo purposes, simulate a successful STK push
         const { amount, phoneNumber, orderReference } = req.body;
         
         console.log('M-Pesa STK Push request:', { amount, phoneNumber, orderReference });
         
-        // Basic validation
         if (!amount || !phoneNumber || !orderReference) {
           return res.status(400).json({ 
             success: false, 
@@ -129,7 +118,6 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
           });
         }
 
-        // Simulate STK push response
         const mockResponse = {
           success: true,
           CheckoutRequestID: `ws_CO_${Date.now()}${Math.random().toString(36).substr(2, 9)}`,
@@ -150,7 +138,6 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       }
     }
 
-    // M-Pesa payment status query
     if (path.startsWith('/api/payments/mpesa/query/') && method === 'GET') {
       try {
         const checkoutRequestId = path.split('/')[5];
@@ -163,9 +150,6 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
             error: 'Checkout request ID is required' 
           });
         }
-
-        // For demo purposes, simulate payment completion after a short delay
-        // In production, this would query the actual M-Pesa API
         const mockStatusResponse = {
           success: true,
           status: 'completed',
@@ -185,10 +169,8 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       }
     }
 
-    // Orders creation endpoint
     if (path === '/api/orders' && method === 'POST') {
       try {
-        // Basic order creation for demo
         const orderData = req.body;
         
         console.log('Order creation request:', orderData);
@@ -215,7 +197,6 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       }
     }
 
-    // Route not found
     return res.status(404).json({ error: 'Not found' });
 
   } catch (error) {

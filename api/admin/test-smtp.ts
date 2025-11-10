@@ -1,15 +1,6 @@
 import { VercelRequest, VercelResponse } from '@vercel/node';
 import nodemailer from 'nodemailer';
-
-/**
- * API Endpoint: Test SMTP Configuration
- * GET /api/admin/test-smtp
- * 
- * Tests SMTP connection and configuration without sending actual emails
- * Useful for verifying Vercel environment variables are set correctly
- */
 export default async function handler(req: VercelRequest, res: VercelResponse) {
-  // Only allow GET requests
   if (req.method !== 'GET') {
     return res.status(405).json({ 
       success: false, 
@@ -24,7 +15,6 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
   };
 
   try {
-    // Test 1: Check if environment variables are set
     const smtpHost = process.env.SMTP_HOST;
     const smtpPort = process.env.SMTP_PORT;
     const smtpUser = process.env.SMTP_USER;
@@ -32,11 +22,11 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     const smtpFrom = process.env.SMTP_FROM;
 
     results.tests.environmentVariables = {
-      SMTP_HOST: smtpHost ? '✅ Set' : '❌ Missing',
-      SMTP_PORT: smtpPort ? `✅ Set (${smtpPort})` : '❌ Missing',
-      SMTP_USER: smtpUser ? `✅ Set (${smtpUser.substring(0, 3)}...${smtpUser.substring(smtpUser.length - 3)})` : '❌ Missing',
-      SMTP_PASS: smtpPass ? `✅ Set (${smtpPass.length} characters)` : '❌ Missing',
-      SMTP_FROM: smtpFrom ? `✅ Set (${smtpFrom})` : '⚠️ Using default',
+      SMTP_HOST: smtpHost ? 'Set' : 'Missing',
+      SMTP_PORT: smtpPort ? `Set (${smtpPort})` : 'Missing',
+      SMTP_USER: smtpUser ? `Set (${smtpUser.substring(0, 3)}...${smtpUser.substring(smtpUser.length - 3)})` : '❌ Missing',
+      SMTP_PASS: smtpPass ? `Set (${smtpPass.length} characters)` : 'ssing',
+      SMTP_FROM: smtpFrom ? `Set (${smtpFrom})` : 'Using default',
     };
 
     if (!smtpHost || !smtpUser || !smtpPass) {
@@ -48,36 +38,34 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       });
     }
 
-    // Test 2: Create transporter
-    results.tests.transporterCreation = '✅ Success';
+    results.tests.transporterCreation = 'Success';
     
     const transporter = nodemailer.createTransport({
       host: smtpHost,
       port: parseInt(smtpPort || '587'),
-      secure: false, // Use STARTTLS for port 587
+      secure: false, 
       auth: {
         user: smtpUser,
         pass: smtpPass,
       },
       tls: {
-        rejectUnauthorized: true // Verify SSL certificates
+        rejectUnauthorized: true 
       },
-      logger: false, // Disable logging for security
+      logger: false, 
     });
 
-    // Test 3: Verify SMTP connection
+    
     try {
       await transporter.verify();
-      results.tests.smtpConnection = '✅ Verified - Credentials are correct';
+      results.tests.smtpConnection = ' Verified - Credentials are correct';
       results.success = true;
       results.message = 'SMTP configuration is working correctly! You can send emails.';
       
       return res.status(200).json(results);
     } catch (verifyError: any) {
-      results.tests.smtpConnection = `❌ Failed: ${verifyError.message}`;
+      results.tests.smtpConnection = ` Failed: ${verifyError.message}`;
       results.success = false;
       
-      // Provide specific error guidance
       if (verifyError.code === 'EAUTH') {
         results.error = 'SMTP Authentication Failed';
         results.reason = 'Your SMTP username or password is incorrect';

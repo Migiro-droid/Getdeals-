@@ -1,14 +1,7 @@
 import { VercelRequest, VercelResponse } from '@vercel/node';
-
-/**
- * Test endpoint for Rukisha webhook validation
- * GET: Returns success message to verify endpoint is accessible
- * POST: Accepts test callback data and returns formatted response
- */
 export default async function handler(req: VercelRequest, res: VercelResponse) {
   const timestamp = new Date().toISOString();
   
-  // Handle GET - for URL validation
   if (req.method === 'GET') {
     return res.status(200).json({
       success: true,
@@ -34,7 +27,6 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     });
   }
 
-  // Handle OPTIONS - for CORS preflight
   if (req.method === 'OPTIONS') {
     return res.status(200).json({
       success: true,
@@ -42,15 +34,13 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     });
   }
 
-  // Handle POST - for testing callback data
   if (req.method === 'POST') {
-    console.log('🧪 Test webhook received at:', timestamp);
-    console.log('📦 Headers:', JSON.stringify(req.headers));
-    console.log('📦 Body:', JSON.stringify(req.body));
+    console.log('Test webhook received at:', timestamp);
+    console.log('Headers:', JSON.stringify(req.headers));
+    console.log('Body:', JSON.stringify(req.body));
 
     const callbackData = req.body;
 
-    // Validate it's a proper object
     if (!callbackData || typeof callbackData !== 'object') {
       return res.status(400).json({
         success: false,
@@ -60,7 +50,6 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       });
     }
 
-    // Check for required fields
     const requiredFields = ['TransactionID', 'Status'];
     const missingFields = requiredFields.filter(field => !callbackData[field]);
     
@@ -75,7 +64,6 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       });
     }
 
-    // All good! Return success
     return res.status(200).json({
       success: true,
       message: 'Test callback received and validated successfully',
@@ -93,7 +81,6 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     });
   }
 
-  // Other methods not allowed
   return res.status(405).json({
     success: false,
     error: `Method ${req.method} not allowed`,

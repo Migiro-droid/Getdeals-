@@ -1,4 +1,4 @@
-// Quick Lei API Test
+// Quick leta API test
 const token = '9ad8af7c3ea3674aee27c3ea8e59928606852820';
 const letaUrl = 'https://integrations.leta.ai/orders/add';
 
@@ -27,10 +27,10 @@ const payload = {
   payment_method: 'prepaid',
 };
 
-console.log('🧪 Testing Lei API\n');
-console.log(`📍 Endpoint: ${letaUrl}`);
-console.log(`🔑 Token: ${token.substring(0, 20)}...`);
-console.log(`\n📦 Sending payload:\n`, JSON.stringify(payload, null, 2));
+console.log('Testing Lei API\n');
+console.log(`Endpoint: ${letaUrl}`);
+console.log(`Token: ${token.substring(0, 20)}...`);
+console.log(`\nSending payload:\n`, JSON.stringify(payload, null, 2));
 
 fetch(letaUrl, {
   method: 'POST',
@@ -46,14 +46,14 @@ fetch(letaUrl, {
       console.log('\n API Error:');
       console.log(JSON.stringify(data, null, 2));
     } else {
-      console.log('\n✅ Lei API Success!');
+      console.log('\n Lei API Success!');
       console.log(JSON.stringify(data, null, 2));
-      console.log(`\n📋 Order created with ID: ${data.id}`);
-      console.log(`📍 Reference: ${data.reference}`);
-      console.log(`📊 Status: ${data.status}`);
+      console.log(`\n Order created with ID: ${data.id}`);
+      console.log(` Reference: ${data.reference}`);
+      console.log(`Status: ${data.status}`);
     }
   })
   .catch(error => {
-    console.log('\n❌ Connection Error:');
+    console.log('\n Connection Error:');
     console.log(error.message);
   });

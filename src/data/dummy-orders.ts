@@ -1,4 +1,3 @@
-// Dummy orders data for testing QuickMart order arrangement features
 export interface DummyOrder {
   id: string;
   order_reference: string;
@@ -21,10 +20,8 @@ export interface DummyOrder {
   updated_at: string;
 }
 
-// Helper to generate IDs
 const generateId = (index: number) => `order_${Date.now()}_${index}`;
 
-// Create orders with realistic timestamps
 const now = new Date();
 const createDate = (hoursAgo: number) => {
   const d = new Date(now.getTime() - hoursAgo * 60 * 60 * 1000);
@@ -32,7 +29,6 @@ const createDate = (hoursAgo: number) => {
 };
 
 export const DUMMY_ORDERS: DummyOrder[] = [
-  // 🔴 URGENT PENDING ORDERS (Less than 2 hours)
   {
     id: generateId(1),
     order_reference: "QM20250001",
@@ -51,7 +47,7 @@ export const DUMMY_ORDERS: DummyOrder[] = [
     subtotal_kes: 700,
     delivery_fee_kes: 200,
     total_amount_kes: 900,
-    created_at: createDate(0.5), // 30 minutes ago
+    created_at: createDate(0.5), 
     updated_at: createDate(0.5),
   },
   {
@@ -71,7 +67,7 @@ export const DUMMY_ORDERS: DummyOrder[] = [
     subtotal_kes: 1550,
     delivery_fee_kes: 200,
     total_amount_kes: 1750,
-    created_at: createDate(1), // 1 hour ago
+    created_at: createDate(1), 
     updated_at: createDate(1),
   },
   {
@@ -95,7 +91,6 @@ export const DUMMY_ORDERS: DummyOrder[] = [
     updated_at: createDate(1.5),
   },
 
-  // 🟡 CONFIRMED ORDERS (2-6 hours)
   {
     id: generateId(4),
     order_reference: "QM20250004",
@@ -179,7 +174,6 @@ export const DUMMY_ORDERS: DummyOrder[] = [
     updated_at: createDate(5),
   },
 
-  // 📦 SHIPPED ORDERS (6-24 hours)
   {
     id: generateId(8),
     order_reference: "QM20250008",
@@ -262,7 +256,6 @@ export const DUMMY_ORDERS: DummyOrder[] = [
     updated_at: createDate(20),
   },
 
-  // ✅ DELIVERED ORDERS (1-3 days ago)
   {
     id: generateId(12),
     order_reference: "QM20250012",
@@ -345,7 +338,6 @@ export const DUMMY_ORDERS: DummyOrder[] = [
     updated_at: createDate(72),
   },
 
-  // ❌ CANCELLED ORDERS (Various times)
   {
     id: generateId(16),
     order_reference: "QM20250016",
@@ -386,7 +378,6 @@ export const DUMMY_ORDERS: DummyOrder[] = [
     updated_at: createDate(144),
   },
 
-  // Additional orders for variety
   {
     id: generateId(18),
     order_reference: "QM20250018",
@@ -404,7 +395,7 @@ export const DUMMY_ORDERS: DummyOrder[] = [
     subtotal_kes: 650,
     delivery_fee_kes: 200,
     total_amount_kes: 850,
-    created_at: createDate(0.25), // 15 minutes ago
+    created_at: createDate(0.25), 
     updated_at: createDate(0.25),
   },
   {

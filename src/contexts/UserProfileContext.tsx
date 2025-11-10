@@ -43,7 +43,6 @@ export const UserProfileProvider: React.FC<UserProfileProviderProps> = ({ childr
     }
   }, [user]);
 
-  // Subscribe to profile changes
   useEffect(() => {
     if (!user) return;
 

@@ -17,8 +17,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
   try {
     const { limit = '50', offset = '0', status, search } = req.query;
 
-    // Fetch all orders (will be displayed for quickmart admins)
-    // In production, you may want to add vendor/branch filtering
+
     let query = supabase
       .from('orders')
       .select('*')
@@ -46,14 +45,12 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       });
     }
 
-    // Normalize data format
     const normalizeOrders = (ordersList: any[]) => {
       return ordersList.map((order: any) => {
         const total = order.total_amount_kes || order.total_amount || 0;
         const subtotal = order.subtotal_kes || order.subtotal || 0;
         const deliveryFee = order.delivery_fee_kes || order.delivery_fee || 0;
 
-        // Convert from cents if needed
         const totalKes = total >= 10 ? total / 100 : total;
         const subtotalKes = subtotal >= 10 ? subtotal / 100 : subtotal;
         const deliveryFeeKes = deliveryFee >= 10 ? deliveryFee / 100 : deliveryFee;
@@ -76,7 +73,6 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
 
     const normalizedOrders = orders ? normalizeOrders(orders) : [];
 
-    // Get count
     let countQuery = supabase
       .from('orders')
       .select('*', { count: 'exact', head: true });
@@ -91,7 +87,6 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
 
     const { count } = await countQuery;
 
-    // Calculate stats for all orders
     const { data: stats } = await supabase
       .from('orders')
       .select('status, total_amount')

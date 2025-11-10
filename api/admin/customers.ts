@@ -201,7 +201,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       if (!order.user_id) continue;
       const existing = orderStats.get(order.user_id) || { totalOrders: 0, totalSpent: 0, lastOrderDate: null };
       existing.totalOrders += 1;
-      const orderTotal = normalizeCurrency(order.total, 100); // totals stored in cents
+      const orderTotal = normalizeCurrency(order.total, 100); 
       existing.totalSpent += orderTotal;
 
       if (order.created_at) {

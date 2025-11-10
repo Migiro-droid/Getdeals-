@@ -1,16 +1,6 @@
 import { VercelRequest, VercelResponse } from '@vercel/node';
 import nodemailer from 'nodemailer';
-
-/**
- * API Endpoint: Send Admin Credentials Email
- * POST /api/admin/send-credentials
- * 
- * Sends login credentials to newly created admin users via email
- * 
- * Required: SMTP credentials in environment variables
- */
 export default async function handler(req: VercelRequest, res: VercelResponse) {
-  // Only allow POST requests
   if (req.method !== 'POST') {
     return res.status(405).json({ 
       success: false, 
@@ -21,7 +11,6 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
   try {
     const { name, email, password, role } = req.body;
 
-    // Validate required fields
     if (!name || !email || !password || !role) {
       return res.status(400).json({
         success: false,
@@ -29,7 +18,6 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       });
     }
 
-    // Check if SMTP is configured
     const smtpHost = process.env.SMTP_HOST;
     const smtpPort = process.env.SMTP_PORT;
     const smtpUser = process.env.SMTP_USER;
@@ -43,7 +31,6 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
         hasPass: !!smtpPass
       });
 
-      // Return success but log warning - in development mode
       return res.status(200).json({
         success: true,
         warning: 'Email not sent: SMTP not configured',
@@ -55,24 +42,22 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       });
     }
 
-    // Create email transporter
     const transporter = nodemailer.createTransport({
       host: smtpHost,
       port: parseInt(smtpPort || '587'),
-      secure: false, // Use STARTTLS for port 587
+      secure: false, 
       auth: {
         user: smtpUser,
         pass: smtpPass,
       },
       tls: {
-        rejectUnauthorized: true // Verify SSL certificates
+        rejectUnauthorized: true 
       }
     });
 
-    // Verify transporter configuration
     try {
       await transporter.verify();
-      console.log('✅ SMTP connection verified');
+      console.log('SMTP connection verified');
     } catch (verifyError: any) {
       console.error('SMTP verification failed:', verifyError);
       return res.status(500).json({
@@ -82,10 +67,8 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       });
     }
 
-    // Generate HTML email
     const htmlEmail = generateCredentialsEmail(name, email, password, role);
 
-    // Send email
     const info = await transporter.sendMail({
       from: smtpFrom,
       to: email,
@@ -94,7 +77,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       text: generatePlainTextEmail(name, email, password, role)
     });
 
-    console.log('✅ Email sent:', info.messageId);
+    console.log('Email sent:', info.messageId);
 
     return res.status(200).json({
       success: true,
@@ -116,9 +99,6 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
   }
 }
 
-/**
- * HTML-escape a string to prevent XSS and ensure proper display
- */
 function escapeHtml(text: string): string {
   const map: { [key: string]: string } = {
     '&': '&amp;',
@@ -130,16 +110,12 @@ function escapeHtml(text: string): string {
   return text.replace(/[&<>"']/g, (m) => map[m]);
 }
 
-/**
- * Generate HTML email template
- */
 function generateCredentialsEmail(name: string, email: string, password: string, role: string): string {
   const loginUrl = 'https://getdeals.co.ke/auth';
   const supportEmail = 'support@getdeals.co.ke';
   
   const roleDisplay = role.charAt(0).toUpperCase() + role.slice(1);
   
-  // Escape HTML characters in user-provided content
   const escapedName = escapeHtml(name);
   const escapedEmail = escapeHtml(email);
   const escapedPassword = escapeHtml(password);
@@ -274,9 +250,7 @@ function generateCredentialsEmail(name: string, email: string, password: string,
   `.trim();
 }
 
-/**
- * Generate plain text email (fallback)
- */
+
 function generatePlainTextEmail(name: string, email: string, password: string, role: string): string {
   const loginUrl = 'https://getdeals.co.ke/auth';
   const roleDisplay = role.charAt(0).toUpperCase() + role.slice(1);

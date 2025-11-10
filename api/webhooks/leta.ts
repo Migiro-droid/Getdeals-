@@ -29,10 +29,7 @@ interface LetaWebhookPayload {
   error_message?: string;
 }
 
-/**
- * Process webhook updates from Leta API
- * Called when order status changes (assigned, in_transit, delivered, etc)
- */
+
 export default async function handler(req: VercelRequest, res: VercelResponse) {
   if (req.method !== 'POST') {
     return res.status(405).json({ error: 'Method not allowed' });
@@ -41,11 +38,10 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
   try {
     const payload: LetaWebhookPayload = req.body;
 
-    console.log(`\n🔔 LETA WEBHOOK RECEIVED:`);
+    console.log(`\n LETA WEBHOOK RECEIVED:`);
     console.log(`Order ID: ${payload.order_id}`);
     console.log(`Status: ${payload.order_status}`);
 
-    // Validate webhook
     if (!payload.order_id || !payload.order_status) {
       console.error('Invalid webhook payload:', payload);
       return res.status(400).json({
@@ -54,13 +50,11 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       });
     }
 
-    // Extract GetDeals order reference from Leta reference
     const letaReference = payload.order_id;
     const getdealsOrderRef = letaReference.replace('GD-', '');
 
     console.log(`📦 Looking for GetDeals order: ${getdealsOrderRef}`);
 
-    // Find order by Leta order ID or reference
     const { data: order, error: fetchError } = await supabase
       .from('orders')
       .select('id, order_reference, customer_email')
@@ -70,17 +64,15 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       .single();
 
     if (fetchError || !order) {
-      console.warn(`⚠️ Order not found for Leta ID: ${payload.order_id}`);
-      // Still return 200 to acknowledge receipt
+      console.warn(` Order not found for Leta ID: ${payload.order_id}`);
       return res.status(200).json({
         success: true,
         warning: 'Order not found - webhook logged',
       });
     }
 
-    console.log(`✅ Found GetDeals order: ${order.id}`);
+    console.log(` Found GetDeals order: ${order.id}`);
 
-    // Map Leta status to GetDeals status
     const statusMap: Record<string, string> = {
       pending: 'pending',
       assigned: 'assigned',
@@ -94,7 +86,6 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
 
     const getdealsStatus = statusMap[payload.order_status] || payload.order_status;
 
-    // Build update payload
     const updatePayload: any = {
       leta_status: payload.order_status,
       status:
@@ -107,17 +98,14 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       updated_at: new Date().toISOString(),
     };
 
-    // Add tracking URL if available
     if (payload.tracking_url) {
       updatePayload.leta_tracking_url = payload.tracking_url;
     }
 
-    // Add delivery OTP if available
     if (payload.delivery_otp) {
       updatePayload.delivery_otp = payload.delivery_otp;
     }
 
-    // Add rider information if available
     if (payload.rider) {
       updatePayload.rider_id = String(payload.rider.id);
       updatePayload.rider_name = payload.rider.name;
@@ -126,32 +114,29 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       updatePayload.rider_longitude = payload.rider.longitude;
     }
 
-    // Add timestamps for status changes
     if (payload.order_status === 'pickup') {
       updatePayload.pickup_at = new Date().toISOString();
     } else if (payload.order_status === 'delivered') {
       updatePayload.delivered_at = new Date().toISOString();
     }
 
-    console.log(`🔄 Updating order with:`, updatePayload);
+    console.log(` Updating order with:`, updatePayload);
 
-    // Update order
     const { error: updateError } = await supabase
       .from('orders')
       .update(updatePayload)
       .eq('id', order.id);
 
     if (updateError) {
-      console.error('❌ Failed to update order:', updateError);
+      console.error(' Failed to update order:', updateError);
       return res.status(500).json({
         success: false,
         error: 'Failed to update order',
       });
     }
 
-    console.log(`✅ Order updated successfully`);
+    console.log(`Order updated successfully`);
 
-    // Log webhook for audit trail
     try {
       await supabase.from('leta_webhook_logs').insert({
         order_id: order.id,
@@ -162,13 +147,11 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
         processed_at: new Date().toISOString(),
       });
     } catch (logError) {
-      console.warn('⚠️ Failed to log webhook (non-critical):', logError);
+      console.warn(' Failed to log webhook (non-critical):', logError);
     }
 
-    // Send notification to user if status changed
     try {
       if (payload.order_status === 'delivered') {
-        // Send delivery confirmation
         const baseUrl = process.env.FRONTEND_URL || 'https://getdeals.co.ke';
         await fetch(`${baseUrl}/api/email/send`, {
           method: 'POST',
@@ -183,7 +166,6 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
           }),
         });
       } else if (payload.order_status === 'failed' || payload.order_status === 'cancelled') {
-        // Send failure notification
         const baseUrl = process.env.FRONTEND_URL || 'https://getdeals.co.ke';
         await fetch(`${baseUrl}/api/email/send`, {
           method: 'POST',
@@ -199,7 +181,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
         });
       }
     } catch (notificationError) {
-      console.warn('⚠️ Failed to send notification (non-critical):', notificationError);
+      console.warn(' Failed to send notification (non-critical):', notificationError);
     }
 
     return res.status(200).json({
@@ -207,7 +189,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       message: `Order ${order.order_reference} updated to ${getdealsStatus}`,
     });
   } catch (error) {
-    console.error('❌ Webhook processing error:', error);
+    console.error(' Webhook processing error:', error);
     return res.status(500).json({
       success: false,
       error: error instanceof Error ? error.message : 'Internal server error',
