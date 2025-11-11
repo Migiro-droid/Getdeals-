@@ -35,29 +35,24 @@ export function Header() {
   const [walletModalOpen, setWalletModalOpen] = useState(false);
   const [kycStatusModalOpen, setKycStatusModalOpen] = useState(false);
   
-  // Get KYC status for authenticated users
   const { kycData, loading: kycLoading, hasKycData, isVerified, refetch: refetchKyc } = useWalletKyc();
 
   const cartItemsCount = items.reduce((sum, item) => sum + item.quantity, 0);
 
-  // Handle wallet button click - check KYC status first
   const handleWalletClick = () => {
     if (!isAuthenticated) {
       setAuthOpen(true);
       return;
     }
 
-    // If user is verified, navigate directly to wallet page
     if (isVerified) {
       navigate('/wallet');
       return;
     }
 
-    // If user has KYC data but not verified (pending/rejected), show status modal
     if (hasKycData) {
       setKycStatusModalOpen(true);
     } else {
-      // No KYC data, show the activation modal
       setWalletModalOpen(true);
     }
   };
@@ -76,7 +71,7 @@ export function Header() {
   ];
 
   const mainNavigation: NavigationItem[] = [
-    { name: "Shop", href: "/baskets" },
+    { name: "Baskets", href: "/baskets" },
     { name: "Deals", href: "/deals", icon: <Zap className="h-4 w-4" /> },
     { name: "Insights", href: "/consumer-insights" },
     { name: "Who GET DEALS Is For", href: "/who-we-serve", icon: <ShoppingBag className="h-4 w-4" /> },
@@ -229,7 +224,7 @@ export function Header() {
                   onClick={() => setAuthOpen(true)}
                   className="hidden md:flex bg-primary hover:bg-primary/90 text-white font-bold"
                 >
-                  Sign In
+                  Login
                 </Button>
               )}
 
@@ -383,7 +378,7 @@ export function Header() {
                   }}
                   className="w-full bg-primary hover:bg-primary/90"
                 >
-                  Sign In
+                  Login
                 </Button>
               )}
 

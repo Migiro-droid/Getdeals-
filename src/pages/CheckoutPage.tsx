@@ -976,23 +976,27 @@ export default function CheckoutPage() {
               </CardHeader>
               <CardContent>
                 <RadioGroup value={deliveryMethod} onValueChange={setDeliveryMethod}>
-                  <div className="flex items-center space-x-2">
-                    <RadioGroupItem value="pickup" id="pickup" />
-                    <Label htmlFor="pickup" className="flex-1">
-                      <div className="font-medium">Store Pickup (Free)</div>
-                      <div className="text-sm text-muted-foreground">
-                        Pick up your order at our store
-                      </div>
-                    </Label>
-                  </div>
-                  <div className="flex items-center space-x-2">
-                    <RadioGroupItem value="speedy" id="speedy" />
-                    <Label htmlFor="speedy" className="flex-1">
-                      <div className="font-medium">Speedy Delivery (KES 300)</div>
-                      <div className="text-sm text-muted-foreground">
-                        Fast delivery to your doorstep
-                      </div>
-                    </Label>
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div className="flex items-center space-x-2 p-4 border-2 border-blue-200 rounded-lg hover:bg-blue-50/50 transition-colors cursor-pointer"
+                         onClick={() => setDeliveryMethod("pickup")}>
+                      <RadioGroupItem value="pickup" id="pickup" className="border-blue-500" />
+                      <Label htmlFor="pickup" className="flex-1 cursor-pointer">
+                        <div className="font-semibold text-blue-800">Store Pickup</div>
+                        <div className="text-sm text-blue-700">
+                          Free • Pick up at our store
+                        </div>
+                      </Label>
+                    </div>
+                    <div className="flex items-center space-x-2 p-4 border-2 border-green-200 rounded-lg hover:bg-green-50/50 transition-colors cursor-pointer"
+                         onClick={() => setDeliveryMethod("speedy")}>
+                      <RadioGroupItem value="speedy" id="speedy" className="border-green-500" />
+                      <Label htmlFor="speedy" className="flex-1 cursor-pointer">
+                        <div className="font-semibold text-green-800">Speedy Delivery</div>
+                        <div className="text-sm text-green-700">
+                          KES 300 • Fast doorstep delivery
+                        </div>
+                      </Label>
+                    </div>
                   </div>
                 </RadioGroup>
 

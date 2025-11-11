@@ -353,23 +353,19 @@ export default function HomePage() {
               </p>
 
               {/* Partnership Badge - Quickmart - PROMINENTLY DISPLAYED */}
-              <div className="mt-6 mb-4 flex items-center gap-4 p-4 bg-gradient-to-r from-red-600/25 to-green-600/25 border-2 border-red-400/60 rounded-2xl backdrop-blur-md hover:border-red-400/100 transition-all duration-300 shadow-2xl hover:shadow-red-500/30 animate-in fade-in-0 zoom-in-95 duration-500 delay-300 group">
-                <div className="flex-shrink-0 h-20 w-28 bg-white rounded-lg p-2 flex items-center justify-center shadow-lg group-hover:shadow-2xl group-hover:shadow-red-500/50 transition-all duration-300 transform group-hover:scale-110">
-                  <img 
-                    src="https://imgs.search.brave.com/GCRwCqFq9Nln05BCKAhyfWJRoxHlnEJ9pnbrxSnK1zk/rs:fit:860:0:0:0/g:ce/aHR0cHM6Ly9jZG4u/YnJhbmRmZXRjaC5p/by9pZGJPQzRBTE1k/L3cvODI2L2gvMTUy/L3RoZW1lL2Rhcmsv/bG9nby5wbmc_Yz0x/YnhpZDY0TXVwN2Fj/emV3U0FZTVgmdD0x/NzUyMjU1OTk3NTk0"
-                    alt="Quickmart Kenya - Fresh & Easy"
-                    className="h-full w-full object-contain"
-                    loading="eager"
-                  />
+              <div className="mt-6 mb-6 flex items-center gap-4 p-5 bg-gradient-to-r from-red-500/30 to-green-500/30 border-2 border-red-400/80 rounded-2xl backdrop-blur-lg hover:border-red-400/100 transition-all duration-300 shadow-2xl hover:shadow-red-500/50 animate-in fade-in-0 zoom-in-95 duration-500 delay-300 group max-w-full">
+                <div className="flex-shrink-0 h-24 w-32 bg-white rounded-xl p-3 flex items-center justify-center shadow-lg group-hover:shadow-2xl group-hover:shadow-red-500/50 transition-all duration-300 transform group-hover:scale-110 flex-col">
+                  <div className="text-xs font-bold text-red-600 tracking-tight">QUICKMART</div>
+                  <div className="text-xs text-green-600 font-semibold">Fresh & Easy</div>
                 </div>
                 <div className="flex-1 min-w-0">
                   <div className="text-xs font-bold text-red-300 uppercase tracking-widest">🤝 Official Partnership</div>
-                  <div className="text-base font-bold text-white mt-1">Proudly Partnering with Quickmart Kenya</div>
-                  <div className="text-sm text-white/80 mt-2">Fresh & Easy • Premium Quality • Trusted Network</div>
+                  <div className="text-lg font-bold text-white mt-1">Proudly Partnering with Quickmart Kenya</div>
+                  <div className="text-sm text-white/90 mt-2 font-medium">Premium Quality • Trusted Network • Local Excellence</div>
                 </div>
-                <div className="flex-shrink-0">
+                <div className="flex-shrink-0 hidden sm:block">
                   <div className="relative">
-                    <div className="h-4 w-4 rounded-full bg-green-400 animate-pulse"></div>
+                    <div className="h-5 w-5 rounded-full bg-green-400 animate-pulse"></div>
                     <div className="absolute inset-0 rounded-full bg-green-400/50 animate-ping"></div>
                   </div>
                 </div>

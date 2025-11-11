@@ -11,7 +11,6 @@ export interface InventoryItem {
   lowStockThreshold: number;
   lastRestocked?: string;
   supplier?: string;
-  // Marks items that were created by the demo seeder so we can safely undo
   demoSeed?: boolean;
 }
 
@@ -23,7 +22,6 @@ interface InventoryContextValue {
   getOutOfStockItems: () => InventoryItem[];
   getLowStockItems: () => InventoryItem[];
   getTotalValue: () => number;
-  // Toggles demo inventory: load if not loaded; clear if already loaded
   seedInventory: () => void;
   isInventorySeeded: boolean;
   clearDemoInventory: () => void;
@@ -34,7 +32,6 @@ const InventoryContext = createContext<InventoryContextValue | undefined>(undefi
 
 const LS_INVENTORY = "getdeals_inventory_v1";
 
-// Generate random stock levels for demo purposes
 const generateRandomStock = () => Math.floor(Math.random() * 150) + 1; // 1-150
 const generateLowStockThreshold = () => Math.floor(Math.random() * 20) + 5; // 5-25
 
@@ -62,7 +59,6 @@ export const InventoryProvider: React.FC<{ children: React.ReactNode }> = ({ chi
     }
   });
 
-  // Persist to localStorage
   useEffect(() => {
     try {
       localStorage.setItem(LS_INVENTORY, JSON.stringify(inventory));
@@ -71,14 +67,12 @@ export const InventoryProvider: React.FC<{ children: React.ReactNode }> = ({ chi
 
   const isInventorySeeded = inventory.length > 0 && inventory.every(it => it.demoSeed === true);
   const isDemoInventoryItem = (it: InventoryItem) => {
-    // Treat as demo if flagged or using known demo image paths
     const img = it.image || "";
     return it.demoSeed === true || img.includes("/placeholder.svg") || img.includes("src/assets/");
   };
   const hasDemoInventory = inventory.some(it => isDemoInventoryItem(it));
 
   const seedInventory = () => {
-    // If any demo data exists, pressing again should clear only demo items
     if (hasDemoInventory) {
       setInventory(prev => prev.filter(it => !isDemoInventoryItem(it)));
       return;
@@ -86,8 +80,7 @@ export const InventoryProvider: React.FC<{ children: React.ReactNode }> = ({ chi
   const inventoryItems: InventoryItem[] = products.map((product) => {
       const stock = generateRandomStock();
       const lowStockThreshold = generateLowStockThreshold();
-      // Some items should be out of stock for demo
-      const finalStock = Math.random() < 0.15 ? 0 : stock; // 15% chance out of stock
+      const finalStock = Math.random() < 0.15 ? 0 : stock; 
       
       return {
         id: product.id,
