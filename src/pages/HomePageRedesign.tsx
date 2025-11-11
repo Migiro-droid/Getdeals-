@@ -571,6 +571,32 @@ export default function HomePageRedesign() {
         </div>
       </div>
 
+      {/* Quickmart Partnership - Professional Badge */}
+      <div className="bg-white border-b border-gray-100">
+        <div className="container mx-auto px-4 py-6">
+          <div className="flex items-center justify-between max-w-6xl mx-auto">
+            <div className="flex items-center gap-3">
+              <span className="text-xs font-bold text-gray-500 uppercase tracking-widest">Official Partner</span>
+              <div className="h-px w-6 bg-gradient-to-r from-gray-300 to-transparent"></div>
+            </div>
+            <div className="flex flex-col items-center gap-1">
+              <div className="h-10 flex items-center justify-center">
+                <img 
+                  src="https://imgs.search.brave.com/GCRwCqFq9Nln05BCKAhyfWJRoxHlnEJ9pnbrxSnK1zk/rs:fit:860:0:0:0/g:ce/aHR0cHM6Ly9jZG4u/YnJhbmRmZXRjaC5p/by9pZGJPQzRBTE1k/L3cvODI2L2gvMTUy/L3RoZW1lL2Rhcmsv/bG9nby5wbmc_Yz0x/YnhpZDY0TXVwN2Fj/emV3U0FZTVgmdD0x/NzUyMjU1OTk3NTk0"
+                  alt="Quickmart Kenya"
+                  className="h-full object-contain"
+                />
+              </div>
+              <span className="text-xs font-medium text-gray-600 italic">Fresh & Easy</span>
+            </div>
+            <div className="flex items-center gap-3">
+              <div className="h-px w-6 bg-gradient-to-l from-gray-300 to-transparent"></div>
+              <span className="text-xs font-medium text-gray-600">Quality Groceries Nationwide</span>
+            </div>
+          </div>
+        </div>
+      </div>
+
       {/* HERO SECTION - Naivas Inspired Clean Design */}
       <section className="bg-white">
         <div className="container mx-auto px-4 py-8">
