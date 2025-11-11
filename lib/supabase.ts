@@ -38,12 +38,22 @@ export const supabaseAdmin = createClient<Database>(supabaseUrl, supabaseService
 
 export const auth = {
   signUp: async (email: string, password: string, metadata?: any) => {
+    const signUpOptions: any = {};
+    
+    if (metadata?.data) {
+      signUpOptions.data = metadata.data;
+    } else if (metadata && !metadata.options) {
+      signUpOptions.data = metadata;
+    }
+    
+    if (metadata?.options?.emailRedirectTo) {
+      signUpOptions.emailRedirectTo = metadata.options.emailRedirectTo;
+    }
+    
     const { data, error } = await supabase.auth.signUp({
       email,
       password,
-      options: {
-        data: metadata
-      }
+      options: signUpOptions
     });
     return { data, error };
   },

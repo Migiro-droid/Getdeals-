@@ -275,9 +275,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       
       const { data, error } = await auth.signUp(email, password, {
         data: {
-          name,
+          first_name: name,
           phone,
-          full_name: name,
           organization: organization || null,
           organization_number: organizationNumber || null
         },
@@ -293,72 +292,12 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
       console.log('Sign up successful:', data);
       if (data.user) {
-        try {
-          console.log('📧 Sending welcome email to:', email);
-          const emailResponse = await fetch('/api/email/send', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({
-              type: 'welcome',
-              recipientEmail: email,
-              data: {
-                name,
-                email,
-                organization: organization || 'Not specified'
-              }
-            })
-          });
-
-          const emailData = await emailResponse.json();
-          console.log('📧 Email response status:', emailResponse.status, 'data:', emailData);
-          
-          if (!emailResponse.ok) {
-            console.error('❌ Email API returned error:', emailResponse.status, emailData);
-          } else {
-            console.log('✅ Welcome email sent successfully');
-          }
-
-          // Add contact to Brevo mailing list
-          console.log('👥 Adding contact to mailing list for:', email);
-          const contactResponse = await fetch('/api/email/add-contact', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({
-              email,
-              firstName: name.split(' ')[0],
-              lastName: name.split(' ').slice(1).join(' '),
-              attributes: {
-                PHONE: phone,
-                ORGANIZATION: organization || '',
-                ORGANIZATION_NUMBER: organizationNumber || '',
-                SIGNUP_DATE: new Date().toISOString(),
-                SIGNUP_METHOD: 'website'
-              }
-            })
-          });
-
-          const contactData = await contactResponse.json();
-          console.log('� Contact response status:', contactResponse.status, 'data:', contactData);
-          
-          if (!contactResponse.ok) {
-            console.error('❌ Contact add API returned error:', contactResponse.status, contactData);
-          } else {
-            console.log('✅ Contact added to mailing list');
-          }
-
-          console.log('�📧 Welcome email and contact addition completed');
-        } catch (emailError) {
-          console.error('Failed to send welcome email:', emailError);
-          // Don't fail registration because of email issues
-        }
-
+        // Supabase automatically sends confirmation email
         toast({
           title: "Account Created!",
-          description: data.user.email_confirmed_at 
-            ? `Welcome to GetDeals Kenya, ${name}! Check your email for welcome information.`
-            : "Please check your email to verify your account and for welcome information.",
+          description: "Please check your email to verify your account before signing in.",
         });
-        return; // Success - exit without throwing
+        return;
       }
     } catch (error) {
       const errorMessage = error instanceof Error ? error.message : 'Registration failed';
