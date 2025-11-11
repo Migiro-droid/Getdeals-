@@ -1164,8 +1164,8 @@ export default function CheckoutPage() {
                 </div>
 
                 <RadioGroup value={paymentMethod} onValueChange={setPaymentMethod}>
-                  <div className="grid grid-cols-2 gap-3">
-                    <div className="flex items-center space-x-2 p-3 border-2 border-green-200 rounded-lg bg-green-50/50 hover:bg-green-50 transition-colors cursor-pointer"
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div className="flex items-center space-x-2 p-4 border-2 border-green-200 rounded-lg bg-green-50/50 hover:bg-green-50 transition-colors cursor-pointer"
                          onClick={() => setPaymentMethod("wallet")}>
                       <RadioGroupItem value="wallet" id="wallet" className="border-green-500" />
                       <Label htmlFor="wallet" className="flex-1 cursor-pointer">
@@ -1192,13 +1192,13 @@ export default function CheckoutPage() {
                       </Label>
                     </div>
 
-                    <div className="flex items-center space-x-2 p-3 border border-gray-200 rounded-lg hover:bg-gray-50 transition-colors cursor-pointer"
+                    <div className="flex items-center space-x-2 p-4 border-2 border-blue-200 rounded-lg hover:bg-blue-50/50 transition-colors cursor-pointer"
                          onClick={() => setPaymentMethod("mobile-money")}>
-                      <RadioGroupItem value="mobile-money" id="mobile-money" />
+                      <RadioGroupItem value="mobile-money" id="mobile-money" className="border-blue-500" />
                       <Label htmlFor="mobile-money" className="flex-1 cursor-pointer">
                         <div>
-                          <div className="font-semibold text-gray-800">Mobile Money</div>
-                          <div className="text-xs text-muted-foreground mt-0.5">
+                          <div className="font-semibold text-blue-800">Mobile Money</div>
+                          <div className="text-xs text-blue-700 mt-1">
                             • Instant payment
                             <br />• Easy checkout
                           </div>
@@ -1223,7 +1223,7 @@ export default function CheckoutPage() {
                         required
                       />
                       <p className="text-xs text-muted-foreground mt-1">
-                        Enter your M-Pesa or Airtel Money registered phone number
+                        Enter your registered Mobile Money phone number
                       </p>
                     </div>
                   </div>
@@ -1294,7 +1294,7 @@ export default function CheckoutPage() {
                   {paymentStatus === "processing" && paymentMethod === "mobile-money" ? (
                     <>
                       <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></div>
-                      Waiting for {mobileMoneyProvider === 'mpesa' ? 'M-Pesa' : 'Airtel Money'}...
+                      Processing Mobile Money...
                     </>
                   ) : paymentStatus === "processing" && paymentMethod === "wallet" ? (
                     <>
@@ -1309,7 +1309,7 @@ export default function CheckoutPage() {
                   ) : paymentMethod === "mobile-money" ? (
                     <>
                       <Smartphone className="h-4 w-4 mr-2" />
-                      Pay with {mobileMoneyProvider === 'mpesa' ? 'M-Pesa' : 'Airtel Money'}
+                      Pay with Mobile Money
                     </>
                   ) : paymentMethod === "wallet" ? (
                     <>
@@ -1341,7 +1341,7 @@ export default function CheckoutPage() {
                 {paymentMethod === "mobile-money" && (
                   <div className="text-xs text-center text-muted-foreground space-y-1">
                     <p>• You'll receive a payment prompt on your phone</p>
-                    <p>• Enter your {mobileMoneyProvider === 'mpesa' ? 'M-Pesa' : 'Airtel Money'} PIN to complete payment</p>
+                    <p>• Enter your Mobile Money PIN to complete payment</p>
                     <p>• Your order will be created only after successful payment</p>
                   </div>
                 )}
