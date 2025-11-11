@@ -4,7 +4,7 @@ import {
   ArrowRight, ShoppingCart, Clock, TrendingUp, Sparkles, 
   Package, Tag, Heart, Eye, Plus, ChevronRight, Star,
   Zap, Award, Users, Shield, Flame, Gift, RefreshCw,
-  Check, Truck, ShoppingBag, X, Trophy
+  Check, Truck, ShoppingBag, X, Trophy, MessageCircle
 } from "lucide-react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogTrigger } from "@/components/ui/dialog";
 import ChatSupportButton from '@/components/ChatSupportButton';
@@ -594,6 +594,25 @@ export default function HomePageRedesign() {
               <span className="text-xs font-medium text-gray-600">Quality Groceries Nationwide</span>
             </div>
           </div>
+        </div>
+      </div>
+
+      {/* Shop by WhatsApp - Compact Banner */}
+      <div className="bg-gradient-to-r from-emerald-600 to-green-600 text-white py-3 px-4">
+        <div className="container mx-auto flex items-center justify-between gap-4">
+          <div className="flex items-center gap-3">
+            <MessageCircle className="h-5 w-5" />
+            <span className="text-sm md:text-base font-semibold">Prefer to shop on WhatsApp?</span>
+          </div>
+          <a 
+            href="https://wa.me/254728322355?text=Hi%20GetDeals!%20I'd%20like%20to%20shop%20through%20WhatsApp"
+            target="_blank"
+            rel="noreferrer"
+            className="flex items-center gap-2 bg-white/20 hover:bg-white/30 px-4 py-1.5 rounded-full font-bold text-sm transition-all hover:scale-105 whitespace-nowrap"
+          >
+            Shop Now
+            <ArrowRight className="h-4 w-4" />
+          </a>
         </div>
       </div>
 
