@@ -1164,89 +1164,66 @@ export default function CheckoutPage() {
                 </div>
 
                 <RadioGroup value={paymentMethod} onValueChange={setPaymentMethod}>
-                  <div className="flex items-center space-x-2 p-3 border-2 border-green-200 rounded-lg bg-green-50/50 hover:bg-green-50 transition-colors">
-                    <RadioGroupItem value="wallet" id="wallet" className="border-green-500" />
-                    <Label htmlFor="wallet" className="flex-1 cursor-pointer">
-                      <div className="flex items-center justify-between">
+                  <div className="grid grid-cols-2 gap-3">
+                    <div className="flex items-center space-x-2 p-3 border-2 border-green-200 rounded-lg bg-green-50/50 hover:bg-green-50 transition-colors cursor-pointer"
+                         onClick={() => setPaymentMethod("wallet")}>
+                      <RadioGroupItem value="wallet" id="wallet" className="border-green-500" />
+                      <Label htmlFor="wallet" className="flex-1 cursor-pointer">
                         <div>
-                          <div className="font-semibold text-green-800 flex items-center gap-2">
+                          <div className="font-semibold text-green-800 flex items-center gap-1">
                             GetDeals Wallet
-                            <span className="bg-green-100 text-green-700 text-xs px-2 py-1 rounded-full font-medium">
-                              RECOMMENDED
-                            </span>
-                            <span className="bg-blue-100 text-blue-700 text-xs px-2 py-1 rounded-full font-medium">
-                              powered by rukisha
+                            <span className="bg-green-100 text-green-700 text-xs px-2 py-0.5 rounded-full font-medium whitespace-nowrap">
+                              BEST
                             </span>
                           </div>
-                          <div className="text-sm text-green-700 mt-1">
-                            Balance: KES {balance.toLocaleString()} • Instant payment • Earn rewards
+                          <div className="text-xs text-green-700 mt-1">
+                            Balance: KES {balance.toLocaleString()}
+                          </div>
+                          <div className="text-xs text-green-600 mt-0.5">
+                            • Instant payment
+                            <br />• Earn 5% cashback
                           </div>
                           {balance < finalTotal && (
                             <div className="text-xs text-red-600 mt-1 font-medium">
-                              Insufficient balance - Need KES {(finalTotal - balance).toLocaleString()} more
+                              Need KES {(finalTotal - balance).toLocaleString()} more
                             </div>
                           )}
                         </div>
+                      </Label>
+                    </div>
 
-                      </div>
-                    </Label>
-                  </div>
-
-                  <div className="flex items-center space-x-2 p-3 border border-gray-200 rounded-lg hover:bg-gray-50 transition-colors mt-2">
-                    <RadioGroupItem value="mobile-money" id="mobile-money" />
-                    <Label htmlFor="mobile-money" className="flex-1 cursor-pointer">
-                      <div className="font-medium">Mobile Money</div>
-                      <div className="text-sm text-muted-foreground">
-                        Pay with M-Pesa or Airtel Money
-                      </div>
-                    </Label>
+                    <div className="flex items-center space-x-2 p-3 border border-gray-200 rounded-lg hover:bg-gray-50 transition-colors cursor-pointer"
+                         onClick={() => setPaymentMethod("mobile-money")}>
+                      <RadioGroupItem value="mobile-money" id="mobile-money" />
+                      <Label htmlFor="mobile-money" className="flex-1 cursor-pointer">
+                        <div>
+                          <div className="font-semibold text-gray-800">Mobile Money</div>
+                          <div className="text-xs text-muted-foreground mt-0.5">
+                            • Instant payment
+                            <br />• Easy checkout
+                          </div>
+                        </div>
+                      </Label>
+                    </div>
                   </div>
                 </RadioGroup>
 
                 {paymentMethod === "mobile-money" && (
                   <div className="mt-4 space-y-4">
                     <div>
-                      <Label className="text-sm font-medium">Choose Mobile Money Provider</Label>
-                      <RadioGroup value={mobileMoneyProvider} onValueChange={setMobileMoneyProvider} className="mt-2">
-                        <div className="flex items-center space-x-2 p-3 border border-gray-200 rounded-lg hover:bg-gray-50 transition-colors">
-                          <RadioGroupItem value="mpesa" id="mpesa-provider" />
-                          <Label htmlFor="mpesa-provider" className="flex-1 cursor-pointer">
-                            <div className="flex items-center justify-between">
-                              <div>
-                                <div className="font-medium text-green-600">M-Pesa</div>
-                                <div className="text-sm text-muted-foreground">Safaricom M-Pesa</div>
-                              </div>
-                            </div>
-                          </Label>
-                        </div>
-                        <div className="flex items-center space-x-2 p-3 border border-gray-200 rounded-lg hover:bg-gray-50 transition-colors">
-                          <RadioGroupItem value="airtel" id="airtel-provider" />
-                          <Label htmlFor="airtel-provider" className="flex-1 cursor-pointer">
-                            <div className="flex items-center justify-between">
-                              <div>
-                                <div className="font-medium text-red-600">Airtel Money</div>
-                                <div className="text-sm text-muted-foreground">Airtel Kenya</div>
-                              </div>
-                            </div>
-                          </Label>
-                        </div>
-                      </RadioGroup>
-                    </div>
-                    
-                    <div>
                       <Label htmlFor="mobileMoneyPhone">
-                        {mobileMoneyProvider === "mpesa" ? "M-Pesa" : "Airtel Money"} Phone Number
+                        Mobile Money Phone Number
                       </Label>
                       <Input
                         id="mobileMoneyPhone"
                         type="tel"
                         value={mpesaPhone}
                         onChange={(e) => setMpesaPhone(e.target.value)}
-                        placeholder={mobileMoneyProvider === "mpesa" ? "254712345678 (M-Pesa)" : "254712345678 (Airtel)"}
+                        placeholder="254712345678"
                         required
                       />
                       <p className="text-xs text-muted-foreground mt-1">
-                        Enter your {mobileMoneyProvider === "mpesa" ? "M-Pesa registered" : "Airtel Money registered"} phone number
+                        Enter your M-Pesa or Airtel Money registered phone number
                       </p>
                     </div>
                   </div>
