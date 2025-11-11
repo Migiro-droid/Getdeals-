@@ -17,7 +17,6 @@ import { useCart } from "@/contexts/CartContext";
 import { useToast } from "@/hooks/use-toast";
 import { useAdmin } from "@/contexts/AdminContext";
 
-// Basket type definition
 interface ShoppingBasket {
   id: string;
   name: string;
@@ -29,10 +28,9 @@ interface ShoppingBasket {
   finalPrice: number;
   itemCount: number;
   badge?: string;
-  isBasket?: boolean; // Track if it's a basket or single item
+  isBasket?: boolean; 
 }
 
-// Counter Component with animation
 interface CounterProps {
   target: number;
   suffix?: string;
@@ -52,7 +50,6 @@ function Counter({ target, suffix = "", duration = 2000, className = "" }: Count
       const elapsed = Date.now() - startTime;
       const progress = Math.min(elapsed / duration, 1);
       
-      // Easing function for smooth animation
       const easeOutQuad = 1 - Math.pow(1 - progress, 2);
       const currentCount = Math.floor(easeOutQuad * target);
       
@@ -62,13 +59,12 @@ function Counter({ target, suffix = "", duration = 2000, className = "" }: Count
         clearInterval(interval);
         setCount(target);
       }
-    }, 16); // ~60fps
+    }, 16); // 
 
     return () => clearInterval(interval);
   }, [hasStarted, target, duration]);
 
   useEffect(() => {
-    // Trigger animation when component mounts and becomes visible
     const observer = new IntersectionObserver(
       ([entry]) => {
         if (entry.isIntersecting && !hasStarted) {
