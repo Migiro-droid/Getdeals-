@@ -296,7 +296,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       if (data.user) {
         // Send welcome email notification
         try {
-          await fetch('/api/email/send', {
+          console.log('📧 Sending welcome email to:', email);
+          const emailResponse = await fetch('/api/email/send', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({
@@ -310,8 +311,18 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
             })
           });
 
+          const emailData = await emailResponse.json();
+          console.log('📧 Email response status:', emailResponse.status, 'data:', emailData);
+          
+          if (!emailResponse.ok) {
+            console.error('❌ Email API returned error:', emailResponse.status, emailData);
+          } else {
+            console.log('✅ Welcome email sent successfully');
+          }
+
           // Add contact to Brevo mailing list
-          await fetch('/api/email/add-contact', {
+          console.log('👥 Adding contact to mailing list for:', email);
+          const contactResponse = await fetch('/api/email/add-contact', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({
@@ -328,7 +339,16 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
             })
           });
 
-          console.log('📧 Welcome email and contact addition initiated');
+          const contactData = await contactResponse.json();
+          console.log('� Contact response status:', contactResponse.status, 'data:', contactData);
+          
+          if (!contactResponse.ok) {
+            console.error('❌ Contact add API returned error:', contactResponse.status, contactData);
+          } else {
+            console.log('✅ Contact added to mailing list');
+          }
+
+          console.log('�📧 Welcome email and contact addition completed');
         } catch (emailError) {
           console.error('❌ Failed to send welcome email:', emailError);
           // Don't fail registration because of email issues

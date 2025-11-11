@@ -68,7 +68,10 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     try {
         const { type, recipientEmail, data }: EmailRequestBody = req.body;
 
+        console.log('📧 Email send request:', { type, recipientEmail, hasData: !!data });
+
         if (!type || !recipientEmail) {
+            console.error('❌ Missing required fields');
             return res.status(400).json({ 
                 success: false, 
                 error: 'Missing required fields: type, recipientEmail' 
@@ -79,18 +82,23 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
         
         switch (type) {
             case 'order-confirmation':
+                console.log('📦 Sending order confirmation email...');
                 result = await brevoService.sendOrderConfirmation(recipientEmail, data);
                 break;
             case 'payment-confirmation':
+                console.log('💳 Sending payment confirmation email...');
                 result = await brevoService.sendPaymentConfirmation(recipientEmail, data);
                 break;
             case 'welcome':
+                console.log('👋 Sending welcome email...');
                 result = await brevoService.sendWelcomeEmail(recipientEmail, data);
                 break;
             case 'password-reset':
+                console.log('🔑 Sending password reset email...');
                 result = await brevoService.sendPasswordReset(recipientEmail, data);
                 break;
             case 'simple':
+                console.log('📝 Sending simple email...');
                 result = await brevoService.sendSimpleEmail(
                     recipientEmail,
                     data.subject!,
@@ -99,15 +107,18 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
                 );
                 break;
             default:
+                console.error('❌ Invalid email type:', type);
                 return res.status(400).json({ 
                     success: false, 
                     error: 'Invalid email type. Must be one of: order-confirmation, payment-confirmation, welcome, password-reset, simple' 
                 });
         }
 
+        console.log('📧 Email result:', { success: result.success, messageId: result.messageId, error: result.error });
+
         return res.status(result.success ? 200 : 500).json(result);
     } catch (error) {
-        console.error('Email API error:', error);
+        console.error('❌ Email API error:', error);
         return res.status(500).json({ 
             success: false, 
             error: 'Failed to send email',

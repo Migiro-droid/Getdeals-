@@ -23,14 +23,24 @@ class BrevoService {
       options.body = JSON.stringify(body);
     }
 
-    const response = await fetch(url, options);
-    const data = await response.json();
+    console.log(`🔗 Making Brevo request: ${method} ${endpoint}`);
+    
+    try {
+      const response = await fetch(url, options);
+      const data = await response.json();
 
-    if (!response.ok) {
-      throw new Error(`Brevo API error: ${response.status} - ${JSON.stringify(data)}`);
+      console.log(`📊 Brevo response status: ${response.status}`);
+      
+      if (!response.ok) {
+        console.error(`❌ Brevo API error (${response.status}):`, data);
+        throw new Error(`Brevo API error: ${response.status} - ${JSON.stringify(data)}`);
+      }
+
+      return data;
+    } catch (error) {
+      console.error(`❌ Brevo request failed for ${endpoint}:`, error);
+      throw error;
     }
-
-    return data;
   }
 
   async sendTransactionalEmail({
@@ -54,13 +64,17 @@ class BrevoService {
       if (templateId) {
         emailData.templateId = parseInt(templateId);
         emailData.params = templateData;
+        console.log(`📧 Using template ID: ${templateId}, recipient: ${to}`);
       } else {
         emailData.subject = subject;
         if (htmlContent) emailData.htmlContent = htmlContent;
         if (textContent) emailData.textContent = textContent;
+        console.log(`📧 Using custom HTML, subject: ${subject}, recipient: ${to}`);
       }
 
       const response = await this.makeRequest('/smtp/email', 'POST', emailData);
+      
+      console.log(`✅ Email sent successfully, messageId: ${response.messageId}`);
       
       return {
         success: true,
@@ -68,10 +82,10 @@ class BrevoService {
         data: response
       };
     } catch (error) {
-      console.error('Brevo email send error:', error);
+      console.error('❌ Brevo email send error:', error);
       return {
         success: false,
-        error: error.message,
+        error: error instanceof Error ? error.message : String(error),
         details: error
       };
     }
@@ -105,11 +119,20 @@ class BrevoService {
         }
       });
     } else {
-      // Use fallback HTML template
-      const { EmailTemplates } = await import('./email-templates.js');
-      const { subject, htmlContent } = EmailTemplates.getOrderConfirmationEmail(orderData);
-      
-      return this.sendSimpleEmail(customerEmail, subject, htmlContent);
+      try {
+        // Use fallback HTML template
+        const { EmailTemplates } = await import('./email-templates.js');
+        const { subject, htmlContent } = EmailTemplates.getOrderConfirmationEmail(orderData);
+        
+        return this.sendSimpleEmail(customerEmail, subject, htmlContent);
+      } catch (error) {
+        console.error('Failed to load order confirmation template, using minimal HTML:', error);
+        return this.sendSimpleEmail(
+          customerEmail,
+          `Order Confirmed - ${orderData.orderNumber} 📦`,
+          `<h1>Order Confirmed!</h1><p>Your order ${orderData.orderNumber} has been confirmed. Total: KES ${orderData.total.toLocaleString()}</p>`
+        );
+      }
     }
   }
 
@@ -131,11 +154,20 @@ class BrevoService {
         }
       });
     } else {
-      // Use fallback HTML template
-      const { EmailTemplates } = await import('./email-templates.js');
-      const { subject, htmlContent } = EmailTemplates.getPaymentConfirmationEmail(paymentData);
-      
-      return this.sendSimpleEmail(customerEmail, subject, htmlContent);
+      try {
+        // Use fallback HTML template
+        const { EmailTemplates } = await import('./email-templates.js');
+        const { subject, htmlContent } = EmailTemplates.getPaymentConfirmationEmail(paymentData);
+        
+        return this.sendSimpleEmail(customerEmail, subject, htmlContent);
+      } catch (error) {
+        console.error('Failed to load payment confirmation template, using minimal HTML:', error);
+        return this.sendSimpleEmail(
+          customerEmail,
+          `Payment Confirmed - ${paymentData.transactionId} ✅`,
+          `<h1>Payment Confirmed!</h1><p>Your payment of KES ${paymentData.amount.toLocaleString()} has been confirmed. Transaction ID: ${paymentData.transactionId}</p>`
+        );
+      }
     }
   }
 
@@ -155,14 +187,25 @@ class BrevoService {
         }
       });
     } else {
-      // Use fallback HTML template
-      const { EmailTemplates } = await import('./email-templates.js');
-      const { subject, htmlContent, textContent } = EmailTemplates.getWelcomeEmail(
-        customerData.name,
-        customerData.organization || 'Not specified'
-      );
-      
-      return this.sendSimpleEmail(customerEmail, subject, htmlContent, textContent);
+      try {
+        // Use fallback HTML template
+        const { EmailTemplates } = await import('./email-templates.js');
+        const { subject, htmlContent, textContent } = EmailTemplates.getWelcomeEmail(
+          customerData.name,
+          customerData.organization || 'Not specified'
+        );
+        
+        return this.sendSimpleEmail(customerEmail, subject, htmlContent, textContent);
+      } catch (error) {
+        console.error('Failed to load email templates, using minimal HTML:', error);
+        // Fallback to a minimal welcome email if template fails to load
+        return this.sendSimpleEmail(
+          customerEmail,
+          'Welcome to GetDeals Kenya! 🎉',
+          `<h1>Welcome to GetDeals Kenya, ${customerData.name}!</h1><p>Thank you for joining us. Visit https://getdeals.co.ke to get started.</p>`,
+          `Welcome to GetDeals Kenya, ${customerData.name}! Visit https://getdeals.co.ke to get started.`
+        );
+      }
     }
   }
 
