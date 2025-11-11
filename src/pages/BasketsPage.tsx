@@ -31,8 +31,9 @@ export default function BasketsPage() {
     "Kikapu sawa", 
     "Wiki pack",
     "Smart familia",
-    "Kikapu sawa (Weekly Essentials)",
-    "Wiki pack (Starter Pack)"
+    "Kikapu sawa( Weekly Essentials)",
+    "Smart familia (Famlly refill basket)",
+    "Wiki pack(Starter Pack)"
   ]);
 
   const categories = Array.from(new Set(basketsOnly.map(p => p.category))).filter(Boolean);
