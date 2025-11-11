@@ -352,6 +352,29 @@ export default function HomePage() {
                 Quality products at better prices on groceries, family baskets, and more. Join our growing community today!
               </p>
 
+              {/* Partnership Badge - Quickmart - PROMINENTLY DISPLAYED */}
+              <div className="mt-6 mb-4 flex items-center gap-4 p-4 bg-gradient-to-r from-red-600/25 to-green-600/25 border-2 border-red-400/60 rounded-2xl backdrop-blur-md hover:border-red-400/100 transition-all duration-300 shadow-2xl hover:shadow-red-500/30 animate-in fade-in-0 zoom-in-95 duration-500 delay-300 group">
+                <div className="flex-shrink-0 h-20 w-28 bg-white rounded-lg p-2 flex items-center justify-center shadow-lg group-hover:shadow-2xl group-hover:shadow-red-500/50 transition-all duration-300 transform group-hover:scale-110">
+                  <img 
+                    src="https://imgs.search.brave.com/GCRwCqFq9Nln05BCKAhyfWJRoxHlnEJ9pnbrxSnK1zk/rs:fit:860:0:0:0/g:ce/aHR0cHM6Ly9jZG4u/YnJhbmRmZXRjaC5p/by9pZGJPQzRBTE1k/L3cvODI2L2gvMTUy/L3RoZW1lL2Rhcmsv/bG9nby5wbmc_Yz0x/YnhpZDY0TXVwN2Fj/emV3U0FZTVgmdD0x/NzUyMjU1OTk3NTk0"
+                    alt="Quickmart Kenya - Fresh & Easy"
+                    className="h-full w-full object-contain"
+                    loading="eager"
+                  />
+                </div>
+                <div className="flex-1 min-w-0">
+                  <div className="text-xs font-bold text-red-300 uppercase tracking-widest">🤝 Official Partnership</div>
+                  <div className="text-base font-bold text-white mt-1">Proudly Partnering with Quickmart Kenya</div>
+                  <div className="text-sm text-white/80 mt-2">Fresh & Easy • Premium Quality • Trusted Network</div>
+                </div>
+                <div className="flex-shrink-0">
+                  <div className="relative">
+                    <div className="h-4 w-4 rounded-full bg-green-400 animate-pulse"></div>
+                    <div className="absolute inset-0 rounded-full bg-green-400/50 animate-ping"></div>
+                  </div>
+                </div>
+              </div>
+
               {/* Key Metrics - Professional Display */}
               <div className="grid grid-cols-2 md:grid-cols-3 gap-4 py-6 animate-in fade-in-0 slide-in-from-bottom-4 duration-1000 delay-600">
                 <div className="text-center bg-white/10 backdrop-blur-sm rounded-lg p-3 hover:bg-white/15 transition-all duration-300 group">
