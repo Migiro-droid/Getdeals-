@@ -29,7 +29,10 @@ export default function BasketsPage() {
   const availableBasketNames = new Set([
     "Smart familia Saver",
     "Kikapu sawa", 
-    "Wiki pack"
+    "Wiki pack",
+    "Smart familia",
+    "Kikapu sawa (Weekly Essentials)",
+    "Wiki pack (Starter Pack)"
   ]);
 
   const categories = Array.from(new Set(basketsOnly.map(p => p.category))).filter(Boolean);
