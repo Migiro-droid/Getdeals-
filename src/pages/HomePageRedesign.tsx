@@ -101,6 +101,12 @@ export default function HomePageRedesign() {
   const { toast } = useToast();
   const { settings } = useAdmin();
 
+  // Define which baskets are sold out
+  const soldOutBasketNames = new Set([
+    "Smart Family Saver ( Ujanja ni Kusave)",
+    "Budget stretch (Kaa steady)"
+  ]);
+
   // Hot Deals - products marked as isHotDeal ONLY (no other promotional flags)
   const promotionalHotDeals = useMemo(() => {
     if (!all || all.length === 0) return [];
@@ -456,6 +462,23 @@ export default function HomePageRedesign() {
   const handleAddToCart = (productId: string) => {
     const product = all?.find(p => p.id === productId);
     if (product) {
+      // Check if product/basket is sold out - show modal instead
+      if (soldOutBasketNames.has(product.name)) {
+        openQuickViewModal(topSellerBaskets.find(b => b.id === productId) || {
+          id: productId,
+          name: product.name,
+          description: product.description || '',
+          image: product.image,
+          items: product.items?.map(item => ({ productId: item, quantity: 1 })) || [],
+          totalValue: product.originalPrice || product.price,
+          savings: (product.originalPrice || 0) - product.price,
+          finalPrice: product.price,
+          itemCount: product.items?.length || 1,
+          isBasket: (product.items?.length || 0) > 0
+        });
+        return;
+      }
+      
       addItem(product);
       toast({
         title: "Added to cart",
@@ -465,6 +488,16 @@ export default function HomePageRedesign() {
   };
 
   const handleAddBasketToCart = (basket: ShoppingBasket) => {
+    // Check if basket is sold out
+    if (soldOutBasketNames.has(basket.name)) {
+      toast({
+        title: "Unavailable",
+        description: `${basket.name} is currently sold out`,
+        variant: "destructive"
+      });
+      return;
+    }
+
     // Find the actual product from the database
     const product = all?.find(p => p.id === basket.id);
     if (product) {
@@ -847,6 +880,14 @@ export default function HomePageRedesign() {
                         alt={basket.name}
                         className="w-full h-full object-contain group-hover:scale-105 transition-transform duration-500"
                       />
+                      {/* Sold Out Badge */}
+                      {soldOutBasketNames.has(basket.name) && (
+                        <div className="absolute top-2 left-2">
+                          <div className="bg-gradient-to-r from-red-500 to-red-600 text-white text-xs py-1.5 px-2.5 font-bold rounded-md shadow-lg">
+                            Sold Out
+                          </div>
+                        </div>
+                      )}
                     </div>
 
                     {/* Content Section */}
@@ -956,7 +997,8 @@ export default function HomePageRedesign() {
                         </div>
 
                         <Button 
-                          className="w-full bg-gradient-to-r from-blue-600 to-cyan-600 hover:from-blue-700 hover:to-cyan-700 text-white font-bold shadow-md hover:shadow-lg transition-all text-xs py-1 h-8"
+                          disabled={soldOutBasketNames.has(basket.name)}
+                          className="w-full bg-gradient-to-r from-blue-600 to-cyan-600 hover:from-blue-700 hover:to-cyan-700 text-white font-bold shadow-md hover:shadow-lg transition-all text-xs py-1 h-8 disabled:opacity-50 disabled:cursor-not-allowed"
                           onClick={() => handleAddBasketToCart(basket)}
                         >
                           <ShoppingCart className="h-3 w-3 mr-1" />
@@ -1052,7 +1094,8 @@ export default function HomePageRedesign() {
                     {/* Actions - Push to bottom */}
                     <div className="mt-auto">
                       <Button 
-                        className="w-full bg-gradient-to-r from-rose-600 to-red-600 hover:from-rose-700 hover:to-red-700 text-white font-bold shadow-md hover:shadow-lg transition-all text-xs py-1 h-7"
+                        disabled={soldOutBasketNames.has(basket.name)}
+                        className="w-full bg-gradient-to-r from-rose-600 to-red-600 hover:from-rose-700 hover:to-red-700 text-white font-bold shadow-md hover:shadow-lg transition-all text-xs py-1 h-7 disabled:opacity-50 disabled:cursor-not-allowed"
                         onClick={() => handleAddBasketToCart(basket)}
                       >
                         <ShoppingCart className="h-3 w-3 mr-1" />
@@ -1350,8 +1393,9 @@ export default function HomePageRedesign() {
                   {/* Push button to bottom */}
                   <div className="mt-auto">
                     <Button 
+                      disabled={basket.isBasket ? soldOutBasketNames.has(basket.name) : false}
                       size="sm" 
-                      className="w-full bg-gradient-to-r from-blue-600 to-cyan-600 hover:from-blue-700 hover:to-cyan-700 text-white font-bold shadow-md hover:shadow-lg transition-all text-xs py-1 h-7"
+                      className="w-full bg-gradient-to-r from-blue-600 to-cyan-600 hover:from-blue-700 hover:to-cyan-700 text-white font-bold shadow-md hover:shadow-lg transition-all text-xs py-1 h-7 disabled:opacity-50 disabled:cursor-not-allowed"
                       onClick={() => basket.isBasket ? handleAddBasketToCart(basket) : handleAddToCart(basket.id)}
                     >
                       <ShoppingCart className="h-3 w-3 mr-1" />
@@ -1488,8 +1532,9 @@ export default function HomePageRedesign() {
                     {/* Push button to bottom */}
                     <div className="mt-auto">
                       <Button 
+                        disabled={basket.isBasket ? soldOutBasketNames.has(basket.name) : false}
                         size="sm" 
-                        className="w-full bg-gradient-to-r from-rose-600 to-red-600 hover:from-rose-700 hover:to-red-700 text-white font-bold text-xs py-1 h-7"
+                        className="w-full bg-gradient-to-r from-rose-600 to-red-600 hover:from-rose-700 hover:to-red-700 text-white font-bold text-xs py-1 h-7 disabled:opacity-50 disabled:cursor-not-allowed"
                         onClick={() => basket.isBasket ? handleAddBasketToCart(basket) : handleAddToCart(basket.id)}
                       >
                         <ShoppingCart className="h-3 w-3 mr-1" />

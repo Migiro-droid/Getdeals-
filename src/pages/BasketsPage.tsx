@@ -19,17 +19,21 @@ export default function BasketsPage() {
   const [searchQuery, setSearchQuery] = useState<string>("");
   const [searchParams] = useSearchParams();
   const { all } = useProducts();
-  
-  // Show ONLY baskets (items with multiple products in them)
-  // A basket has multiple items in the items array
+
+
   const basketsOnly = all.filter(p => {
     const items = Array.isArray(p.items) ? p.items : [];
-    // Show products that have 2 or more items (actual baskets)
     return items.length >= 2;
   });
+
+  const availableBasketNames = new Set([
+    "Smart familia Saver",
+    "Kikapu sawa", 
+    "Wiki pack"
+  ]);
+
   const categories = Array.from(new Set(basketsOnly.map(p => p.category))).filter(Boolean);
-  
-  // Initialize filter from URL query parameter
+
   useEffect(() => {
     const categoryParam = searchParams.get('category');
     const searchParam = searchParams.get('search');
@@ -40,23 +44,22 @@ export default function BasketsPage() {
       setSearchQuery(searchParam);
     }
   }, [searchParams]);
-  
-  // Apply filter and search
+
   const visible = useMemo(() => {
     let filtered = basketsOnly.filter(p => filter === 'all' ? true : p.category === filter);
-    
+
     if (searchQuery.trim()) {
       const query = searchQuery.toLowerCase();
-      filtered = filtered.filter(p => 
+      filtered = filtered.filter(p =>
         p.name.toLowerCase().includes(query) ||
         p.description?.toLowerCase().includes(query) ||
         p.category.toLowerCase().includes(query) ||
-        (p.items && p.items.some(item => 
+        (p.items && p.items.some(item =>
           typeof item === 'string' && item.toLowerCase().includes(query)
         ))
       );
     }
-    
+
     return filtered;
   }, [basketsOnly, filter, searchQuery]);
 
@@ -132,7 +135,7 @@ export default function BasketsPage() {
                 {visible.length} {visible.length === 1 ? 'basket' : 'baskets'} available
               </span>
             </div>
-            
+
             <div className="flex items-center gap-2">
               <SortAsc className="h-4 w-4 text-muted-foreground" />
               <Select value={sortBy} onValueChange={setSortBy}>
@@ -153,7 +156,11 @@ export default function BasketsPage() {
         {/* Baskets Grid */}
         <div className="grid sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-5 xl:grid-cols-6 gap-2 mb-12">
           {sortedProducts.map((product) => (
-            <ProductCard key={product.id} product={product} />
+            <ProductCard 
+              key={product.id} 
+              product={product}
+              showSoldOut={!availableBasketNames.has(product.name)}
+            />
           ))}
         </div>
 

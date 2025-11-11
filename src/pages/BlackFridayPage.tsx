@@ -252,10 +252,10 @@ export default function BlackFridayPage() {
       {/* Floating Badges */}
       <div className="fixed top-4 right-4 z-20 space-y-2 md:space-y-3">
         <div className="bg-gradient-to-r from-red-900 to-red-950 text-red-300 px-3 py-1.5 rounded-full font-bold text-xs md:text-sm shadow-lg animate-bounce border border-red-700">
-          🔥 UP TO 70% OFF
+           UP TO 70% OFF
         </div>
         <div className="bg-gradient-to-r from-red-800 to-red-900 text-red-200 px-3 py-1.5 rounded-full font-bold text-xs md:text-sm shadow-lg animate-bounce border border-red-700" style={{ animationDelay: '0.2s' }}>
-          ⚡ LIMITED TIME
+           LIMITED TIME
         </div>
       </div>
 

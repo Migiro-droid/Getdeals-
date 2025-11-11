@@ -1,4 +1,4 @@
-import { useMemo, useState, useCallback, useRef } from "react";
+import { useMemo, useState, useCallback, useRef, useEffect } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -15,11 +15,54 @@ import { Link, useNavigate } from "react-router-dom";
 import { ShoppingBag, AlertTriangle, Truck, Clock, FileDown, User, Shield, Crown, MapPin, Phone, LogOut } from "lucide-react";
 
 export default function AdminDashboard() {
-  const { orders, metrics } = useOrders();
+  const { metrics } = useOrders();
   const { settings, logout, role, user } = useAdmin();
   const navigate = useNavigate();
-  const [range, setRange] = useState<"7d" | "30d" | "all">("7d");
+  const [range, setRange] = useState<"7d" | "30d" | "90d" | "ytd" | "all">("7d");
   const [customerModalOpen, setCustomerModalOpen] = useState(false);
+  const [orders, setOrders] = useState<Order[]>([]);
+  const [loadingOrders, setLoadingOrders] = useState(true);
+
+  // Fetch orders from database API instead of context
+  useEffect(() => {
+    const fetchOrders = async () => {
+      try {
+        setLoadingOrders(true);
+        const response = await fetch('/api/orders/list?limit=1000&offset=0');
+        const data = await response.json();
+
+        if (data.success && Array.isArray(data.orders)) {
+          // Transform database orders to UI format
+          const transformed: Order[] = data.orders.map((dbOrder: any) => ({
+            id: dbOrder.order_reference || dbOrder.id,
+            date: dbOrder.created_at || new Date().toISOString(),
+            items: dbOrder.order_items || [],
+            subtotal: dbOrder.subtotal_kes || 0, // Already converted from cents by API
+            deliveryFee: dbOrder.delivery_fee_kes || 0,
+            total: dbOrder.total_amount_kes || 0,
+            deliveryMethod: (dbOrder.delivery_method || 'pickup') === 'speedy' ? 'speedy' : 'pickup',
+            paymentMethod: (dbOrder.payment_method || 'mpesa').toLowerCase() as any,
+            customer: {
+              firstName: dbOrder.customer_name?.split(' ')[0] || '',
+              lastName: dbOrder.customer_name?.split(' ').slice(1).join(' ') || '',
+              phone: dbOrder.customer_phone || '',
+              email: dbOrder.customer_email || '',
+              address: typeof dbOrder.delivery_address === 'string' ? dbOrder.delivery_address : dbOrder.delivery_address?.address,
+              pickupLocation: dbOrder.pickup_location
+            },
+            status: (dbOrder.status || 'pending').toLowerCase() as OrderStatus,
+          }));
+          setOrders(transformed);
+        }
+      } catch (error) {
+        console.error('Error fetching orders:', error);
+      } finally {
+        setLoadingOrders(false);
+      }
+    };
+
+    fetchOrders();
+  }, []);
 
   // Hide any lingering demo orders from admin analytics/views (extra safety)
   const isDemoOrder = (o: Order) => {
@@ -27,6 +70,12 @@ export default function AdminDashboard() {
     return o.demoSeed === true || o.id.startsWith("DEMO-") || email.endsWith("@example.com");
   };
   const safeOrders = useMemo(() => orders.filter(o => !isDemoOrder(o)), [orders]);
+  
+  // Memoize revenue orders to prevent chart flickering
+  const revenueOrders = useMemo(() => 
+    safeOrders.map(o => ({ date: o.date, total: o.total })), 
+    [safeOrders]
+  );
 
   // User display component
   const UserDisplay = () => {
@@ -394,9 +443,14 @@ export default function AdminDashboard() {
   const todayKey = new Date().toISOString().slice(0, 10);
   const todayOrders = useMemo(() => safeOrders.filter((o) => o.date.slice(0, 10) === todayKey), [safeOrders, todayKey]);
   const todayCounts = useMemo(() => {
-    const c: Record<string, number> = { pending: 0, shipped: 0, cancelled: 0 };
+    const c: Record<string, number> = { pending: 0, shipped: 0, out_for_delivery: 0, cancelled: 0, confirmed: 0, delivered: 0 };
     for (const o of todayOrders) {
-      if (o.status in c) c[o.status]++;
+      if (o.status === 'shipped') c.shipped++;
+      else if (o.status === 'pending') c.pending++;
+      else if (o.status === 'cancelled') c.cancelled++;
+      else if (o.status === 'out_for_delivery') c.out_for_delivery++;
+      else if (o.status === 'confirmed') c.confirmed++;
+      else if (o.status === 'delivered') c.delivered++;
     }
     return c;
   }, [todayOrders]);
@@ -518,7 +572,7 @@ export default function AdminDashboard() {
           <div className="grid lg:grid-cols-3 gap-6">
             {/* Revenue Trend - Takes 2 columns */}
             <div className="lg:col-span-2">
-              <AdvancedRevenueTrend initialRange={range} orders={safeOrders.map(o => ({ date: o.date, total: o.total }))} />
+              <AdvancedRevenueTrend initialRange={range === 'all' ? 'total' : range as any} orders={revenueOrders} />
             </div>
 
             {/* Order Pipeline - Takes 1 column */}

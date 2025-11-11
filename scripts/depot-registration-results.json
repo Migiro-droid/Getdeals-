@@ -1,0 +1,46 @@
+{
+  "timestamp": "2025-10-29T08:51:40.025Z",
+  "apiUrl": "https://integrations.leta.ai",
+  "summary": {
+    "total": 8,
+    "successful": 0,
+    "failed": 8
+  },
+  "results": {
+    "successful": [],
+    "failed": [
+      {
+        "code": "QUICK_NAIROBI_WESTLANDS",
+        "error": "Unknown error"
+      },
+      {
+        "code": "QUICK_NAIROBI_ROYSAMBU",
+        "error": "Unknown error"
+      },
+      {
+        "code": "QUICK_NAIROBI_LAVINGTON",
+        "error": "Unknown error"
+      },
+      {
+        "code": "QUICK_NAIROBI_THINDIUGA",
+        "error": "Unknown error"
+      },
+      {
+        "code": "QUICK_NAIROBI_MOMBASA_ROAD",
+        "error": "Unknown error"
+      },
+      {
+        "code": "QUICK_NAIROBI_KAREN",
+        "error": "Unknown error"
+      },
+      {
+        "code": "QUICK_NAIROBI_CBD",
+        "error": "Unknown error"
+      },
+      {
+        "code": "QUICK_NAIROBI_EASTLANDS",
+        "error": "Unknown error"
+      }
+    ]
+  }
+}

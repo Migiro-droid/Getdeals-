@@ -21,14 +21,16 @@ interface Product {
   itemsDetail?: { name: string; image: string }[];
   category: string;
   description?: string;
+  soldOut?: boolean;
 }
 
 interface ProductCardProps {
   product: Product;
   onQuickView?: (product: Product) => void;
+  showSoldOut?: boolean;
 }
 
-export function ProductCard({ product, onQuickView }: ProductCardProps) {
+export function ProductCard({ product, onQuickView, showSoldOut }: ProductCardProps) {
   const [isWishlisted, setIsWishlisted] = useState(false);
   const [isHovered, setIsHovered] = useState(false);
   const [showDetailModal, setShowDetailModal] = useState(false);
@@ -54,6 +56,13 @@ export function ProductCard({ product, onQuickView }: ProductCardProps) {
 
   const handleAddToCart = (e: React.MouseEvent) => {
     e.stopPropagation();
+    
+    // Check if product is sold out - show modal instead
+    if (product.soldOut || showSoldOut) {
+      setShowDetailModal(true);
+      return;
+    }
+    
     if (!isAuthenticated) {
       setShowAuthDialog(true);
       return;
@@ -99,7 +108,7 @@ export function ProductCard({ product, onQuickView }: ProductCardProps) {
       <div className="relative overflow-hidden">
         <div className="w-full aspect-square bg-muted flex items-center justify-center">
           <img
-            src={withVersion(product.image)}
+            src={product.image || 'https://images.unsplash.com/photo-1563453392212-326f5e854473?w=800&h=600&fit=crop'}
             alt={product.name}
             loading="lazy"
             className="w-full h-full object-contain opacity-0 transition-opacity duration-300"
@@ -108,19 +117,24 @@ export function ProductCard({ product, onQuickView }: ProductCardProps) {
             }}
             onError={(e) => {
               const img = e.currentTarget as HTMLImageElement;
-              if (!img.src.includes("placeholder.svg")) {
-                img.src = "/placeholder.svg";
+              if (!img.src.includes("unsplash")) {
+                img.src = 'https://images.unsplash.com/photo-1563453392212-326f5e854473?w=800&h=600&fit=crop';
+                img.style.opacity = "1";
               }
             }}
           />
         </div>
 
-        {/* Discount Badge */}
-        {discountPercentage && (
+        {/* Discount Badge or Sold Out Badge */}
+        {(product.soldOut || showSoldOut) ? (
+          <Badge className="absolute top-1 left-1 bg-gradient-to-r from-red-500 to-red-600 text-white text-xs py-1.5 px-2.5 font-bold rounded-md shadow-lg hover:shadow-xl transition-all">
+            Sold Out
+          </Badge>
+        ) : discountPercentage ? (
           <Badge className="absolute top-1 left-1 bg-destructive text-destructive-foreground text-xs py-0.5 px-1.5">
             -{discountPercentage}%
           </Badge>
-        )}
+        ) : null}
 
         {/* Wishlist Button */}
         <Button
@@ -140,30 +154,30 @@ export function ProductCard({ product, onQuickView }: ProductCardProps) {
         </Button>
 
         {/* Quick Actions Overlay */}
-        <div
-          className={`absolute inset-x-0 bottom-0 p-2 bg-gradient-to-t from-black/50 to-transparent transition-all duration-300 ${
-            isHovered ? "opacity-100 translate-y-0" : "opacity-0 translate-y-4"
-          }`}
-        >
-          <div className="flex gap-1">
-            <Button size="sm" className="flex-1 text-xs h-7" onClick={handleAddToCart}>
-              <ShoppingCart className="h-3 w-3 mr-1" />
-              Add
-            </Button>
-            <Button
-              aria-label="Quick view"
-              variant="secondary"
-              size="sm"
-              className="h-7 w-7 p-0"
-              onClick={(e) => {
-                e.stopPropagation();
-                onQuickView ? onQuickView(product) : setShowDetailModal(true);
-              }}
-            >
-              <Eye className="h-3 w-3" />
-            </Button>
+        {isHovered && (
+          <div
+            className={`absolute inset-x-0 bottom-0 p-2 bg-gradient-to-t from-black/50 to-transparent transition-all duration-300 opacity-100 translate-y-0`}
+          >
+            <div className="flex gap-1">
+              <Button size="sm" className="flex-1 text-xs h-7" onClick={handleAddToCart}>
+                <ShoppingCart className="h-3 w-3 mr-1" />
+                Add
+              </Button>
+              <Button
+                aria-label="Quick view"
+                variant="secondary"
+                size="sm"
+                className="h-7 w-7 p-0"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  onQuickView ? onQuickView(product) : setShowDetailModal(true);
+                }}
+              >
+                <Eye className="h-3 w-3" />
+              </Button>
+            </div>
           </div>
-        </div>
+        )}
       </div>
 
       <CardContent className="p-2">
@@ -199,6 +213,7 @@ export function ProductCard({ product, onQuickView }: ProductCardProps) {
         product={product}
         open={showDetailModal}
         onOpenChange={setShowDetailModal}
+        soldOut={product.soldOut || showSoldOut}
       />
       <AuthRequiredDialog
         open={showAuthDialog}

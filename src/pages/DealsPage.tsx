@@ -20,17 +20,14 @@ export default function DealsPage() {
   const [searchParams] = useSearchParams();
   const { all } = useProducts();
 
-  // Show ALL individual products (1-item products)
-  // Individual items are those with 0 or 1 items in the items array
+
   const dealsOnly = all.filter(p => {
     const items = Array.isArray(p.items) ? p.items : [];
-    // Show products that have 0 or 1 item (individual deals, not baskets)
     return items.length <= 1;
   });
 
   const categories = Array.from(new Set(dealsOnly.map(p => p.category))).filter(Boolean);
 
-  // Initialize filter from URL query parameter
   useEffect(() => {
     const categoryParam = searchParams.get('category');
     const searchParam = searchParams.get('search');
@@ -42,22 +39,21 @@ export default function DealsPage() {
     }
   }, [searchParams]);
 
-  // Apply filter and search
   const visible = useMemo(() => {
     let filtered = dealsOnly.filter(p => filter === 'all' ? true : p.category === filter);
-    
+
     if (searchQuery.trim()) {
       const query = searchQuery.toLowerCase();
-      filtered = filtered.filter(p => 
+      filtered = filtered.filter(p =>
         p.name.toLowerCase().includes(query) ||
         p.description?.toLowerCase().includes(query) ||
         p.category.toLowerCase().includes(query) ||
-        (p.items && p.items.some(item => 
+        (p.items && p.items.some(item =>
           typeof item === 'string' && item.toLowerCase().includes(query)
         ))
       );
     }
-    
+
     return filtered;
   }, [dealsOnly, filter, searchQuery]);
 
@@ -81,10 +77,9 @@ export default function DealsPage() {
   return (
     <div className="min-h-screen py-8">
       <div className="container mx-auto px-4">
-        {/* Header */}
+        {}
         <div className="mb-8">
           <div className="flex items-center gap-3 mb-4">
-            <Sparkles className="h-6 w-6 text-yellow-500" />
             <h1 className="text-3xl lg:text-4xl font-bold">Special Deals & Promotions</h1>
           </div>
           <p className="text-xl text-muted-foreground max-w-2xl">
@@ -97,9 +92,9 @@ export default function DealsPage() {
           </div>
         </div>
 
-        {/* Filters and Sorting */}
+        {}
         <div className="flex flex-col gap-4 mb-8">
-          {/* Search Bar */}
+          {}
           <div className="w-full relative">
             <Search className="absolute left-3 top-1/2 h-5 w-5 -translate-y-1/2 text-gray-400 pointer-events-none" />
             <Input
@@ -118,7 +113,7 @@ export default function DealsPage() {
             )}
           </div>
 
-          {/* Filters and Sorting */}
+          {}
           <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
             <div className="flex flex-col sm:flex-row items-start sm:items-center gap-3">
               <span className="text-sm font-semibold text-muted-foreground">Category:</span>
@@ -152,7 +147,7 @@ export default function DealsPage() {
           </div>
         </div>
 
-        {/* Products Grid */}
+        {}
         {sortedProducts.length > 0 ? (
           <div className="grid sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-5 xl:grid-cols-6 gap-2 mb-12">
             {sortedProducts.map((product) => (
@@ -179,7 +174,7 @@ export default function DealsPage() {
           </div>
         )}
 
-        {/* CTA Section */}
+        {}
         <div className="text-center py-12 bg-gradient-to-r from-primary/5 to-primary/10 rounded-2xl border border-primary/20">
           <h2 className="text-2xl font-bold mb-4">Get Notified of New Deals</h2>
           <p className="text-muted-foreground mb-6 max-w-md mx-auto">

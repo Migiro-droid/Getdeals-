@@ -14,6 +14,7 @@ export interface Product {
   isNewArrival?: boolean;
   isSpecialDeal?: boolean;
   isTopBasket?: boolean;
+  soldOut?: boolean;
 }
 
 export const products: Product[] = [
@@ -31,7 +32,8 @@ export const products: Product[] = [
       "1kg Wheat Flour"
     ],
     category: "essential",
-    description: "Perfect for small families with daily essentials"
+    description: "Perfect for small families with daily essentials",
+    soldOut: true
   },
   {
     id: "mini-essential",
@@ -46,7 +48,8 @@ export const products: Product[] = [
       "1 Bread Loaf"
     ],
     category: "essential",
-    description: "Compact essentials for singles or couples"
+    description: "Compact essentials for singles or couples",
+    soldOut: true
   },
   {
     id: "mega-essential",
@@ -63,7 +66,8 @@ export const products: Product[] = [
       "1kg Beans"
     ],
     category: "essential",
-    description: "Extended essentials for larger households"
+    description: "Extended essentials for larger households",
+    soldOut: true
   },
 
   // Family Baskets
@@ -81,7 +85,8 @@ export const products: Product[] = [
       "2kg Wheat Flour"
     ],
     category: "family",
-    description: "Complete family shopping solution"
+    description: "Complete family shopping solution",
+    soldOut: true
   },
   {
     id: "premium-basket",
@@ -97,7 +102,8 @@ export const products: Product[] = [
       "5kg Wheat Flour"
     ],
     category: "family",
-    description: "Premium products for discerning families"
+    description: "Premium products for discerning families",
+    soldOut: true
   },
   {
     id: "luxury-basket",
@@ -113,7 +119,8 @@ export const products: Product[] = [
       "10kg Wheat Flour"
     ],
     category: "family", 
-    description: "Ultimate luxury shopping experience"
+    description: "Ultimate luxury shopping experience",
+    soldOut: true
   },
 
   // Our additional curated baskets
@@ -131,7 +138,8 @@ export const products: Product[] = [
       "2kg Wheat Flour"
     ],
     category: "basket",
-    description: "Perfect starter pack for school season"
+    description: "Perfect starter pack for school season",
+    soldOut: true
   },
   {
     id: "holiday-feast-basket",
@@ -147,7 +155,8 @@ export const products: Product[] = [
       "4kg Wheat Flour"
     ],
     category: "basket",
-    description: "Celebrate holidays with a generous family bundle"
+    description: "Celebrate holidays with a generous family bundle",
+    soldOut: true
   },
   {
     id: "essentials-plus-basket",

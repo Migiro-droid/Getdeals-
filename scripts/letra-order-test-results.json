@@ -1,0 +1,52 @@
+{
+  "timestamp": "2025-10-29T10:29:11.179Z",
+  "configuration": {
+    "valid": true,
+    "errors": []
+  },
+  "tests": {
+    "orderCreation": {
+      "passed": true,
+      "message": "Order created: 5454475",
+      "orderId": 5454475,
+      "reference": "TEST-1761733751215"
+    },
+    "orderUpdate": {
+      "passed": true,
+      "message": "Order updated successfully",
+      "updated": true
+    },
+    "shippingRatesCalculation": {
+      "passed": false,
+      "message": "Error: HTTP 400: {\"status_code\":400,\"detail\":{\"distance\":2379,\"price\":0,\"detail\":\"No rates found for the given distance\"}}",
+      "rate": null
+    },
+    "driverAvailability": {
+      "passed": false,
+      "message": "Error: HTTP 400: {\"status_code\":400,\"detail\":\"No available drivers\"}",
+      "available": false
+    },
+    "orderCancellation": {
+      "passed": true,
+      "message": "Order cancelled successfully",
+      "cancelled": true
+    },
+    "depotCreation": {
+      "passed": true,
+      "message": "Depot created: TEST-DEPOT-1761733768492",
+      "depotId": 3293,
+      "depotCode": "TEST-DEPOT-1761733768492"
+    },
+    "depotUpdate": {
+      "passed": false,
+      "message": "",
+      "updated": false
+    }
+  },
+  "summary": {
+    "totalTests": 7,
+    "passedTests": 4,
+    "failedTests": 3,
+    "overallStatus": "[WARNING] PARTIAL SUCCESS"
+  }
+}

@@ -419,9 +419,9 @@ export default function AccountPage() {
                         <Truck className="h-6 w-6" />
                         Your Orders
                       </h2>
-                      <div className="space-y-6">
+                      <div className="space-y-4">
                         {databaseOrders.map((o) => (
-                          <div key={o.id}>
+                          <div key={o.id} className="group">
                             {/* Delivery Progress Bar for Speedy Orders */}
                             {o.delivery_method === 'speedy' && (
                               <div className="mb-4">
@@ -437,68 +437,96 @@ export default function AccountPage() {
                               </div>
                             )}
 
-                            {/* Order Details Card */}
-                            <Card>
-                              <CardContent className="p-4">
-                                <div className="flex items-center justify-between mb-3">
-                                  <div>
-                                    <h3 className="font-bold text-lg">
+                            {/* Redesigned Order Card - Glovo-Inspired */}
+                            <Card className="border border-gray-200 shadow-sm hover:shadow-lg transition-all duration-300 overflow-hidden hover:border-gray-300">
+                              <CardContent className="p-0">
+                                {/* Card Header with Status Badge */}
+                                <div className={`p-4 border-b border-gray-100 flex items-start justify-between gap-3 ${
+                                  o.status === 'delivered' ? 'bg-emerald-50/50' :
+                                  o.status === 'pending' ? 'bg-yellow-50/50' :
+                                  o.status === 'confirmed' ? 'bg-blue-50/50' :
+                                  o.status === 'shipped' ? 'bg-purple-50/50' :
+                                  'bg-red-50/50'
+                                }`}>
+                                  <div className="flex-1 min-w-0">
+                                    <h3 className="font-bold text-base mb-1">
                                       Order #{o.order_reference}
                                     </h3>
-                                    <p className="text-sm text-muted-foreground">
-                                      {new Date(o.date).toLocaleString()}
+                                    <p className="text-xs text-gray-500 flex items-center gap-2">
+                                      <CalendarClock className="h-3.5 w-3.5" />
+                                      {new Date(o.date).toLocaleDateString()} at {new Date(o.date).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
                                     </p>
                                   </div>
-                                  <Badge className={`${
-                                    o.status === 'delivered' ? 'bg-emerald-100 text-emerald-800' :
-                                    o.status === 'pending' ? 'bg-yellow-100 text-yellow-800' :
-                                    o.status === 'confirmed' ? 'bg-blue-100 text-blue-800' :
-                                    o.status === 'shipped' ? 'bg-purple-100 text-purple-800' :
-                                    'bg-red-100 text-red-800'
+                                  <Badge className={`whitespace-nowrap flex-shrink-0 text-xs font-bold px-3 py-1 ${
+                                    o.status === 'delivered' ? 'bg-emerald-500 text-white' :
+                                    o.status === 'pending' ? 'bg-yellow-500 text-white' :
+                                    o.status === 'confirmed' ? 'bg-blue-500 text-white' :
+                                    o.status === 'shipped' ? 'bg-purple-500 text-white' :
+                                    'bg-red-500 text-white'
                                   }`}>
-                                    {o.status ? o.status.replace(/_/g, ' ').replace(/^./, (c: string) => c.toUpperCase()) : 'Pending'}
+                                    {o.status ? o.status.replace(/_/g, ' ').toUpperCase() : 'PENDING'}
                                   </Badge>
                                 </div>
 
-                                <Separator className="my-3" />
-
-                                <div className="grid grid-cols-2 gap-4 mb-3">
-                                  <div>
-                                    <p className="text-xs font-semibold text-gray-600 mb-1">Items</p>
-                                    {o.items && Array.isArray(o.items) ? (
-                                      <ul className="text-sm space-y-1">
-                                        {o.items.map((item: any, idx: number) => (
-                                          <li key={idx} className="text-gray-700">
-                                            {item.name || item.product_name} ×{item.quantity}
-                                          </li>
+                                {/* Card Body - Items and Details */}
+                                <div className="p-4 space-y-3">
+                                  {/* Items Section */}
+                                  {o.items && Array.isArray(o.items) && o.items.length > 0 && (
+                                    <div>
+                                      <p className="text-xs font-bold text-gray-600 mb-2 uppercase tracking-wide">Items ({o.items.length})</p>
+                                      <div className="space-y-1.5">
+                                        {o.items.slice(0, 3).map((item: any, idx: number) => (
+                                          <div key={idx} className="flex items-center justify-between text-sm bg-gray-50 rounded p-2">
+                                            <span className="font-medium text-gray-800 truncate flex-1">{item.name || item.product_name}</span>
+                                            <span className="text-gray-600 ml-2">×{item.quantity}</span>
+                                          </div>
                                         ))}
-                                      </ul>
-                                    ) : (
-                                      <p className="text-sm text-gray-500">No items</p>
-                                    )}
+                                        {o.items.length > 3 && (
+                                          <p className="text-xs text-gray-500 pl-2">+{o.items.length - 3} more items</p>
+                                        )}
+                                      </div>
+                                    </div>
+                                  )}
+
+                                  {/* Delivery Info */}
+                                  <div className="grid grid-cols-2 gap-3">
+                                    <div className="bg-gray-50 rounded p-2.5">
+                                      <p className="text-xs font-bold text-gray-600 mb-1 uppercase tracking-wide">Delivery</p>
+                                      <p className="text-sm font-semibold text-gray-800">
+                                        {o.delivery_method === 'speedy' ? '🚚 Speedy' : '🏪 Pickup'}
+                                      </p>
+                                    </div>
+                                    <div className="bg-gradient-to-br from-emerald-50 to-teal-50 rounded p-2.5 border border-emerald-200">
+                                      <p className="text-xs font-bold text-emerald-700 mb-1 uppercase tracking-wide">Total</p>
+                                      <p className="text-lg font-bold text-emerald-600">
+                                        KES {(o.total_amount || 0).toLocaleString()}
+                                      </p>
+                                    </div>
                                   </div>
-                                  <div>
-                                    <p className="text-xs font-semibold text-gray-600 mb-1">Delivery Method</p>
-                                    <p className="text-sm font-medium">
-                                      {o.delivery_method === 'speedy' ? '🚚 Speedy' : '🏪 Pickup'}
-                                    </p>
-                                    <p className="text-xs font-semibold text-gray-600 mb-1 mt-2">Total</p>
-                                    <p className="text-lg font-bold text-green-600">
-                                      KES {(o.total_amount || 0).toLocaleString()}
-                                    </p>
-                                  </div>
+
+                                  {/* Address for Speedy Delivery */}
+                                  {o.delivery_method === 'speedy' && o.delivery_address && (
+                                    <div className="bg-blue-50 border border-blue-200 rounded-lg p-3 flex gap-3">
+                                      <MapPin className="h-4 w-4 mt-0.5 flex-shrink-0 text-blue-600" />
+                                      <div className="flex-1 min-w-0">
+                                        <p className="text-xs font-bold text-blue-700 mb-0.5 uppercase tracking-wide">Location</p>
+                                        <p className="text-sm text-blue-900 line-clamp-2">{o.delivery_address}</p>
+                                      </div>
+                                    </div>
+                                  )}
                                 </div>
 
-                                {o.delivery_method === 'speedy' && o.delivery_address && (
-                                  <div className="mb-3 p-2 bg-blue-50 rounded text-sm text-gray-700 flex items-start gap-2">
-                                    <MapPin className="h-4 w-4 mt-0.5 flex-shrink-0 text-blue-600" />
-                                    <span>{o.delivery_address}</span>
-                                  </div>
-                                )}
-
-                                <Button variant="outline" size="sm" className="w-full" onClick={() => setActive(o)}>
-                                  View Full Details
-                                </Button>
+                                {/* Card Footer - Action Button */}
+                                <div className="p-4 border-t border-gray-100 bg-gray-50/50">
+                                  <Button 
+                                    variant="outline" 
+                                    size="sm" 
+                                    className="w-full hover:bg-blue-600 hover:text-white hover:border-blue-600 transition-colors font-semibold" 
+                                    onClick={() => setActive(o)}
+                                  >
+                                    View Full Details
+                                  </Button>
+                                </div>
                               </CardContent>
                             </Card>
                           </div>

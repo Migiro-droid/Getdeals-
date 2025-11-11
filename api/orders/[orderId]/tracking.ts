@@ -16,7 +16,9 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
   }
 
   try {
-    const orderId = req.query.orderId as string;
+    // In Vercel functions with dynamic routes, the parameter is in req.query with the bracket name
+    // File: [orderId]/tracking.ts -> Parameter: req.query.orderId
+    let orderId = req.query.orderId as string;
 
     if (!orderId) {
       console.warn(' No order ID provided in request');
@@ -89,17 +91,17 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
         order_reference,
         status,
         delivery_method,
+        payment_status,
+        total_amount,
+        subtotal,
+        delivery_fee,
+        customer_name,
+        customer_email,
+        customer_phone,
         delivery_address,
-        leta_order_id,
-        leta_reference,
-        leta_status,
-        leta_tracking_url,
-        rider_name,
-        rider_phone,
-        rider_latitude,
-        rider_longitude,
-        delivery_otp,
-        last_location_update,
+        pickup_location,
+        payment_method,
+        order_items,
         created_at,
         updated_at
       `

@@ -724,6 +724,50 @@ export class PickupLocationService {
         },
         created_at: new Date().toISOString(),
         updated_at: new Date().toISOString()
+      },
+      {
+        id: 'kilimani',
+        name: 'Quickmart Kilimani',
+        address: 'Kilimani Centre, Ngong Road, Nairobi',
+        latitude: -1.3032,
+        longitude: 36.7784,
+        phone: '+254 20 2386005',
+        status: 'active',
+        capacity: 85,
+        features: ['Parking Available', 'Security', 'Modern Facilities'],
+        operating_hours: {
+          monday: '8:00 AM - 9:00 PM',
+          tuesday: '8:00 AM - 9:00 PM',
+          wednesday: '8:00 AM - 9:00 PM',
+          thursday: '8:00 AM - 9:00 PM',
+          friday: '8:00 AM - 9:00 PM',
+          saturday: '8:00 AM - 9:00 PM',
+          sunday: '9:00 AM - 8:00 PM'
+        },
+        created_at: new Date().toISOString(),
+        updated_at: new Date().toISOString()
+      },
+      {
+        id: 'ruaka',
+        name: 'Quickmart Ruaka',
+        address: 'Ruaka Shopping Centre, Kiambu Road, Nairobi',
+        latitude: -1.2508,
+        longitude: 36.9003,
+        phone: '+254 20 2386006',
+        status: 'active',
+        capacity: 75,
+        features: ['Parking Available', 'Family Friendly', 'Accessible'],
+        operating_hours: {
+          monday: '8:00 AM - 9:00 PM',
+          tuesday: '8:00 AM - 9:00 PM',
+          wednesday: '8:00 AM - 9:00 PM',
+          thursday: '8:00 AM - 9:00 PM',
+          friday: '8:00 AM - 9:00 PM',
+          saturday: '8:00 AM - 9:00 PM',
+          sunday: '9:00 AM - 8:00 PM'
+        },
+        created_at: new Date().toISOString(),
+        updated_at: new Date().toISOString()
       }
     ];
 
