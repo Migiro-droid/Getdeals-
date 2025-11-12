@@ -93,15 +93,22 @@ class WalletService {
 
       const { data, error } = await supabase
         .from('wallets')
-        .select('balance, user_id, updated_at, getdeals_number')
+        .select('id, balance, user_id, updated_at, getdeals_number, is_active, created_at')
         .eq('user_id', user.id)
         .single();
       
-      console.log('[wallet-service] getWalletBalance query result:', { data, error, userId: user.id });
+      console.log('[wallet-service] getWalletBalance - Full wallet data:', { data, error, userId: user.id });
       
       // If wallet row found, return it (including existing getdeals_number)
       if (data) {
-        return data as WalletBalance;
+        const walletData = data as any;
+        console.log('[wallet-service] Wallet getdeals_number from DB:', walletData.getdeals_number);
+        return {
+          balance: walletData.balance,
+          user_id: walletData.user_id,
+          updated_at: walletData.updated_at,
+          getdeals_number: walletData.getdeals_number // Explicitly preserve from DB
+        } as WalletBalance;
       }
 
       // If wallet row missing entirely, attempt lazy creation
@@ -122,11 +129,26 @@ class WalletService {
    */
   private async createWalletIfMissing(userId: string): Promise<WalletBalance | null> {
     try {
-      // Create wallet row if it doesn't exist
+      // FIRST: Double-check wallet doesn't already exist (prevents duplicates)
+      const { data: existingWallet, error: checkError } = await supabase
+        .from('wallets')
+        .select('balance, user_id, updated_at, getdeals_number')
+        .eq('user_id', userId)
+        .single();
+
+      if (existingWallet && !checkError) {
+        const wallet = existingWallet as any;
+        console.log('[wallet-service] Wallet already exists, returning existing:', wallet.getdeals_number);
+        return existingWallet as WalletBalance;
+      }
+
+      console.log('[wallet-service] No wallet found, creating new one...');
+
+      // Create wallet row if it doesn't exist (the trigger will auto-assign getdeals_number)
       const { data: newWallet, error: insertError } = await supabase
         .from('wallets')
-        .insert([{ user_id: userId, balance: 0 }] as any)
-        .select('balance, user_id, updated_at, getdeals_number')
+        .insert([{ user_id: userId, balance: 0, is_active: false }] as any)
+        .select('balance, user_id, updated_at, getdeals_number, is_active')
         .single<any>();
 
       if (insertError) {
@@ -134,6 +156,7 @@ class WalletService {
         return null;
       }
       
+      console.log('[wallet-service] New wallet created with getdeals_number:', newWallet.getdeals_number);
       return newWallet as WalletBalance;
     } catch (error) {
       console.error('Error creating wallet:', error);
@@ -239,7 +262,25 @@ class WalletService {
         },
         (payload) => {
           if (payload.eventType === 'INSERT' || payload.eventType === 'UPDATE') {
-            callback(payload.new as WalletBalance);
+            const walletData = payload.new as any;
+            
+            // Ensure getdeals_number is preserved - never replace with undefined
+            if (walletData.getdeals_number === undefined || walletData.getdeals_number === null) {
+              console.warn('[wallet] Real-time update has null getdeals_number, refetching fresh data...');
+              // If getdeals_number is missing in the update, refetch to ensure we have the correct one
+              this.getWalletBalance().then(freshData => {
+                if (freshData) callback(freshData);
+              });
+              return;
+            }
+            
+            console.log('[wallet] Real-time wallet update:', walletData.getdeals_number);
+            callback({
+              balance: walletData.balance,
+              user_id: walletData.user_id,
+              updated_at: walletData.updated_at,
+              getdeals_number: walletData.getdeals_number
+            });
           }
         }
       )
