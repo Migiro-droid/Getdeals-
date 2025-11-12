@@ -90,7 +90,7 @@ export class GetDealsNumberService {
       }
 
       const { data, error } = await supabase
-        .from('profiles')
+        .from('wallets')
         .select('getdeals_number')
         .eq('user_id', user.id)
         .single();
@@ -116,7 +116,7 @@ export class GetDealsNumberService {
       }
 
       const { data, error } = await supabase
-        .from('profiles')
+        .from('wallets')
         .select('getdeals_number')
         .eq('getdeals_number', getdealsNumber)
         .limit(1);
@@ -156,8 +156,8 @@ export class GetDealsNumberService {
   static async getUsersWithoutNumbers(): Promise<{ user_id: string; full_name: string; email: string }[]> {
     try {
       const { data, error } = await supabase
-        .from('profiles')
-        .select('user_id, full_name, email')
+        .from('wallets')
+        .select('user_id')
         .is('getdeals_number', null)
         .order('created_at');
 
@@ -233,8 +233,7 @@ export class GetDealsNumberService {
       const { data: profileData, error: profileError } = await supabase
         .from('profiles')
         .select('user_id')
-        .eq('getdeals_number', getdealsNumber)
-        .single();
+        .limit(1);
 
       // Check wallet
       const { data: walletData, error: walletError } = await supabase
@@ -245,16 +244,14 @@ export class GetDealsNumberService {
 
       const profile_exists = !profileError && profileData;
       const wallet_exists = !walletError && walletData;
-      const user_id_match = profile_exists && wallet_exists && 
-                           profileData.user_id === walletData.user_id;
+      const user_id_match = false; // Wallets only have getdeals_number, not profiles
 
       return {
-        linked: profile_exists && wallet_exists && user_id_match,
-        profile_exists,
-        wallet_exists,
+        linked: !!wallet_exists,
+        profile_exists: false,
+        wallet_exists: !!wallet_exists,
         user_id_match,
         details: {
-          profile_user_id: profileData?.user_id,
           wallet_user_id: walletData?.user_id,
           wallet_balance: walletData?.balance,
         },
@@ -279,14 +276,14 @@ export class GetDealsNumberService {
     try {
       const [profileStats, walletStats] = await Promise.all([
         // Profile statistics
-        supabase.from('profiles').select('getdeals_number', { count: 'exact' }),
+        supabase.from('profiles').select('*', { count: 'exact', head: true }),
         // Wallet statistics  
         supabase.from('wallets').select('getdeals_number', { count: 'exact' }),
       ]);
 
       const [profilesWithNumbers, profilesWithoutNumbers] = await Promise.all([
-        supabase.from('profiles').select('*', { count: 'exact', head: true }).not('getdeals_number', 'is', null),
-        supabase.from('profiles').select('*', { count: 'exact', head: true }).is('getdeals_number', null),
+        supabase.from('wallets').select('*', { count: 'exact', head: true }).not('getdeals_number', 'is', null),
+        supabase.from('wallets').select('*', { count: 'exact', head: true }).is('getdeals_number', null),
       ]);
 
       const walletsWithNumbers = await supabase
@@ -359,18 +356,12 @@ export class GetDealsNumberService {
       const searchPattern = `GD-${digits}%`;
 
       const { data, error } = await supabase
-        .from('profiles')
+        .from('wallets')
         .select(`
           user_id,
           getdeals_number,
-          full_name,
-          email,
-          phone,
-          organization,
-          wallets!inner (
-            balance,
-            is_active
-          )
+          balance,
+          is_active
         `)
         .ilike('getdeals_number', searchPattern)
         .limit(10);
@@ -379,15 +370,15 @@ export class GetDealsNumberService {
         throw error;
       }
 
-      return data?.map(user => ({
-        user_id: user.user_id,
-        getdeals_number: user.getdeals_number,
-        full_name: user.full_name,
-        email: user.email,
-        phone: user.phone,
-        organization: user.organization,
-        wallet_balance: user.wallets[0]?.balance || 0,
-        wallet_active: user.wallets[0]?.is_active || false,
+      return data?.map(wallet => ({
+        user_id: wallet.user_id,
+        getdeals_number: wallet.getdeals_number,
+        full_name: null,
+        email: null,
+        phone: null,
+        organization: null,
+        wallet_balance: wallet.balance || 0,
+        wallet_active: wallet.is_active || false,
       })) || [];
     } catch (error) {
       console.error('Error searching by partial GetDeals number:', error);

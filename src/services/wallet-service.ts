@@ -38,14 +38,14 @@ export interface DepositResponse {
 
 class WalletService {
   private async ensureWalletIdentifier(userId: string): Promise<string | null> {
-    // Try to get from profiles table first
-    const { data: profile, error: profileErr } = await (supabase.from('profiles') as any)
+    // Get wallet which has getdeals_number
+    const { data: wallet, error: walletErr } = await (supabase.from('wallets') as any)
       .select('getdeals_number')
       .eq('user_id', userId)
       .single();
 
-    if (!profileErr && profile?.getdeals_number) {
-      return profile.getdeals_number as string;
+    if (!walletErr && wallet?.getdeals_number) {
+      return wallet.getdeals_number as string;
     }
 
     // If missing, attempt to generate via existing sequence function
@@ -58,15 +58,7 @@ class WalletService {
 
     const newId = (generated as any) as string; // function returns TEXT
 
-    // Update profiles table
-    const { error: updProfErr } = await (supabase.from('profiles') as any)
-      .update({ getdeals_number: newId })
-      .eq('user_id', userId);
-    if (updProfErr) {
-      console.error('[wallet] failed to update profiles with new getdeals_number', updProfErr);
-    }
-
-    // Update wallet row if exists
+    // Update wallet row with new getdeals_number
     const { error: updWalletErr } = await (supabase.from('wallets') as any)
       .update({ getdeals_number: newId })
       .eq('user_id', userId);
@@ -149,22 +141,10 @@ class WalletService {
    */
   private async createWalletIfMissing(userId: string): Promise<WalletBalance | null> {
     try {
-      // Fetch getdeals_number from profiles table
-      const { data: profile, error: profileError } = await supabase
-        .from('profiles')
-        .select('getdeals_number')
-        .eq('user_id', userId)
-        .single<any>();
-
-      if (profileError) {
-        console.error('Failed to fetch profiles for wallet bootstrap:', profileError);
-        return null;
-      }
-
-      // Create wallet row if profile exists
+      // Create wallet row if it doesn't exist
       const { data: newWallet, error: insertError } = await supabase
         .from('wallets')
-        .insert([{ user_id: userId, balance: 0, getdeals_number: profile?.getdeals_number || null }] as any)
+        .insert([{ user_id: userId, balance: 0 }] as any)
         .select('balance, user_id, updated_at, getdeals_number')
         .single<any>();
 
