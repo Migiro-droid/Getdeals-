@@ -38,7 +38,7 @@ export interface DepositResponse {
 
 class WalletService {
   private async ensureWalletIdentifier(userId: string): Promise<string | null> {
-    // Get wallet which has getdeals_number
+    // Get wallet which has getdeals_number (should already exist - don't generate)
     const { data: wallet, error: walletErr } = await (supabase.from('wallets') as any)
       .select('getdeals_number')
       .eq('user_id', userId)
@@ -48,25 +48,10 @@ class WalletService {
       return wallet.getdeals_number as string;
     }
 
-    // If missing, attempt to generate via existing sequence function
-    console.warn('[wallet] getdeals_number missing – generating on demand');
-    const { data: generated, error: genErr } = await (supabase.rpc('generate_getdeals_number') as any);
-    if (genErr || !generated) {
-      console.error('[wallet] failed to generate getdeals_number', genErr);
-      return null;
-    }
-
-    const newId = (generated as any) as string; // function returns TEXT
-
-    // Update wallet row with new getdeals_number
-    const { error: updWalletErr } = await (supabase.from('wallets') as any)
-      .update({ getdeals_number: newId })
-      .eq('user_id', userId);
-    if (updWalletErr) {
-      console.error('[wallet] failed to update wallets with new getdeals_number', updWalletErr);
-    }
-
-    return newId;
+    // If missing, log the issue but don't auto-generate
+    // GetDeals numbers should be assigned at wallet creation time
+    console.warn('[wallet] getdeals_number not found for user', userId);
+    return null;
   }
   /**
    * Initiate a deposit to the user's wallet
@@ -112,14 +97,10 @@ class WalletService {
         .eq('user_id', user.id)
         .single();
       
-      // If wallet row found, return it
+      console.log('[wallet-service] getWalletBalance query result:', { data, error, userId: user.id });
+      
+      // If wallet row found, return it (including existing getdeals_number)
       if (data) {
-        // Backfill getdeals_number if missing on wallet but present on profile (non-blocking)
-        if ((data as any)?.getdeals_number == null) {
-          this.ensureWalletIdentifier(user.id).catch(err => 
-            console.warn('[wallet] failed to ensure identifier:', err)
-          );
-        }
         return data as WalletBalance;
       }
 
