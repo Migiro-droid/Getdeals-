@@ -90,7 +90,7 @@ export class GetDealsNumberService {
       }
 
       const { data, error } = await supabase
-        .from('user_profile')
+        .from('profiles')
         .select('getdeals_number')
         .eq('user_id', user.id)
         .single();
@@ -116,7 +116,7 @@ export class GetDealsNumberService {
       }
 
       const { data, error } = await supabase
-        .from('user_profile')
+        .from('profiles')
         .select('getdeals_number')
         .eq('getdeals_number', getdealsNumber)
         .limit(1);
@@ -156,7 +156,7 @@ export class GetDealsNumberService {
   static async getUsersWithoutNumbers(): Promise<{ user_id: string; full_name: string; email: string }[]> {
     try {
       const { data, error } = await supabase
-        .from('user_profile')
+        .from('profiles')
         .select('user_id, full_name, email')
         .is('getdeals_number', null)
         .order('created_at');
@@ -231,7 +231,7 @@ export class GetDealsNumberService {
 
       // Check profile
       const { data: profileData, error: profileError } = await supabase
-        .from('user_profile')
+        .from('profiles')
         .select('user_id')
         .eq('getdeals_number', getdealsNumber)
         .single();
@@ -279,14 +279,14 @@ export class GetDealsNumberService {
     try {
       const [profileStats, walletStats] = await Promise.all([
         // Profile statistics
-        supabase.from('user_profile').select('getdeals_number', { count: 'exact' }),
+        supabase.from('profiles').select('getdeals_number', { count: 'exact' }),
         // Wallet statistics  
         supabase.from('wallets').select('getdeals_number', { count: 'exact' }),
       ]);
 
       const [profilesWithNumbers, profilesWithoutNumbers] = await Promise.all([
-        supabase.from('user_profile').select('*', { count: 'exact', head: true }).not('getdeals_number', 'is', null),
-        supabase.from('user_profile').select('*', { count: 'exact', head: true }).is('getdeals_number', null),
+        supabase.from('profiles').select('*', { count: 'exact', head: true }).not('getdeals_number', 'is', null),
+        supabase.from('profiles').select('*', { count: 'exact', head: true }).is('getdeals_number', null),
       ]);
 
       const walletsWithNumbers = await supabase
@@ -359,7 +359,7 @@ export class GetDealsNumberService {
       const searchPattern = `GD-${digits}%`;
 
       const { data, error } = await supabase
-        .from('user_profile')
+        .from('profiles')
         .select(`
           user_id,
           getdeals_number,

@@ -38,8 +38,8 @@ export interface DepositResponse {
 
 class WalletService {
   private async ensureWalletIdentifier(userId: string): Promise<string | null> {
-    // Try to get from user_profile first
-    const { data: profile, error: profileErr } = await (supabase.from('user_profile') as any)
+    // Try to get from profiles table first
+    const { data: profile, error: profileErr } = await (supabase.from('profiles') as any)
       .select('getdeals_number')
       .eq('user_id', userId)
       .single();
@@ -58,12 +58,12 @@ class WalletService {
 
     const newId = (generated as any) as string; // function returns TEXT
 
-    // Update user_profile
-    const { error: updProfErr } = await (supabase.from('user_profile') as any)
+    // Update profiles table
+    const { error: updProfErr } = await (supabase.from('profiles') as any)
       .update({ getdeals_number: newId })
       .eq('user_id', userId);
     if (updProfErr) {
-      console.error('[wallet] failed to update user_profile with new getdeals_number', updProfErr);
+      console.error('[wallet] failed to update profiles with new getdeals_number', updProfErr);
     }
 
     // Update wallet row if exists
@@ -119,52 +119,63 @@ class WalletService {
         .select('balance, user_id, updated_at, getdeals_number')
         .eq('user_id', user.id)
         .single();
-      // If wallet row missing entirely, attempt creation (lazy bootstrap)
-      if (error || !data) {
+      
+      // If wallet row found, return it
+      if (data) {
+        // Backfill getdeals_number if missing on wallet but present on profile (non-blocking)
+        if ((data as any)?.getdeals_number == null) {
+          this.ensureWalletIdentifier(user.id).catch(err => 
+            console.warn('[wallet] failed to ensure identifier:', err)
+          );
+        }
+        return data as WalletBalance;
+      }
+
+      // If wallet row missing entirely, attempt lazy creation
+      if (error) {
         console.warn('Wallet row missing or error fetching wallet. Attempting lazy creation...', error?.message);
-        // Fetch getdeals_number from user_profile
-        const { data: profile, error: profileError } = await supabase
-          .from('user_profile')
-          .select('getdeals_number')
-          .eq('user_id', user.id)
-          .single<any>();
-
-        if (profileError) {
-          console.error('Failed to fetch user_profile for wallet bootstrap:', profileError);
-          return null;
-        }
-
-        // Create wallet row if profile exists
-        const { data: newWallet, error: insertError } = await supabase
-          .from('wallets')
-          .insert([{ user_id: user.id, balance: 0, getdeals_number: profile?.getdeals_number || null }] as any)
-          .select('balance, user_id, updated_at, getdeals_number')
-          .single<any>();
-
-        if (insertError) {
-          console.error('Failed to lazily create wallet row:', insertError);
-          return null;
-        }
-        return newWallet as WalletBalance;
+        return await this.createWalletIfMissing(user.id);
       }
 
-      // Backfill getdeals_number if missing on wallet but present on profile
-      if ((data as any)?.getdeals_number == null) {
-        const ensured = await this.ensureWalletIdentifier(user.id);
-        if (ensured) {
-          // Re-fetch wallet row to include newly added id
-            const { data: updatedRow } = await supabase
-              .from('wallets')
-              .select('balance, user_id, updated_at, getdeals_number')
-              .eq('user_id', user.id)
-              .single();
-            if (updatedRow) return updatedRow as WalletBalance;
-        }
-      }
-
-      return data as WalletBalance;
+      return null;
     } catch (error) {
       console.error('Failed to get wallet balance:', error);
+      return null;
+    }
+  }
+
+  /**
+   * Create wallet row if it doesn't exist (lazy bootstrap)
+   */
+  private async createWalletIfMissing(userId: string): Promise<WalletBalance | null> {
+    try {
+      // Fetch getdeals_number from profiles table
+      const { data: profile, error: profileError } = await supabase
+        .from('profiles')
+        .select('getdeals_number')
+        .eq('user_id', userId)
+        .single<any>();
+
+      if (profileError) {
+        console.error('Failed to fetch profiles for wallet bootstrap:', profileError);
+        return null;
+      }
+
+      // Create wallet row if profile exists
+      const { data: newWallet, error: insertError } = await supabase
+        .from('wallets')
+        .insert([{ user_id: userId, balance: 0, getdeals_number: profile?.getdeals_number || null }] as any)
+        .select('balance, user_id, updated_at, getdeals_number')
+        .single<any>();
+
+      if (insertError) {
+        console.error('Failed to lazily create wallet row:', insertError);
+        return null;
+      }
+      
+      return newWallet as WalletBalance;
+    } catch (error) {
+      console.error('Error creating wallet:', error);
       return null;
     }
   }

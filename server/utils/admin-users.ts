@@ -284,7 +284,7 @@ export async function fetchAdminProfiles(
 
   try {
     const { data, error } = await client
-      .from('user_profile')
+      .from('profiles')
       .select(
         `
         user_id,

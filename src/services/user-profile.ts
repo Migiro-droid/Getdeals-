@@ -17,7 +17,7 @@ export class UserProfileService {
   static async getUserProfile(userId: string): Promise<UserProfile | null> {
     try {
       const { data, error } = await supabase
-        .from('user_profile')
+        .from('profiles')
         .select('*')
         .eq('user_id', userId)
         .single();
@@ -64,7 +64,7 @@ export class UserProfileService {
   ): Promise<UserProfile> {
     try {
       const { data, error } = await supabase
-        .from('user_profile')
+        .from('profiles')
         .upsert(
           {
             user_id: userId,
@@ -116,7 +116,7 @@ export class UserProfileService {
   static async isOrganizationNumberAvailable(organizationNumber: string, excludeUserId?: string): Promise<boolean> {
     try {
       let query = supabase
-        .from('user_profile')
+        .from('profiles')
         .select('user_id')
         .eq('organization_number', organizationNumber);
 
@@ -143,7 +143,7 @@ export class UserProfileService {
   static async searchByOrganization(organizationName: string): Promise<UserProfile[]> {
     try {
       const { data, error } = await supabase
-        .from('user_profile')
+        .from('profiles')
         .select('*')
         .ilike('organization', `%${organizationName}%`)
         .eq('is_active', true)
@@ -170,9 +170,9 @@ export class UserProfileService {
   }> {
     try {
       const [totalResult, orgResult, verifiedResult] = await Promise.all([
-        supabase.from('user_profile').select('*', { count: 'exact', head: true }),
-        supabase.from('user_profile').select('*', { count: 'exact', head: true }).not('organization', 'is', null),
-        supabase.from('user_profile').select('*', { count: 'exact', head: true }).eq('email_verified', true),
+        supabase.from('profiles').select('*', { count: 'exact', head: true }),
+        supabase.from('profiles').select('*', { count: 'exact', head: true }).not('organization', 'is', null),
+        supabase.from('profiles').select('*', { count: 'exact', head: true }).eq('email_verified', true),
       ]);
 
       return {
@@ -192,7 +192,7 @@ export class UserProfileService {
   static async deactivateUserProfile(userId: string): Promise<boolean> {
     try {
       const { error } = await supabase
-        .from('user_profile')
+        .from('profiles')
         .update({ 
           is_active: false,
           updated_at: new Date().toISOString(),
@@ -224,7 +224,7 @@ export class UserProfileService {
         {
           event: '*',
           schema: 'public',
-          table: 'user_profile',
+          table: 'profiles',
           filter: `user_id=eq.${userId}`,
         },
         (payload) => {
