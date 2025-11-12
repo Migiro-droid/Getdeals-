@@ -165,13 +165,28 @@ export default function WalletPage() {
             </h1>
             <p className="mt-1 text-muted-foreground">Manage your funds and transactions securely.</p>
           </div>
-          <div className="flex items-center">
+          <div className="flex items-center gap-2">
             {loading ? (
               <Skeleton className="h-8 w-64" />
-            ) : (
+            ) : walletId ? (
               <span className="inline-flex items-center rounded-md bg-primary/10 text-primary border border-primary/20 px-3 py-1 text-xs md:text-sm font-mono tracking-wide">
-                Wallet ID: {walletId || (walletData?.user_id ? 'TEMP-' + walletData.user_id.slice(0,8) : '...')}
+                Wallet ID: {walletId}
               </span>
+            ) : (
+              <div className="flex items-center gap-2">
+                <span className="inline-flex items-center rounded-md bg-amber-100 text-amber-800 border border-amber-300 px-3 py-1 text-xs md:text-sm">
+                  Wallet ID not found - please refresh
+                </span>
+                <Button 
+                  size="sm" 
+                  variant="outline"
+                  onClick={() => {
+                    refreshWallet();
+                  }}
+                >
+                  Refresh
+                </Button>
+              </div>
             )}
           </div>
         </div>

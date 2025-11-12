@@ -97,12 +97,18 @@ class WalletService {
         .eq('user_id', user.id)
         .single();
       
-      console.log('[wallet-service] getWalletBalance - Full wallet data:', { data, error, userId: user.id });
+      console.log('[wallet-service] getWalletBalance - Full wallet data:', { 
+        data, 
+        error, 
+        userId: user.id,
+        balance: (data as any)?.balance,
+        getdeals_number: (data as any)?.getdeals_number
+      });
       
       // If wallet row found, return it (including existing getdeals_number)
       if (data) {
         const walletData = data as any;
-        console.log('[wallet-service] Wallet getdeals_number from DB:', walletData.getdeals_number);
+        console.log('[wallet-service] Wallet getdeals_number from DB:', walletData.getdeals_number, 'Balance:', walletData.balance);
         return {
           balance: walletData.balance,
           user_id: walletData.user_id,
@@ -172,6 +178,17 @@ class WalletService {
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) return [];
 
+      // First, get ALL transactions regardless of status to understand what's in the DB
+      const { data: allData, error: allError } = await supabase
+        .from('wallet_transactions')
+        .select('*')
+        .eq('user_id', user.id)
+        .order('created_at', { ascending: false })
+        .limit(100);
+
+      console.log('[wallet-service] All transactions (all statuses):', allData);
+
+      // Then get only completed ones
       const { data, error } = await supabase
         .from('wallet_transactions')
         .select('*')
@@ -179,6 +196,8 @@ class WalletService {
         .eq('status', 'completed')
         .order('created_at', { ascending: false })
         .limit(limit);
+
+      console.log('[wallet-service] Completed transactions:', { data, error, userId: user.id, count: data?.length || 0 });
 
       if (error) {
         console.error('Error fetching transaction history:', error);
