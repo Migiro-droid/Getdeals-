@@ -9,6 +9,7 @@ import { QuickMartAdminOrders } from './QuickMartAdminOrders';
 import { QuickMartAdminProducts } from './QuickMartAdminProducts';
 import { QuickMartAdminAnalytics } from './QuickMartAdminAnalytics';
 import { QuickMartCheckout } from './QuickMartCheckout';
+import { OrderNotificationCenter } from '../../components/OrderNotificationCenter';
 
 export const QuickMartAdminDashboard: React.FC = () => {
   const { user, isAuthenticated, signOut, signIn } = useAuth();
@@ -301,6 +302,9 @@ export const QuickMartAdminDashboard: React.FC = () => {
           </TabsContent>
         </Tabs>
       </div>
+
+      {/* Order Notification Center */}
+      <OrderNotificationCenter />
     </div>
   );
 };
