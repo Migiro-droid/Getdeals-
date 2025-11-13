@@ -1,4 +1,4 @@
-import { useEffect, useState, useMemo } from "react";
+import { useEffect, useState, useMemo, useRef } from "react";
 import { Link } from "react-router-dom";
 import { ArrowRight, CheckCircle, Clock, Shield, Truck, LogIn, UserPlus, Megaphone, X, Star, ShieldCheck, Search, Package, Users, CreditCard, Wallet, Zap, MessageCircle, Sparkles } from "lucide-react";
 import ChatSupportButton from '@/components/ChatSupportButton';
@@ -6,9 +6,11 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { ProductCard } from "@/components/ProductCard";
 import { AuthModals } from "@/components/AuthModals";
+import { AddressRequiredModal } from "@/components/AddressRequiredModal";
 import { useProducts } from "@/contexts/ProductsContext";
 import { useAuth } from "@/contexts/AuthContext";
 import { useAdmin } from "@/contexts/AdminContext";
+import { useAccount } from "@/contexts/AccountContext";
 import { Input } from "@/components/ui/input";
 import { useToast } from "@/hooks/use-toast";
 import heroBg from "@/assets/franki-chamaki-ivfp_yxZuYQ-unsplash.jpg";
@@ -29,11 +31,15 @@ export default function HomePage() {
   const { all } = useProducts();
   const { isAuthenticated, signOut } = useAuth();
   const { settings } = useAdmin();
+  const { addresses } = useAccount();
+  // track previous auth value so we only open the address modal on a fresh login
+  const prevIsAuthenticatedRef = useRef<boolean | null>(null);
   const featuredProducts = all.filter(p => p.category !== 'alcohol' && p.category !== 'blackfriday').slice(0, 3);
   const discountedProducts = all.filter(p => p.originalPrice && p.originalPrice > p.price);
   const blackFridayProducts = all.filter(p => p.category === 'blackfriday');
   const [authModalOpen, setAuthModalOpen] = useState(false);
   const [authModalTab, setAuthModalTab] = useState<"signin" | "signup">("signin");
+  const [addressModalOpen, setAddressModalOpen] = useState(false);
   const { toast } = useToast();
   const [email, setEmail] = useState("");
   const [countdown, setCountdown] = useState({ days: 0, hours: 0, mins: 0, secs: 0, ended: false });
@@ -125,6 +131,22 @@ export default function HomePage() {
     const id = setInterval(tick, 1000);
     return () => clearInterval(id);
   }, [settings.blackFridayCountdownDate, settings.blackFridayEnabled]);
+
+  // open address modal when user just logged in (transition false -> true)
+  useEffect(() => {
+    // initialize previous on first mount
+    if (prevIsAuthenticatedRef.current === null) {
+      prevIsAuthenticatedRef.current = isAuthenticated;
+      return;
+    }
+
+    if (!prevIsAuthenticatedRef.current && isAuthenticated) {
+      // user has just logged in
+      setAddressModalOpen(true);
+    }
+
+    prevIsAuthenticatedRef.current = isAuthenticated;
+  }, [isAuthenticated]);
 
   // Hero slideshow effect
   useEffect(() => {
@@ -954,6 +976,15 @@ export default function HomePage() {
         open={authModalOpen}
         onOpenChange={setAuthModalOpen}
         defaultTab={authModalTab}
+        onLoginSuccess={() => {
+          // Always prompt for address after login to allow user to confirm/change delivery address
+          setAddressModalOpen(true);
+        }}
+      />
+
+      <AddressRequiredModal
+        open={addressModalOpen}
+        onOpenChange={setAddressModalOpen}
       />
     </div>
   );

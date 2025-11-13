@@ -14,9 +14,10 @@ interface AuthModalsProps {
   onOpenChange: (open: boolean) => void;
   // accept legacy "signin" value too and normalize internally
   defaultTab?: "login" | "signup" | "signin";
+  onLoginSuccess?: () => void;
 }
 
-export function AuthModals({ open, onOpenChange, defaultTab = "login" }: AuthModalsProps) {
+export function AuthModals({ open, onOpenChange, defaultTab = "login", onLoginSuccess }: AuthModalsProps) {
   // normalize any incoming "signin" to "login"
   const normalizeTab = (t?: string) => (t === "signin" ? "login" : (t as any) ?? "login");
   const [activeTab, setActiveTab] = useState(normalizeTab(defaultTab));
@@ -50,8 +51,10 @@ export function AuthModals({ open, onOpenChange, defaultTab = "login" }: AuthMod
     const password = (form.querySelector('#login-password') as HTMLInputElement)?.value;
     try {
       await signIn(email, password);
-  toast({ title: "Welcome back!" });
+      toast({ title: "Welcome back!" });
       onOpenChange(false);
+      // Trigger post-login address check if callback provided
+      onLoginSuccess?.();
     } catch (err: any) {
       setError(err?.message || 'Failed to login');
     } finally {
@@ -68,8 +71,6 @@ export function AuthModals({ open, onOpenChange, defaultTab = "login" }: AuthMod
     const phone = (form.querySelector('#signup-phone') as HTMLInputElement)?.value;
     const email = (form.querySelector('#signup-email') as HTMLInputElement)?.value;
     const password = (form.querySelector('#signup-password') as HTMLInputElement)?.value;
-    const organization = (form.querySelector('#signup-organization') as HTMLInputElement)?.value;
-    const organizationId = (form.querySelector('#signup-organization-id') as HTMLInputElement)?.value;
     
     // Validate phone number is provided
     if (!phone || phone.trim() === '') {
@@ -79,7 +80,7 @@ export function AuthModals({ open, onOpenChange, defaultTab = "login" }: AuthMod
     }
     
     try {
-      await signUp(name, phone, email, password, organization, organizationId);
+      await signUp(name, phone, email, password, '', '');
       toast({ 
         title: "Account created", 
         description: "Please check your email to confirm your account. The preferences section will be available after email confirmation." 
@@ -150,8 +151,8 @@ export function AuthModals({ open, onOpenChange, defaultTab = "login" }: AuthMod
                 }}
               />
             </div>
-            <DialogTitle className="text-xl font-bold bg-gradient-to-r from-primary to-primary/70 bg-clip-text text-transparent">
-              {showForgotPassword ? "Reset Password" : "Welcome to GetDeals"}
+            <DialogTitle className="text-xl font-bold bg-gradient-to-r from-primary to-primary/70 bg-clip-text text-transparent text-center w-full">
+              {showForgotPassword ? "Reset Password" : activeTab === "signup" ? "Signup" : "Welcome to GetDeals"}
             </DialogTitle>
             <DialogDescription className="text-center text-xs text-muted-foreground">
               {showForgotPassword ? "Enter your email to receive a password reset link" : "Login or create an account to continue shopping"}
@@ -202,9 +203,9 @@ export function AuthModals({ open, onOpenChange, defaultTab = "login" }: AuthMod
             }}
             className="w-full"
           >
-            <TabsList className="grid w-full grid-cols-2 h-10 bg-muted/50">
+            {/* Only show Login tab. Sign Up is accessible via the CTA below */}
+            <TabsList className="grid w-full grid-cols-1 h-10 bg-muted/50">
               <TabsTrigger value="login" className="text-sm">Login</TabsTrigger>
-              <TabsTrigger value="signup" className="text-sm">Sign Up</TabsTrigger>
             </TabsList>
 
             <TabsContent value="login" className="space-y-4 mt-4">
@@ -333,32 +334,6 @@ export function AuthModals({ open, onOpenChange, defaultTab = "login" }: AuthMod
                       placeholder="your@email.com"
                       className="pl-7 h-8 text-xs border-2 focus:border-primary/50 transition-colors"
                       required
-                    />
-                  </div>
-                </div>
-                
-                <div className="space-y-1">
-                  <Label htmlFor="signup-organization" className="text-xs font-medium">Organization (Optional)</Label>
-                  <div className="relative">
-                    <Building2 className="absolute left-2 top-2 h-3 w-3 text-muted-foreground" />
-                    <Input
-                      id="signup-organization"
-                      type="text"
-                      placeholder="Your company"
-                      className="pl-7 h-8 text-xs border-2 focus:border-primary/50 transition-colors"
-                    />
-                  </div>
-                </div>
-                
-                <div className="space-y-1">
-                  <Label htmlFor="signup-organization-id" className="text-xs font-medium">Organization ID (Optional)</Label>
-                  <div className="relative">
-                    <Building2 className="absolute left-2 top-2 h-3 w-3 text-muted-foreground" />
-                    <Input
-                      id="signup-organization-id"
-                      type="text"
-                      placeholder="Org ID or registration"
-                      className="pl-7 h-8 text-xs border-2 focus:border-primary/50 transition-colors"
                     />
                   </div>
                 </div>
