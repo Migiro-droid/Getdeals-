@@ -12,11 +12,14 @@ import { useToast } from "@/components/ui/use-toast";
 interface AuthModalsProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
-  defaultTab?: "signin" | "signup";
+  // accept legacy "signin" value too and normalize internally
+  defaultTab?: "login" | "signup" | "signin";
 }
 
-export function AuthModals({ open, onOpenChange, defaultTab = "signin" }: AuthModalsProps) {
-  const [activeTab, setActiveTab] = useState(defaultTab);
+export function AuthModals({ open, onOpenChange, defaultTab = "login" }: AuthModalsProps) {
+  // normalize any incoming "signin" to "login"
+  const normalizeTab = (t?: string) => (t === "signin" ? "login" : (t as any) ?? "login");
+  const [activeTab, setActiveTab] = useState(normalizeTab(defaultTab));
   const [showSignInPassword, setShowSignInPassword] = useState(false);
   const [showSignUpPassword, setShowSignUpPassword] = useState(false);
   const [loading, setLoading] = useState(false);
@@ -28,7 +31,7 @@ export function AuthModals({ open, onOpenChange, defaultTab = "signin" }: AuthMo
 
   useEffect(() => {
     if (open) {
-      setActiveTab(defaultTab);
+      setActiveTab(normalizeTab(defaultTab));
       setError(null);
       setLoading(false);
       setShowSignInPassword(false);
@@ -43,14 +46,14 @@ export function AuthModals({ open, onOpenChange, defaultTab = "signin" }: AuthMo
     setError(null);
     setLoading(true);
     const form = e.target as HTMLFormElement;
-    const email = (form.querySelector('#signin-email') as HTMLInputElement)?.value;
-    const password = (form.querySelector('#signin-password') as HTMLInputElement)?.value;
+    const email = (form.querySelector('#login-email') as HTMLInputElement)?.value;
+    const password = (form.querySelector('#login-password') as HTMLInputElement)?.value;
     try {
       await signIn(email, password);
-  toast({ title: "Signed in successfully" });
+  toast({ title: "Welcome back!" });
       onOpenChange(false);
     } catch (err: any) {
-      setError(err?.message || 'Failed to sign in');
+      setError(err?.message || 'Failed to login');
     } finally {
       setLoading(false);
     }
@@ -151,7 +154,7 @@ export function AuthModals({ open, onOpenChange, defaultTab = "signin" }: AuthMo
               {showForgotPassword ? "Reset Password" : "Welcome to GetDeals"}
             </DialogTitle>
             <DialogDescription className="text-center text-xs text-muted-foreground">
-              {showForgotPassword ? "Enter your email to receive a password reset link" : "Sign in or create an account to continue shopping"}
+              {showForgotPassword ? "Enter your email to receive a password reset link" : "Login or create an account to continue shopping"}
             </DialogDescription>
           </DialogHeader>
 
@@ -185,7 +188,7 @@ export function AuthModals({ open, onOpenChange, defaultTab = "signin" }: AuthMo
                   onClick={() => setShowForgotPassword(false)}
                   className="text-primary hover:text-primary/80 font-medium hover:underline transition-colors"
                 >
-                  Back to Sign In
+                  Back to Login
                 </button>
               </p>
             </form>
@@ -200,18 +203,18 @@ export function AuthModals({ open, onOpenChange, defaultTab = "signin" }: AuthMo
             className="w-full"
           >
             <TabsList className="grid w-full grid-cols-2 h-10 bg-muted/50">
-              <TabsTrigger value="signin" className="text-sm">Sign In</TabsTrigger>
+              <TabsTrigger value="login" className="text-sm">Login</TabsTrigger>
               <TabsTrigger value="signup" className="text-sm">Sign Up</TabsTrigger>
             </TabsList>
 
-            <TabsContent value="signin" className="space-y-4 mt-4">
+            <TabsContent value="login" className="space-y-4 mt-4">
               <form onSubmit={handleSignIn} className="space-y-4">
                 <div className="space-y-1">
-                  <Label htmlFor="signin-email" className="text-xs font-medium">Email Address</Label>
+                    <Label htmlFor="login-email" className="text-xs font-medium">Email Address</Label>
                   <div className="relative">
                     <Mail className="absolute left-3 top-2.5 h-4 w-4 text-muted-foreground" />
                     <Input
-                      id="signin-email"
+                      id="login-email"
                       type="email"
                       placeholder="Enter your email"
                       className="pl-10 h-10 border-2 focus:border-primary/50 transition-colors"
@@ -222,7 +225,7 @@ export function AuthModals({ open, onOpenChange, defaultTab = "signin" }: AuthMo
                 
                 <div className="space-y-1">
                   <div className="flex items-center justify-between">
-                    <Label htmlFor="signin-password" className="text-xs font-medium">Password</Label>
+                    <Label htmlFor="login-password" className="text-xs font-medium">Password</Label>
                     <button
                       type="button"
                       onClick={() => setShowForgotPassword(true)}
@@ -234,7 +237,7 @@ export function AuthModals({ open, onOpenChange, defaultTab = "signin" }: AuthMo
                   <div className="relative">
                     <Lock className="absolute left-3 top-2.5 h-4 w-4 text-muted-foreground" />
                     <Input
-                      id="signin-password"
+                      id="login-password"
                       type={showSignInPassword ? "text" : "password"}
                       placeholder="Enter your password"
                       className="pl-10 pr-10 h-10 border-2 focus:border-primary/50 transition-colors"
@@ -252,7 +255,7 @@ export function AuthModals({ open, onOpenChange, defaultTab = "signin" }: AuthMo
 
                 {error && <p className="text-xs text-red-600">{error}</p>}
                 <Button disabled={loading} type="submit" className="w-full h-10 bg-gradient-to-r from-primary to-primary/80 hover:from-primary/90 hover:to-primary/70 transition-all">
-                  Sign In
+                  Login
                 </Button>
                 
                 <div className="flex items-center gap-2">
@@ -282,7 +285,7 @@ export function AuthModals({ open, onOpenChange, defaultTab = "signin" }: AuthMo
                     onClick={() => setActiveTab("signup")}
                     className="text-primary hover:text-primary/80 font-medium hover:underline transition-colors"
                   >
-                    Create one now
+                    Signup Now
                   </button>
                 </p>
               </form>
@@ -411,10 +414,10 @@ export function AuthModals({ open, onOpenChange, defaultTab = "signin" }: AuthMo
                   Already have an account?{" "}
                   <button
                     type="button"
-                    onClick={() => setActiveTab("signin")}
+                    onClick={() => setActiveTab("login")}
                     className="text-primary hover:text-primary/80 font-medium hover:underline transition-colors"
                   >
-                    Sign in
+                    Login
                   </button>
                 </p>
               </form>
