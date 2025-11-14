@@ -35,7 +35,31 @@ export default defineConfig(async ({ mode }) => {
       },
     },
     build: {
-      chunkSizeWarningLimit: 2000,
+      chunkSizeWarningLimit: 1000, // Reduce to 1MB to encourage better splitting
+      rollupOptions: {
+        output: {
+          manualChunks: {
+            // Vendor chunks - split large dependencies
+            'react-vendor': ['react', 'react-dom', 'react-router-dom'],
+            'ui-vendor': [
+              '@radix-ui/react-dialog',
+              '@radix-ui/react-dropdown-menu',
+              '@radix-ui/react-select',
+              '@radix-ui/react-tabs',
+              '@radix-ui/react-toast',
+              '@radix-ui/react-tooltip',
+              '@radix-ui/react-slot',
+              '@radix-ui/react-label',
+              '@radix-ui/react-switch',
+            ],
+            'chart-vendor': ['recharts'],
+            'query-vendor': ['@tanstack/react-query'],
+            'supabase-vendor': ['@supabase/supabase-js'],
+            'utils': ['clsx', 'tailwind-merge', 'class-variance-authority'],
+            'icons': ['lucide-react'],
+          },
+        },
+      },
     },
   };
 });

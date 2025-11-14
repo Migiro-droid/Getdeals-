@@ -3,7 +3,7 @@ import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route } from "react-router-dom";
-import { useEffect } from "react";
+import { useEffect, lazy, Suspense } from "react";
 import { SpeedInsights } from "@vercel/speed-insights/react";
 import { CartProvider } from "@/contexts/CartContext";
 import { WalletProvider } from "./contexts/NewWalletContext";
@@ -18,44 +18,46 @@ import { AccountProvider } from "./contexts/AccountContext";
 import { UserProfileProvider } from "./contexts/UserProfileContext";
 import { Footer } from "@/components/Footer";
 import { initializeLetaClient } from "@/services/leta";
-import HomePage from "./pages/HomePage";
-import HomePageRedesign from "./pages/HomePageRedesign";
-import BlackFridayPage from "./pages/BlackFridayPage";
-import BasketsPage from "./pages/BasketsPage";
-import DealsPage from "./pages/DealsPage";
-import CartPage from "./pages/CartPage";
-import CheckoutPage from "./pages/CheckoutPage";
-import ContactPage from "./pages/ContactPage";
-import AboutPage from "./pages/AboutPage";
-import HowItWorksPage from "./pages/HowItWorksPage";
-import AccountPage from "./pages/AccountPage";
-import FAQPage from "./pages/FAQPage";
-import NotFound from "./pages/NotFound";
-import AdminDashboard from "./pages/admin/AdminDashboard";
-import AdminOrders from "./pages/admin/AdminOrders";
-import AdminSettings from "./pages/admin/AdminSettings";
-import { useAdmin } from "@/contexts/AdminContext";
-import AdminProducts from "./pages/admin/AdminProducts";
-import AdminUsers from "./pages/admin/AdminUsers";
-import InventoryPage from "./pages/admin/InventoryPage";
-import OutOfStockPage from "./pages/admin/OutOfStockPage";
-import TestProductsPage from "./pages/TestProductsPage";
-import WalletPage from "./pages/WalletPage";
-import CategoryPage from "./pages/CategoryPage";
-import AuthPage from "./pages/AuthPage";
-import AuthCallbackPage from "./pages/AuthCallbackPage";
-import ResetPasswordPage from "./pages/ResetPasswordPage";
-import TermsOfServicePage from "./pages/TermsOfServicePage";
-import PrivacyPolicyPage from "./pages/PrivacyPolicyPage";
-import CookiePolicyPage from "./pages/CookiePolicyPage";
-import ReturnPolicyPage from "./pages/ReturnPolicyPage";
-import { AuthTestPage } from "./components/AuthTestPage";
-import QuickMartAdminDashboard from "./pages/quickmart/QuickMartAdminDashboard";
-import BuildYourBasket from "./pages/BuildYourBasket";
-import ConsumerInsightsPage from "./pages/ConsumerInsightsPage";
-import WhoWeServe from "./pages/WhoWeServe";
 import { AddressRequiredModal } from "./components/AddressRequiredModal";
 import { useAddressOnboarding } from "./hooks/useAddressOnboarding";
+import { useAdmin } from "@/contexts/AdminContext";
+
+// Lazy load route components
+const HomePageRedesign = lazy(() => import("./pages/HomePageRedesign"));
+const HomePage = lazy(() => import("./pages/HomePage"));
+const BlackFridayPage = lazy(() => import("./pages/BlackFridayPage"));
+const BasketsPage = lazy(() => import("./pages/BasketsPage"));
+const DealsPage = lazy(() => import("./pages/DealsPage"));
+const CartPage = lazy(() => import("./pages/CartPage"));
+const CheckoutPage = lazy(() => import("./pages/CheckoutPage"));
+const ContactPage = lazy(() => import("./pages/ContactPage"));
+const AboutPage = lazy(() => import("./pages/AboutPage"));
+const HowItWorksPage = lazy(() => import("./pages/HowItWorksPage"));
+const AccountPage = lazy(() => import("./pages/AccountPage"));
+const FAQPage = lazy(() => import("./pages/FAQPage"));
+const NotFound = lazy(() => import("./pages/NotFound"));
+const AdminDashboard = lazy(() => import("./pages/admin/AdminDashboard"));
+const AdminOrders = lazy(() => import("./pages/admin/AdminOrders"));
+const AdminSettings = lazy(() => import("./pages/admin/AdminSettings"));
+const AdminProducts = lazy(() => import("./pages/admin/AdminProducts"));
+const AdminUsers = lazy(() => import("./pages/admin/AdminUsers"));
+const InventoryPage = lazy(() => import("./pages/admin/InventoryPage"));
+const OutOfStockPage = lazy(() => import("./pages/admin/OutOfStockPage"));
+const TestProductsPage = lazy(() => import("./pages/TestProductsPage"));
+const WalletPage = lazy(() => import("./pages/WalletPage"));
+const CategoryPage = lazy(() => import("./pages/CategoryPage"));
+const AuthPage = lazy(() => import("./pages/AuthPage"));
+const AuthCallbackPage = lazy(() => import("./pages/AuthCallbackPage"));
+const ResetPasswordPage = lazy(() => import("./pages/ResetPasswordPage"));
+const TermsOfServicePage = lazy(() => import("./pages/TermsOfServicePage"));
+const PrivacyPolicyPage = lazy(() => import("./pages/PrivacyPolicyPage"));
+const CookiePolicyPage = lazy(() => import("./pages/CookiePolicyPage"));
+const ReturnPolicyPage = lazy(() => import("./pages/ReturnPolicyPage"));
+const AuthTestPage = lazy(() => import("./components/AuthTestPage").then(m => ({ default: m.AuthTestPage })));
+const QuickMartAdminDashboard = lazy(() => import("./pages/quickmart/QuickMartAdminDashboard"));
+const BuildYourBasket = lazy(() => import("./pages/BuildYourBasket"));
+const ConsumerInsightsPage = lazy(() => import("./pages/ConsumerInsightsPage"));
+const WhoWeServe = lazy(() => import("./pages/WhoWeServe"));
 
 // Initialize Leta Client on app startup
 const letaApiUrl = import.meta.env.VITE_LETA_API_URL || 'https://integrations.leta.ai';
@@ -149,6 +151,15 @@ const App = () => {
     return null; 
   }
 
+  // Loading fallback component
+  function PageLoader() {
+    return (
+      <div className="flex items-center justify-center min-h-[60vh]">
+        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary"></div>
+      </div>
+    );
+  }
+
   function AppContent() {
     const { showAddressModal, closeModal } = useAddressOnboarding();
 
@@ -158,7 +169,8 @@ const App = () => {
           <Header />
           <main className="flex-1">
             <MaintenanceBanner />
-            <Routes>
+            <Suspense fallback={<PageLoader />}>
+              <Routes>
               <Route path="/" element={<HomePageRedesign />} />
               <Route path="/old-home" element={<HomePage />} />
               <Route path="/black-friday" element={<BlackFridayPage />} />
@@ -196,7 +208,8 @@ const App = () => {
               <Route path="/who-we-serve" element={<WhoWeServe />} />
               {}
               <Route path="*" element={<NotFound />} />
-            </Routes>
+              </Routes>
+            </Suspense>
           </main>
           <Footer />
 
