@@ -1,8 +1,10 @@
+import { useState } from 'react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '@/components/ui/dialog';
-import { MapPin } from 'lucide-react';
+import { MapPin, Check } from 'lucide-react';
 import { AddressForm } from '@/components/AddressForm';
 import { useAccount, type Address } from '@/contexts/AccountContext';
 import { useToast } from '@/components/ui/use-toast';
+import { Button } from '@/components/ui/button';
 
 interface AddressRequiredModalProps {
   open: boolean;
@@ -13,8 +15,12 @@ export function AddressRequiredModal({
   open,
   onOpenChange,
 }: AddressRequiredModalProps) {
-  const { addAddress, addresses } = useAccount();
+  const { addAddress, addresses, setDefaultAddress } = useAccount();
   const { toast } = useToast();
+  const [showAddForm, setShowAddForm] = useState(addresses.length === 0);
+  const [selectedAddressId, setSelectedAddressId] = useState<string | null>(
+    addresses.find(a => a.is_default || a.isDefault)?.id || null
+  );
 
   const handleAddressSave = (addressData: Omit<Address, 'id'>) => {
     try {
@@ -26,6 +32,7 @@ export function AddressRequiredModal({
       // Close modal after a brief delay to show success
       setTimeout(() => {
         onOpenChange(false);
+        setShowAddForm(false);
       }, 500);
     } catch (error) {
       toast({
@@ -36,18 +43,34 @@ export function AddressRequiredModal({
     }
   };
 
-  const handleCancel = () => {
-    // If user has no addresses, require them to add one
-    if (addresses.length === 0) {
+  const handleConfirmAddress = () => {
+    if (!selectedAddressId) {
       toast({
-        title: "Address Required",
-        description: "Please add a delivery address to continue.",
+        title: "No Address Selected",
+        description: "Please select an address or add a new one.",
         variant: "destructive",
       });
-    } else {
-      // If user already has addresses, allow them to skip
-      onOpenChange(false);
+      return;
     }
+
+    // Set the selected address as default
+    setDefaultAddress(selectedAddressId);
+
+    toast({
+      title: "Address Confirmed",
+      description: "Your delivery address has been confirmed.",
+    });
+
+    onOpenChange(false);
+  };
+
+  const handleCancel = () => {
+    // All users must confirm/update their address on login
+    toast({
+      title: "Address Confirmation Required",
+      description: "Please confirm or update your delivery address to continue.",
+      variant: "destructive",
+    });
   };
 
   return (
@@ -85,10 +108,74 @@ export function AddressRequiredModal({
         </DialogHeader>
 
         <div className="py-4">
-          <AddressForm
-            onSave={handleAddressSave}
-            onCancel={handleCancel}
-          />
+          {showAddForm ? (
+            <AddressForm
+              onSave={handleAddressSave}
+              onCancel={() => {
+                if (addresses.length > 0) {
+                  setShowAddForm(false);
+                } else {
+                  handleCancel();
+                }
+              }}
+            />
+          ) : (
+            <div className="space-y-4">
+              {/* Existing Addresses List */}
+              <div className="space-y-2">
+                <label className="text-sm font-medium">Select Delivery Address</label>
+                {addresses.map((address) => (
+                  <div
+                    key={address.id}
+                    onClick={() => setSelectedAddressId(address.id)}
+                    className={`p-3 border rounded-lg cursor-pointer transition-all ${
+                      selectedAddressId === address.id
+                        ? 'border-primary bg-primary/5'
+                        : 'border-gray-200 hover:border-primary/50'
+                    }`}
+                  >
+                    <div className="flex items-start justify-between">
+                      <div className="flex-1">
+                        <div className="flex items-center gap-2">
+                          <span className="font-medium text-sm">{address.label}</span>
+                          {(address.is_default || address.isDefault) && (
+                            <span className="text-xs bg-primary/10 text-primary px-2 py-0.5 rounded">
+                              Default
+                            </span>
+                          )}
+                        </div>
+                        <p className="text-sm text-gray-600 mt-1">
+                          {address.street_address}
+                        </p>
+                        <p className="text-xs text-gray-500">{address.city}</p>
+                      </div>
+                      {selectedAddressId === address.id && (
+                        <Check className="h-5 w-5 text-primary flex-shrink-0" />
+                      )}
+                    </div>
+                  </div>
+                ))}
+              </div>
+
+              {/* Action Buttons */}
+              <div className="flex gap-2 pt-2">
+                <Button
+                  variant="outline"
+                  onClick={() => setShowAddForm(true)}
+                  className="flex-1"
+                >
+                  Add New Address
+                </Button>
+                <Button
+                  onClick={handleConfirmAddress}
+                  className="flex-1"
+                  disabled={!selectedAddressId}
+                >
+                  Confirm Address
+                </Button>
+              </div>
+            </div>
+          )}
         </div>
       </DialogContent>
     </Dialog>
