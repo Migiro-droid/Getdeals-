@@ -20,14 +20,21 @@ interface AddressData {
   label: string;
   street_address: string;
   city: string;
-  county: string;
-  postal_code: string;
-  phone_number: string;
+  county?: string;
+  postal_code?: string;
+  phone_number?: string;
   latitude?: number;
   longitude?: number;
   formatted_address?: string;
   is_default: boolean;
   address_type: 'home' | 'work' | 'other';
+}
+
+interface PlaceSuggestion {
+  place_id: string;
+  description: string;
+  main_text: string;
+  secondary_text: string;
 }
 
 export const AddressForm: React.FC<AddressFormProps> = ({
@@ -38,9 +45,12 @@ export const AddressForm: React.FC<AddressFormProps> = ({
 }) => {
   const { toast } = useToast();
   const [gettingLocation, setGettingLocation] = useState(false);
-  
+  const [addressInput, setAddressInput] = useState('');
+  const [suggestions, setSuggestions] = useState<PlaceSuggestion[]>([]);
+  const [showSuggestions, setShowSuggestions] = useState(false);
+
   const [formData, setFormData] = useState<AddressData>({
-    label: address?.label || '',
+    label: address?.label || 'Home',
     street_address: address?.street_address || '',
     city: address?.city || '',
     county: address?.county || '',
@@ -52,6 +62,89 @@ export const AddressForm: React.FC<AddressFormProps> = ({
     is_default: address?.is_default || false,
     address_type: address?.address_type || 'home'
   });
+
+  // Geocoding function for address suggestions
+  const searchPlaces = async (input: string) => {
+    if (input.length < 3) {
+      setSuggestions([]);
+      setShowSuggestions(false);
+      return;
+    }
+
+    try {
+      // Using Nominatim API (OpenStreetMap) for geocoding - free alternative
+      const response = await fetch(
+        `https://nominatim.openstreetmap.org/search?q=${encodeURIComponent(input)},Kenya&format=json&addressdetails=1&limit=5`,
+        {
+          headers: {
+            'User-Agent': 'GetDeals Kenya App'
+          }
+        }
+      );
+
+      const data = await response.json();
+
+      const placeSuggestions: PlaceSuggestion[] = data.map((place: any) => ({
+        place_id: place.place_id,
+        description: place.display_name,
+        main_text: place.name || place.display_name.split(',')[0],
+        secondary_text: place.display_name.split(',').slice(1).join(',').trim()
+      }));
+
+      setSuggestions(placeSuggestions);
+      setShowSuggestions(true);
+    } catch (error) {
+      console.error('Error searching places:', error);
+    }
+  };
+
+  const handleAddressInputChange = (value: string) => {
+    setAddressInput(value);
+    setFormData(prev => ({ ...prev, street_address: value }));
+    searchPlaces(value);
+  };
+
+  const selectSuggestion = async (suggestion: PlaceSuggestion) => {
+    try {
+      // Get detailed place information
+      const response = await fetch(
+        `https://nominatim.openstreetmap.org/lookup?osm_ids=N${suggestion.place_id}&format=json&addressdetails=1`,
+        {
+          headers: {
+            'User-Agent': 'GetDeals Kenya App'
+          }
+        }
+      );
+
+      const data = await response.json();
+      if (data && data[0]) {
+        const place = data[0];
+        const address = place.address || {};
+
+        setFormData(prev => ({
+          ...prev,
+          street_address: suggestion.main_text,
+          city: address.city || address.town || address.village || '',
+          latitude: parseFloat(place.lat),
+          longitude: parseFloat(place.lon),
+          formatted_address: suggestion.description
+        }));
+
+        setAddressInput(suggestion.main_text);
+      }
+
+      setShowSuggestions(false);
+      setSuggestions([]);
+    } catch (error) {
+      console.error('Error getting place details:', error);
+      setFormData(prev => ({
+        ...prev,
+        street_address: suggestion.main_text
+      }));
+      setAddressInput(suggestion.main_text);
+      setShowSuggestions(false);
+    }
+  };
 
   const getCurrentLocation = () => {
     if (!navigator.geolocation) {
@@ -67,7 +160,7 @@ export const AddressForm: React.FC<AddressFormProps> = ({
     navigator.geolocation.getCurrentPosition(
       (position) => {
         const { latitude, longitude } = position.coords;
-        
+
         setFormData(prev => ({
           ...prev,
           latitude,
@@ -83,7 +176,7 @@ export const AddressForm: React.FC<AddressFormProps> = ({
       },
       (error) => {
         let message = "Failed to get your location.";
-        
+
         switch (error.code) {
           case error.PERMISSION_DENIED:
             message = "Location access denied. Please allow location access in your browser settings.";
@@ -149,35 +242,26 @@ export const AddressForm: React.FC<AddressFormProps> = ({
       </CardHeader>
       <CardContent className="pt-0">
         <form onSubmit={handleSubmit} className="space-y-4">
-          {/* Basic Information */}
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-            <div>
-              <Label htmlFor="label" className="text-sm">Address Label *</Label>
-              <Input
-                id="label"
-                value={formData.label}
-                onChange={(e) => setFormData(prev => ({ ...prev, label: e.target.value }))}
-                placeholder="e.g., Home, Office"
-                required
-                className="h-9"
-              />
-            </div>
-            <div>
-              <Label htmlFor="address_type" className="text-sm">Address Type</Label>
-              <Select 
-                value={formData.address_type} 
-                onValueChange={(value) => setFormData(prev => ({ ...prev, address_type: value as 'home' | 'work' | 'other' }))}
-              >
-                <SelectTrigger className="h-9">
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="home">Home</SelectItem>
-                  <SelectItem value="work">Work</SelectItem>
-                  <SelectItem value="other">Other</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
+          {/* Address Label Dropdown */}
+          <div>
+            <Label htmlFor="label" className="text-sm">Address Label *</Label>
+            <Select
+              value={formData.label}
+              onValueChange={(value) => setFormData(prev => ({
+                ...prev,
+                label: value,
+                address_type: value.toLowerCase() === 'apartment' ? 'other' : value.toLowerCase() as 'home' | 'work' | 'other'
+              }))}
+            >
+              <SelectTrigger className="h-9">
+                <SelectValue placeholder="Select address type" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="Home">Home</SelectItem>
+                <SelectItem value="Office">Office</SelectItem>
+                <SelectItem value="Apartment">Apartment</SelectItem>
+              </SelectContent>
+            </Select>
           </div>
 
           {/* GPS Location */}
@@ -202,64 +286,46 @@ export const AddressForm: React.FC<AddressFormProps> = ({
 
           {/* Address Details */}
           <div className="space-y-3">
-            <div>
+            <div className="relative">
               <Label htmlFor="street_address" className="text-sm">Street Address *</Label>
               <Input
                 id="street_address"
                 value={formData.street_address}
-                onChange={(e) => setFormData(prev => ({ ...prev, street_address: e.target.value }))}
-                placeholder="e.g., 123 Kimathi Street"
+                onChange={(e) => handleAddressInputChange(e.target.value)}
+                onFocus={() => {
+                  if (suggestions.length > 0) setShowSuggestions(true);
+                }}
+                placeholder="Start typing your address..."
+                required
+                className="h-9"
+                autoComplete="off"
+              />
+              {showSuggestions && suggestions.length > 0 && (
+                <div className="absolute z-50 w-full mt-1 bg-white border rounded-md shadow-lg max-h-60 overflow-auto">
+                  {suggestions.map((suggestion) => (
+                    <div
+                      key={suggestion.place_id}
+                      className="px-3 py-2 cursor-pointer hover:bg-gray-100 border-b last:border-b-0"
+                      onClick={() => selectSuggestion(suggestion)}
+                    >
+                      <div className="font-medium text-sm">{suggestion.main_text}</div>
+                      <div className="text-xs text-gray-500">{suggestion.secondary_text}</div>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+
+            <div>
+              <Label htmlFor="city" className="text-sm">City *</Label>
+              <Input
+                id="city"
+                value={formData.city}
+                onChange={(e) => setFormData(prev => ({ ...prev, city: e.target.value }))}
+                placeholder="e.g., Nairobi"
                 required
                 className="h-9"
               />
-            </div>
-            
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-              <div>
-                <Label htmlFor="city" className="text-sm">City *</Label>
-                <Input
-                  id="city"
-                  value={formData.city}
-                  onChange={(e) => setFormData(prev => ({ ...prev, city: e.target.value }))}
-                  placeholder="e.g., Nairobi"
-                  required
-                  className="h-9"
-                />
-              </div>
-              <div>
-                <Label htmlFor="county" className="text-sm">County</Label>
-                <Input
-                  id="county"
-                  value={formData.county}
-                  onChange={(e) => setFormData(prev => ({ ...prev, county: e.target.value }))}
-                  placeholder="e.g., Nairobi County"
-                  className="h-9"
-                />
-              </div>
-            </div>
-
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-              <div>
-                <Label htmlFor="postal_code" className="text-sm">Postal Code</Label>
-                <Input
-                  id="postal_code"
-                  value={formData.postal_code}
-                  onChange={(e) => setFormData(prev => ({ ...prev, postal_code: e.target.value }))}
-                  placeholder="e.g., 00100"
-                  className="h-9"
-                />
-              </div>
-              <div>
-                <Label htmlFor="phone_number" className="text-sm">Phone Number</Label>
-                <Input
-                  id="phone_number"
-                  type="tel"
-                  value={formData.phone_number}
-                  onChange={(e) => setFormData(prev => ({ ...prev, phone_number: e.target.value }))}
-                  placeholder="e.g., +254 712 345 678"
-                  className="h-9"
-                />
-              </div>
             </div>
           </div>
 

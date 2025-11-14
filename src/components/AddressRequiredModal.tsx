@@ -1,4 +1,3 @@
-import { useState } from 'react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '@/components/ui/dialog';
 import { MapPin } from 'lucide-react';
 import { AddressForm } from '@/components/AddressForm';
@@ -16,10 +15,8 @@ export function AddressRequiredModal({
 }: AddressRequiredModalProps) {
   const { addAddress } = useAccount();
   const { toast } = useToast();
-  const [isSubmitting, setIsSubmitting] = useState(false);
 
   const handleAddressSave = (addressData: Omit<Address, 'id'>) => {
-    setIsSubmitting(true);
     try {
       addAddress(addressData);
       toast({
@@ -29,7 +26,6 @@ export function AddressRequiredModal({
       // Close modal after a brief delay to show success
       setTimeout(() => {
         onOpenChange(false);
-        setIsSubmitting(false);
       }, 500);
     } catch (error) {
       toast({
@@ -37,7 +33,6 @@ export function AddressRequiredModal({
         description: "Failed to save your address. Please try again.",
         variant: "destructive",
       });
-      setIsSubmitting(false);
     }
   };
 
@@ -52,15 +47,32 @@ export function AddressRequiredModal({
   };
 
   return (
-    <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-md bg-white dark:bg-white border shadow-lg">
+    <Dialog open={open} onOpenChange={(newOpen) => {
+      // Prevent closing the modal without adding an address
+      if (!newOpen) {
+        handleCancel();
+      }
+    }}>
+      <DialogContent
+        className="max-w-md bg-white dark:bg-white border shadow-lg"
+        onInteractOutside={(e) => {
+          // Prevent closing when clicking outside
+          e.preventDefault();
+          handleCancel();
+        }}
+        onEscapeKeyDown={(e) => {
+          // Prevent closing with Escape key
+          e.preventDefault();
+          handleCancel();
+        }}
+      >
         <DialogHeader className="text-center pb-4 border-b">
           <div className="flex justify-center mb-3">
             <div className="bg-primary/10 p-3 rounded-full">
               <MapPin className="h-6 w-6 text-primary" />
             </div>
           </div>
-          <DialogTitle className="text-xl font-bold text-primary">
+          <DialogTitle className="text-xl font-bold text-primary text-center">
             Delivery Address
           </DialogTitle>
           <DialogDescription className="text-center text-xs text-muted-foreground mt-2">

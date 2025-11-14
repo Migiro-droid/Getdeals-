@@ -54,6 +54,8 @@ import QuickMartAdminDashboard from "./pages/quickmart/QuickMartAdminDashboard";
 import BuildYourBasket from "./pages/BuildYourBasket";
 import ConsumerInsightsPage from "./pages/ConsumerInsightsPage";
 import WhoWeServe from "./pages/WhoWeServe";
+import { AddressRequiredModal } from "./components/AddressRequiredModal";
+import { useAddressOnboarding } from "./hooks/useAddressOnboarding";
 
 // Initialize Leta Client on app startup
 const letaApiUrl = import.meta.env.VITE_LETA_API_URL || 'https://integrations.leta.ai';
@@ -148,6 +150,8 @@ const App = () => {
   }
 
   function AppContent() {
+    const { showAddressModal, closeModal } = useAddressOnboarding();
+
     return (
       <BrowserRouter>
         <div className="min-h-screen flex flex-col">
@@ -195,6 +199,12 @@ const App = () => {
             </Routes>
           </main>
           <Footer />
+
+          {/* Address Onboarding Modal - shown after login if no address exists */}
+          <AddressRequiredModal
+            open={showAddressModal}
+            onOpenChange={closeModal}
+          />
         </div>
       </BrowserRouter>
     );
