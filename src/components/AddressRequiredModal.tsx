@@ -13,7 +13,7 @@ export function AddressRequiredModal({
   open,
   onOpenChange,
 }: AddressRequiredModalProps) {
-  const { addAddress } = useAccount();
+  const { addAddress, addresses } = useAccount();
   const { toast } = useToast();
 
   const handleAddressSave = (addressData: Omit<Address, 'id'>) => {
@@ -37,13 +37,17 @@ export function AddressRequiredModal({
   };
 
   const handleCancel = () => {
-    // For post-login flow, we don't allow skipping address setup
-    // User must add an address to continue
-    toast({
-      title: "Address Required",
-      description: "Please add a delivery address to continue.",
-      variant: "destructive",
-    });
+    // If user has no addresses, require them to add one
+    if (addresses.length === 0) {
+      toast({
+        title: "Address Required",
+        description: "Please add a delivery address to continue.",
+        variant: "destructive",
+      });
+    } else {
+      // If user already has addresses, allow them to skip
+      onOpenChange(false);
+    }
   };
 
   return (
